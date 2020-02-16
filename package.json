@@ -1,0 +1,22 @@
+{
+  "name": "sbp-core",
+  "version": "0.1.0",
+  "description": "core functions to enable scenario based programming, written in TypeScript",
+  "author": {
+    "name": "Thomas Deutsch",
+    "email": "deutsch.thomas+sbpcore@gmail.com",
+    "url": "http://thomasdeutsch.de/"
+  },
+  "keywords": [
+    "scenario based programming",
+    "behavioural programming",
+    "TypeScript"
+  ],
+  "license": "MIT",
+  "main": "index.ts",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^25.1.2",
+    "typescript": "3.7.5"
+  }
+}
