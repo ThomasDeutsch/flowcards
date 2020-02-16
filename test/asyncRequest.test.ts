@@ -16,6 +16,7 @@ function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+
 test("A promise can be requested", () => {
     function* thread1() {
         yield bp.request("A", delay(100));
@@ -43,7 +44,7 @@ test("A promise-function can be requested", () => {
 });
 
 test("multiple promises can be requested and pending", () => {
-    let state;
+    let state = {pendingEvents: [], nrProgressions: 0};
     function* thread1() {
         yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
     }
@@ -56,7 +57,7 @@ test("multiple promises can be requested and pending", () => {
 });
 
 test("while a thread is pending a request, it will not request it again", () => {
-    let state;
+    let state = {pendingEvents: [], nrProgressions: 0};
     function* thread1() {
         while (true) {
             yield bp.request("A", () => delay(1000));

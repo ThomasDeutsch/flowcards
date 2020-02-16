@@ -154,8 +154,8 @@ test("A request-value can be a function.", () => {
 });
 
 test("if a request value is a function, it will only be called once.", () => {
-    let receivedValue1: number,
-        receivedValue2: number,
+    let receivedValue1: number = 1000,
+        receivedValue2: number = 1000,
         fnCount: number = 0;
     function* requestThread() {
         yield bp.request("A", () => {
