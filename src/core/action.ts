@@ -20,6 +20,10 @@ export interface ExternalAction {
     actions: Action[];
 }
 
+interface Dictionary<T> {
+    [Key: string]: T;
+}
+
 export function getNextActionFromRequests(requestBids: BidArrayDictionary): Action | null {
     const eventNames = Object.keys(requestBids);
     if (eventNames.length > 0) {

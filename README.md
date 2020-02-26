@@ -3,4 +3,4 @@
 
 
 
-![updateLoop](https://raw.githubusercontent.com/ThomasDeutsch/sbp-core/master/documentation/updateloop.png "updateLoop")
+![updateLoop](./docs/img/updateloop.png "updateLoop")

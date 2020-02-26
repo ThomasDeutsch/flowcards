@@ -1,0 +1,70 @@
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.playlog {
+  position: relative;
+  top: 0;
+  right: 0;
+  width: 400px;
+  font-family: monospace;
+}
+
+.playlog > *:first-child {
+  margin-bottom: 0.8em;
+}
+
+.logitem {
+  position: relative;
+  height: 18px;
+  line-height: 18px;
+  font-size: 13px;
+  padding-left: 1em;
+  text-align: left;
+  margin-bottom: 1px;
+  background-color: #efefef;
+}
+
+.logitem.empty {
+  background-color: white;
+}
+
+.circle {
+  position: absolute;
+  left: -4px;
+  top: 5px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid gray;
+  background-color: gray;
+  border-radius: 50%;
+}
+
+.circle.half {
+  background: linear-gradient(
+    -45deg,
+    white,
+    white,
+    50%,
+    gray,
+    50%,
+    gray,
+    50%,
+    grey 51%
+  );
+  -webkit-animation: rotating 1s linear infinite;
+}
+
+.circle.empty {
+  background-color: white;
+}
+
+@-webkit-keyframes rotating {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
+}

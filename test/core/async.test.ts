@@ -1,6 +1,6 @@
-import bp from "../index";
-import { createUpdateLoop } from "../src/updateloop";
-import { Logger } from "../src/logger";
+import bp from "../../src/core/index";
+import { createUpdateLoop } from "../../src/core/updateloop";
+import { Logger } from "../../src/core/logger";
 
 let updateLoop: Function;
 
