@@ -1,8 +1,9 @@
 {
   "name": "sbp-core",
-  "version": "0.0.1",
-  "description": "enable scenario based programming",
-  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",

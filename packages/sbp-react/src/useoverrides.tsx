@@ -1,5 +1,5 @@
-import * as React from "react";
-import { useRef } from "react";
+import * as React from "../packages/sbp-core/sbp-react/react";
+import { useRef } from "../packages/sbp-core/sbp-react/react";
 
 function maybeMerge(a: Object, b?: Object) {
     return a && b ? { ...a, ...b } : a || b;

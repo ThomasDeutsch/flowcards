@@ -14,15 +14,18 @@ export interface UpdateInfo {
     threadDictionary: ThreadDictionary;
 }
 
+type EnableThreadFunctionType = (gen: ThreadGen, args: Array<any>, key?: string | number) => ThreadState;
+export type ScaffoldingFunctionType = (e: EnableThreadFunctionType) => void;
+
 function setupAndDeleteThreads(
-    scaffolding: Function,
+    scaffolding: ScaffoldingFunctionType,
     threadDictionary: ThreadDictionary,
     dispatch: Function,
     logger?: Logger
 ): Array<string> {
     let threadIds: Set<string> = new Set();
     let orderedThreadIds: Array<string> = [];
-    const enableThread = (gen: ThreadGen, args: Array<any> = [], key?: string | number): ThreadState => {
+    const enableThread: EnableThreadFunctionType = (gen: ThreadGen, args: Array<any> = [], key?: string | number): ThreadState => {
         const id: string = scenarioId(gen, key);
         threadIds.add(id);
         orderedThreadIds.push(id);
@@ -88,7 +91,9 @@ function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): Dispatch
     }, {});
 }
 
-export function createUpdateLoop(scaffolding: Function, dispatch: Function, logger?: Logger): Function {
+export type UpdateLoopFunctionType = (dispatchedActions?: ExternalAction | null) => UpdateInfo;
+
+export function createUpdateLoop(scaffolding: ScaffoldingFunctionType, dispatch: Function, logger?: Logger): UpdateLoopFunctionType {
     let threadDictionary: ThreadDictionary = {};
     let orderedThreadIds: string[];
     let bids: BidDictionariesByType;
@@ -97,7 +102,7 @@ export function createUpdateLoop(scaffolding: Function, dispatch: Function, logg
         bids = getAllBids(orderedThreadIds.map(id => threadDictionary[id].currentBids));
     };
     setThreadsAndBids();
-    const updateLoop = (dispatchedActions?: ExternalAction | null): UpdateInfo => {
+    const updateLoop: UpdateLoopFunctionType = (dispatchedActions?: ExternalAction | null): UpdateInfo => {
         let nextAction: Action | null = null;
         let remainingActions: ExternalAction | null = null;
         if (dispatchedActions && dispatchedActions.actions.length > 0) {  // external event
@@ -123,7 +128,7 @@ export function createUpdateLoop(scaffolding: Function, dispatch: Function, logg
             orderedThreadIds: orderedThreadIds,
             dispatchByWait: dispatchByWait(dispatch, bids.wait),
             threadDictionary: threadDictionary
-        };
+        } as UpdateInfo;
     };
     return updateLoop;
 }
