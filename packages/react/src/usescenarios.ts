@@ -4,6 +4,7 @@ import { getOverrides } from "../../sbp-core/src/overrideinfo";
 import { Logger } from "../../sbp-core/src/logger";
 import { ExternalAction } from "../packages/sbp-core/core/action";
 
+
 function reducer(state: ExternalAction, nextActions: ExternalAction): any {
     return nextActions;
 }
