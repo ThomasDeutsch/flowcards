@@ -1,11 +1,12 @@
-import bp from "../../src/core/index";
-import { createUpdateLoop } from "../../src/core/updateloop";
-import { Logger } from "../../src/core/logger";
+import bp from "../src/bid";
+import { createUpdateLoop, ScaffoldingFunction, UpdateLoopFunction } from '../src/updateloop';
+import { Logger } from "../src/logger";
 
-let updateLoop: Function;
+type TestLoop = (enable: ScaffoldingFunction) => Logger;
+let testLoop: TestLoop;
 
 beforeEach(() => {
-    updateLoop = (enable: Function): Logger => {
+    testLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
         createUpdateLoop(enable, () => null, logger)();
         return logger;
@@ -21,7 +22,7 @@ test("A promise can be requested", () => {
     function* thread1() {
         yield bp.request("A", delay(100));
     }
-    const logger = updateLoop((enable: any) => {
+    const logger = testLoop((enable: any) => {
         enable(thread1);
     });
     const threadReaction = logger.getLatestReactions().thread1;
@@ -34,7 +35,7 @@ test("A promise-function can be requested", () => {
     function* thread1() {
         yield bp.request("A", () => delay(100));
     }
-    const logger = updateLoop((enable: any) => {
+    const logger = testLoop((enable: any) => {
         enable(thread1);
     });
     const threadReaction = logger.getLatestReactions().thread1;
@@ -48,7 +49,7 @@ test("multiple promises can be requested and pending", () => {
     function* thread1() {
         yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
     }
-    updateLoop((enable: any) => {
+    testLoop((enable: any) => {
         state = enable(thread1);
     });
     expect(state.pendingEvents).toContain("A");
@@ -63,7 +64,7 @@ test("while a thread is pending a request, it will not request it again", () => 
             yield bp.request("A", () => delay(1000));
         }
     }
-    updateLoop((enable: any) => {
+    testLoop((enable: any) => {
         state = enable(thread1);
     });
     expect(state.nrProgressions).toBe(1);
@@ -79,7 +80,7 @@ test("a pending request can be cancelled", () => {
         yield bp.request("B");
         isCancelled = true;
     }
-    updateLoop((enable: any) => {
+    testLoop((enable: any) => {
         const { pendingEvents } = enable(thread1);
         if (pendingEvents.length > 0) {
             enable(thread2);

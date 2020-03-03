@@ -18,14 +18,15 @@
 //    also a big change: a guard can be used to verify the user-input (prevent invalid events fired from the UI!)
 
 
-import bp from "../../src/core/index";
-import { createUpdateLoop } from "../../src/core/updateloop";
-import { Logger } from "../../src/core/logger";
+import bp from "../src/bid";
+import { createUpdateLoop, ScaffoldingFunction, UpdateLoopFunction } from '../src/updateloop';
+import { Logger } from "../src/logger";
 
-let updateLoop: Function;
+type TestLoop = (enable: ScaffoldingFunction) => Logger;
+let updateLoop: TestLoop;
 
 beforeEach(() => {
-    updateLoop = (enable: Function): Logger => {
+    updateLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
         createUpdateLoop(enable, () => null, logger)();
         return logger;

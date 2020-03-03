@@ -1,7 +1,7 @@
 import { useReducer, useRef } from "react";
 import { 
-    UpdateLoopFunctionType, 
-    ScaffoldingFunctionType, 
+    UpdateLoopFunction, 
+    ScaffoldingFunction, 
     createUpdateLoop,
     getOverrides,
     Logger,
@@ -14,9 +14,9 @@ function reducer(state: ExternalActions, nextActions: ExternalActions): any {
     return nextActions;
 }
 
-export default function useScenarios(scaffoldingFn: ScaffoldingFunctionType, logger?: Logger) : [OverridesByComponent, DispatchByWait] {
+export default function useScenarios(scaffoldingFn: ScaffoldingFunction, logger?: Logger) : [OverridesByComponent, DispatchByWait] {
     const [nextActions, dispatch] = useReducer(reducer, null);
-    const updateLoopRef = useRef<null | UpdateLoopFunctionType>(null);
+    const updateLoopRef = useRef<null | UpdateLoopFunction>(null);
     if(updateLoopRef.current === null) {
         updateLoopRef.current = createUpdateLoop(scaffoldingFn, dispatch, logger);
     }

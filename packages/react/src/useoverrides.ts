@@ -1,13 +1,22 @@
 import * as React from "react";
-import { useRef, FunctionComponent } from "react";
+import { useRef, FunctionComponent, Component } from "react";
 import { OverridesByComponent } from "@flowcards/core";
 
 function maybeMerge(a: Object, b?: Object) {
     return a && b ? { ...a, ...b } : a || b;
 }
 
+type ReactComponent = FunctionComponent<any> | Component<any>;
+
+interface Dictionary<T> {
+    [Key: string]: T;
+}
+
+type ComponentDictionary = Dictionary<ReactComponent>;
+
+
 // from: https://github.com/tlrobinson/overrides
-function applyOverride(override: any, Component: FunctionComponent<any>, props: any = {}) {
+function applyOverride(override: any, Component: ReactComponent, props: any = {}) {
     // component override shortcut:
     if (typeof override === "function" || typeof override === "string" || override instanceof React.Component) {
         Component = override;
@@ -34,7 +43,7 @@ function mergeOverrides(component: any, props: any, overrides: any[]) {
     return overrides.reduce(([c, p], o) => applyOverride(o, c, p), [component, props]);
 }
 
-function getOverrideComponent(DefaultComponent: FunctionComponent<any>, overrides: any, name: string) {
+function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any, name: string) {
     const Comp = React.memo((props: any) => {
         const [Component, mergedProps] = mergeOverrides(DefaultComponent, props, overrides);
         return React.createElement(Component, {...mergedProps}, null);
@@ -42,12 +51,6 @@ function getOverrideComponent(DefaultComponent: FunctionComponent<any>, override
     Comp.displayName = `${name}_override`;
     return Comp;
 }
-
-interface Dictionary<T> {
-    [Key: string]: T;
-}
-
-type ComponentDictionary = Dictionary<FunctionComponent<any>>;
 
 export default function useOverrides(defaultComponents: ComponentDictionary, override: OverridesByComponent): ComponentDictionary {
     const overrideDict: any = useRef<ComponentDictionary>({});

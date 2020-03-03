@@ -15,10 +15,10 @@ export interface UpdateInfo {
 }
 
 type EnableThreadFunctionType = (gen: ThreadGen, args: Array<any>, key?: string | number) => ThreadState;
-export type ScaffoldingFunctionType = (e: EnableThreadFunctionType) => void;
+export type ScaffoldingFunction = (e: EnableThreadFunctionType) => void;
 
 function setupAndDeleteThreads(
-    scaffolding: ScaffoldingFunctionType,
+    scaffolding: ScaffoldingFunction,
     threadDictionary: ThreadDictionary,
     dispatch: Function,
     logger?: Logger
@@ -91,9 +91,9 @@ function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): Dispatch
     }, {});
 }
 
-export type UpdateLoopFunctionType = (dispatchedActions?: ExternalActions | null) => UpdateInfo;
+export type UpdateLoopFunction = (dispatchedActions?: ExternalActions | null) => UpdateInfo;
 
-export function createUpdateLoop(scaffolding: ScaffoldingFunctionType, dispatch: Function, logger?: Logger): UpdateLoopFunctionType {
+export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function, logger?: Logger): UpdateLoopFunction {
     let threadDictionary: ThreadDictionary = {};
     let orderedThreadIds: string[];
     let bids: BidDictionariesByType;
@@ -102,7 +102,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunctionType, dispatch:
         bids = getAllBids(orderedThreadIds.map(id => threadDictionary[id].currentBids));
     };
     setThreadsAndBids();
-    const updateLoop: UpdateLoopFunctionType = (dispatchedActions?: ExternalActions | null): UpdateInfo => {
+    const updateLoop: UpdateLoopFunction = (dispatchedActions?: ExternalActions | null): UpdateInfo => {
         let nextAction: Action | null = null;
         let remainingActions: ExternalActions | null = null;
         if (dispatchedActions && dispatchedActions.actions.length > 0) {  // external event
