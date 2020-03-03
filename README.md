@@ -1,6 +1,5 @@
-# sbp-core
-### core library to enable scenario based programming in JavasScript.
+# flowcards
 
-
+### enable scenario based programming in JavasScript.
 
 ![updateLoop](./docs/img/updateloop.png "updateLoop")

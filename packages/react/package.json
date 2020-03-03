@@ -2,6 +2,11 @@
   "name": "@flowcards/react",
   "version": "1.0.0",
   "description": "",
+  "author": {
+    "name": "Thomas Deutsch",
+    "email": "deutsch.thomas+flowcards@gmail.com",
+    "url": "https://thomasdeutsch.de"
+  },
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "directories": {
@@ -13,15 +18,12 @@
     "test:watch": "jest --watch",
     "tsc": "tsc"
   },
-  "author": {
-    "name": "Thomas Deutsch",
-    "email": "deutsch.thomas+flowcards@gmail.com",
-    "url": "https://thomasdeutsch.de"
-  },
   "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "@types/react": ">=16.8.0"
+  },
   "dependencies": {
-    "@types/react": "^16.9.23",
-    "react": "^16.13.0",
     "@flowcards/core": "^1.0.0"
   }
 }
