@@ -15,7 +15,7 @@ export interface Action {
     payload?: any;
 }
 
-export interface ExternalAction {
+export interface ExternalActions {
     isReplay?: boolean;
     actions: Action[];
 }

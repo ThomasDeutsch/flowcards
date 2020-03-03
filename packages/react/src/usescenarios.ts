@@ -6,15 +6,15 @@ import {
     getOverrides,
     Logger,
     DispatchByWait,
-    OverridesByComponentType,
-    ExternalAction } from "@flowcards/core";
+    OverridesByComponent,
+    ExternalActions } from "@flowcards/core";
 
 
-function reducer(state: ExternalAction, nextActions: ExternalAction): any {
+function reducer(state: ExternalActions, nextActions: ExternalActions): any {
     return nextActions;
 }
 
-export default function useScenarios(scaffoldingFn: ScaffoldingFunctionType, logger?: Logger) : [OverridesByComponentType, DispatchByWait] {
+export default function useScenarios(scaffoldingFn: ScaffoldingFunctionType, logger?: Logger) : [OverridesByComponent, DispatchByWait] {
     const [nextActions, dispatch] = useReducer(reducer, null);
     const updateLoopRef = useRef<null | UpdateLoopFunctionType>(null);
     if(updateLoopRef.current === null) {

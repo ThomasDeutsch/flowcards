@@ -1,7 +1,7 @@
 import { BidDictionaries, getBidDictionaries, getCurrentBids, BidType, BidDictionaryType } from "./bid";
 import * as utils from "./utils";
 import { Logger, ReactionType } from "./logger";
-import { ActionType, ExternalAction } from './action';
+import { ActionType, ExternalActions } from './action';
 
 export type ThreadGen = any; // TODO: Type this generator
 export interface ThreadDictionary {
@@ -135,7 +135,7 @@ export class BThread {
                     delete this._pendingPromiseDict[eventName];
                     this._dispatch({
                         actions: [{ type: ActionType.resolve, threadId: this.id, eventName: eventName, payload: data }]
-                    } as ExternalAction);
+                    } as ExternalActions);
                 }
             })
             .catch(e => {
@@ -143,7 +143,7 @@ export class BThread {
                     delete this._pendingPromiseDict[eventName];
                     this._dispatch({
                         actions: [{ type: ActionType.reject, threadId: this.id, eventName: eventName, payload: e }]
-                    } as ExternalAction);
+                    } as ExternalActions);
                 }
             });
     }

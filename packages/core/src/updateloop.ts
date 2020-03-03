@@ -2,7 +2,7 @@ import { scenarioId, ThreadGen, BThread, ThreadDictionary, ThreadState } from '.
 import { getAllBids, BidArrayDictionary, BidDictionariesByType, BidType } from "./bid";
 import * as utils from "./utils";
 import { Logger } from "./logger";
-import { Action, getNextActionFromRequests, ExternalAction, ActionType } from "./action";
+import { Action, getNextActionFromRequests, ExternalActions, ActionType } from "./action";
 
 export interface DispatchByWait {
     [Key: string]: Function;
@@ -82,7 +82,7 @@ function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): Dispatch
                 return () => dispatch({
                     isReplay: false,
                     actions: [{ type: ActionType.waited, eventName: eventName, payload: payload }]
-                } as ExternalAction);
+                } as ExternalActions);
             } else {
                 return null;
             }
@@ -91,7 +91,7 @@ function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): Dispatch
     }, {});
 }
 
-export type UpdateLoopFunctionType = (dispatchedActions?: ExternalAction | null) => UpdateInfo;
+export type UpdateLoopFunctionType = (dispatchedActions?: ExternalActions | null) => UpdateInfo;
 
 export function createUpdateLoop(scaffolding: ScaffoldingFunctionType, dispatch: Function, logger?: Logger): UpdateLoopFunctionType {
     let threadDictionary: ThreadDictionary = {};
@@ -102,9 +102,9 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunctionType, dispatch:
         bids = getAllBids(orderedThreadIds.map(id => threadDictionary[id].currentBids));
     };
     setThreadsAndBids();
-    const updateLoop: UpdateLoopFunctionType = (dispatchedActions?: ExternalAction | null): UpdateInfo => {
+    const updateLoop: UpdateLoopFunctionType = (dispatchedActions?: ExternalActions | null): UpdateInfo => {
         let nextAction: Action | null = null;
-        let remainingActions: ExternalAction | null = null;
+        let remainingActions: ExternalActions | null = null;
         if (dispatchedActions && dispatchedActions.actions.length > 0) {  // external event
             if (dispatchedActions.isReplay) { // external event is a replay
                 Object.keys(threadDictionary).forEach(key => delete threadDictionary[key]);

@@ -9,14 +9,14 @@ interface Dictionary<T> {
     [Key: string]: T;
 }
 
-export type OverridesByComponentType = Dictionary<ComponentOverrideInfo>;
+export type OverridesByComponent = Dictionary<ComponentOverrideInfo>;
 
 export function getOverrides({
     orderedThreadIds,
     dispatchByWait,
     threadDictionary
-}: UpdateInfo): OverridesByComponentType {
-    let obcn: OverridesByComponentType = {};
+}: UpdateInfo): OverridesByComponent {
+    let obcn: OverridesByComponent = {};
     orderedThreadIds.forEach(id => {
         const overrideFn = threadDictionary[id].override;
         if (overrideFn) {
