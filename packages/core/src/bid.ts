@@ -21,8 +21,7 @@ export type BidArrayDictionary = Dictionary<Array<Bid>>;
 
 export enum BidDictionaryType {
     single = "single",
-    array = "array",
-    function = "function"
+    array = "array"
 }
 
 // Bids from current thread
@@ -61,24 +60,17 @@ export class BidDictionaries {
     }
 }
 
-export function getBidDictionaries(threadId: string, bid: Bid | null | Array<Bid | null> | Function): BidDictionaries {
+export function getBidDictionaries(threadId: string, bid: Bid | null | Array<Bid | null>): BidDictionaries {
     if (Array.isArray(bid)) {
         return bid.reduce((acc: BidDictionaries, b) => acc.addBid(b), new BidDictionaries(BidDictionaryType.array, threadId));
-    } else if (typeof bid === 'function') {
-        return new BidDictionaries(BidDictionaryType.function, threadId, bid);
-    }
+    } 
     return new BidDictionaries(BidDictionaryType.single, threadId).addBid(bid);
 }
 
 export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: string[]) {
     if (bds === null) return null;
     let current: BidDictionaries;
-    if (bds.type === BidDictionaryType.function) {
-        current = getBidDictionaries(bds.threadId, bds.unresolvedBid!());
-    } else {
-        current = bds.clone();
-    }
-    // remove pending requests
+    current = bds.clone(); 
     pendingEventNames.forEach(eventName => {
         delete current.request[eventName];
     });

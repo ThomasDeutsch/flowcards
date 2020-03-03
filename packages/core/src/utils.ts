@@ -23,10 +23,6 @@ export function isThenable(p: any): boolean {
     return p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
 
-export function getLast(a: any[]): any {
-    return a[a.length - 1];
-}
-
 export function dropFirst(a: any[]): any[] {
     if (a.length === 0) {
         return [];

@@ -35,22 +35,14 @@ export class BThread {
     private _currentArguments: Array<any>;
     private _thread: IterableIterator<any>;
     private _currentBids: BidDictionaries | null = null;
-    private _currentBidsForProgress: [number | null, BidDictionaries | null] = [null, null];
-    get currentBids(): BidDictionaries | null {
-        if(!(this._currentBidsForProgress[0] === this.nrProgressions) ||
-            (this._currentBids && (this._currentBids.type === BidDictionaryType.function))) {
-            this._currentBidsForProgress[0] = this.nrProgressions;
-            this._currentBidsForProgress[1] = getCurrentBids(this._currentBids, this.pendingEventNames);
-        }
-        return this._currentBidsForProgress[1];
-    }
+    private _nextBid: any;
     private _pendingPromiseDict: PromiseDictionary<any> = {};
     get pendingEventNames() {
         return Object.keys(this._pendingPromiseDict);
     }
     private _isCompleted: boolean = false;
     private _nrProgressions: number = -1;
-    get nrProgressions(): number {
+    get nrProgressions() {
         return this._nrProgressions;
     }
     private _stateValue: any;
@@ -96,8 +88,23 @@ export class BThread {
 
     // --- private
 
+    private _setNewBids(): void {
+        if(this._nextBid === null) {
+            this._currentBids = null;
+            return;
+        }
+        let bids;
+        if(typeof this._nextBid === 'function') {
+            bids = getBidDictionaries(this.id, this._nextBid());
+        } else {
+            bids = getBidDictionaries(this.id, this._nextBid);
+        }
+        this._currentBids = getCurrentBids(bids, this.pendingEventNames);
+    }
+
     private _increaseProgress(): void {
         this._nrProgressions = this._nrProgressions + 1;
+        this._setNewBids();
     }
 
     private _cancelPendingPromises(): string[] {
@@ -116,13 +123,13 @@ export class BThread {
         const cancelledPromises = this._cancelPendingPromises();
         this._override = null;
         const next: any = this._thread.next(returnValue);
-        this._increaseProgress();
         if (next.done) {
             this._isCompleted = true;
-            this._currentBids = null;
+            this._nextBid = null;
         } else {
-            this._currentBids = getBidDictionaries(this.id, next.value);
+            this._nextBid = next.value;
         }
+        this._increaseProgress();
         return cancelledPromises;
     }
 
@@ -159,6 +166,13 @@ export class BThread {
 
     // --- public
 
+    public getBids(): BidDictionaries | null {
+        if(typeof this._nextBid === 'function') {
+            this._setNewBids();  
+        }
+        return this._currentBids;
+    }
+
     public resetOnArgsChange(nextArguments: any): void {
         if (utils.areInputsEqual(this._currentArguments, nextArguments)) {
             return;
@@ -186,17 +200,17 @@ export class BThread {
         return [payload, false];
     }
 
-    public progressWaitIntercept(type: BidType, eventName: string, payload: any) {
+    public progressWaitIntercept(type: BidType, eventName: string, payload: any): boolean {
         if (!this._currentBids || !this._currentBids[type] || !this._currentBids[type][eventName]) {
             console.error(`thread '${this.id}' had no current bids for action '${type}:${eventName}')`);
-            throw new Error("no current bids"); // can this happen?
-            //return;
+            return false;
         }
         const guard = this._currentBids[type][eventName].guard;
         if(guard && !guard(payload)) {
-            return;
+            return false;
         }
         this._progressThread(eventName, payload, false);
+        return true;
     }
 
     public onDelete(): void {

@@ -1,23 +1,3 @@
-// ---------- guards & waits/intercepts
-// a wait can be guarded
-// an intercept can be guarded
-
-// ---------- guards & blocks
-// blocks can be guarded
-// if there is an unguared block and a guarded block - the guard will have no effect
-// different guards are merged
-// a wait guard and a block guard for the same event are merged.
-// if a bid is a function, it get reevaluated every cycle
-// a function can result in an array or single event
-
-
-// FOR EVERY FEATURE, EXPAIN WHY
-// 2. A generator is reset with argument change. Why? ->  argument-changes are a context changes. you can pass Objects to prevent changes.
-// 3. You do not want to introduce new events. You want to make decisions, based on the payload - so there needs to be guards-functions.
-//    AND it will be easier to block AND other threads do not know all kind of different events.
-//    also a big change: a guard can be used to verify the user-input (prevent invalid events fired from the UI!)
-
-
 import bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction, UpdateLoopFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
@@ -297,23 +277,3 @@ test("the last intercept that is enabled has the highest priority", () => {
     expect(advancedThread1).toBeFalsy();
     expect(advancedThread2).toBe(true);
 });
-
-// INVALID
-// ---------------------------------------------------------------------
-
-// test("A thread can only exclusively (request,block,wait or intercept) the same event at a time", () => {
-//     const eventName = "event1";
-//     function* thread1() {
-//         yield bp.request(eventName);
-//     }
-//     function* thread2() {
-//         yield bp.request(eventName);
-//     }
-
-//     expect(
-//         testLoop((enable: any) => {
-//             enable(thread1);
-//             enable(thread2);
-//         })
-//     ).toThrow(Error);
-// });

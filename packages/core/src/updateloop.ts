@@ -60,13 +60,16 @@ function advanceThreads(
     }
     if (!wasAsyncRequest && waits[action.eventName] && waits[action.eventName].length) {
         if (intercepts[action.eventName]) {
-            const threadId: string = utils.getLast(intercepts[action.eventName]).threadId;
-            threadDictionary[threadId].progressWaitIntercept(BidType.intercept, action.eventName, payload);
-        } else {
-            waits[action.eventName].forEach(({ threadId }) => {
-                threadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, payload);
-            });
+            let i = [...intercepts[action.eventName]];
+            while(i.length) {
+                const threadId = i.pop()!.threadId;
+                const wasIntercepted = threadDictionary[threadId].progressWaitIntercept(BidType.intercept, action.eventName, payload);
+                if(wasIntercepted) return;
+            }  
         }
+        waits[action.eventName].forEach(({ threadId }) => {
+            threadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, payload);
+        });
     }
 }
 
@@ -99,7 +102,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
     let bids: BidDictionariesByType;
     const setThreadsAndBids = () => {
         orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, dispatch, logger);
-        bids = getAllBids(orderedThreadIds.map(id => threadDictionary[id].currentBids));
+        bids = getAllBids(orderedThreadIds.map(id => threadDictionary[id].getBids()));
     };
     setThreadsAndBids();
     const updateLoop: UpdateLoopFunction = (dispatchedActions?: ExternalActions | null): UpdateInfo => {
