@@ -1,4 +1,4 @@
-# sbp-core
+# flowcards
 ### core library to enable scenario based programming in JavasScript.
 
 
