@@ -39,6 +39,8 @@ build/Release
 
 # Dependency directories
 node_modules/
+packages/*/node_modules/
+
 jspm_packages/
 
 # TypeScript v1 declaration files
@@ -89,6 +91,9 @@ typings/
 
 # TypeScript build directory
 build/*
+
+# Tests
+__tests__/
 
 # MacOS
 .DS_Store

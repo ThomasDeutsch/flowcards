@@ -4,7 +4,7 @@ import * as utils from "./utils";
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests, ExternalAction, ActionType } from "./action";
 
-interface DispatchByWait {
+export interface DispatchByWait {
     [Key: string]: Function;
 }
 
