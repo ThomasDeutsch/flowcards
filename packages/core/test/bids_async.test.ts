@@ -31,6 +31,7 @@ test("A promise can be requested", () => {
     expect(threadReaction.type).toBe("promise");
 });
 
+
 test("A promise-function can be requested", () => {
     function* thread1() {
         yield bp.request("A", () => delay(100));
@@ -43,6 +44,7 @@ test("A promise-function can be requested", () => {
     expect(logger.getLatestReactionThreads()).toContain("thread1");
     expect(threadReaction.type).toBe("promise");
 });
+
 
 test("multiple promises can be requested and pending", () => {
     let state = {pendingEvents: [], nrProgressions: 0};
@@ -57,6 +59,7 @@ test("multiple promises can be requested and pending", () => {
     expect(state.nrProgressions).toBe(2);
 });
 
+
 test("while a thread is pending a request, it will not request it again", () => {
     let state = {pendingEvents: [], nrProgressions: 0};
     function* thread1() {
@@ -69,6 +72,7 @@ test("while a thread is pending a request, it will not request it again", () => 
     });
     expect(state.nrProgressions).toBe(1);
 });
+
 
 test("a pending request can be cancelled", () => {
     let isCancelled;

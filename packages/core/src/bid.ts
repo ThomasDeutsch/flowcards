@@ -69,6 +69,7 @@ export function getBidDictionaries(threadId: string, bid: Bid | null | Array<Bid
 
 export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: string[]) {
     if (bds === null) return null;
+    if (!pendingEventNames.length) return bds;
     let current: BidDictionaries;
     current = bds.clone(); 
     pendingEventNames.forEach(eventName => {

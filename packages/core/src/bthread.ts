@@ -17,8 +17,15 @@ type DispatchFn = Function;
 export interface ThreadState {
     isCompleted: boolean;
     nrProgressions: number;
-    pendingEvents?: Array<string>;
-    value: any;
+    pendingEvents?: Set<string>;
+    value?: any;
+}
+
+export interface ThreadContext {
+    key: string | number | null;
+    show: Function;
+    setState: Function;
+    state: Function;
 }
 
 export function scenarioId(generator: ThreadGen, key?: string | number): string {
@@ -28,7 +35,7 @@ export function scenarioId(generator: ThreadGen, key?: string | number): string 
 
 export class BThread {
     readonly id: string;
-    readonly key?: String;
+    readonly key: string | number | null = null;
     private readonly _logger?: Logger;
     private readonly _dispatch: DispatchFn;
     private readonly _generator: ThreadGen;
@@ -45,12 +52,15 @@ export class BThread {
     get nrProgressions() {
         return this._nrProgressions;
     }
-    private _stateValue: any;
+    private _stateValue?: any;
     private _stateRef: any = {};
     get state(): ThreadState {
         this._stateRef.isCompleted = this._isCompleted;
         this._stateRef.nrProgressions = this._nrProgressions;
-        this._stateRef.pendingEvents = Object.keys(this._pendingPromiseDict);
+        const pendingEventNames = Object.keys(this._pendingPromiseDict);
+        if(pendingEventNames.length) { 
+            this._stateRef.pendingEvents = new Set(pendingEventNames);
+        }
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
@@ -58,7 +68,8 @@ export class BThread {
     get override(): Function | null {
         return this._override;
     }
-    private _getThreadContext() {
+
+    private _getThreadContext(): ThreadContext {
         return {
             key: this.key,
             show: (overrideFn: Function): void => {
@@ -74,7 +85,7 @@ export class BThread {
     constructor(generator: ThreadGen, args: Array<any>, dispatch: Function, key?: string | number, logger?: Logger) {
         this.id = scenarioId(generator, key);
         if (key || key === 0) {
-            this.key = key.toString();
+            this.key = key;
         }
         this._override = null;
         this._dispatch = dispatch;
@@ -85,8 +96,6 @@ export class BThread {
         this._processNextBid();
         if (this._logger) this._logger.logReaction(this.id, ReactionType.init);
     }
-
-    // --- private
 
     private _setNewBids(): void {
         if(this._nextBid === null) {

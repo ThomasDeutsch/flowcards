@@ -14,7 +14,7 @@ export interface UpdateInfo {
     threadDictionary: ThreadDictionary;
 }
 
-type EnableThreadFunctionType = (gen: ThreadGen, args: Array<any>, key?: string | number) => ThreadState;
+type EnableThreadFunctionType = (gen: ThreadGen, args?: Array<any>, key?: string | number) => ThreadState;
 export type ScaffoldingFunction = (e: EnableThreadFunctionType) => void;
 
 function setupAndDeleteThreads(
@@ -25,7 +25,8 @@ function setupAndDeleteThreads(
 ): Array<string> {
     let threadIds: Set<string> = new Set();
     let orderedThreadIds: Array<string> = [];
-    const enableThread: EnableThreadFunctionType = (gen: ThreadGen, args: Array<any> = [], key?: string | number): ThreadState => {
+    const enableThread: EnableThreadFunctionType = (gen: ThreadGen, args?: Array<any>, key?: string | number): ThreadState => {
+        if(!args) args = [];
         const id: string = scenarioId(gen, key);
         threadIds.add(id);
         orderedThreadIds.push(id);
