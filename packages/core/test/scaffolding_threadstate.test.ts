@@ -38,8 +38,9 @@ test("the enable function will return the current thread state", () => {
 
 
 test("if promises are pending, the thread will return a set of those pending promises", () => {
-    let state,state2: ThreadState;
-
+    let state: any = null;
+    let state2: any = null;
+    
     function* thread() {
         yield bp.request("A", delay(1000));
     }
@@ -53,18 +54,19 @@ test("if promises are pending, the thread will return a set of those pending pro
         state2 = enable(thread2);
     });
 
-    expect(state.isCompleted).toBe(false);
-    expect(state.nrProgressions).toBe(1); 
-    expect(state.pendingEvents).toEqual(new Set(["A"]));
-    expect(state.value).toBeUndefined();
-    expect(state2.nrProgressions).toBe(2); 
-    expect(state2.pendingEvents).toEqual(new Set(["C", "D"]));
+    if(state && state2) {
+        expect(state.isCompleted).toBe(false);
+        expect(state.nrProgressions).toBe(1); 
+        expect(state.pendingEvents).toEqual(new Set(["A"]));
+        expect(state.value).toBeUndefined();
+        expect(state2.nrProgressions).toBe(2); 
+        expect(state2.pendingEvents).toEqual(new Set(["C", "D"]));
+    }
 });
 
 
 test("the thread will return the state value, and a completed-flag if the thread completes", () => {
-    let state: ThreadState;
-
+    let state: any = null
     function* thread(this: ThreadContext) {
         this.setState('foo');
         yield bp.request("A");
@@ -74,7 +76,12 @@ test("the thread will return the state value, and a completed-flag if the thread
         state = enable(thread);
     });
 
-    expect(state.isCompleted).toBe(true);
-    expect(state.nrProgressions).toBe(1);
-    expect(state.value).toEqual('foo');
+    if(state) {
+        expect(state.isCompleted).toBe(true);
+        expect(state.nrProgressions).toBe(1);
+        expect(state.value).toEqual('foo');
+    }
+    
+    
+
 });

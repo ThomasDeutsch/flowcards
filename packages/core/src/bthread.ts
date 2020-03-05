@@ -169,7 +169,7 @@ export class BThread {
     private _progressThread(eventName: string, payload: any, isReject: boolean): void {
         let returnVal = null
         if(!isReject) {
-            returnVal = (this._currentBids && (this._currentBids.type === BidDictionaryType.array)) ? [payload, eventName] : payload;
+            returnVal = (this._currentBids && (this._currentBids.type === BidDictionaryType.array)) ? [eventName, payload] : payload;
         }
         const cancelledPromises = this._processNextBid(returnVal);
         if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);

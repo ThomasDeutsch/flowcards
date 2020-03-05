@@ -70,7 +70,7 @@ test("a bid-function can return multiple bids", () => {
     }
 
     function* fnThread() {
-        [receivedValue, receivedEvent] = yield () => [bp.wait("A"), bp.wait("B")];
+        [receivedEvent, receivedValue] = yield () => [bp.wait("A"), bp.wait("B")];
     }
 
     updateLoop((enable) => {

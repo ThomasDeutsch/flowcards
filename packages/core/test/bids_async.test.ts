@@ -49,21 +49,24 @@ test("A promise-function can be requested", () => {
 
 
 test("multiple promises can be requested and pending", () => {
-    let state: ThreadState;
+    let state: any = null;
     function* thread1() {
         yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
     }
     testLoop((enable) => {
         state = enable(thread1);
     });
-    expect(state.pendingEvents).toContain("A");
-    expect(state.pendingEvents).toContain("B");
-    expect(state.nrProgressions).toBe(2);
+
+    if(state) {
+        expect(state.pendingEvents).toContain("A");
+        expect(state.pendingEvents).toContain("B");
+        expect(state.nrProgressions).toBe(2);
+    }
 });
 
 
 test("while a thread is pending a request, it will not request it again", () => {
-    let state: ThreadState;
+    let state: any = null;
     function* thread1() {
         while (true) {
             yield bp.request("A", () => delay(1000));
@@ -72,15 +75,18 @@ test("while a thread is pending a request, it will not request it again", () => 
     testLoop((enable) => {
         state = enable(thread1);
     });
-    expect(state.nrProgressions).toBe(1);
+
+    if(state) {
+        expect(state.nrProgressions).toBe(1);
+    }
+    
 });
 
 
 test("a pending request can be cancelled", () => {
     let isCancelled;
     function* thread1() {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [_, eventName] = yield [bp.request("A", () => delay(1000)), bp.wait("B")];
+        const [eventName] = yield [bp.request("A", () => delay(1000)), bp.wait("B")];
         isCancelled = eventName === "B" ? true : false;
     }
     function* thread2() {

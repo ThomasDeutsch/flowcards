@@ -84,12 +84,11 @@ test("waits will return the value that has been requested", () => {
 });
 
 
-test("multiple requests will return an array of [value, eventName].", () => {
+test("multiple requests will return an array of [eventName, value].", () => {
     let progressedEventName, receivedValueA, receivedValueB;
 
     function* requestThread() {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [value, eventName] = yield [bp.request("A", 1000), bp.request("B", 2000)];
+        const [eventName] = yield [bp.request("A", 1000), bp.request("B", 2000)];
         progressedEventName = eventName;
     }
 
@@ -125,7 +124,7 @@ test("multiple waits will return an array of [value, eventName].", () => {
     }
 
     function* receiveThread() {
-        [receivedValue, receivedEventName] = yield [bp.wait("A"), bp.wait("B")];
+        [receivedEventName, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
     }
 
     updateLoop((enable) => {
@@ -146,7 +145,7 @@ test("A request-value can be a function.", () => {
     }
 
     function* receiveThread() {
-        [receivedValue, receivedEventName] = yield [bp.wait("A"), bp.wait("B")];
+        [receivedEventName, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
     }
 
     updateLoop((enable) => {
