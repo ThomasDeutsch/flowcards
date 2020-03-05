@@ -1,16 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-
 import * as React from "react";
-import { useRef, FunctionComponent, Component } from "react";
+import { useRef, FunctionComponent, ComponentClass } from "react";
 import { OverridesByComponent } from "@flowcards/core";
 
 function maybeMerge(a: Record<string, any>, b?: Record<string, any>): Record<string, any> {
     return a && b ? { ...a, ...b } : a || b;
 }
 
-type ReactComponent = FunctionComponent<any> | Component<any>;
+type ReactComponent = FunctionComponent<{}> | ComponentClass<{}, any>;
 
 interface Dictionary<T> {
     [Key: string]: T;
@@ -20,7 +18,7 @@ type ComponentDictionary = Dictionary<ReactComponent>;
 
 
 // from: https://github.com/tlrobinson/overrides
-function applyOverride(override: any, Component: ReactComponent, props: any = {}) {
+function applyOverride(override: any, Component: ReactComponent, props: any = {}): [ReactComponent, any] {
     // component override shortcut:
     if (typeof override === "function" || typeof override === "string" || override instanceof React.Component) {
         Component = override;
@@ -43,12 +41,12 @@ function applyOverride(override: any, Component: ReactComponent, props: any = {}
     return [Component, props];
 }
 
-function mergeOverrides(component: any, props: any, overrides: any[]) {
-    return overrides.reduce(([c, p], o) => applyOverride(o, c, p), [component, props]);
+function mergeOverrides(component: any, props: any, overrides: any[]): [ReactComponent, any] {
+    return overrides.reduce(([c, p], o): [ReactComponent, any] => applyOverride(o, c, p), [component, props]);
 }
 
-function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any, name: string) {
-    const Comp = React.memo((props: any) => {
+function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any, name: string): ReactComponent {
+    const Comp = React.memo((props: any): any => {
         const [Component, mergedProps] = mergeOverrides(DefaultComponent, props, overrides);
         return React.createElement(Component, {...mergedProps}, null);
     });
@@ -58,7 +56,7 @@ function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any, 
 
 export default function useOverrides(defaultComponents: ComponentDictionary, override: OverridesByComponent): ComponentDictionary {
     const overrideDict: any = useRef<ComponentDictionary>({});
-    return Object.keys(defaultComponents).reduce((acc:any, name) => {
+    return Object.keys(defaultComponents).reduce((acc:any, name): ComponentDictionary => {
         if(!override[name]) {
             delete overrideDict.current[name];
             acc[name] = defaultComponents[name];

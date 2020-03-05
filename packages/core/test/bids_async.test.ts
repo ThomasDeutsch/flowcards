@@ -134,7 +134,7 @@ test("when an async request is fulfilled, the thread will not progress until the
 //     expect(1).toBe(2);
 // });
 
-// test("A requested promise can throw an error. This error can be try/catched in the generator", () => {
+// test("A requested promise can throw an error. This error can be try/catch in the generator", () => {
 //     expect(1).toBe(2);
 // });
 
