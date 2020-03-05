@@ -1,2 +1,2 @@
-export * from './overridesHook';
-export * from './scenariosHook';
+export { useOverrides } from './overridesHook';
+export { useScenarios } from './scenariosHook';

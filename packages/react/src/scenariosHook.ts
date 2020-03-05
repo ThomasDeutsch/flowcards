@@ -14,7 +14,7 @@ function reducer(state: ExternalActions, nextActions: ExternalActions): External
     return nextActions;
 }
 
-export default function useScenarios(scaffoldingFn: ScaffoldingFunction, logger?: Logger) : [OverridesByComponent, DispatchByWait] {
+export function useScenarios(scaffoldingFn: ScaffoldingFunction, logger?: Logger) : [OverridesByComponent, DispatchByWait] {
     const [nextActions, dispatch] = useReducer(reducer, { isReplay: false, actions: []});
     const updateLoopRef = useRef<null | UpdateLoopFunction>(null);
     if(updateLoopRef.current === null) {

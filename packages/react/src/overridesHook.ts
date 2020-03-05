@@ -54,7 +54,7 @@ function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any, 
     return Comp;
 }
 
-export default function useOverrides(defaultComponents: ComponentDictionary, override: OverridesByComponent): ComponentDictionary {
+export function useOverrides(defaultComponents: ComponentDictionary, override: OverridesByComponent): ComponentDictionary {
     const overrideDict: any = useRef<ComponentDictionary>({});
     return Object.keys(defaultComponents).reduce((acc:any, name): ComponentDictionary => {
         if(!override[name]) {
