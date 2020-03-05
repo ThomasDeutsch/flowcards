@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction, UpdateLoopFunction } from '../src/updateloop';
+import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
+import { ThreadState } from '../src/bthread';
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;
 let testLoop: TestLoop;
@@ -22,7 +24,7 @@ test("A promise can be requested", () => {
     function* thread1() {
         yield bp.request("A", delay(100));
     }
-    const logger = testLoop((enable: any) => {
+    const logger = testLoop((enable) => {
         enable(thread1);
     });
     const threadReaction = logger.getLatestReactions().thread1;
@@ -36,7 +38,7 @@ test("A promise-function can be requested", () => {
     function* thread1() {
         yield bp.request("A", () => delay(100));
     }
-    const logger = testLoop((enable: any) => {
+    const logger = testLoop((enable) => {
         enable(thread1);
     });
     const threadReaction = logger.getLatestReactions().thread1;
@@ -47,11 +49,11 @@ test("A promise-function can be requested", () => {
 
 
 test("multiple promises can be requested and pending", () => {
-    let state = {pendingEvents: [], nrProgressions: 0};
+    let state: ThreadState;
     function* thread1() {
         yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
     }
-    testLoop((enable: any) => {
+    testLoop((enable) => {
         state = enable(thread1);
     });
     expect(state.pendingEvents).toContain("A");
@@ -61,13 +63,13 @@ test("multiple promises can be requested and pending", () => {
 
 
 test("while a thread is pending a request, it will not request it again", () => {
-    let state = {pendingEvents: [], nrProgressions: 0};
+    let state: ThreadState;
     function* thread1() {
         while (true) {
             yield bp.request("A", () => delay(1000));
         }
     }
-    testLoop((enable: any) => {
+    testLoop((enable) => {
         state = enable(thread1);
     });
     expect(state.nrProgressions).toBe(1);
@@ -77,6 +79,7 @@ test("while a thread is pending a request, it will not request it again", () => 
 test("a pending request can be cancelled", () => {
     let isCancelled;
     function* thread1() {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const [_, eventName] = yield [bp.request("A", () => delay(1000)), bp.wait("B")];
         isCancelled = eventName === "B" ? true : false;
     }
@@ -84,13 +87,31 @@ test("a pending request can be cancelled", () => {
         yield bp.request("B");
         isCancelled = true;
     }
-    testLoop((enable: any) => {
+    testLoop((enable) => {
         const { pendingEvents } = enable(thread1);
-        if (pendingEvents.length > 0) {
+        if (pendingEvents && pendingEvents.size > 0) {
             enable(thread2);
         }
     });
     expect(isCancelled).toBe(true);
+});
+
+
+test("when an async request is fulfilled, the thread will not progress until the promise ist resolved", () => {
+    let isAdvanced = false;
+
+    function* thread1() {
+        yield bp.request("A", () => delay(1000));
+        isAdvanced = true;
+    }
+    testLoop((enable) => {
+        const { pendingEvents } = enable(thread1);
+        if (pendingEvents && pendingEvents.size > 0) {
+            enable(thread1);
+        }
+    });
+    
+    expect(isAdvanced).toBe(false);
 });
 
 // test("A promise response is dispatched", () => {

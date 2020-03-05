@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export enum BidType {
     wait = "wait",
     intercept = "intercept",
@@ -5,19 +7,19 @@ export enum BidType {
     request = "request"
 }
 
-export type Bid = {
+export interface Bid {
     type: BidType;
     threadId: string;
     eventName: string;
     payload?: any;
     guard?: Function;
-};
+}
 
 interface Dictionary<T> {
     [Key: string]: T;
 }
 
-export type BidArrayDictionary = Dictionary<Array<Bid>>;
+export type BidArrayDictionary = Dictionary<Bid[]>;
 
 export enum BidDictionaryType {
     single = "single",
@@ -28,15 +30,15 @@ export enum BidDictionaryType {
 // --------------------------------------------------------------------------------------------------------------------
 
 export class BidDictionaries {
-    readonly type: BidDictionaryType;
-    readonly threadId: string;
+    public readonly type: BidDictionaryType;
+    public readonly threadId: string;
     public unresolvedBid?: Function;
     public [BidType.wait]: Dictionary<Bid> = {};
     public [BidType.intercept]: Dictionary<Bid> = {};
     public [BidType.request]: Dictionary<Bid> = {};
     public [BidType.block]: Dictionary<Bid> = {};
 
-    constructor(type: BidDictionaryType, threadId: string, unresolvedBid?: Function) {
+    public constructor(type: BidDictionaryType, threadId: string, unresolvedBid?: Function) {
         this.type = type;
         this.threadId = threadId;
         this.unresolvedBid = unresolvedBid;
@@ -60,19 +62,18 @@ export class BidDictionaries {
     }
 }
 
-export function getBidDictionaries(threadId: string, bid: Bid | null | Array<Bid | null>): BidDictionaries {
+export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | null)[]): BidDictionaries {
     if (Array.isArray(bid)) {
-        return bid.reduce((acc: BidDictionaries, b) => acc.addBid(b), new BidDictionaries(BidDictionaryType.array, threadId));
+        return bid.reduce((acc: BidDictionaries, b): BidDictionaries => acc.addBid(b), new BidDictionaries(BidDictionaryType.array, threadId));
     } 
     return new BidDictionaries(BidDictionaryType.single, threadId).addBid(bid);
 }
 
-export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: string[]) {
+export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: string[]): BidDictionaries | null {
     if (bds === null) return null;
     if (!pendingEventNames.length) return bds;
-    let current: BidDictionaries;
-    current = bds.clone(); 
-    pendingEventNames.forEach(eventName => {
+    const current = bds.clone(); 
+    pendingEventNames.forEach((eventName): void => {
         delete current.request[eventName];
     });
     return current;
@@ -83,19 +84,19 @@ export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: s
 
 function getAllBidsForType(
     type: BidType,
-    coll: Array<BidDictionaries>,
+    coll: BidDictionaries[],
     blockedEventNames: Set<string> | null,
     guardedBlocks: Dictionary<Function> | null
 ): BidArrayDictionary {
-    return coll.reduce((acc: BidArrayDictionary, curr: BidDictionaries) => {
+    return coll.reduce((acc: BidArrayDictionary, curr: BidDictionaries): BidArrayDictionary => {
         const bidByEventName = curr[type];
-        Object.keys(bidByEventName).forEach(eventName => {
+        Object.keys(bidByEventName).forEach((eventName): BidArrayDictionary | undefined => {
             if (blockedEventNames && blockedEventNames.has(eventName)) {
                 return acc;
             }
-            let bid = {...bidByEventName[eventName]}
+            const bid = {...bidByEventName[eventName]}
             if(guardedBlocks && guardedBlocks[eventName]) {
-                bid.guard = bid.guard ? (a: any) => bid.guard!(a) && !guardedBlocks[eventName](a) : (a: any) => !guardedBlocks[eventName](a);
+                bid.guard = bid.guard ? (a: any): boolean => bid.guard && bid.guard(a) && !guardedBlocks[eventName](a) : (a: any): boolean => !guardedBlocks[eventName](a);
             }
             if (acc[eventName]) {
                 acc[eventName].push(bid);
@@ -108,13 +109,13 @@ function getAllBidsForType(
 }
 
 function getCategorizedBlocks(blocks: BidArrayDictionary): [Dictionary<Function>, Set<string> | null] {
-    let guarded: Dictionary<Function> = {};
-    let unguarded: Set<string> = new Set();
-    Object.keys(blocks).forEach((eventName: string) => {
-        blocks[eventName].forEach(block => {
+    const guarded: Dictionary<Function> = {};
+    const unguarded: Set<string> = new Set();
+    Object.keys(blocks).forEach((eventName: string): void => {
+        blocks[eventName].forEach((block): void => {
             if(block.guard && !unguarded.has(eventName)) {
                 if(guarded[eventName]) {
-                    guarded[eventName] = (a: any) => (block.guard!(a) && guarded[eventName](a));
+                    guarded[eventName] = (a: any): boolean => (block.guard && block.guard(a) && guarded[eventName](a));
                 }
                 else {
                     guarded[eventName] = block.guard;
@@ -135,7 +136,7 @@ export interface BidDictionariesByType {
     [BidType.intercept]: BidArrayDictionary;
 }
 
-export function getAllBids(coll: Array<BidDictionaries | null>): BidDictionariesByType {
+export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByType {
     const dictionaries = coll.filter((c): c is BidDictionaries => c !== null);
     const allBlockingBids = getAllBidsForType(BidType.block, dictionaries, null, null);
     const [guardedBlocks, unguardedBlocks] = getCategorizedBlocks(allBlockingBids);
@@ -150,19 +151,19 @@ export function getAllBids(coll: Array<BidDictionaries | null>): BidDictionaries
 // Bid API --------------------------------------------------------------------
 
 export function wait(eventName: string, guard?: Function): Bid {
-    return { type: BidType.wait, eventName: eventName, guard: guard } as Bid;
+    return { type: BidType.wait, eventName: eventName, guard: guard, threadId: ""};
 }
 
 export function intercept(eventName: string, guard?: Function): Bid {
-    return { type: BidType.intercept, eventName: eventName, guard: guard } as Bid;
+    return { type: BidType.intercept, eventName: eventName, guard: guard, threadId: ""};
 }
 
 export function request(eventName: string, payload?: any): Bid {
-    return { type: BidType.request, eventName: eventName, payload: payload } as Bid;
+    return { type: BidType.request, eventName: eventName, payload: payload, threadId: "" };
 }
 
 export function block(eventName: string, guard?: Function): Bid {
-    return { type: BidType.block, eventName: eventName, guard: guard } as Bid;
+    return { type: BidType.block, eventName: eventName, guard: guard, threadId: "" };
 }
 
 export default {

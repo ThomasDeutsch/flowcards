@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+
 import bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction, UpdateLoopFunction } from '../src/updateloop';
+import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
 import { ThreadContext, ThreadState } from '../src/bthread';
 
@@ -36,7 +38,7 @@ test("the enable function will return the current thread state", () => {
 
 
 test("if promises are pending, the thread will return a set of those pending promises", () => {
-    let state: any, state2: any;
+    let state,state2: ThreadState;
 
     function* thread() {
         yield bp.request("A", delay(1000));
@@ -61,7 +63,7 @@ test("if promises are pending, the thread will return a set of those pending pro
 
 
 test("the thread will return the state value, and a completed-flag if the thread completes", () => {
-    let state: any;
+    let state: ThreadState;
 
     function* thread(this: ThreadContext) {
         this.setState('foo');

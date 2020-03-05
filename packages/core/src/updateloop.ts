@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { scenarioId, ThreadGen, BThread, ThreadDictionary, ThreadState } from './bthread';
-import { getAllBids, BidArrayDictionary, BidDictionariesByType, BidType } from "./bid";
+import { getAllBids, BidArrayDictionary, BidDictionariesByType, BidType, Bid, BidDictionaries } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests, ExternalActions, ActionType } from "./action";
@@ -14,7 +16,7 @@ export interface UpdateInfo {
     threadDictionary: ThreadDictionary;
 }
 
-type EnableThreadFunctionType = (gen: ThreadGen, args?: Array<any>, key?: string | number) => ThreadState;
+type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => ThreadState;
 export type ScaffoldingFunction = (e: EnableThreadFunctionType) => void;
 
 function setupAndDeleteThreads(
@@ -22,10 +24,10 @@ function setupAndDeleteThreads(
     threadDictionary: ThreadDictionary,
     dispatch: Function,
     logger?: Logger
-): Array<string> {
-    let threadIds: Set<string> = new Set();
-    let orderedThreadIds: Array<string> = [];
-    const enableThread: EnableThreadFunctionType = (gen: ThreadGen, args?: Array<any>, key?: string | number): ThreadState => {
+): string[] {
+    const threadIds: Set<string> = new Set();
+    const orderedThreadIds: string[] = [];
+    const enableThread: EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number): ThreadState => {
         if(!args) args = [];
         const id: string = scenarioId(gen, key);
         threadIds.add(id);
@@ -38,7 +40,7 @@ function setupAndDeleteThreads(
         return threadDictionary[id].state;
     };
     scaffolding(enableThread); // enable threads
-    Object.keys(threadDictionary).forEach(id => {
+    Object.keys(threadDictionary).forEach((id): void => {
         const notEnabledAndNotProgressed = !threadIds.has(id) && threadDictionary[id].nrProgressions === 0;
         if (notEnabledAndNotProgressed) {
             threadDictionary[id].onDelete();
@@ -61,32 +63,39 @@ function advanceThreads(
     }
     if (!wasAsyncRequest && waits[action.eventName] && waits[action.eventName].length) {
         if (intercepts[action.eventName]) {
-            let i = [...intercepts[action.eventName]];
+            const i = [...intercepts[action.eventName]];
             while(i.length) {
-                const threadId = i.pop()!.threadId;
-                const wasIntercepted = threadDictionary[threadId].progressWaitIntercept(BidType.intercept, action.eventName, payload);
-                if(wasIntercepted) return;
+                const nextThread = i.pop();
+                if(nextThread) {
+                    const wasIntercepted = threadDictionary[nextThread.threadId].progressWaitIntercept(BidType.intercept, action.eventName, payload);
+                    if(wasIntercepted) return;
+                }
             }  
         }
-        waits[action.eventName].forEach(({ threadId }) => {
+        waits[action.eventName].forEach(({ threadId }): void => {
             threadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, payload);
         });
     }
 }
 
 function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): DispatchByWait {
-    return Object.keys(waits).reduce((acc: DispatchByWait, eventName) => {
-        const allGuards = waits[eventName].filter(x => x.guard).map(x => x.guard);
-        const combinedGuardFn = (val: any) => {
-            if(!allGuards.length) return true;
-            return allGuards.some(guard => guard!(val));
+    return Object.keys(waits).reduce((acc: DispatchByWait, eventName): DispatchByWait => {
+        const allGuards = waits[eventName].reduce((acc: Function[], curr: Bid): Function[] => {
+            if(curr.guard) {
+                acc.push(curr.guard);
+            }
+            return acc;
+        }, []);
+        const combinedGuardFn = (val: any): boolean => {
+            if(allGuards.length === 0) return true;
+            return allGuards.some((guard): boolean => guard(val));
         }
-        acc[eventName] = (payload?: any) => {
+        acc[eventName] = (payload?: any): Function | null => {
             if(combinedGuardFn(payload)) {
-                return () => dispatch({
+                return (): Function => dispatch({
                     isReplay: false,
                     actions: [{ type: ActionType.waited, eventName: eventName, payload: payload }]
-                } as ExternalActions);
+                });
             } else {
                 return null;
             }
@@ -98,12 +107,12 @@ function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): Dispatch
 export type UpdateLoopFunction = (dispatchedActions?: ExternalActions | null) => UpdateInfo;
 
 export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function, logger?: Logger): UpdateLoopFunction {
-    let threadDictionary: ThreadDictionary = {};
+    const threadDictionary: ThreadDictionary = {};
     let orderedThreadIds: string[];
     let bids: BidDictionariesByType;
-    const setThreadsAndBids = () => {
+    const setThreadsAndBids = (): void => {
         orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, dispatch, logger);
-        bids = getAllBids(orderedThreadIds.map(id => threadDictionary[id].getBids()));
+        bids = getAllBids(orderedThreadIds.map((id): BidDictionaries | null => threadDictionary[id].getBids()));
     };
     setThreadsAndBids();
     const updateLoop: UpdateLoopFunction = (dispatchedActions?: ExternalActions | null): UpdateInfo => {
@@ -111,7 +120,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         let remainingActions: ExternalActions | null = null;
         if (dispatchedActions && dispatchedActions.actions.length > 0) {  // external event
             if (dispatchedActions.isReplay) { // external event is a replay
-                Object.keys(threadDictionary).forEach(key => delete threadDictionary[key]);
+                Object.keys(threadDictionary).forEach((key): void => { delete threadDictionary[key] });
                 setThreadsAndBids();
             }
             nextAction = dispatchedActions.actions[0];
@@ -132,7 +141,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             orderedThreadIds: orderedThreadIds,
             dispatchByWait: dispatchByWait(dispatch, bids.wait),
             threadDictionary: threadDictionary
-        } as UpdateInfo;
+        };
     };
     return updateLoop;
 }

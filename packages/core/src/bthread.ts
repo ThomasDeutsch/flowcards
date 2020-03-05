@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { BidDictionaries, getBidDictionaries, getCurrentBids, BidType, BidDictionaryType } from "./bid";
 import * as utils from "./utils";
 import { Logger, ReactionType } from "./logger";
-import { ActionType, ExternalActions } from './action';
+import { ActionType } from './action';
 
 export type ThreadGen = any; // TODO: Type this generator
 export interface ThreadDictionary {
@@ -34,27 +36,27 @@ export function scenarioId(generator: ThreadGen, key?: string | number): string 
 }
 
 export class BThread {
-    readonly id: string;
-    readonly key: string | number | null = null;
+    public readonly id: string;
+    public readonly key: string | number | null = null;
     private readonly _logger?: Logger;
     private readonly _dispatch: DispatchFn;
     private readonly _generator: ThreadGen;
-    private _currentArguments: Array<any>;
+    private _currentArguments: any[];
     private _thread: IterableIterator<any>;
     private _currentBids: BidDictionaries | null = null;
     private _nextBid: any;
     private _pendingPromiseDict: PromiseDictionary<any> = {};
-    get pendingEventNames() {
+    public get pendingEventNames(): string[] {
         return Object.keys(this._pendingPromiseDict);
     }
     private _isCompleted: boolean = false;
     private _nrProgressions: number = -1;
-    get nrProgressions() {
+    public get nrProgressions(): number {
         return this._nrProgressions;
     }
     private _stateValue?: any;
-    private _stateRef: any = {};
-    get state(): ThreadState {
+    private _stateRef: ThreadState = { isCompleted: this._isCompleted, nrProgressions: this._nrProgressions };
+    public get state(): ThreadState {
         this._stateRef.isCompleted = this._isCompleted;
         this._stateRef.nrProgressions = this._nrProgressions;
         const pendingEventNames = Object.keys(this._pendingPromiseDict);
@@ -65,7 +67,7 @@ export class BThread {
         return this._stateRef;
     }
     private _override: Function | null;
-    get override(): Function | null {
+    public get override(): Function | null {
         return this._override;
     }
 
@@ -78,11 +80,11 @@ export class BThread {
             setState: (val: any): void => {
                 this._stateValue = val;
             },
-            state: () => this._stateValue
+            state: ():any => this._stateValue
         };
     }
 
-    constructor(generator: ThreadGen, args: Array<any>, dispatch: Function, key?: string | number, logger?: Logger) {
+    public constructor(generator: ThreadGen, args: any[], dispatch: Function, key?: string | number, logger?: Logger) {
         this.id = scenarioId(generator, key);
         if (key || key === 0) {
             this.key = key;
@@ -117,10 +119,10 @@ export class BThread {
     }
 
     private _cancelPendingPromises(): string[] {
-        let cancelledPromises: string[] = [];
-        let eventNames = Object.keys(this._pendingPromiseDict);
+        const cancelledPromises: string[] = [];
+        const eventNames = Object.keys(this._pendingPromiseDict);
         if (eventNames.length > 0) {
-            eventNames.forEach(eventName => {
+            eventNames.forEach((eventName):void => {
                 delete this._pendingPromiseDict[eventName];
                 cancelledPromises.push(eventName);
             });
@@ -146,20 +148,20 @@ export class BThread {
         this._pendingPromiseDict[eventName] = promise;
         this._increaseProgress();
         this._pendingPromiseDict[eventName]
-            .then(data => {
+            .then((data): void => {
                 if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
                     this._dispatch({
                         actions: [{ type: ActionType.resolve, threadId: this.id, eventName: eventName, payload: data }]
-                    } as ExternalActions);
+                    });
                 }
             })
-            .catch(e => {
+            .catch((e): void => {
                 if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
                     this._dispatch({
                         actions: [{ type: ActionType.reject, threadId: this.id, eventName: eventName, payload: e }]
-                    } as ExternalActions);
+                    });
                 }
             });
     }
@@ -167,7 +169,7 @@ export class BThread {
     private _progressThread(eventName: string, payload: any, isReject: boolean): void {
         let returnVal = null
         if(!isReject) {
-            returnVal = (this._currentBids!.type === BidDictionaryType.array) ? [payload, eventName] : payload;
+            returnVal = (this._currentBids && (this._currentBids.type === BidDictionaryType.array)) ? [payload, eventName] : payload;
         }
         const cancelledPromises = this._processNextBid(returnVal);
         if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);
@@ -201,7 +203,9 @@ export class BThread {
             }
         }
         if(type === ActionType.reject) {
-            this._thread!.throw!({eventName: eventName, error: payload});
+            if(this._thread && this._thread.throw) { 
+                this._thread.throw({eventName: eventName, error: payload});
+            }
             this._progressThread(eventName, payload, true);
         } else {
             this._progressThread(eventName, payload, false);

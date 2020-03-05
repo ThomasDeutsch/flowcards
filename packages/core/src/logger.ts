@@ -18,11 +18,17 @@ interface ReactionDictionary {
     [Key: string]: Reaction;
 }
 
+
+interface ActionLog {
+    pastActions: string[];
+    pendingEventNames: Set<string>;
+}
+
 class LoopLog {
-    readonly action: Action;
+    public readonly action: Action;
     public reactionDictionary: ReactionDictionary = {};
-    constructor(action?: Action) {
-        this.action = action || {eventName: "_INIT"} as Action;
+    public constructor(action?: Action) {
+        this.action = action || {eventName: "", type: ActionType.init};
     }
 
     public addReaction(reaction: Reaction): void {
@@ -35,7 +41,7 @@ export class Logger {
     private _currentLoopLog: LoopLog;
     private _pendingEventNames: Set<string> = new Set();
 
-    constructor() {
+    public constructor() {
         this._currentLoopLog = new LoopLog();
     }
 
@@ -45,7 +51,6 @@ export class Logger {
         if(action.type === ActionType.resolve) {
             this._pendingEventNames.delete(action.eventName);
         }
-        //console.log('action: ', action);
     }
 
     public logReaction(threadId: string, type: ReactionType, cancelledPromises?: string[]): void {
@@ -59,7 +64,7 @@ export class Logger {
             this._pendingEventNames.add(this._currentLoopLog.action.eventName);
         }
         if(cancelledPromises) {
-            cancelledPromises.map(name => this._pendingEventNames.delete(name));
+            cancelledPromises.forEach((name): void => {this._pendingEventNames.delete(name)});
         }
     }
 
@@ -67,7 +72,7 @@ export class Logger {
         return JSON.stringify(this._log);
     }
 
-    public getLatestAction() {
+    public getLatestAction(): Action {
         return this._currentLoopLog.action;
     }
 
@@ -75,14 +80,14 @@ export class Logger {
         return new Set(Object.keys(this._currentLoopLog.reactionDictionary));
     }
 
-    public getLatestReactions() {
+    public getLatestReactions(): ReactionDictionary {
         return this._currentLoopLog.reactionDictionary;
     }
 
-    public getActionLog() {
-        let pastActions = [...this._log, this._currentLoopLog]
-            .filter((a) => a.action.type === ActionType.waited || a.action.type === ActionType.resolve)
-            .map(l => (l.action.type === ActionType.resolve) ? `${l.action.eventName} - completed` : l.action.eventName);
+    public getActionLog(): ActionLog {
+        const pastActions = [...this._log, this._currentLoopLog]
+            .filter((a): boolean => a.action.type === ActionType.waited || a.action.type === ActionType.resolve)
+            .map((l): string => (l.action.type === ActionType.resolve) ? `${l.action.eventName} - completed` : l.action.eventName);
         return {
             pastActions: pastActions,
             pendingEventNames: this._pendingEventNames

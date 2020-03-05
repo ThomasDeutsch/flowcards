@@ -1,8 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+
 import * as React from "react";
 import { useRef, FunctionComponent, Component } from "react";
 import { OverridesByComponent } from "@flowcards/core";
 
-function maybeMerge(a: Object, b?: Object) {
+function maybeMerge(a: Record<string, any>, b?: Record<string, any>): Record<string, any> {
     return a && b ? { ...a, ...b } : a || b;
 }
 

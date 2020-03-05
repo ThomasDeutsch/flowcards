@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+
 // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Object/is
 export function is(x: any, y: any): boolean {
     return (
@@ -27,7 +30,7 @@ export function dropFirst(a: any[]): any[] {
     if (a.length === 0) {
         return [];
     }
-    let r = [...a];
+    const r = [...a];
     r.shift();
     return r;
 }

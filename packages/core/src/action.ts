@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { BidArrayDictionary } from "./bid";
 import * as utils from "./utils";
 
@@ -5,7 +7,8 @@ export enum ActionType {
     request = "request",
     resolve = "resolve",
     reject = "reject",
-    waited = "waited"
+    waited = "waited",
+    init = "init"
 }
 
 export interface Action {
@@ -31,15 +34,14 @@ export function getNextActionFromRequests(requestBids: BidArrayDictionary): Acti
         const bids = requestBids[chosenEventName];
         if (bids.length > 1) {
             throw new Error(`event '${chosenEventName}' was requested by ${bids.length} threads at the same time: '${bids
-                .map(b => b.threadId)
-                .join(", ")}'.
-      Make sure to use distinct event names.`);
+                .map((b): string => b.threadId)
+                .join(", ")}'. Make sure to use distinct event names.`);
         } else {
             const bid = bids[0];
-            let isAborted: boolean = false;
+            let isAborted = false;
             let payload = bid.payload;
             if (payload && typeof payload === "function") {
-                payload = payload({isValid: bid.guard || (() => true), abort: (result: boolean = true) => isAborted = result });
+                payload = payload({isValid: bid.guard || (():boolean => true), abort: (result: boolean = true): boolean => isAborted = result });
             }
             const isGuarded = bid.guard ? !bid.guard(payload) : false;
             if(isAborted || isGuarded) {
@@ -51,7 +53,7 @@ export function getNextActionFromRequests(requestBids: BidArrayDictionary): Acti
                 eventName: bid.eventName,
                 payload: payload,
                 threadId: bid.threadId
-            } as Action;
+            };
         }
     }
     return null;

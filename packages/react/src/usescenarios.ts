@@ -10,12 +10,12 @@ import {
     ExternalActions } from "@flowcards/core";
 
 
-function reducer(state: ExternalActions, nextActions: ExternalActions): any {
+function reducer(state: ExternalActions, nextActions: ExternalActions): ExternalActions {
     return nextActions;
 }
 
 export default function useScenarios(scaffoldingFn: ScaffoldingFunction, logger?: Logger) : [OverridesByComponent, DispatchByWait] {
-    const [nextActions, dispatch] = useReducer(reducer, null);
+    const [nextActions, dispatch] = useReducer(reducer, { isReplay: false, actions: []});
     const updateLoopRef = useRef<null | UpdateLoopFunction>(null);
     if(updateLoopRef.current === null) {
         updateLoopRef.current = createUpdateLoop(scaffoldingFn, dispatch, logger);

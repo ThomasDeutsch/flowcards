@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+
 import bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction, UpdateLoopFunction } from '../src/updateloop';
+import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;
@@ -35,7 +37,7 @@ test("a wait is not advanced, if the guard returns false", () => {
         waitCAdvanced = true;
     }
 
-    const logger = updateLoop((enable: any) => {
+    const logger = updateLoop((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -69,7 +71,7 @@ test("an intercept is not applied, if the guard returns false.", () => {
         waitCAdvanced = true;
     }
 
-    const logger = updateLoop((enable: any) => {
+    const logger = updateLoop((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -108,7 +110,7 @@ test("if an intercept is not applied, than the next intercept will get the event
         waitDAdvanced = true;
     }
 
-    const logger = updateLoop((enable: any) => {
+    const logger = updateLoop((enable) => {
         enable(requestThread);
         enable(waitThread);
         enable(interceptPrioLowThread);
@@ -144,7 +146,7 @@ test("a block is applied, if the guard returns true", () => {
         waitCAdvanced = true;
     }
 
-    updateLoop((enable: any) => {
+    updateLoop((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -175,7 +177,7 @@ test("a block is not applied, if the guard returns false", () => {
         waitAdvanced = true;
     }
 
-    updateLoop((enable: any) => {
+    updateLoop((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -209,7 +211,7 @@ test("guards for blocks will be merged", () => {
         waitAdvanced = true;
     }
 
-    updateLoop((enable: any) => {
+    updateLoop((enable) => {
         enable(requestThread);
         enable(blockingThread);
         enable(notBlockingThread);

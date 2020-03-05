@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+
 import bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction, UpdateLoopFunction } from '../src/updateloop';
+import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
 import { ThreadContext } from "../src/bthread";
 
@@ -34,16 +36,40 @@ test("a thread will accept an optional array of arguments", () => {
 
 
 test("a thread will accept an optional key", () => {
-    let receivedKey;
+    let receivedKeyA, receivedKeyB;
 
     function* thread(this: ThreadContext) {
-        receivedKey = this.key;
+        receivedKeyA = this.key;
+        yield bp.wait('A');
+    }
+
+    function* threadB(this: ThreadContext) {
+        receivedKeyB = this.key;
         yield bp.wait('A');
     }
 
     updateLoop((enable) => {
-        enable(thread, [], 1);
+        enable(thread, [], 0);
+        enable(threadB, [], "foo");
     });
 
-    expect(receivedKey).toBe(1); 
+    expect(receivedKeyA).toBe(0); 
+    expect(receivedKeyB).toBe("foo");
+});
+
+
+
+test("if no key is provided, the default key value is null", () => {
+    let receivedKeyA;
+
+    function* thread(this: ThreadContext) {
+        receivedKeyA = this.key;
+        yield bp.wait('A');
+    }
+
+    updateLoop((enable) => {
+        enable(thread);
+    });
+
+    expect(receivedKeyA).toBeNull(); 
 });
