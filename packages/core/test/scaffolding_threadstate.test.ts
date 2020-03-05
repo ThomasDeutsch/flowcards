@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
-import { ThreadContext, ThreadState } from '../src/bthread';
+import { ThreadContext } from '../src/bthread';
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;
 let updateLoop: TestLoop;
@@ -40,7 +42,7 @@ test("the enable function will return the current thread state", () => {
 test("if promises are pending, the thread will return a set of those pending promises", () => {
     let state: any = null;
     let state2: any = null;
-    
+
     function* thread() {
         yield bp.request("A", delay(1000));
     }

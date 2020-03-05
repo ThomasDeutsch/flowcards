@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
-import { ThreadState } from '../src/bthread';
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;
 let testLoop: TestLoop;
