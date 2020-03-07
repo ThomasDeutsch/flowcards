@@ -4,6 +4,7 @@
 import bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
+import { ExternalActions } from '../../../build/packages/core/src/action';
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;
 let testLoop: TestLoop;
@@ -11,7 +12,10 @@ let testLoop: TestLoop;
 beforeEach(() => {
     testLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
-        createUpdateLoop(enable, () => null, logger)();
+        const updateLoop = createUpdateLoop(enable, (actions: ExternalActions) => {
+            updateLoop(actions);
+        }, logger);
+        updateLoop();
         return logger;
     };
 });
@@ -120,15 +124,14 @@ test("when an async request is fulfilled, the thread will not progress until the
     expect(isAdvanced).toBe(false);
 });
 
+
 test("If one promise is resolved, other promises for this yield are cancelled", done => {
     function* thread1() {
-        const [event] = yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(500))];
+        const [event] = yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(100))];
         expect(event).toBe("B");
         done();
     }
-    const logger = testLoop((enable) => {
+    testLoop((enable) => {
         enable(thread1);
     });
-    
-    expect(logger.getLatestReactions().cancelledPromises[0]).toBe("A");
 });

@@ -1,42 +1,78 @@
 
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
+import { ExternalActions } from '../../../build/packages/core/src/action';
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;
-let testLoop: TestLoop;
-
 
 function rejectedDelay(ms: number) {
-    return new Promise((resolve, reject) => setTimeout(reject, ms));
+    return new Promise((resolve, reject) => setTimeout(() => reject('reject reason'), ms));
+}
+
+function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms)).then(d => 'data');
 }
 
 
-beforeEach(() => {
-    testLoop = (enable: ScaffoldingFunction): Logger => {
+test("when a promise is resolved, it will dispatch an ExternalAction.", done => {
+
+    const testLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
-        const updateLoop = createUpdateLoop(enable, a => updateLoop(a), logger);
+        const updateLoop = createUpdateLoop(enable, (actions: ExternalActions) => {
+            expect(actions.actions[0].type).toBe('resolve');
+            expect(actions.actions[0].threadId).toBe('thread1');
+            expect(actions.actions[0].eventName).toBe('A');
+            expect(actions.actions[0].payload).toBe('data');
+            updateLoop(actions);
+        }, logger);
         updateLoop();
         return logger;
     };
+
+    function* thread1() {
+        yield bp.request("A", delay(100));
+        done();
+    }
+
+    testLoop((enable) => {
+        enable(thread1);
+    });
 });
 
 
-test("A promise can be requested", done => {
-    function* thread1() {
-        let catched = false;
-        try {
-            yield bp.request("A", rejectedDelay(100));
+describe('external actions', () => {
+
+    const testLoop = (enable: ScaffoldingFunction): Logger => {
+        const logger = new Logger();
+        const updateLoop = createUpdateLoop(enable, (a:any) => {
+            updateLoop(a);
+        }, logger);
+        updateLoop();
+        return logger;
+
+    };
+
+    test("A promise that throws an error, will continue. The error object will contain the reason and the eventName", done => {
+        function* thread1() {
+            let catched = false;
+            try {
+                yield bp.request("A", rejectedDelay(1));
+            }
+            catch (e) {
+                catched = true;
+                expect(e.eventName).toBe('A');
+                expect(e.error).toBe('reject reason');
+            }       
+            expect(catched).toBe(true);
+            done();
         }
-        catch (e) {
-            catched = true;
-        }
-        expect(catched).toBeTruthy();
-        done();
-        
-    }
-    const logger = testLoop((enable) => {
-        enable(thread1);
+        testLoop((enable) => {
+            enable(thread1);
+        });    
     });
-    
+
 });
