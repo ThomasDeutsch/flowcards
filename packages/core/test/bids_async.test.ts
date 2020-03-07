@@ -51,9 +51,11 @@ test("A promise-function can be requested", () => {
 
 test("multiple promises can be requested and pending", () => {
     let state: any = null;
+    
     function* thread1() {
         yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
     }
+
     testLoop((enable) => {
         state = enable(thread1);
     });
@@ -112,31 +114,21 @@ test("when an async request is fulfilled, the thread will not progress until the
         isAdvanced = true;
     }
     testLoop((enable) => {
-        const { pendingEvents } = enable(thread1);
-        if (pendingEvents && pendingEvents.size > 0) {
-            enable(thread1);
-        }
+        enable(thread1);
     });
     
     expect(isAdvanced).toBe(false);
 });
 
-// test("A promise response is dispatched", () => {
-//     // INCLUDE FAILED REQUESTS?
-//     expect(1).toBe(2);
-// });
-
-// test("If one promise is resolved, other promises for this yield are cancelled", () => {
-//     expect(1).toBe(2);
-// });
-
-// test("an override is only active, if the promise is pending", () => {
-//     expect(1).toBe(2);
-// });
-
-// test("A requested promise can throw an error. This error can be try/catch in the generator", () => {
-//     expect(1).toBe(2);
-// });
-
-
-// - when an async request is started, the thread is not advanced
+test("If one promise is resolved, other promises for this yield are cancelled", done => {
+    function* thread1() {
+        const [event] = yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(500))];
+        expect(event).toBe("B");
+        done();
+    }
+    const logger = testLoop((enable) => {
+        enable(thread1);
+    });
+    
+    expect(logger.getLatestReactions().cancelledPromises[0]).toBe("A");
+});
