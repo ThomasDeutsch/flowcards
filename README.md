@@ -1,7 +1,5 @@
 ## flowcards
 
-### add behaviours to your JS application.
-
 when your UI-framework is about modular components<br/>
 then flowcards is about modular behaviours
 
