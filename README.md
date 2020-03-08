@@ -26,9 +26,7 @@ npm install @flowcards/core
 ```javascript
 import { scenarios, request, wait } from @flowcards/core;
 
-function delayed(data, ms) {
-    () => return new Promise((resolve) => setTimeout(() => resolve(data), ms));
-}
+const delayed = (data, ms) => new Promise(r => setTimeout(() => r(data), ms));
 
 function* sender() {
     yield request('event1', 'well done!'); // request an event
