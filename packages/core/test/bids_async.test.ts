@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import bp from "../src/bid";
+import * as bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
 import { ExternalActions } from '../../../build/packages/core/src/action';
@@ -32,11 +32,11 @@ test("A promise can be requested", () => {
     const logger = testLoop((enable) => {
         enable(thread1);
     });
-    const threadReaction = logger.getLatestReactions().thread1;
     expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactionThreads()).toContain("thread1");
-    expect(threadReaction.type).toBe("promise");
+    expect(logger.getLatestReactions().threadIds).toContain("thread1");
+    expect(logger.getLatestReactions().type.thread1).toBe("promise");
 });
+
 
 
 test("A promise-function can be requested", () => {
@@ -46,10 +46,9 @@ test("A promise-function can be requested", () => {
     const logger = testLoop((enable) => {
         enable(thread1);
     });
-    const threadReaction = logger.getLatestReactions().thread1;
     expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactionThreads()).toContain("thread1");
-    expect(threadReaction.type).toBe("promise");
+    expect(logger.getLatestReactions().threadIds).toContain("thread1");
+    expect( logger.getLatestReactions().type.thread1).toBe("promise");
 });
 
 

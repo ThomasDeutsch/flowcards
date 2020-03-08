@@ -146,10 +146,3 @@ export function request(eventName: string, payload?: any): Bid {
 export function block(eventName: string, guard?: Function): Bid {
     return { type: BidType.block, eventName: eventName, guard: guard, threadId: "" };
 }
-
-export default {
-    wait: wait,
-    intercept: intercept,
-    request: request,
-    block: block
-}

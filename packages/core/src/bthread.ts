@@ -95,20 +95,20 @@ export class BThread {
         this._currentBids = null;
     }
 
-    private _cancelPendingPromises(): string[] {
-        const cancelledPromises: string[] = [];
+    private _cancelPendingPromises(): Set<string> {
+        const cancelledPromises = new Set<string>();
         const eventNames = Object.keys(this._pendingPromiseDict);
-        if (eventNames.length > 0) {
+        if (eventNames.length > 0) {   
             eventNames.forEach((eventName):void => {
                 delete this._pendingPromiseDict[eventName];
                 this.pendingEvents.delete(eventName);
-                cancelledPromises.push(eventName);
+                cancelledPromises.add(eventName);
             });
         }
         return cancelledPromises;
     }
 
-    private _processNextBid(returnValue?: any): string[] {
+    private _processNextBid(returnValue?: any): Set<string> {
         const cancelledPromises = this._cancelPendingPromises();
         this._override = null;
         const next: any = this._thread.next(returnValue);
@@ -165,7 +165,7 @@ export class BThread {
         }
         if(typeof this._nextBid === 'function') {
             this._currentBids = getBidDictionaries(this.id, this._nextBid(), this.pendingEvents);
-        } else if(this._currentBids === null) {
+        } else if(this._currentBids === null) { // this._increaseProgress may have set the currentBids to null, in this case - recalculate.
             this._currentBids = getBidDictionaries(this.id, this._nextBid, this.pendingEvents);
         }
         return this._currentBids;

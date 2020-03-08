@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
-import bp from "../src/bid";
+import * as bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
 
@@ -31,7 +31,7 @@ test("a requested event that is not blocked will advance", () => {
     });
     expect(hasAdvanced).toBe(true);
     expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactionThreads()).toContain("thread1");
+    expect(logger.getLatestReactions().threadIds).toContain("thread1");
 });
 
 
@@ -55,8 +55,8 @@ test("a request will also advance waiting threads", () => {
     expect(requestProgressed).toBe(true);
     expect(waitProgressed).toBe(true);
     expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactionThreads()).toContain("thread1");
-    expect(logger.getLatestReactionThreads()).toContain("thread2");
+    expect(logger.getLatestReactions().threadIds).toContain("thread1");
+    expect(logger.getLatestReactions().threadIds).toContain("thread2");
 });
 
 
@@ -79,8 +79,8 @@ test("waits will return the value that has been requested", () => {
     expect(receivedValue).toBe(1000);
     expect(logger.getLatestAction().eventName).toBe("A");
     expect(logger.getLatestAction().payload).toBe(1000);
-    expect(logger.getLatestReactionThreads()).toContain("requestThread");
-    expect(logger.getLatestReactionThreads()).toContain("receiveThread");
+    expect(logger.getLatestReactions().threadIds).toContain("requestThread");
+    expect(logger.getLatestReactions().threadIds).toContain("receiveThread");
 });
 
 

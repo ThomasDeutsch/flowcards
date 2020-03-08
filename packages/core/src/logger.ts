@@ -11,22 +11,18 @@ export enum ReactionType {
 interface Reaction {
     threadId: string;
     type: ReactionType;
-    cancelledPromises?: string[];
+    cancelledEvents?: Set<string>;
+    pendingEvents?: Set<string>;
 }
-
-interface ReactionDictionary {
-    [Key: string]: Reaction;
-}
-
 
 interface ActionLog {
     pastActions: string[];
-    pendingEventNames: Set<string>;
+    latestReactions: ReactionInfo;
 }
 
 class LoopLog {
     public readonly action: Action;
-    public reactionDictionary: ReactionDictionary = {};
+    public reactionDictionary: Record<string, Reaction> = {};
     public constructor(action?: Action) {
         this.action = action || {eventName: "", type: ActionType.init};
     }
@@ -36,10 +32,16 @@ class LoopLog {
     }
 }
 
+
+interface ReactionInfo {
+    threadIds: Set<string>;
+    pendingEvents: Set<string>;
+    type: Record<string, ReactionType>;
+}
+
 export class Logger {
     private _log: LoopLog[] = [];
     private _currentLoopLog: LoopLog;
-    private _pendingEventNames: Set<string> = new Set();
 
     public constructor() {
         this._currentLoopLog = new LoopLog();
@@ -48,24 +50,16 @@ export class Logger {
     public logAction(action: Action): void {
         this._log.push(this._currentLoopLog);
         this._currentLoopLog = new LoopLog(action);
-        if(action.type === ActionType.resolve) {
-            this._pendingEventNames.delete(action.eventName);
-        }
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: string[]): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledEvents?: Set<string>, pendingEvents?: Set<string>): void {
         const reaction: Reaction = {
             type: type,
             threadId: threadId,
-            cancelledPromises: cancelledPromises
+            cancelledEvents: cancelledEvents,
+            pendingEvents: pendingEvents
         };
         this._currentLoopLog.addReaction(reaction);
-        if(reaction.type === ReactionType.promise) {
-            this._pendingEventNames.add(this._currentLoopLog.action.eventName);
-        }
-        if(cancelledPromises) {
-            cancelledPromises.forEach((name): void => {this._pendingEventNames.delete(name)});
-        }
     }
 
     public getLog(): string {
@@ -76,12 +70,24 @@ export class Logger {
         return this._currentLoopLog.action;
     }
 
-    public getLatestReactionThreads(): Set<string> {
-        return new Set(Object.keys(this._currentLoopLog.reactionDictionary));
-    }
 
-    public getLatestReactions(): ReactionDictionary {
-        return this._currentLoopLog.reactionDictionary;
+    public getLatestReactions(): ReactionInfo  {
+        const reactionThreadIds = Object.keys(this._currentLoopLog.reactionDictionary);
+        return {
+            threadIds: new Set(reactionThreadIds),
+            pendingEvents: Object.keys(reactionThreadIds).reduce((acc, threadId: string): Set<string> => {
+                const thread = this._currentLoopLog.reactionDictionary[threadId];
+                const pe = thread ? this._currentLoopLog.reactionDictionary[threadId].pendingEvents : null;
+                if(pe) {
+                    return new Set([...acc, ...pe]);
+                }
+                return acc;
+            }, new Set<string>()),
+            type: reactionThreadIds.reduce((acc: Record<string, ReactionType>, threadId: string): Record<string, ReactionType> => {
+                acc[threadId] = this._currentLoopLog.reactionDictionary[threadId].type;
+                return acc;
+            }, {})
+        }
     }
 
     public getActionLog(): ActionLog {
@@ -90,7 +96,7 @@ export class Logger {
             .map((l): string => (l.action.type === ActionType.resolve) ? `${l.action.eventName} - completed` : l.action.eventName);
         return {
             pastActions: pastActions,
-            pendingEventNames: this._pendingEventNames
+            latestReactions: this.getLatestReactions()
         }
     }
 }
