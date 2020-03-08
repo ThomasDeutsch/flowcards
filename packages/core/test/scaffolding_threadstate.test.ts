@@ -33,7 +33,7 @@ test("the enable function will return the current thread state", () => {
         
         expect(state.isCompleted).toBe(false);
         expect(state.nrProgressions).toBe(0); 
-        expect(state.pendingEvents).toBeUndefined();
+        expect(state.pendingEvents).toEqual(new Set());
         expect(state.value).toBeUndefined();
     });
 });

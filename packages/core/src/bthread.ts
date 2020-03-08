@@ -10,10 +10,6 @@ export interface ThreadDictionary {
     [Key: string]: BThread;
 }
 
-interface PromiseDictionary<T> {
-    [Key: string]: Promise<T>;
-}
-
 type DispatchFn = Function;
 
 export interface ThreadState {
@@ -45,10 +41,8 @@ export class BThread {
     private _thread: IterableIterator<any>;
     private _currentBids: BidDictionaries | null = null;
     private _nextBid: any;
-    private _pendingPromiseDict: PromiseDictionary<any> = {};
-    public get pendingEventNames(): string[] {
-        return Object.keys(this._pendingPromiseDict);
-    }
+    private _pendingPromiseDict: Record<string, Promise<any>> = {};
+    public pendingEvents: Set<string> = new Set([]);
     private _isCompleted: boolean = false;
     private _nrProgressions: number = -1;
     public get nrProgressions(): number {
@@ -59,10 +53,7 @@ export class BThread {
     public get state(): ThreadState {
         this._stateRef.isCompleted = this._isCompleted;
         this._stateRef.nrProgressions = this._nrProgressions;
-        const pendingEventNames = Object.keys(this._pendingPromiseDict);
-        if(pendingEventNames.length) { 
-            this._stateRef.pendingEvents = new Set(pendingEventNames);
-        }
+        this._stateRef.pendingEvents = this.pendingEvents;
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
@@ -110,7 +101,7 @@ export class BThread {
         } else {
             bids = getBidDictionaries(this.id, this._nextBid);
         }
-        this._currentBids = getCurrentBids(bids, this.pendingEventNames);
+        this._currentBids = getCurrentBids(bids, this.pendingEvents);
     }
 
     private _increaseProgress(): void {
@@ -124,6 +115,7 @@ export class BThread {
         if (eventNames.length > 0) {
             eventNames.forEach((eventName):void => {
                 delete this._pendingPromiseDict[eventName];
+                this.pendingEvents.delete(eventName);
                 cancelledPromises.push(eventName);
             });
         }
@@ -146,11 +138,13 @@ export class BThread {
 
     private _addPromise(eventName: string, promise: Promise<any>): void {
         this._pendingPromiseDict[eventName] = promise;
+        this.pendingEvents.add(eventName);
         this._increaseProgress();
         this._pendingPromiseDict[eventName]
             .then((data): void => {
                 if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
+                    this.pendingEvents.delete(eventName);
                     this._dispatch({
                         actions: [{ type: ActionType.resolve, threadId: this.id, eventName: eventName, payload: data }]
                     });
@@ -159,6 +153,7 @@ export class BThread {
             .catch((e): void => {
                 if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
+                    this.pendingEvents.delete(eventName);
                     this._dispatch({
                         actions: [{ type: ActionType.reject, threadId: this.id, eventName: eventName, payload: e }]
                     });

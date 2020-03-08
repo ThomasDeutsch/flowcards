@@ -15,11 +15,7 @@ export interface Bid {
     guard?: Function;
 }
 
-interface Dictionary<T> {
-    [Key: string]: T;
-}
-
-export type BidArrayDictionary = Dictionary<Bid[]>;
+export type BidArrayDictionary = Record<string, Bid[]>;
 
 export enum BidDictionaryType {
     single = "single",
@@ -33,10 +29,10 @@ export class BidDictionaries {
     public readonly type: BidDictionaryType;
     public readonly threadId: string;
     public unresolvedBid?: Function;
-    public [BidType.wait]: Dictionary<Bid> = {};
-    public [BidType.intercept]: Dictionary<Bid> = {};
-    public [BidType.request]: Dictionary<Bid> = {};
-    public [BidType.block]: Dictionary<Bid> = {};
+    public [BidType.wait]: Record<string, Bid> = {};
+    public [BidType.intercept]:Record<string, Bid> = {};
+    public [BidType.request]:Record<string, Bid> = {};
+    public [BidType.block]: Record<string, Bid> = {};
 
     public constructor(type: BidDictionaryType, threadId: string, unresolvedBid?: Function) {
         this.type = type;
@@ -69,9 +65,9 @@ export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | nu
     return new BidDictionaries(BidDictionaryType.single, threadId).addBid(bid);
 }
 
-export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: string[]): BidDictionaries | null {
+export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: Set<string>): BidDictionaries | null {
     if (bds === null) return null;
-    if (!pendingEventNames.length) return bds;
+    if (!pendingEventNames.size) return bds;
     const current = bds.clone(); 
     pendingEventNames.forEach((eventName): void => {
         delete current.request[eventName];
@@ -86,7 +82,7 @@ function getAllBidsForType(
     type: BidType,
     coll: BidDictionaries[],
     blockedEventNames: Set<string> | null,
-    guardedBlocks: Dictionary<Function> | null
+    guardedBlocks:Record<string, Function> | null
 ): BidArrayDictionary {
     return coll.reduce((acc: BidArrayDictionary, curr: BidDictionaries): BidArrayDictionary => {
         const bidByEventName = curr[type];
@@ -108,8 +104,8 @@ function getAllBidsForType(
     }, {});
 }
 
-function getCategorizedBlocks(blocks: BidArrayDictionary): [Dictionary<Function>, Set<string> | null] {
-    const guarded: Dictionary<Function> = {};
+function getCategorizedBlocks(blocks: BidArrayDictionary): [Record<string, Function>, Set<string> | null] {
+    const guarded: Record<string, Function> = {};
     const unguarded: Set<string> = new Set();
     Object.keys(blocks).forEach((eventName: string): void => {
         blocks[eventName].forEach((block): void => {

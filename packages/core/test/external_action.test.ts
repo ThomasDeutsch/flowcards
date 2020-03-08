@@ -5,16 +5,14 @@
 import bp from "../src/bid";
 import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
 import { Logger } from "../src/logger";
-import { ExternalActions } from '../../../build/packages/core/src/action';
-
-type TestLoop = (enable: ScaffoldingFunction) => Logger;
+import { ExternalActions } from '../src/action';
 
 function rejectedDelay(ms: number) {
     return new Promise((resolve, reject) => setTimeout(() => reject('reject reason'), ms));
 }
 
 function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms)).then(d => 'data');
+    return new Promise((resolve) => setTimeout(resolve, ms)).then(() => 'data');
 }
 
 
