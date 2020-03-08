@@ -38,7 +38,7 @@ test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {
         enable(fnThread);
     });
 
-    expect(count).toBe(cycleNr + 1); 
+    expect(count).toBe(cycleNr); 
 });
 
 

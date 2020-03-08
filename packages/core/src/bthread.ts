@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { BidDictionaries, getBidDictionaries, getCurrentBids, BidType, BidDictionaryType } from "./bid";
+import { BidDictionaries, getBidDictionaries, BidType, BidDictionaryType } from './bid';
 import * as utils from "./utils";
 import { Logger, ReactionType } from "./logger";
 import { ActionType } from './action';
@@ -90,23 +90,8 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.init);
     }
 
-    private _setNewBids(): void {
-        if(this._nextBid === null) {
-            this._currentBids = null;
-            return;
-        }
-        let bids;
-        if(typeof this._nextBid === 'function') {
-            bids = getBidDictionaries(this.id, this._nextBid());
-        } else {
-            bids = getBidDictionaries(this.id, this._nextBid);
-        }
-        this._currentBids = getCurrentBids(bids, this.pendingEvents);
-    }
-
     private _increaseProgress(): void {
         this._nrProgressions = this._nrProgressions + 1;
-        this._setNewBids();
     }
 
     private _cancelPendingPromises(): string[] {
@@ -162,7 +147,7 @@ export class BThread {
     }
 
     private _progressThread(eventName: string, payload: any, isReject: boolean): void {
-        let returnVal = null
+        let returnVal = null;
         if(!isReject) {
             returnVal = (this._currentBids && (this._currentBids.type === BidDictionaryType.array)) ? [eventName, payload] : payload;
         }
@@ -173,10 +158,18 @@ export class BThread {
     // --- public
 
     public getBids(): BidDictionaries | null {
-        if(typeof this._nextBid === 'function') {
-            this._setNewBids();  
+        if(this._nextBid === null || this._isCompleted) {
+            this._currentBids = null;
+            return null;
         }
-        return this._currentBids;
+        let bids;
+        if(typeof this._nextBid === 'function') {
+            bids = getBidDictionaries(this.id, this._nextBid(), this.pendingEvents);
+        } else {
+            bids = getBidDictionaries(this.id, this._nextBid, this.pendingEvents);
+        }
+        this._currentBids = bids;
+        return bids;
     }
 
     public resetOnArgsChange(nextArguments: any): void {

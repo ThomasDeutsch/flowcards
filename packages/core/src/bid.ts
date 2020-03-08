@@ -25,54 +25,39 @@ export enum BidDictionaryType {
 // Bids from current thread
 // --------------------------------------------------------------------------------------------------------------------
 
-export class BidDictionaries {
-    public readonly type: BidDictionaryType;
-    public readonly threadId: string;
-    public unresolvedBid?: Function;
-    public [BidType.wait]: Record<string, Bid> = {};
-    public [BidType.intercept]:Record<string, Bid> = {};
-    public [BidType.request]:Record<string, Bid> = {};
-    public [BidType.block]: Record<string, Bid> = {};
-
-    public constructor(type: BidDictionaryType, threadId: string, unresolvedBid?: Function) {
-        this.type = type;
-        this.threadId = threadId;
-        this.unresolvedBid = unresolvedBid;
-    }
-
-    public addBid(bid: Bid | null): BidDictionaries {
-        if(bid) {
-            bid.threadId = this.threadId;
-            this[bid.type][bid.eventName] = bid;
-        }
-        return this;
-    }
-
-    public clone(): BidDictionaries {
-        const c = new BidDictionaries(this.type, this.threadId);
-        c[BidType.wait] = { ...this[BidType.wait] };
-        c[BidType.request] = { ...this[BidType.request] };
-        c[BidType.intercept] = { ...this[BidType.intercept] };
-        c[BidType.block] = { ...this[BidType.block] };
-        return c;
-    }
+export interface BidDictionaries {
+    type: BidDictionaryType;
+    [BidType.wait]: Record<string, Bid>;
+    [BidType.intercept]:Record<string, Bid>;
+    [BidType.request]:Record<string, Bid>;
+    [BidType.block]: Record<string, Bid>;
 }
 
-export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | null)[]): BidDictionaries {
+
+export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | null)[], pendingEvents: Set<string>): BidDictionaries | null {
+    if(!bid) return null;
+    const bd = {
+        type: BidDictionaryType.array,
+        [BidType.wait]: {},
+        [BidType.intercept]: {},
+        [BidType.request]: {},
+        [BidType.block]: {}
+    }
     if (Array.isArray(bid)) {
-        return bid.reduce((acc: BidDictionaries, b): BidDictionaries => acc.addBid(b), new BidDictionaries(BidDictionaryType.array, threadId));
+        return bid.reduce((acc: BidDictionaries, b): BidDictionaries => {
+            if(b) {
+                if(b.type === BidType.request && pendingEvents.has(b.eventName)) return acc;
+                acc[b.type][b.eventName] = {...b, threadId: threadId};
+            }
+            return acc;
+        }, bd);
     } 
-    return new BidDictionaries(BidDictionaryType.single, threadId).addBid(bid);
-}
-
-export function getCurrentBids(bds: BidDictionaries | null, pendingEventNames: Set<string>): BidDictionaries | null {
-    if (bds === null) return null;
-    if (!pendingEventNames.size) return bds;
-    const current = bds.clone(); 
-    pendingEventNames.forEach((eventName): void => {
-        delete current.request[eventName];
-    });
-    return current;
+    if(bid.type === BidType.request && pendingEvents.has(bid.eventName)) return null;
+    return {
+        ...bd, 
+        type: BidDictionaryType.single, 
+        [bid.type]: {[bid.eventName]: {...bid, threadId: threadId}}
+    };
 }
 
 // Bids from multiple threads
@@ -104,7 +89,7 @@ function getAllBidsForType(
     }, {});
 }
 
-function getCategorizedBlocks(blocks: BidArrayDictionary): [Record<string, Function>, Set<string> | null] {
+function getCategorizedBlocks(blocks: BidArrayDictionary): [Record<string,Function>, Set<string> | null] {
     const guarded: Record<string, Function> = {};
     const unguarded: Set<string> = new Set();
     Object.keys(blocks).forEach((eventName: string): void => {
