@@ -3,9 +3,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
+import { createUpdateLoop, ScaffoldingFunction, DispatchedActions } from '../src/update-loop';
 import { Logger } from "../src/logger";
-import { ExternalActions } from '../src/action';
 
 function rejectedDelay(ms: number) {
     return new Promise((resolve, reject) => setTimeout(() => reject('reject reason'), ms));
@@ -20,7 +19,7 @@ test("when a promise is resolved, it will dispatch an ExternalAction.", done => 
 
     const testLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
-        const updateLoop = createUpdateLoop(enable, (actions: ExternalActions) => {
+        const updateLoop = createUpdateLoop(enable, (actions: DispatchedActions) => {
             expect(actions.actions[0].type).toBe('resolve');
             expect(actions.actions[0].threadId).toBe('thread1');
             expect(actions.actions[0].eventName).toBe('A');

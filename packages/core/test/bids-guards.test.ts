@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
+import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
 import { Logger } from "../src/logger";
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;

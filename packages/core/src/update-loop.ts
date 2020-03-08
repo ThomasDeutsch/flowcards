@@ -5,7 +5,7 @@ import { getAllBids, BidArrayDictionary, BidDictionariesByType, BidType, BidDict
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests } from "./action";
-import { dispatchByWait } from "./dispatchByWait";
+import { dispatchByWait } from "./dispatch-by-wait";
 
 
 // -----------------------------------------------------------------------------------

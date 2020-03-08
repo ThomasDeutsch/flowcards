@@ -3,7 +3,7 @@
 
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/updateloop';
+import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
 import { Logger } from "../src/logger";
 import { ThreadContext } from '../src/bthread';
 
