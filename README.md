@@ -13,9 +13,9 @@ Difference between XState and Flowcards.
 
 ## Packages
 
-- [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed & tested & dependency-free)
+- [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
 - [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks and utilities
-- ❇️ you want to add support for another framework? - please contact me!
+- ❇️ fork this repository and add support for your favorite framework.
 
 ## Quick Start
 
@@ -24,20 +24,22 @@ npm install @flowcards/core
 ```
 
 ```javascript
-import { createUpdateLoop } from @flowcards/core;
+import { scenarios, request, wait } from @flowcards/core;
 
 function* sender() {
-    yield request('msg', 'hello world');
+    yield request('event', 'well done!');
+    yield request('event', 'you are making progress');
 }
 
 function* receiver() {
-    const value = yield wait('msg');
-    console.log('received message:', value);
+    while(true) {
+        const message = yield wait('event');
+        console.log('received message: ', message);
+    }
 }
 
-createUpdateLoop((enable => {
+scenarios(enable => {
     enable(sender);
     enable(receiver);
-}), () => null);
-
+});
 ```
