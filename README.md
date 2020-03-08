@@ -1,10 +1,10 @@
-## flowcards
+# flowcards
 
-your UI-framework is about modular components,<br/>
 flowcards is about modular behaviours.
+Enabling you to use "scenario based programming" in your JS application.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
-Both add a layer on top of your component structure<br/>
+Both add a layer on top of your UI-framework component structure<br/>
 to enable new ways to describe/model dynamic UI behaviours.<br/>
 
 ## Why flowcards?
