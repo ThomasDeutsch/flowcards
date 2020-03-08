@@ -26,16 +26,20 @@ npm install @flowcards/core
 ```javascript
 import { scenarios, request, wait } from @flowcards/core;
 
+function delayed(data, ms) {
+    () => return new Promise((resolve) => setTimeout(() => resolve(data), ms));
+}
+
 function* sender() {
-    yield request('event', 'well done!');
-    yield request('event', 'you are making progress');
+    yield request('event1', 'well done!'); // request an event
+    yield request('event2', delayed('you are making progress', 2000)); // async request
 }
 
 function* receiver() {
-    while(true) {
-        const message = yield wait('event');
-        console.log('received message: ', message);
-    }
+    let message = yield wait('event1'); // wait for event
+    console.log(message);
+    message = yield wait('event2'); // wait for async event
+    console.log(message);
 }
 
 scenarios(enable => {
