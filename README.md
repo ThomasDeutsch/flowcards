@@ -1,34 +1,34 @@
-# flowcards
+# flowcard
 
-flowcards is about modular behaviours.<br/>
+flowcard is about modular behaviours.<br/>
 Enabling "scenario-based programming" for your JS application.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They enable new ways to describe/model reactive systems<br/>
-and can serve as a layer above your UI-component structure.
-They are like a state-reducer on steroids 💪
+and can serve as a layer above your UI-component structure.<br/>
+Like a state-reducer on steroids 💪
 
-## Why flowcards?
+## Why flowcard?
 
 finite-state machines and statecharts (XState), provide a way<br/>
 for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
 The behaviour is described in an intra-object (within objects) fashion.
 
-flowcards is not about finite-state machines.
+flowcard is not about finite-state machines.
 It is based on the idea of describing the behaviour of a system in an inter-object (between objects) way.
 This inter-object specification of a system can be achieved by using scenario-based programming.
 
 ## Packages
 
-- [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
-- [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks and utilities
+- [🌀 `@flowcard/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
+- [⚛️ `@flowcard/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks and utilities
 - ❇️ fork this repository and add support for your favorite framework.
 
 ## Quick Start
 
 ```
-npm install @flowcards/core
+npm install @flowcard/core
 ```
 
 ```javascript
