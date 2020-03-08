@@ -28,8 +28,8 @@ export enum BidDictionaryType {
 export interface BidDictionaries {
     type: BidDictionaryType;
     [BidType.wait]: Record<string, Bid>;
-    [BidType.intercept]:Record<string, Bid>;
-    [BidType.request]:Record<string, Bid>;
+    [BidType.intercept]: Record<string, Bid>;
+    [BidType.request]: Record<string, Bid>;
     [BidType.block]: Record<string, Bid>;
 }
 
@@ -122,7 +122,7 @@ export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByT
     const allBlockingBids = getAllBidsForType(BidType.block, dictionaries, null, null);
     const [guardedBlocks, unguardedBlocks] = getCategorizedBlocks(allBlockingBids);
     return {
-        [BidType.wait]: getAllBidsForType(BidType.wait, dictionaries, unguardedBlocks, guardedBlocks), // todo: add guarded blocks and remove guarded blocks 
+        [BidType.wait]: getAllBidsForType(BidType.wait, dictionaries, unguardedBlocks, guardedBlocks),
         [BidType.request]: getAllBidsForType(BidType.request, dictionaries, unguardedBlocks, guardedBlocks),
         [BidType.intercept]: getAllBidsForType(BidType.intercept, dictionaries, unguardedBlocks, guardedBlocks)
     };

@@ -92,6 +92,7 @@ export class BThread {
 
     private _increaseProgress(): void {
         this._nrProgressions = this._nrProgressions + 1;
+        this._currentBids = null;
     }
 
     private _cancelPendingPromises(): string[] {
@@ -162,14 +163,12 @@ export class BThread {
             this._currentBids = null;
             return null;
         }
-        let bids;
         if(typeof this._nextBid === 'function') {
-            bids = getBidDictionaries(this.id, this._nextBid(), this.pendingEvents);
-        } else {
-            bids = getBidDictionaries(this.id, this._nextBid, this.pendingEvents);
+            this._currentBids = getBidDictionaries(this.id, this._nextBid(), this.pendingEvents);
+        } else if(this._currentBids === null) {
+            this._currentBids = getBidDictionaries(this.id, this._nextBid, this.pendingEvents);
         }
-        this._currentBids = bids;
-        return bids;
+        return this._currentBids;
     }
 
     public resetOnArgsChange(nextArguments: any): void {
