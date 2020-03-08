@@ -1,7 +1,7 @@
 ## flowcards
 
 when your UI-framework is about modular components<br/>
-then flowcards is about modular behaviours
+then flowcards is about modular behaviours.
 
 You can compare flowcards with [XState](https://github.com/davidkpiano/xstate).<br/>
 Both add a layer on top of your component structure<br/>
@@ -17,8 +17,27 @@ Difference between XState and Flowcards.
 - [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks and utilities
 - ❇️ you want to add support for another framework? - please contact me!
 
-## Get Started
+## Quick Start
 
 ```
-npm install @flowcards/react
+npm install @flowcards/core
+```
+
+```javascript
+import { createUpdateLoop } from @flowcards/core;
+
+function* sender() {
+    yield request('msg', 'hello world');
+}
+
+function* receiver() {
+    const value = yield wait('msg');
+    console.log('received message:', value);
+}
+
+createUpdateLoop((enable => {
+    enable(sender);
+    enable(receiver);
+}), () => null);
+
 ```
