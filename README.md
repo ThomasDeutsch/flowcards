@@ -1,9 +1,9 @@
 ## flowcards
 
-when your UI-framework is about modular components<br/>
-then flowcards is about modular behaviours.
+your UI-framework is about modular components,<br/>
+flowcards is about modular behaviours.
 
-You can compare flowcards with [XState](https://github.com/davidkpiano/xstate).<br/>
+You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 Both add a layer on top of your component structure<br/>
 to enable new ways to describe/model dynamic UI behaviours.<br/>
 

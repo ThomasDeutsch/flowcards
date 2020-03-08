@@ -50,7 +50,6 @@ describe('external actions', () => {
         }, logger);
         updateLoop();
         return logger;
-
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventName", done => {
