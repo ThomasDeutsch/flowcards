@@ -16,22 +16,14 @@ interface Reaction {
 }
 
 interface ActionLog {
-    pastActions: string[];
+    pastActions: Action[];
     latestReactions: ReactionInfo;
 }
 
-class LoopLog {
-    public readonly action: Action;
-    public reactionDictionary: Record<string, Reaction> = {};
-    public constructor(action?: Action) {
-        this.action = action || {eventName: "", type: ActionType.init};
-    }
-
-    public addReaction(reaction: Reaction): void {
-        this.reactionDictionary[reaction.threadId] = reaction;
-    }
+interface ActionAndReactions {
+    action: Action;
+    reactionDictionary: Record<string, Reaction>;
 }
-
 
 interface ReactionInfo {
     threadIds: Set<string>;
@@ -40,16 +32,23 @@ interface ReactionInfo {
 }
 
 export class Logger {
-    private _log: LoopLog[] = [];
-    private _currentLoopLog: LoopLog;
+    private _log: ActionAndReactions[] = [];
+    private _latestActionAndReactions: ActionAndReactions;
+
+    private _getNewActionsReactions(action?: Action): ActionAndReactions {
+        return this._latestActionAndReactions = {
+            action: action ? {...action} : { eventName: "", type: ActionType.init },
+            reactionDictionary: {}
+        }
+    }
 
     public constructor() {
-        this._currentLoopLog = new LoopLog();
+        this._latestActionAndReactions = this._getNewActionsReactions();
     }
 
     public logAction(action: Action): void {
-        this._log.push(this._currentLoopLog);
-        this._currentLoopLog = new LoopLog(action);
+        this._log.push(this._latestActionAndReactions);
+        this._latestActionAndReactions = this._getNewActionsReactions(action);
     }
 
     public logReaction(threadId: string, type: ReactionType, cancelledEvents?: Set<string>, pendingEvents?: Set<string>): void {
@@ -59,43 +58,45 @@ export class Logger {
             cancelledEvents: cancelledEvents,
             pendingEvents: pendingEvents
         };
-        this._currentLoopLog.addReaction(reaction);
+        this._latestActionAndReactions.reactionDictionary[reaction.threadId] = reaction;
     }
 
-    public getLog(): string {
-        return JSON.stringify(this._log);
+    public getCompleteLog() : ActionAndReactions[] {
+        const log = [...this._log];
+        log.push(this._latestActionAndReactions);
+        return log;
+    }
+
+    public getJSONString(): string {
+        return JSON.stringify(this.getCompleteLog());
     }
 
     public getLatestAction(): Action {
-        return this._currentLoopLog.action;
+        return this._latestActionAndReactions.action;
     }
 
-
     public getLatestReactions(): ReactionInfo  {
-        const reactionThreadIds = Object.keys(this._currentLoopLog.reactionDictionary);
+        const reactionThreadIds = Object.keys(this._latestActionAndReactions.reactionDictionary);
         return {
             threadIds: new Set(reactionThreadIds),
             pendingEvents: Object.keys(reactionThreadIds).reduce((acc, threadId: string): Set<string> => {
-                const thread = this._currentLoopLog.reactionDictionary[threadId];
-                const pe = thread ? this._currentLoopLog.reactionDictionary[threadId].pendingEvents : null;
+                const thread = this._latestActionAndReactions.reactionDictionary[threadId];
+                const pe = thread ? this._latestActionAndReactions.reactionDictionary[threadId].pendingEvents : null;
                 if(pe) {
                     return new Set([...acc, ...pe]);
                 }
                 return acc;
             }, new Set<string>()),
             type: reactionThreadIds.reduce((acc: Record<string, ReactionType>, threadId: string): Record<string, ReactionType> => {
-                acc[threadId] = this._currentLoopLog.reactionDictionary[threadId].type;
+                acc[threadId] = this._latestActionAndReactions.reactionDictionary[threadId].type;
                 return acc;
             }, {})
         }
     }
 
     public getActionLog(): ActionLog {
-        const pastActions = [...this._log, this._currentLoopLog]
-            .filter((a): boolean => a.action.type === ActionType.waited || a.action.type === ActionType.resolve)
-            .map((l): string => (l.action.type === ActionType.resolve) ? `${l.action.eventName} - completed` : l.action.eventName);
         return {
-            pastActions: pastActions,
+            pastActions: [...this._log.map((x):Action => x.action), this._latestActionAndReactions.action],
             latestReactions: this.getLatestReactions()
         }
     }

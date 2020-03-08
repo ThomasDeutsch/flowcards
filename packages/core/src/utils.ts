@@ -8,6 +8,7 @@ export function is(x: any, y: any): boolean {
     );
 }
 
+
 export function areInputsEqual(nextDeps: any[], prevDeps: any[] | null): boolean {
     if (prevDeps === null) {
         return false;
@@ -21,10 +22,12 @@ export function areInputsEqual(nextDeps: any[], prevDeps: any[] | null): boolean
     return true;
 }
 
+
 // promise duck-typing
 export function isThenable(p: any): boolean {
     return p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
+
 
 export function dropFirst(a: any[]): any[] {
     if (a.length === 0) {
@@ -34,6 +37,7 @@ export function dropFirst(a: any[]): any[] {
     r.shift();
     return r;
 }
+
 
 export function getRandomString(coll: string[]): string {
     if (coll.length === 1) {

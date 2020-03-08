@@ -38,7 +38,6 @@ test("A promise can be requested", () => {
 });
 
 
-
 test("A promise-function can be requested", () => {
     function* thread1() {
         yield bp.request("A", () => delay(100));

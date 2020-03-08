@@ -18,10 +18,6 @@ export interface Action {
     payload?: any;
 }
 
-export interface ExternalActions {
-    isReplay?: boolean;
-    actions: Action[];
-}
 
 export function getNextActionFromRequests(requestBids: BidArrayDictionary): Action | null {
     const eventNames = Object.keys(requestBids);

@@ -7,10 +7,10 @@ import {
     Logger,
     DispatchByWait,
     OverridesByComponent,
-    ExternalActions } from "@flowcards/core";
+    DispatchedActions } from "@flowcards/core";
 
 
-function reducer(state: ExternalActions, nextActions: ExternalActions): ExternalActions {
+function reducer(state: DispatchedActions, nextActions: DispatchedActions): DispatchedActions {
     return nextActions;
 }
 

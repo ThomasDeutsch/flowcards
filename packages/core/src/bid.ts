@@ -37,7 +37,6 @@ export interface BidDictionaries {
 export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | null)[], pendingEvents: Set<string>): BidDictionaries | null {
     if(!bid) return null;
     const bd = {
-        type: BidDictionaryType.array,
         [BidType.wait]: {},
         [BidType.intercept]: {},
         [BidType.request]: {},
@@ -47,10 +46,13 @@ export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | nu
         return bid.reduce((acc: BidDictionaries, b): BidDictionaries => {
             if(b) {
                 if(b.type === BidType.request && pendingEvents.has(b.eventName)) return acc;
-                acc[b.type][b.eventName] = {...b, threadId: threadId};
+                acc[b.type][b.eventName] = {
+                    ...b, 
+                    threadId: threadId
+                };
             }
             return acc;
-        }, bd);
+        }, {...bd, type: BidDictionaryType.array});
     } 
     if(bid.type === BidType.request && pendingEvents.has(bid.eventName)) return null;
     return {
