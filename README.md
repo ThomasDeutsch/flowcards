@@ -4,7 +4,7 @@ flowcard is about modular behaviours.<br/>
 "scenario-based programming" for your JS application.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
-They enable new ways to describe/model reactive systems<br/>
+They both enable new ways to describe & model reactive systems<br/>
 and can serve as a layer above your UI-component structure.<br/>
 Like a state-reducer on steroids 💪
 
