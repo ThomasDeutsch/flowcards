@@ -1,3 +1,3 @@
 # flowcards
 
-### add modular scenarios to your JavaScript / Typescript application.
+### add modular scenarios to your JavaScript / TypeScript application.
