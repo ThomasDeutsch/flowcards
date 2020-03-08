@@ -1,7 +1,7 @@
 # flowcard
 
-flowcard is about modular behaviours.<br/>
-"scenario-based programming" for your JS application.
+flowcard is about modular behaviours<br/>
+to enable "scenario-based programming" in your JS application.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable new ways to describe & model reactive systems<br/>
