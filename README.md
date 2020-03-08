@@ -1,15 +1,24 @@
 # flowcards
 
 flowcards is about modular behaviours.<br/>
-Enabling "scenario based programming" for your JS application.
+Enabling "scenario-based programming" for your JS application.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They enable new ways to describe/model reactive systems<br/>
 and can serve as a layer above your UI-component structure.
+They are like a state-reducer on steroids 💪
 
 ## Why flowcards?
 
-Todo: Difference between XState and Flowcards.
+finite-state machines in general,<br/>
+and statecharts (XState) in particular, provide a way<br/>
+for specifying the behavior of the system per object / component.<br/>
+For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
+The behaviour is described in an intra-object (within objects) fashion.
+
+flowcards is not about finite-state machines.
+It is based on the idea of describing the behaviour of a system in an inter-object (between objects) way.
+This inter-object specification of a system can be achieved by using scenario-based programming.
 
 ## Packages
 
