@@ -10,8 +10,7 @@ They are like a state-reducer on steroids 💪
 
 ## Why flowcards?
 
-finite-state machines in general,<br/>
-and statecharts (XState) in particular, provide a way<br/>
+finite-state machines and statecharts (XState), provide a way<br/>
 for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
 The behaviour is described in an intra-object (within objects) fashion.
