@@ -13,10 +13,10 @@ for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
 The behaviour is described in an intra-object (within object) fashion.
 
-With flowcards, you define behaviours as inter-object flows.<br/>
+flowcards enables you define behaviours as inter-object flows.<br/>
 You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps,<br/>
 a user needs to take, to reach a goal.<br/>
-Therefore, a system is not defined by the reactivity of each component,<br/>
+With flowcards, a system is not defined by the reactivity of each component,<br/>
 but by the scenarios / flows you enabled.<br/>
 
 ## Packages
