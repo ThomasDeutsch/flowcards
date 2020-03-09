@@ -17,8 +17,8 @@ The behaviour is described in an intra-object (within object) fashion.
 With flowcard, you define behaviours as inter-object flows.<br/>
 You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps,<br/>
 a user needs to take, to reach a goal.<br/>
-Define the bahaviour of the system not by the reactivity of each object / component,<br/>
-but by the scenario / flow you want to enable.<br/>
+A system is not defined by the reactivity of each component,<br/>
+but by the scenarios / flows that can include multiple components<br/>
 This is what flowcard is all about: enabling scenarios in a modular way.
 
 ## Packages
