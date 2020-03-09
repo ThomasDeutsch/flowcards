@@ -1,18 +1,13 @@
 import { ScaffoldingFunction, createUpdateLoop, DispatchedActions } from './update-loop';
 import { Logger } from "./logger";
 
-export function scenarios(enable: ScaffoldingFunction, updateCb?: Function, logger?: Logger): Function {
+export function scenarios(enable: ScaffoldingFunction, updateCb?: Function, logger?: Logger): void {
     const updateLoop = createUpdateLoop(enable, (a: DispatchedActions): void => {
         const info = updateLoop(a);
         if(updateCb) updateCb(info);
     }, logger);
-
-    updateLoop();
-    
-    return (a: DispatchedActions): void => { 
-        const info = updateLoop(a); 
-        if(updateCb) updateCb(info);
-    }
+    const initialInfo = updateLoop();
+    if(updateCb) updateCb(initialInfo);
 }
 
 export { ThreadContext } from './bthread';
