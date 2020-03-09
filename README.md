@@ -14,8 +14,8 @@ For example, take a look at a [traffic-light machine](https://github.com/davidkp
 The behavior is described in an intra-object (within object) fashion.
 
 flowcards enable behavior descriptions as inter-object flows.<br/>
-You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps,<br/>
-a user needs to take, to reach a goal.<br/>
+You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take,
+to reach a meaningful goal.<br/>
 In this case, a system is not defined by the reactivity of each component,<br/>
 but by scenarios / flows you enabled.<br/>
 
