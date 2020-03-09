@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { BidArrayDictionary } from "./bid";
 import * as utils from "./utils";
+import { BidArrayDictionary } from "./bid";
+
 
 export enum ActionType {
     request = "request",
