@@ -1,6 +1,6 @@
 # flowcards
 
-using scenarios to enable modular behavior. Based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
+using scenarios to enable modular behavior.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems.<br/>
@@ -17,6 +17,7 @@ flowcards enable behavior descriptions as inter-object flows.<br/>
 You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a meaningful goal.<br/>
 In this case, a system is not defined by the reactivity of each component,<br/>
 but by scenarios / flows that are enabled.<br/>
+flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
 
 ## Packages
 
