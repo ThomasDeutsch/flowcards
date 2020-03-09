@@ -1,7 +1,9 @@
-import { ScaffoldingFunction, createUpdateLoop, DispatchedActions } from './update-loop';
+import { ScaffoldingFunction, createUpdateLoop, DispatchedActions, ScenarioStates } from './update-loop';
 import { Logger } from "./logger";
 
-export function scenarios(enable: ScaffoldingFunction, updateCb?: Function, logger?: Logger): void {
+type UpdateCallback = (states: ScenarioStates) => any;
+
+export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback, logger?: Logger): void {
     const updateLoop = createUpdateLoop(enable, (a: DispatchedActions): void => {
         const info = updateLoop(a);
         if(updateCb) updateCb(info);
@@ -11,8 +13,7 @@ export function scenarios(enable: ScaffoldingFunction, updateCb?: Function, logg
 }
 
 export { ThreadContext } from './bthread';
-export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedActions, UpdateInfo } from './update-loop';
-export { getOverrides, OverridesByComponent } from "./override-info";
+export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedActions, ScenarioStates } from './update-loop';
 export { Logger } from "./logger";
 export { wait, intercept, block, request } from "./bid";
 export { DispatchByWait } from './dispatch-by-wait';

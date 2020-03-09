@@ -6,6 +6,7 @@ import * as utils from "./utils";
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests } from "./action";
 import { dispatchByWait } from "./dispatch-by-wait";
+import { getOverridesByComponentName, OverridesByComponent } from './overrides';
 
 
 // -----------------------------------------------------------------------------------
@@ -86,10 +87,10 @@ function setupAndDeleteThreads(
 // -----------------------------------------------------------------------------------
 // UPDATE LOOP
 
-export interface UpdateInfo {
-    orderedThreadIds: string[];
+export interface ScenarioStates {
     dispatchByWait: Record<string, Function>;
-    threadDictionary: ThreadDictionary;
+    overrides: OverridesByComponent,
+    thread: Record<string,ThreadState>;
 }
 
 export interface DispatchedActions {
@@ -97,7 +98,7 @@ export interface DispatchedActions {
     actions: Action[];
 }
 
-export type UpdateLoopFunction = (ext?: DispatchedActions | null) => UpdateInfo;
+export type UpdateLoopFunction = (ext?: DispatchedActions | null) => ScenarioStates;
 
 
 export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function, logger?: Logger): UpdateLoopFunction {
@@ -111,7 +112,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
     };
     setThreadsAndBids(); // initial setup
 
-    const updateLoop: UpdateLoopFunction = (ext?: DispatchedActions | null): UpdateInfo => {
+    const updateLoop: UpdateLoopFunction = (ext?: DispatchedActions | null): ScenarioStates => {
         let nextAction: Action | null = null;
         let remainingActions: DispatchedActions | null = null;
         if (ext && ext.actions.length > 0) {  // external event
@@ -133,10 +134,14 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             setThreadsAndBids();
             return updateLoop(remainingActions);
         }
+        const dbw = dispatchByWait(dispatch, bids.wait)
         return {
-            orderedThreadIds: orderedThreadIds,
-            dispatchByWait: dispatchByWait(dispatch, bids.wait),
-            threadDictionary: threadDictionary
+            dispatchByWait: dbw,
+            overrides: getOverridesByComponentName(orderedThreadIds, dbw, threadDictionary),
+            thread: Object.keys(threadDictionary).reduce((acc: Record<string, ThreadState>, threadId: string): Record<string, ThreadState> => {
+                acc[threadId] = threadDictionary[threadId].state;
+                return acc;
+            }, {})
         };
     };
     return updateLoop;

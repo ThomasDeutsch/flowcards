@@ -16,7 +16,8 @@ test("scenarios can be used without updateCb and logger", done => {
 
     scenarios((enable) => {
         enable(thread1);
-    }, (a:any): void => {
-        expect(a).toEqual(1);
+    }, (states) => {
+        expect(states.thread["thread1"].nrProgressions).toEqual(1);
     });
+    
 });
