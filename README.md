@@ -19,7 +19,6 @@ You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9f
 a user needs to take, to reach a goal.<br/>
 A system is not (only) defined by the reactivity of each component,<br/>
 but by the scenarios / flows you have enabled.<br/>
-This is what flowcards is all about: using scenarios to enable modular behaviour.
 
 ## Packages
 
