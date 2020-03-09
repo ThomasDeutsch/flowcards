@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+
 import { ScaffoldingFunction, createUpdateLoop, DispatchedActions, ScenarioStates } from './update-loop';
 import { Logger } from "./logger";
 
