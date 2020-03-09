@@ -1,8 +1,4 @@
 {
-    // If you have a monorepo we infer your packages from your Yarn workspaces
-    // or lerna configuration by default. If you want to explicitly
-    // set what to build, you can fill the 'packages' field with paths to your
-    // packages
     "packages": ["packages/core", "packages/react"],
     "sandboxes": ["core", "react"]
   }
