@@ -11,13 +11,12 @@ Use them for well defined state-transitions, and free yourself from switch-case 
 finite-state machines and statecharts (XState), provide a way<br/>
 for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
-The behavior is described in an intra-object (within object) fashion.
+Behavior is described in an intra-object (within object) fashion.
 
 flowcards enable behavior descriptions as inter-object flows.<br/>
-You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take,
-to reach a meaningful goal.<br/>
+You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a meaningful goal.<br/>
 In this case, a system is not defined by the reactivity of each component,<br/>
-but by scenarios / flows you enabled.<br/>
+but by scenarios / flows that are enabled.<br/>
 
 ## Packages
 
@@ -53,3 +52,16 @@ scenarios(enable => {
     enable(receiver);
 });
 ```
+
+## Why?
+
+Traditionally, we make changes to parts of our system, so that a requirement is fulfilled.<br/>
+For Example: We made changes to 3 components and a user now gets a message after he logged out.<br/>
+5 month into your project, you look at one of those components and you are not able to tell<br/>
+why there is so much code - simply because you do not know about all the scenarios<br/>
+you have enabled that touch this component.<br/>
+This will make it very difficult to change your code, even with tests.<br/>
+
+flowcards will enable you to keep requirements as modular behaviors in your code.<br/>
+This changes perspectives, because you are not complecting scenario-parts into your components.<br/>
+What the software does, can be found right at the very top of your application.<br/>
