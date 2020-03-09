@@ -12,6 +12,7 @@ export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback
     if(updateCb) updateCb(initialInfo);
 }
 
+export { OverridesByComponent } from './overrides';
 export { ThreadContext } from './bthread';
 export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedActions, ScenarioStates } from './update-loop';
 export { Logger } from "./logger";
