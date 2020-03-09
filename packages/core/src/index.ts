@@ -8,11 +8,11 @@ type UpdateCallback = (states: ScenarioStates) => any;
 
 export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback, logger?: Logger): void {
     const updateLoop = createUpdateLoop(enable, (a: DispatchedActions): void => {
-        const info = updateLoop(a);
-        if(updateCb) updateCb(info);
+        const states = updateLoop(a);
+        if(updateCb) updateCb(states);
     }, logger);
-    const initialInfo = updateLoop();
-    if(updateCb) updateCb(initialInfo);
+    const states = updateLoop();
+    if(updateCb) updateCb(states);
 }
 
 export { OverridesByComponent } from './overrides';
