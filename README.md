@@ -17,8 +17,8 @@ The behaviour is described in an intra-object (within object) fashion.
 With flowcards, you define behaviours as inter-object flows.<br/>
 You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps,<br/>
 a user needs to take, to reach a goal.<br/>
-A system is not (only) defined by the reactivity of each component,<br/>
-but by the scenarios / flows you have enabled.<br/>
+Therefore, a system is not defined by the reactivity of each component,<br/>
+but by the scenarios / flows you enabled.<br/>
 
 ## Packages
 
@@ -34,9 +34,9 @@ npm install @flowcard/core
 
 ```javascript
 import { scenarios, request, wait } from @flowcards/core;
-
 const delayed = (data, ms) => new Promise(r => setTimeout(() => r(data), ms));
 
+// JS Generators define your scenarios
 function* sender() {
     yield request('event1', 'well done!'); // request an event
     yield request('event2', delayed('you are making progress', 2000)); // async request
