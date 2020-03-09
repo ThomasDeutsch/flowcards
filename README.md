@@ -1,6 +1,6 @@
 # flowcards
 
-using scenarios to enable modular behaviour.
+using scenarios to enable modular behavior.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems.<br/>
@@ -11,13 +11,13 @@ Use them for well defined state-transitions, and free yourself from switch-case 
 finite-state machines and statecharts (XState), provide a way<br/>
 for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
-The behaviour is described in an intra-object (within object) fashion.
+The behavior is described in an intra-object (within object) fashion.
 
-flowcards enables you define behaviours as inter-object flows.<br/>
+flowcards enable behavior descriptions as inter-object flows.<br/>
 You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps,<br/>
 a user needs to take, to reach a goal.<br/>
-With flowcards, a system is not defined by the reactivity of each component,<br/>
-but by the scenarios / flows you enabled.<br/>
+In this case, a system is not defined by the reactivity of each component,<br/>
+but by scenarios / flows you enabled.<br/>
 
 ## Packages
 
