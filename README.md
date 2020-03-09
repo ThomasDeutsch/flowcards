@@ -21,8 +21,7 @@ but by scenarios / flows that are enabled.<br/>
 ## Packages
 
 - [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
-- [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks and utilities
-- ❇️ fork this repository and add support for your favorite framework.
+- [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks and utilities (core included)
 
 ## Quick Start
 

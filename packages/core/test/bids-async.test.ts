@@ -2,9 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
+import { createUpdateLoop, ScaffoldingFunction, DispatchedActions } from '../src/update-loop';
 import { Logger } from "../src/logger";
-import { ExternalActions } from '../../../build/packages/core/src/action';
 
 type TestLoop = (enable: ScaffoldingFunction) => Logger;
 let testLoop: TestLoop;
@@ -12,7 +11,7 @@ let testLoop: TestLoop;
 beforeEach(() => {
     testLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
-        const updateLoop = createUpdateLoop(enable, (actions: ExternalActions) => {
+        const updateLoop = createUpdateLoop(enable, (actions: DispatchedActions) => {
             updateLoop(actions);
         }, logger);
         updateLoop();
