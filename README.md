@@ -26,11 +26,12 @@ but by scenarios / flows that are enabled.<br/>
 ## Quick Start
 
 ```
-npm install @flowcard/core
+npm install @flowcards/core
 ```
 
 ```javascript
 import { scenarios, request, wait } from @flowcards/core;
+
 const delayed = (data, ms) => new Promise(r => setTimeout(() => r(data), ms));
 
 // JS Generators define your scenarios
