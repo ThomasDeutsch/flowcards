@@ -1,6 +1,6 @@
 # flowcards
 
-using scenarios to enable modular behavior. Based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html#Event%20selection%20with%20%20a%20global%20view)
+using scenarios to enable modular behavior. Based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems.<br/>
