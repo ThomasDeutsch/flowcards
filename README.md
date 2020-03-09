@@ -1,23 +1,24 @@
 # flowcard
 
-flowcard is about modular behaviours<br/>
-to enable "scenario-based programming" in your JS application.
+enable "scenario-based programming" in your JS application.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
-They both enable new ways to describe & model reactive systems<br/>
+They both enable ways to describe & model reactive systems<br/>
 and can serve as a layer above your UI-component structure.<br/>
-Like a state-reducer on steroids 💪
+State-transitions can be more than a bunch of switch-statements in your reducer.<br/>
 
 ## Why flowcard?
 
 finite-state machines and statecharts (XState), provide a way<br/>
 for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
-The behaviour is described in an intra-object (within objects) fashion.
+The behaviour is described in an intra-object (within object) fashion.
 
-flowcard is not about finite-state machines.
-It is based on the idea of describing the behaviour of a system in an inter-object (between objects) way.
-This inter-object specification of a system can be achieved by using scenario-based programming.
+With flowcard, you define behaviours in an inter-object way.
+You know this from [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png).<br/>
+A series of steps, a user needs to take to reach a goal.<br/>
+What happens, if you are able to define behaviours in your code like user-flows?<br/>
+flowcard enables you to do so. read more or get started
 
 ## Packages
 
