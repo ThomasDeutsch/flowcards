@@ -3,7 +3,7 @@
 using scenarios to enable modular behaviour.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
-They both enable ways to describe & model reactive systems<br/>
+They both enable ways to describe & model reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 
 ## Comparison
