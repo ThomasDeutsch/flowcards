@@ -5,7 +5,7 @@ enable "scenario-based programming" in your JS application.
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems<br/>
 and can serve as a layer above your UI-component structure.<br/>
-State-transitions can be more than a bunch of switch-statements in your reducer.<br/>
+Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 
 ## Why flowcard?
 
@@ -14,11 +14,11 @@ for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
 The behaviour is described in an intra-object (within object) fashion.
 
-With flowcard, you define behaviours in an inter-object way.
-You know this from [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png).<br/>
-A series of steps, a user needs to take to reach a goal.<br/>
-What happens, if you are able to define behaviours in your code like user-flows?<br/>
-flowcard enables you to do so. read more or get started
+With flowcard, you define behaviours as inter-object flows.
+You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png).<br/>
+A series of steps, a user needs to take, to reach a goal.<br/>
+You define the bahaviour of the system not by the reactivity of each component,<br/>
+but by the scenario/flow you want to enable.
 
 ## Packages
 
