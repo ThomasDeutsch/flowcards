@@ -4,7 +4,7 @@ import {
     ScaffoldingFunction, 
     createUpdateLoop,
     Logger,
-    ScenarioStates,
+    ScenarioUtils,
     DispatchedAction } from "@flowcards/core";
 
 
@@ -15,12 +15,12 @@ function reducer(latestAction: DispatchedAction, nextAction: DispatchedAction): 
 
 const initialActions: DispatchedAction = { id: -1 };
 
-export function useScenarios(scaffoldingFn: ScaffoldingFunction, logger?: Logger) : ScenarioStates {
+export function useScenarios(scaffoldingFn: ScaffoldingFunction, logger?: Logger) : ScenarioUtils {
     const [nextAction, dispatch] = useReducer(reducer, initialActions);
     const updateLoopRef = useRef<null | UpdateLoopFunction>(null);
     if(updateLoopRef.current === null) {
         updateLoopRef.current = createUpdateLoop(scaffoldingFn, dispatch, logger);
     }
-    const scenarioStates = updateLoopRef.current(nextAction, null);
-    return scenarioStates;
+    const scenarioUtils = updateLoopRef.current(nextAction, null);
+    return scenarioUtils;
 }
