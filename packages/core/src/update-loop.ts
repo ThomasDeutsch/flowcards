@@ -17,12 +17,13 @@ function advanceThreads(
     intercepts: BidArrayDictionary,
     action: Action
 ): void {
-    let wasAsyncRequest,
+    let wasThreadScoped,
         payload = action.payload;
     if (action.threadId && threadDictionary[action.threadId]) {
-        [payload, wasAsyncRequest] = threadDictionary[action.threadId].progressRequestResolve(action.type, action.eventName, payload);
+        [payload, wasThreadScoped] = threadDictionary[action.threadId].progressRequestResolve(action.type, action.eventName, payload);
     }
-    if (!wasAsyncRequest && waits[action.eventName] && waits[action.eventName].length) {
+    if (wasThreadScoped) return;
+    if (waits[action.eventName] && waits[action.eventName].length) {
         if (intercepts[action.eventName]) {
             const i = [...intercepts[action.eventName]];
             while(i.length) {
@@ -145,13 +146,14 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             }
             nextActions = dAction.payload ? [dAction.payload] : null; // select a dispatched action
         } 
-        if(!nextActions || nextActions.length === 0) {
+        else if(dAction && (dAction.id !== loopCount)) { // component was reloaded
+            setThreadsAndBids();
+            return updateLoop(null);
+        }
+        nextActions = (nextActions && nextActions.length > 0) ? nextActions : null;
+        if(!nextActions) {
             const action = getNextActionFromRequests(bids.request)
             nextActions = action ? [action] : null;  // select a requested action
-        }
-        if(!nextActions && dAction && (dAction.id !== loopCount)) { // component was reloaded
-            setThreadsAndBids(); // do this, because component-props might have been changed
-            return updateLoop(null);
         }
         if (nextActions && nextActions.length > 0) { 
             const [nextAction, ...restActions] = nextActions;
