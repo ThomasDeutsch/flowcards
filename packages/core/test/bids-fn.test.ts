@@ -1,19 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
-import { Logger } from "../src/logger";
-
-type TestLoop = (enable: ScaffoldingFunction) => Logger;
-let updateLoop: TestLoop;
-
-beforeEach(() => {
-    updateLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
-        createUpdateLoop(enable, () => null, logger)();
-        return logger;
-    };
-});
+import { scenarios } from '../src/index';
 
 
 test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {
@@ -32,7 +20,7 @@ test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {
         }
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         cycleNr++;
         enable(requestThread);
         enable(fnThread);
@@ -53,7 +41,7 @@ test("a bid-function can return a single bid", () => {
         receivedValue = yield () => bp.wait("A");
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(fnThread);
     });
@@ -73,7 +61,7 @@ test("a bid-function can return multiple bids", () => {
         [receivedEvent, receivedValue] = yield () => [bp.wait("A"), bp.wait("B")];
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(fnThread);
     });

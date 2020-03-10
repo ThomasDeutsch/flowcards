@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction, DispatchedActions } from '../src/update-loop';
+import { createUpdateLoop, ScaffoldingFunction, DispatchedAction } from '../src/update-loop';
 import { Logger } from "../src/logger";
 
 function rejectedDelay(ms: number) {
@@ -14,19 +14,20 @@ function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms)).then(() => 'data');
 }
 
-
 test("when a promise is resolved, it will dispatch an ExternalAction.", done => {
 
     const testLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
-        const updateLoop = createUpdateLoop(enable, (actions: DispatchedActions) => {
-            expect(actions.actions[0].type).toBe('resolve');
-            expect(actions.actions[0].threadId).toBe('thread1');
-            expect(actions.actions[0].eventName).toBe('A');
-            expect(actions.actions[0].payload).toBe('data');
-            updateLoop(actions);
+        const updateLoop = createUpdateLoop(enable, (action: DispatchedAction) => {
+            if(action.payload) {
+                expect(action.payload.type).toBe('resolve');
+                expect(action.payload.threadId).toBe('thread1');
+                expect(action.payload.eventName).toBe('A');
+                expect(action.payload.payload).toBe('data');
+            }
+            updateLoop(action);
         }, logger);
-        updateLoop();
+        updateLoop(null);
         return logger;
     };
 
@@ -45,10 +46,10 @@ describe('external actions', () => {
 
     const testLoop = (enable: ScaffoldingFunction): Logger => {
         const logger = new Logger();
-        const updateLoop = createUpdateLoop(enable, (a:any) => {
-            updateLoop(a);
+        const updateLoop = createUpdateLoop(enable, (a: DispatchedAction) => {
+            updateLoop(a, null);
         }, logger);
-        updateLoop();
+        updateLoop(null);
         return logger;
     };
 
@@ -70,5 +71,4 @@ describe('external actions', () => {
             enable(thread1);
         });    
     });
-
 });

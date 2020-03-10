@@ -1,19 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
-import { Logger } from "../src/logger";
+import { Logger, scenarios } from "../src/index";
 
-type TestLoop = (enable: ScaffoldingFunction) => Logger;
-let updateLoop: TestLoop;
-
-beforeEach(() => {
-    updateLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
-        createUpdateLoop(enable, () => null, logger)();
-        return logger;
-    };
-});
 
 
 // REQUESTS & WAITS
@@ -26,9 +15,10 @@ test("a requested event that is not blocked will advance", () => {
         yield bp.request("A");
         hasAdvanced = true;
     }
-    const logger = updateLoop((enable) => {
+    const logger = new Logger();
+    scenarios((enable) => {
         enable(thread1);
-    });
+    }, null, logger);
     expect(hasAdvanced).toBe(true);
     expect(logger.getLatestAction().eventName).toBe("A");
     expect(logger.getLatestReactions().threadIds).toContain("thread1");
@@ -47,10 +37,11 @@ test("a request will also advance waiting threads", () => {
         waitProgressed = true;
     }
 
-    const logger = updateLoop((enable) => {
+    const logger = new Logger();
+    scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    });
+    }, null, logger);
 
     expect(requestProgressed).toBe(true);
     expect(waitProgressed).toBe(true);
@@ -71,10 +62,11 @@ test("waits will return the value that has been requested", () => {
         receivedValue = yield bp.wait("A");
     }
 
-    const logger = updateLoop((enable) => {
+    const logger = new Logger();
+    scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
-    });
+    }, null, logger);
 
     expect(receivedValue).toBe(1000);
     expect(logger.getLatestAction().eventName).toBe("A");
@@ -100,7 +92,7 @@ test("multiple requests will return an array of [eventName, value].", () => {
         receivedValueB = yield bp.wait("B");
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(receiveThreadA);
         enable(receiveThreadB);
@@ -127,7 +119,7 @@ test("multiple waits will return an array of [value, eventName].", () => {
         [receivedEventName, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
     });
@@ -148,7 +140,7 @@ test("A request-value can be a function.", () => {
         [receivedEventName, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
     });
@@ -178,7 +170,7 @@ test("if a request value is a function, it will only be called once.", () => {
         receivedValue2 = yield bp.wait("A");
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread1);
         enable(receiveThread2);
@@ -210,7 +202,7 @@ test("events can be blocked", () => {
         yield bp.block("A");
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(waitingThread);
         enable(blockingThread);
@@ -244,7 +236,7 @@ test("waits can be intercepted", () => {
         progressedIntercept = true;
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
@@ -271,7 +263,7 @@ test("intercepts will receive a value (like waits)", () => {
         interceptedValue = yield bp.intercept("A");
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
@@ -292,7 +284,7 @@ test("intercepts are only advanced, if there is a wait for the same eventName", 
         interceptedValue = yield bp.intercept("A");
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(thread1);
         enable(thread2);
     });
@@ -322,7 +314,7 @@ test("the last intercept that is enabled has the highest priority", () => {
         advancedThread2 = true;
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(waitThread);
         enable(interceptThread1);

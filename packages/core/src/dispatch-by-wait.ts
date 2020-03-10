@@ -2,12 +2,12 @@
 
 import { Bid, BidArrayDictionary } from './bid';
 import { ActionType } from './action';
-
+import { DispatchFunction } from './update-loop';
 
 export type DispatchByWait = Record<string, Function>;
 
 
-export function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): DispatchByWait {
+export function dispatchByWait(dispatch: DispatchFunction, waits: BidArrayDictionary): DispatchByWait {
     return Object.keys(waits).reduce((acc: DispatchByWait, eventName): DispatchByWait  => {
         const allGuards = waits[eventName].reduce((acc: Function[], curr: Bid): Function[] => {
             if(curr.guard) {
@@ -21,10 +21,7 @@ export function dispatchByWait(dispatch: Function, waits: BidArrayDictionary): D
         }
         acc[eventName] = (payload?: any): Function | null => {
             if(combinedGuardFn(payload)) {
-                return (): Function => dispatch({
-                    isReplay: false,
-                    actions: [{ type: ActionType.waited, eventName: eventName, payload: payload }]
-                });
+                return (): Function | void => dispatch({ type: ActionType.waited, eventName: eventName, payload: payload });
             } else {
                 return null;
             }

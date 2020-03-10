@@ -2,7 +2,6 @@
 
 import { scenarioId, ThreadGen, BThread, ThreadDictionary, ThreadState } from './bthread';
 import { getAllBids, BidArrayDictionary, BidDictionariesByType, BidType, BidDictionaries } from './bid';
-import * as utils from "./utils";
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests } from "./action";
 import { dispatchByWait } from "./dispatch-by-wait";
@@ -49,11 +48,13 @@ type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | nu
 
 export type ScaffoldingFunction = (e: EnableThreadFunctionType) => void;
 
+export type DispatchFunction = (action: Action) => void;
+
 
 function setupAndDeleteThreads(
     scaffolding: ScaffoldingFunction,
     threadDictionary: ThreadDictionary,
-    dispatch: Function,
+    dispatch: DispatchFunction,
     logger?: Logger
 ): string[] {
     const threadIds: Set<string> = new Set();
@@ -87,56 +88,82 @@ function setupAndDeleteThreads(
 // -----------------------------------------------------------------------------------
 // UPDATE LOOP
 
+type ReplayDispatchFunction = (actions: Action[]) => void;
+
 export interface ScenarioStates {
     dispatchByWait: Record<string, Function>;
-    overrides: OverridesByComponent,
+    replay: ReplayDispatchFunction;
+    overrides: OverridesByComponent;
     thread: Record<string,ThreadState>;
 }
 
-export interface DispatchedActions {
-    isReplay?: boolean;
-    actions: Action[];
+export interface DispatchedAction {
+    id: number;
+    replay?: Action[];
+    payload?: Action;
 }
 
-export type UpdateLoopFunction = (ext?: DispatchedActions | null) => ScenarioStates;
 
+
+export type UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null) => ScenarioStates;
 
 export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function, logger?: Logger): UpdateLoopFunction {
     const threadDictionary: ThreadDictionary = {};
     let orderedThreadIds: string[];
     let bids: BidDictionariesByType;
+    let loopCount = 0;
+
+    const actionDispatch: DispatchFunction = (a: Action): void => {
+        const x: DispatchedAction = {
+            id: loopCount+1,
+            payload: a
+        }
+        dispatch(x);
+    };
+
+    const replayDispatch: ReplayDispatchFunction = (actions: Action[]): void => {
+        const x: DispatchedAction = {
+            id: loopCount+1,
+            replay: actions
+        }
+        dispatch(x);
+    }
 
     const setThreadsAndBids = (): void => {
-        orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, dispatch, logger);
+        orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, actionDispatch, logger);
         bids = getAllBids(orderedThreadIds.map((id): BidDictionaries | null => threadDictionary[id].getBids()));
     };
     setThreadsAndBids(); // initial setup
 
-    const updateLoop: UpdateLoopFunction = (ext?: DispatchedActions | null): ScenarioStates => {
-        let nextAction: Action | null = null;
-        let remainingActions: DispatchedActions | null = null;
-        if (ext && ext.actions.length > 0) {  // external event
-            if (ext.isReplay) { // external event is a replay
+    const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): ScenarioStates => {
+        loopCount++;
+        if (dAction && (dAction.id === loopCount)) {
+            if (dAction.replay) {
                 Object.keys(threadDictionary).forEach((key): void => { delete threadDictionary[key] });
                 setThreadsAndBids();
+                return updateLoop(null, dAction.replay); // start a replay
             }
-            nextAction = ext.actions[0];
-            remainingActions = {
-                isReplay: false,
-                actions: utils.dropFirst(ext.actions)
-            };
-        } else {
-            nextAction = getNextActionFromRequests(bids.request);
+            nextActions = dAction.payload ? [dAction.payload] : null; // select a dispatched action
+        } 
+        if(!nextActions || nextActions.length === 0) {
+            const action = getNextActionFromRequests(bids.request)
+            nextActions = action ? [action] : null;  // select a requested action
         }
-        if (nextAction) {
+        if(!nextActions && dAction && (dAction.id !== loopCount)) { // component was reloaded
+            setThreadsAndBids(); // do this, because component-props might have been changed
+            return updateLoop(null);
+        }
+        if (nextActions && nextActions.length > 0) { 
+            const [nextAction, ...restActions] = nextActions;
             if (logger) logger.logAction(nextAction);
             advanceThreads(threadDictionary, bids.wait, bids.intercept, nextAction);
             setThreadsAndBids();
-            return updateLoop(remainingActions);
+            return updateLoop(null, restActions);
         }
-        const dbw = dispatchByWait(dispatch, bids.wait)
+        const dbw = dispatchByWait(actionDispatch, bids.wait)
         return {
             dispatchByWait: dbw,
+            replay: replayDispatch,
             overrides: getOverridesByComponentName(orderedThreadIds, dbw, threadDictionary),
             thread: Object.keys(threadDictionary).reduce((acc: Record<string, ThreadState>, threadId: string): Record<string, ThreadState> => {
                 acc[threadId] = threadDictionary[threadId].state;

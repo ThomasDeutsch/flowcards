@@ -1,20 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
-import { Logger } from "../src/logger";
+import { scenarios } from "../src/index";
 import { ThreadContext } from "../src/bthread";
-
-type TestLoop = (enable: ScaffoldingFunction) => Logger;
-let updateLoop: TestLoop;
-
-beforeEach(() => {
-    updateLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
-        createUpdateLoop(enable, () => null, logger)();
-        return logger;
-    };
-});
 
 
 test("a thread will accept an optional array of arguments", () => {
@@ -25,7 +13,7 @@ test("a thread will accept an optional array of arguments", () => {
         yield bp.wait('event');
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(thread, ["A", "B", "C"]);
     });
 
@@ -48,7 +36,7 @@ test("a thread will accept an optional key", () => {
         yield bp.wait('A');
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(thread, [], 0);
         enable(threadB, [], "foo");
     });
@@ -67,7 +55,7 @@ test("if no key is provided, the default key value is null", () => {
         yield bp.wait('A');
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(thread);
     });
 

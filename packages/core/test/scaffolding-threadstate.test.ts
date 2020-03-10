@@ -3,20 +3,10 @@
 
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
-import { Logger } from "../src/logger";
 import { ThreadContext } from '../src/bthread';
+import { scenarios } from '../src/index';
 
-type TestLoop = (enable: ScaffoldingFunction) => Logger;
-let updateLoop: TestLoop;
 
-beforeEach(() => {
-    updateLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
-        createUpdateLoop(enable, () => null, logger)();
-        return logger;
-    };
-});
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -28,7 +18,7 @@ test("the enable function will return the current thread state", () => {
         yield bp.wait('event');
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         const state = enable(thread);
         
         expect(state.isCompleted).toBe(false);
@@ -51,7 +41,7 @@ test("if promises are pending, the thread will return a set of those pending pro
         yield [bp.request("C", delay(1000)), bp.request("D", delay(1100))]
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         state = enable(thread);
         state2 = enable(thread2);
     });
@@ -74,7 +64,7 @@ test("the thread will return the state value, and a completed-flag if the thread
         yield bp.request("A");
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         state = enable(thread);
     });
 

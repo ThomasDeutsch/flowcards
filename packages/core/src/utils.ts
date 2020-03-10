@@ -29,16 +29,6 @@ export function isThenable(p: any): boolean {
 }
 
 
-export function dropFirst(a: any[]): any[] {
-    if (a.length === 0) {
-        return [];
-    }
-    const r = [...a];
-    r.shift();
-    return r;
-}
-
-
 export function getRandomString(coll: string[]): string {
     if (coll.length === 1) {
         return coll[0];

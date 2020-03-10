@@ -4,13 +4,12 @@ import { BidDictionaries, getBidDictionaries, BidType, BidDictionaryType } from 
 import * as utils from "./utils";
 import { Logger, ReactionType } from "./logger";
 import { ActionType } from './action';
+import { DispatchFunction } from './update-loop';
 
 export type ThreadGen = any; // TODO: Type this generator
 export interface ThreadDictionary {
     [Key: string]: BThread;
 }
-
-type DispatchFn = Function;
 
 export interface ThreadState {
     isCompleted: boolean;
@@ -35,7 +34,7 @@ export class BThread {
     public readonly id: string;
     public readonly key: string | number | null = null;
     private readonly _logger?: Logger;
-    private readonly _dispatch: DispatchFn;
+    private readonly _dispatch: DispatchFunction;
     private readonly _generator: ThreadGen;
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
@@ -78,7 +77,7 @@ export class BThread {
         };
     }
 
-    public constructor(generator: ThreadGen, args: any[], dispatch: Function, key?: string | number, logger?: Logger) {
+    public constructor(generator: ThreadGen, args: any[], dispatch: DispatchFunction, key?: string | number, logger?: Logger) {
         this.id = scenarioId(generator, key);
         if (key || key === 0) {
             this.key = key;
@@ -134,18 +133,14 @@ export class BThread {
                 if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
                     this._pendingEvents.delete(eventName);
-                    this._dispatch({
-                        actions: [{ type: ActionType.resolve, threadId: this.id, eventName: eventName, payload: data }]
-                    });
+                    this._dispatch({ type: ActionType.resolve, threadId: this.id, eventName: eventName, payload: data });
                 }
             })
             .catch((e): void => {
                 if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
                     this._pendingEvents.delete(eventName);
-                    this._dispatch({
-                        actions: [{ type: ActionType.reject, threadId: this.id, eventName: eventName, payload: e }]
-                    });
+                    this._dispatch({ type: ActionType.reject, threadId: this.id, eventName: eventName, payload: e });
                 }
             });
     }
@@ -168,7 +163,7 @@ export class BThread {
         }
         if(typeof this._nextBid === 'function') {
             this._currentBids = getBidDictionaries(this.id, this._nextBid(), this._pendingEvents);
-        } else if(this._currentBids === null) { // this._increaseProgress may have set the currentBids to null, in this case - recalculate.
+        } else if(this._currentBids === null) {
             this._currentBids = getBidDictionaries(this.id, this._nextBid, this._pendingEvents);
         }
         return this._currentBids;

@@ -1,20 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
-import { Logger } from "../src/logger";
+import { scenarios } from "../src/index";
 import { ThreadContext, ThreadState } from '../src/bthread';
-
-type TestLoop = (enable: ScaffoldingFunction) => Logger;
-let updateLoop: TestLoop;
-
-beforeEach(() => {
-    updateLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
-        createUpdateLoop(enable, () => null, logger)();
-        return logger;
-    };
-});
 
 
 test("a thread gets reset, when the arguments change", () => {
@@ -31,7 +19,7 @@ test("a thread gets reset, when the arguments change", () => {
         yield bp.wait('A');
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         const state = enable(threadA);
         enable(threadB, [state.value]);
     });
@@ -55,7 +43,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
         receivedValue = stateFromThreadA.value;
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         const state = enable(threadA);
         enable(threadB, [state]);  // instead of state.value, we will pass state.
     });

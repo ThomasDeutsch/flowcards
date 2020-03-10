@@ -1,19 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction } from '../src/update-loop';
-import { Logger } from "../src/logger";
+import { scenarios, Logger } from '../src/index';
 
-type TestLoop = (enable: ScaffoldingFunction) => Logger;
-let updateLoop: TestLoop;
-
-beforeEach(() => {
-    updateLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
-        createUpdateLoop(enable, () => null, logger)();
-        return logger;
-    };
-});
 
 
 test("a wait is not advanced, if the guard returns false", () => {
@@ -37,11 +26,12 @@ test("a wait is not advanced, if the guard returns false", () => {
         waitCAdvanced = true;
     }
 
-    const logger = updateLoop((enable) => {
+    const logger = new Logger();
+    scenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    });
+    }, null, logger);
 
     expect(requestAdvanced).toBe(true);
     expect(waitBAdvanced).toBe(false);
@@ -71,11 +61,12 @@ test("an intercept is not applied, if the guard returns false.", () => {
         waitCAdvanced = true;
     }
 
-    const logger = updateLoop((enable) => {
+    const logger = new Logger();
+    scenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    });
+    }, null, logger);
 
     expect(requestAdvanced).toBe(true);
     expect(waitBAdvanced).toBe(true);
@@ -110,12 +101,13 @@ test("if an intercept is not applied, than the next intercept will get the event
         waitDAdvanced = true;
     }
 
-    const logger = updateLoop((enable) => {
+    const logger = new Logger();
+    scenarios((enable) => {
         enable(requestThread);
         enable(waitThread);
         enable(interceptPrioLowThread);
         enable(interceptPrioHighThread);
-    });
+    }, null, logger);
 
     expect(requestAdvanced).toBe(true);
     expect(waitBAdvanced).toBe(false);
@@ -146,7 +138,7 @@ test("a block is applied, if the guard returns true", () => {
         waitCAdvanced = true;
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -177,7 +169,7 @@ test("a block is not applied, if the guard returns false", () => {
         waitAdvanced = true;
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -211,7 +203,7 @@ test("guards for blocks will be merged", () => {
         waitAdvanced = true;
     }
 
-    updateLoop((enable) => {
+    scenarios((enable) => {
         enable(requestThread);
         enable(blockingThread);
         enable(notBlockingThread);
