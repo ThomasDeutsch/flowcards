@@ -105,7 +105,7 @@ export interface ScenarioUtils {
 }
 
 export interface DispatchedAction {
-    id: number;
+    id?: number;
     replay?: Action[];
     payload?: Action;
 }

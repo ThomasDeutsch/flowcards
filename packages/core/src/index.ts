@@ -7,8 +7,8 @@ type UpdateCallback = (utils: ScenarioUtils) => any;
 
 export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback | null, logger?: Logger): void {
     const updateLoop = createUpdateLoop(enable, (a: DispatchedAction): void => {
-        const states = updateLoop(a);
-        if(updateCb) updateCb(states);
+        const utils = updateLoop(a);
+        if(updateCb) updateCb(utils);
     }, logger);
     const states = updateLoop(null);
     if(updateCb) updateCb(states);
