@@ -129,7 +129,7 @@ test("multiple waits will return an array of [value, eventName].", () => {
 });
 
 
-test("A request-value can be a function.", () => {
+test("A request-value can be a function. It will get called, when the event is selected", () => {
     let receivedValue, receivedEventName;
 
     function* requestThread() {
@@ -180,6 +180,7 @@ test("if a request value is a function, it will only be called once.", () => {
     expect(receivedValue2).toBe(1000);
     expect(fnCount).toBe(1);
 });
+
 
 
 // BLOCK

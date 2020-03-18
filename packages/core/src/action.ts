@@ -17,6 +17,7 @@ export interface Action {
     threadId?: string;
     eventName: string;
     payload?: any;
+    isPromise?: boolean;
 }
 
 
@@ -31,21 +32,21 @@ export function getNextActionFromRequests(requestBids: BidArrayDictionary): Acti
                 .join(", ")}'. Make sure to use distinct event names.`);
         } else {
             const bid = bids[0];
-            let isAborted = false;
             let payload = bid.payload;
-            if (payload && typeof payload === "function") {
-                payload = payload({isValid: bid.guard || (():boolean => true), abort: (result: boolean = true): boolean => isAborted = result });
+            if (typeof payload === "function") {
+                payload = payload();
             }
             const isGuarded = bid.guard ? !bid.guard(payload) : false;
-            if(isAborted || isGuarded) {
+            if(isGuarded) {
                 delete requestBids[chosenEventName];
                 return getNextActionFromRequests(requestBids);
             }
             return {
                 type: ActionType.request,
+                threadId: bid.threadId,
                 eventName: bid.eventName,
                 payload: payload,
-                threadId: bid.threadId
+                isPromise: utils.isThenable(payload)
             };
         }
     }

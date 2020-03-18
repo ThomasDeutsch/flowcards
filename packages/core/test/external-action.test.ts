@@ -72,3 +72,7 @@ describe('external actions', () => {
         });    
     });
 });
+
+
+
+// TODO: when a promise is rejected, other threads waiting for this event are not advanced.

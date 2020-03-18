@@ -3,7 +3,7 @@
 import { scenarioId, ThreadGen, BThread, ThreadDictionary, ThreadState } from './bthread';
 import { getAllBids, BidArrayDictionary, BidDictionariesByType, BidType, BidDictionaries } from './bid';
 import { Logger } from "./logger";
-import { Action, getNextActionFromRequests } from "./action";
+import { Action, getNextActionFromRequests, ActionType } from './action';
 import { dispatchByWait } from "./dispatch-by-wait";
 import { getOverridesByComponentName, OverridesByComponent } from './overrides';
 
@@ -17,25 +17,31 @@ function advanceThreads(
     intercepts: BidArrayDictionary,
     action: Action
 ): void {
-    let wasThreadScoped,
-        payload = action.payload;
-    if (action.threadId && threadDictionary[action.threadId]) {
-        [payload, wasThreadScoped] = threadDictionary[action.threadId].progressRequestResolve(action.type, action.eventName, payload);
+
+   if (action.threadId && threadDictionary[action.threadId]) {
+        if(action.isPromise) {
+            threadDictionary[action.threadId].addPromise(action.eventName, action.payload);
+            return;
+        } else if(action.type === ActionType.request || action.type === ActionType.resolve) {
+            threadDictionary[action.threadId].advanceRequest(action.eventName, action.payload);
+        } else if(action.type === ActionType.reject) {
+            threadDictionary[action.threadId].rejectPromise(action.eventName, action.payload);
+            return;
+        }
     }
-    if (wasThreadScoped) return;
     if (waits[action.eventName] && waits[action.eventName].length) {
         if (intercepts[action.eventName]) {
             const i = [...intercepts[action.eventName]];
             while(i.length) {
                 const nextThread = i.pop();
                 if(nextThread) {
-                    const wasIntercepted = threadDictionary[nextThread.threadId].progressWaitIntercept(BidType.intercept, action.eventName, payload);
+                    const wasIntercepted = threadDictionary[nextThread.threadId].progressWaitIntercept(BidType.intercept, action.eventName, action.payload);
                     if(wasIntercepted) return;
                 }
             }  
         }
         waits[action.eventName].forEach(({ threadId }): void => {
-            threadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, payload);
+            threadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, action.payload);
         });
     }
 }

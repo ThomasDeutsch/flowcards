@@ -190,11 +190,11 @@ test("guards for blocks will be merged", () => {
         requestAdvanced = true;
     }
 
-    function* blockingThread() {
-        yield bp.block("A");
+    function* blockingThreadA() {
+        yield bp.block("A", (pl: number) => pl === 1000);
     }
 
-    function* notBlockingThread() {
+    function* blockingThreadB() {
         yield bp.block("A", (pl: number) => pl !== 1000);
     }
 
@@ -205,8 +205,43 @@ test("guards for blocks will be merged", () => {
 
     scenarios((enable) => {
         enable(requestThread);
-        enable(blockingThread);
-        enable(notBlockingThread);
+        enable(blockingThreadA);
+        enable(blockingThreadB);
+        enable(waitingThread);
+    });
+
+    expect(requestAdvanced).toBe(false);
+    expect(waitAdvanced).toBe(false);
+});
+
+
+test("if there is a block without a guard, the guard will be ignored", () => {
+    let requestAdvanced = false;
+    let waitAdvanced = false;
+
+
+    function* requestThread() {
+        yield bp.request("A", 1000);
+        requestAdvanced = true;
+    }
+
+    function* blockingThreadA() {
+        yield bp.block("A", (pl: number) => pl !== 1000);
+    }
+
+    function* blockingThreadB() {
+        yield bp.block("A");
+    }
+
+    function* waitingThread() {
+        yield bp.wait("A");
+        waitAdvanced = true;
+    }
+
+    scenarios((enable) => {
+        enable(requestThread);
+        enable(blockingThreadA);
+        enable(blockingThreadB);
         enable(waitingThread);
     });
 

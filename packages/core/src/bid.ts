@@ -98,7 +98,7 @@ function getCategorizedBlocks(blocks: BidArrayDictionary): [Record<string,Functi
         blocks[eventName].forEach((block): void => {
             if(block.guard && !unguarded.has(eventName)) {
                 if(guarded[eventName]) {
-                    guarded[eventName] = (a: any): boolean => (block.guard && block.guard(a) && guarded[eventName](a));
+                    guarded[eventName] = (a: any): boolean => block.guard && !block.guard(a) || !guarded[eventName](a);
                 }
                 else {
                     guarded[eventName] = block.guard;

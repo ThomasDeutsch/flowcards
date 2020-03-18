@@ -179,23 +179,20 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.reset, cancelledPromises);
     }
 
-    public progressRequestResolve(type: ActionType, eventName: string, payload: any): [any, boolean] {
-        if (payload !== null && payload !== undefined) {
-            if (utils.isThenable(payload)) {
-                this._addPromise(eventName, payload);
-                if (this._logger) this._logger.logReaction(this.id, ReactionType.promise);
-                return [payload, true];
-            }
-        }
-        if(type === ActionType.reject) {
-            if(this._thread && this._thread.throw) { 
-                this._thread.throw({eventName: eventName, error: payload});
-            }
+    public addPromise(eventName: string, payload: any): void {
+        this._addPromise(eventName, payload);
+        if (this._logger) this._logger.logReaction(this.id, ReactionType.promise);
+    }
+
+    public advanceRequest(eventName: string, payload: any): void {
+        this._progressThread(eventName, payload, false);
+    }
+
+    public rejectPromise(eventName: string, payload: any): void {
+        if(this._thread && this._thread.throw) { 
+            this._thread.throw({eventName: eventName, error: payload});
             this._progressThread(eventName, payload, true);
-        } else {
-            this._progressThread(eventName, payload, false);
         }
-        return [payload, false];
     }
 
     public progressWaitIntercept(type: BidType, eventName: string, payload: any): boolean {
