@@ -4,7 +4,8 @@ export enum BidType {
     wait = "wait",
     intercept = "intercept",
     block = "block",
-    request = "request"
+    request = "request",
+    pending = "pending"
 }
 
 export interface Bid {
@@ -31,6 +32,7 @@ export interface BidDictionaries {
     [BidType.intercept]: Record<string, Bid>;
     [BidType.request]: Record<string, Bid>;
     [BidType.block]: Record<string, Bid>;
+    [BidType.pending]: Record<string, Bid>;
 }
 
 
@@ -40,26 +42,29 @@ export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | nu
         [BidType.wait]: {},
         [BidType.intercept]: {},
         [BidType.request]: {},
-        [BidType.block]: {}
+        [BidType.block]: {},
+        [BidType.pending]: {}
     }
-    if (Array.isArray(bid)) {
-        return bid.reduce((acc: BidDictionaries, b): BidDictionaries => {
-            if(b) {
-                if(b.type === BidType.request && pendingEvents.has(b.eventName)) return acc;
-                acc[b.type][b.eventName] = {
-                    ...b, 
-                    threadId: threadId
-                };
+    const rec = {...bd, type: BidDictionaryType.array}
+    if(Array.isArray(bid)) {
+        rec.type = BidDictionaryType.array;
+    } else {
+        rec.type = BidDictionaryType.single;
+        bid = [bid];
+    }
+    return bid.reduce((acc: BidDictionaries, b): BidDictionaries => {
+        if(b) {
+            let type = b.type;
+            if(b.type === BidType.request && pendingEvents.has(b.eventName)) {
+                type = BidType.pending;
             }
-            return acc;
-        }, {...bd, type: BidDictionaryType.array});
-    } 
-    if(bid.type === BidType.request && pendingEvents.has(bid.eventName)) return null;
-    return {
-        ...bd, 
-        type: BidDictionaryType.single, 
-        [bid.type]: {[bid.eventName]: {...bid, threadId: threadId}}
-    };
+            acc[type][b.eventName] = {
+                ...b, 
+                threadId: threadId
+            };
+        }
+        return acc;
+    }, rec);
 }
 
 // Bids from multiple threads
@@ -117,6 +122,7 @@ export interface BidDictionariesByType {
     [BidType.wait]: BidArrayDictionary;
     [BidType.request]: BidArrayDictionary;
     [BidType.intercept]: BidArrayDictionary;
+    [BidType.pending]: BidArrayDictionary;
 }
 
 export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByType {
@@ -126,7 +132,8 @@ export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByT
     return {
         [BidType.wait]: getAllBidsForType(BidType.wait, dictionaries, unguardedBlocks, guardedBlocks),
         [BidType.request]: getAllBidsForType(BidType.request, dictionaries, unguardedBlocks, guardedBlocks),
-        [BidType.intercept]: getAllBidsForType(BidType.intercept, dictionaries, unguardedBlocks, guardedBlocks)
+        [BidType.intercept]: getAllBidsForType(BidType.intercept, dictionaries, unguardedBlocks, guardedBlocks),
+        [BidType.pending]: getAllBidsForType(BidType.pending, dictionaries, null, null)
     };
 }
 

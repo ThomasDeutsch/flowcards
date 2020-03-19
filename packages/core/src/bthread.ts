@@ -100,10 +100,10 @@ export class BThread {
     private _cancelPendingPromises(): Set<string> {
         const cancelledPromises = new Set<string>();
         const eventNames = Object.keys(this._pendingPromiseDict);
+        this._pendingEvents = new Set<string>();
         if (eventNames.length > 0) {   
             eventNames.forEach((eventName):void => {
                 delete this._pendingPromiseDict[eventName];
-                this._pendingEvents.delete(eventName);
                 cancelledPromises.add(eventName);
             });
         }
@@ -179,8 +179,13 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.reset, cancelledPromises);
     }
 
-    public addPromise(eventName: string, payload: any): void {
-        this._addPromise(eventName, payload);
+    public addPromise(eventName: string, promise: Promise<any> | null): void {
+        if(promise === null) {
+            this._pendingEvents.add(eventName);
+            this._increaseProgress();
+        } else {
+            this._addPromise(eventName, promise);
+        }
         if (this._logger) this._logger.logReaction(this.id, ReactionType.promise);
     }
 
@@ -188,7 +193,12 @@ export class BThread {
         this._progressThread(eventName, payload, false);
     }
 
-    public rejectPromise(eventName: string, payload: any): void {
+    public rejectPromise(eventName: string, payload: any, doThrow: boolean): void {
+        if(!doThrow) {
+            this._pendingEvents.delete(eventName);
+            this._increaseProgress();
+            return;
+        }
         if(this._thread && this._thread.throw) { 
             this._thread.throw({eventName: eventName, error: payload});
             this._progressThread(eventName, payload, true);

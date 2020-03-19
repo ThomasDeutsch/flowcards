@@ -182,6 +182,29 @@ test("if a request value is a function, it will only be called once.", () => {
 });
 
 
+test("When there are multiple requests with the same event-name, the payload from the higher priority threads gets chosen", () => {
+    let receivedValue;
+
+    function* requestThreadLower() {
+        yield bp.request("A", 1);
+    }
+    function* requestThreadHigher() {
+        yield bp.request("A", 2);
+    }
+
+    function* receiveThread() {
+        receivedValue = yield bp.wait("A");
+    }
+
+    scenarios((enable) => {
+        enable(requestThreadLower);
+        enable(requestThreadHigher);
+        enable(receiveThread);
+    });
+
+    expect(receivedValue).toBe(2);
+});
+
 
 // BLOCK
 //-------------------------------------------------------------------------

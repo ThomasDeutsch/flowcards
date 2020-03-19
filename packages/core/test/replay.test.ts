@@ -6,7 +6,6 @@ import * as bp from "../src/bid";
 import { Logger, scenarios} from "../src/index";
 import { ActionType } from '../src/action';
 
-
 test("an array of actions can be used as a replay", done => {
     let x = 0;
     function* thread1() {
@@ -42,11 +41,16 @@ test("an array of actions can be used as a replay", done => {
 });
 
 
-test("an array of actions can be used as a replay", done => {
-    let triggerReplay: Function = () => null;
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+test("an array of actions can be used as a replay 2", done => {
+    let x = 0;
     function* thread1() {
         yield bp.wait("A");
-        yield bp.wait("B");
+        yield bp.request("B", delay(1));
         yield bp.wait("C");
         done();
     }
@@ -54,22 +58,24 @@ test("an array of actions can be used as a replay", done => {
     scenarios((enable) => {
         enable(thread1);
     }, ({replay}) => {
-        triggerReplay = replay;
-    }, logger);
-    triggerReplay([
-        {
-            type: ActionType.request,
-            eventName: 'A'
-        },
-        {
-            type: ActionType.request,
-            eventName: 'B'
-        },
-        {
-            type: ActionType.request,
-            eventName: 'C'
+        if(x === 0) {
+            x = 1;
+            replay([
+                {
+                    type: ActionType.request,
+                    eventName: 'A'
+                },
+                {
+                    type: ActionType.request,
+                    eventName: 'B'
+                },
+                {
+                    type: ActionType.request,
+                    eventName: 'C'
+                }
+            ]);
         }
-    ]);
+    }, logger);
     expect(logger.getLatestReactions().threadIds).toContain("thread1");
     expect(logger.getLatestAction().eventName).toEqual("C");
 });

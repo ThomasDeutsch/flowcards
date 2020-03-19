@@ -99,7 +99,7 @@ test("when an async request is fulfilled, the thread will not progress until the
     let isAdvanced = false;
 
     function* thread1() {
-        yield bp.request("A", () => delay(1000));
+        yield bp.request("A", () => delay(1));
         isAdvanced = true;
     }
     scenarios((enable) => {
@@ -118,5 +118,68 @@ test("If one promise is resolved, other promises for this yield are cancelled", 
     }
     scenarios((enable) => {
         enable(thread1);
+    });
+});
+
+
+function delayedTwo(ms: number) {
+    return new Promise(resolve => setTimeout(() => resolve(2), ms));
+}
+
+test("If a higher prio thread is a promise, it will also reflect in the lower prio thread", done => {
+    function* thread1() {
+        const val = yield bp.request("A", 1);
+        expect(val).toEqual(2);
+        done();
+        
+    }
+    function* thread2() {
+        yield bp.request("A", () => delayedTwo(1));
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    });
+});
+
+
+function rejectedPromise(ms: number) {
+    return new Promise((_, reject) => setTimeout(() => reject(2), ms));
+}
+
+test("if a request from a higher thread is rejected, the lower thread will use its request instead", done => {
+    function* thread1() {
+        const val = yield bp.request("A", 1);
+        expect(val).toEqual(1);
+        done();
+        
+    }
+    function* thread2() {
+        try{
+            yield bp.request("A", () => rejectedPromise(1));
+        } catch(e) {
+            //no op
+        }
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    });
+});
+
+
+test("a request for the same event can be used as a promise cancellation", done => {
+    function* thread1() {
+        yield bp.request("X", delay(1));
+        yield bp.request('A', 1);
+    }
+    function* thread2() {
+        const val = yield bp.request('A', delay(1000));
+        expect(val).toEqual(1);
+        done();
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
     });
 });

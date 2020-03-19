@@ -19,5 +19,4 @@ test("scenarios can be used without updateCb and logger", done => {
     }, (states) => {
         expect(states.thread["thread1"].nrProgressions).toEqual(1);
     });
-    
 });

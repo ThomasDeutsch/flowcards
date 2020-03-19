@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { scenarioId, ThreadGen, BThread, ThreadDictionary, ThreadState } from './bthread';
-import { getAllBids, BidArrayDictionary, BidDictionariesByType, BidType, BidDictionaries } from './bid';
+import { getAllBids, BidDictionariesByType, BidType, BidDictionaries } from './bid';
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { dispatchByWait } from "./dispatch-by-wait";
@@ -11,27 +11,39 @@ import { getOverridesByComponentName, OverridesByComponent } from './overrides';
 // -----------------------------------------------------------------------------------
 // ADVANCE THREADS
 
-function advanceThreads(
-    threadDictionary: ThreadDictionary,
-    waits: BidArrayDictionary,
-    intercepts: BidArrayDictionary,
-    action: Action
-): void {
-
-   if (action.threadId && threadDictionary[action.threadId]) {
-        if(action.isPromise) {
-            threadDictionary[action.threadId].addPromise(action.eventName, action.payload);
-            return;
-        } else if(action.type === ActionType.request || action.type === ActionType.resolve) {
-            threadDictionary[action.threadId].advanceRequest(action.eventName, action.payload);
-        } else if(action.type === ActionType.reject) {
-            threadDictionary[action.threadId].rejectPromise(action.eventName, action.payload);
+function advanceThreads(threadDictionary: ThreadDictionary, bids: BidDictionariesByType, action: Action): void {
+    if (bids.request[action.eventName]) {
+        if(action.type === ActionType.request) {
+            bids.request[action.eventName].forEach((bid): void => {
+                threadDictionary[bid.threadId].advanceRequest(action.eventName, action.payload);
+            });
+        } else if(action.type === ActionType.promise) {
+            bids.request[action.eventName].forEach((bid): void => {
+                threadDictionary[bid.threadId].addPromise(action.eventName, action.threadId === bid.threadId ? action.payload : null);
+            });
             return;
         }
     }
-    if (waits[action.eventName] && waits[action.eventName].length) {
-        if (intercepts[action.eventName]) {
-            const i = [...intercepts[action.eventName]];
+    if (bids.pending[action.eventName]) {
+
+        if(action.type === ActionType.resolve || action.type === ActionType.request) {
+            if(action.type === ActionType.request && action.eventName === 'supi') {
+                console.log('Ho');
+            }
+            bids.pending[action.eventName].forEach((bid): void => {
+                threadDictionary[bid.threadId].advanceRequest(action.eventName, action.payload);
+            });
+        }
+        else if(action.type === ActionType.reject) {
+            bids.pending[action.eventName].forEach((bid): void => {
+                threadDictionary[bid.threadId].rejectPromise(action.eventName, action.payload, action.threadId === bid.threadId);
+            });
+            return;
+        }
+    }
+    if (bids.wait[action.eventName]) {
+        if (bids.intercept[action.eventName]) {
+            const i = [...bids.intercept[action.eventName]];
             while(i.length) {
                 const nextThread = i.pop();
                 if(nextThread) {
@@ -40,7 +52,7 @@ function advanceThreads(
                 }
             }  
         }
-        waits[action.eventName].forEach(({ threadId }): void => {
+        bids.wait[action.eventName].forEach(({ threadId }): void => {
             threadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, action.payload);
         });
     }
@@ -164,7 +176,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         if (nextActions && nextActions.length > 0) { 
             const [nextAction, ...restActions] = nextActions;
             if (logger) logger.logAction(nextAction);
-            advanceThreads(threadDictionary, bids.wait, bids.intercept, nextAction);
+            advanceThreads(threadDictionary, bids, nextAction);
             setThreadsAndBids();
             return updateLoop(null, restActions);
         }
