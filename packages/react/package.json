@@ -16,7 +16,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "build": "tsc --build",
-    "prepare": "tsc"
+    "prepare": "tsc -p tsconfig.build.json"
   },
   "license": "MIT",
   "devDependencies": {
