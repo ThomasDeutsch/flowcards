@@ -1,5 +1,8 @@
 {
   "extends": "../../tsconfig.json",
-
-  "include": ["src/**/*"]
+  "compilerOptions": {
+    "jsx": "preserve"
+  },
+  "include": ["src/**/*"],
+  "references": [{ "path": "../core" }]
 }

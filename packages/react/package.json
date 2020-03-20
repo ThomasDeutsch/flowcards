@@ -15,11 +15,13 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "npm run clean && npm run compile",
-    "clean": "rm -rf ./build",
-    "compile": "tsc --build"
+    "build": "tsc -b"
   },
   "license": "MIT",
+  "devDependencies": {
+    "@types/react": ">=16.8.0",
+    "react": ">=16.8.0"
+  },
   "peerDependencies": {
     "@types/react": ">=16.8.0",
     "react": ">=16.8.0"
