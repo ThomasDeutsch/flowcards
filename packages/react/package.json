@@ -29,5 +29,8 @@
   "dependencies": {
     "@flowcards/core": "^0.3.4"
   },
-  "gitHead": "85bc560ef8ebd2e32b13fa148ac8582683983136"
+  "gitHead": "c9fbcbcea7891c9d6999d892242b36338763aa6c",
+  "publishConfig": {
+    "access": "public"
+  }
 }
