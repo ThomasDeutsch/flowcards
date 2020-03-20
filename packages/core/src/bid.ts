@@ -93,6 +93,7 @@ function getAllBidsForType(
             }
         });
         return acc;
+        
     }, {});
 }
 
