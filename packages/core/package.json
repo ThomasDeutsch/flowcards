@@ -10,7 +10,8 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "tsc -b"
+    "build": "tsc --build",
+    "prepare": "tsc"
   },
   "author": {
     "name": "Thomas Deutsch",
