@@ -3,15 +3,6 @@
 import { ScaffoldingFunction, createUpdateLoop, ScenarioUtils, DispatchedAction } from './update-loop';
 import { Logger } from "./logger";
 
-
-
-export { OverridesByComponent } from './overrides';
-export { ThreadContext } from './bthread';
-export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, ScenarioUtils } from './update-loop';
-export { Logger } from "./logger";
-export { wait, intercept, block, request } from "./bid";
-export { DispatchByWait } from './dispatch-by-wait';
-
 type UpdateCallback = (utils: ScenarioUtils) => any;
 
 export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback | null, logger?: Logger): void {
@@ -22,3 +13,11 @@ export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback
     const states = updateLoop(null);
     if(updateCb) updateCb(states);
 }
+
+export { OverridesByComponent } from './overrides';
+export { ThreadContext } from './bthread';
+export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, ScenarioUtils } from './update-loop';
+export { Logger } from "./logger";
+export { wait, intercept, block, request } from "./bid";
+export { DispatchByWait } from './dispatch-by-wait';
+
