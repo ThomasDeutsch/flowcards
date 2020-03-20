@@ -91,6 +91,7 @@ typings/
 
 # TypeScript build directory
 build/*
+packages/*/build
 
 # Tests
 __tests__/
