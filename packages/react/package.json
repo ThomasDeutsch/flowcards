@@ -13,10 +13,11 @@
     "test": "test"
   },
   "scripts": {
-    "build": "tsc --build",
     "test": "jest",
     "test:watch": "jest --watch",
-    "tsc": "tsc"
+    "build": "npm run clean && npm run compile",
+    "clean": "rm -rf ./dist",
+    "compile": "tsc --build"
   },
   "license": "MIT",
   "peerDependencies": {

@@ -7,8 +7,10 @@
   "scripts": {
     "test": "lerna run test --since",
     "new-version": "lerna version --conventional-commits --yes",
-    "diff": "lerna diff",
-    "build": "lerna run build"
+    "bootstrap": "lerna bootstrap --hoist",
+    "clean": "lerna run clean",
+    "build": "lerna run build",
+    "pub": "lerna publish"
   },
   "devDependencies": {
     "@types/jest": "^24.0.15",
