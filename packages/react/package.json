@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/react",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -27,7 +27,6 @@
     "@types/react": ">=16.8.0",
     "react": ">=16.8.0"
   },
-  "dependencies": {},
   "gitHead": "57894064ffd80508b3e9f1463b76b1f9e48926f3",
   "publishConfig": {
     "access": "public"
