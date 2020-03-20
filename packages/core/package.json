@@ -17,5 +17,9 @@
     "email": "deutsch.thomas+flowcards@gmail.com",
     "url": "https://thomasdeutsch.de"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "gitHead": "38e5255a7b78839e57581f1d8447e967aa460a68",
+  "publishConfig": {
+    "access": "public"
+  }
 }
