@@ -109,11 +109,11 @@ function setupAndDeleteThreads(
 
 type ReplayDispatchFunction = (actions: Action[]) => void;
 
-export interface ScenarioUtils {
-    dispatchByWait: Record<string, Function>;
+export interface Scenario {
+    dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
     overrides: OverridesByComponent;
-    thread: Record<string,ThreadState>;
+    state: Record<string,ThreadState>;
 }
 
 export interface DispatchedAction {
@@ -122,7 +122,7 @@ export interface DispatchedAction {
     payload?: Action;
 }
 
-export type UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null) => ScenarioUtils;
+export type UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null) => Scenario;
 
 
 export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function, logger?: Logger): UpdateLoopFunction {
@@ -154,7 +154,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
 
     setThreadsAndBids(); // initial setup
 
-    const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): ScenarioUtils => {
+    const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): Scenario => {
         loopCount++;
         if (dAction && (dAction.id === loopCount)) {
             if (dAction.replay) {
@@ -182,10 +182,10 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         }
         const dbw = dispatchByWait(actionDispatch, bids.wait)
         return {
-            dispatchByWait: dbw,
+            dispatch: dbw,
             replay: replayDispatch,
             overrides: getOverridesByComponentName(orderedThreadIds, dbw, threadDictionary),
-            thread: Object.keys(threadDictionary).reduce((acc: Record<string, ThreadState>, threadId: string): Record<string, ThreadState> => {
+            state: Object.keys(threadDictionary).reduce((acc: Record<string, ThreadState>, threadId: string): Record<string, ThreadState> => {
                 acc[threadId] = threadDictionary[threadId].state;
                 return acc;
             }, {})
