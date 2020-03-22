@@ -16,8 +16,7 @@ function delay(ms: number) {
 
 test("when a promise is resolved, it will dispatch an ExternalAction.", done => {
 
-    const testLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
+    const testLoop = (enable: ScaffoldingFunction): void => {
         const updateLoop = createUpdateLoop(enable, (action: DispatchedAction) => {
             if(action.payload) {
                 expect(action.payload.type).toBe('resolve');
@@ -26,9 +25,8 @@ test("when a promise is resolved, it will dispatch an ExternalAction.", done => 
                 expect(action.payload.payload).toBe('data');
             }
             updateLoop(action);
-        }, logger);
+        });
         updateLoop(null);
-        return logger;
     };
 
     function* thread1() {
@@ -44,13 +42,11 @@ test("when a promise is resolved, it will dispatch an ExternalAction.", done => 
 
 describe('external actions', () => {
 
-    const testLoop = (enable: ScaffoldingFunction): Logger => {
-        const logger = new Logger();
+    const testLoop = (enable: ScaffoldingFunction): void => {
         const updateLoop = createUpdateLoop(enable, (a: DispatchedAction) => {
             updateLoop(a, null);
-        }, logger);
+        });
         updateLoop(null);
-        return logger;
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventName", done => {

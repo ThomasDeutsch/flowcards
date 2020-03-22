@@ -114,6 +114,7 @@ export interface Scenario {
     replay: ReplayDispatchFunction;
     overrides: OverridesByComponent;
     state: Record<string,ThreadState>;
+    logger: Logger;
 }
 
 export interface DispatchedAction {
@@ -125,11 +126,12 @@ export interface DispatchedAction {
 export type UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null) => Scenario;
 
 
-export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function, logger?: Logger): UpdateLoopFunction {
+export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function): UpdateLoopFunction {
     const threadDictionary: ThreadDictionary = {};
     let orderedThreadIds: string[];
     let bids: BidDictionariesByType;
     let loopCount = 0;
+    const logger = new Logger();
 
     const actionDispatch: DispatchFunction = (a: Action): void => {
         const x: DispatchedAction = {
@@ -188,7 +190,8 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             state: Object.keys(threadDictionary).reduce((acc: Record<string, ThreadState>, threadId: string): Record<string, ThreadState> => {
                 acc[threadId] = threadDictionary[threadId].state;
                 return acc;
-            }, {})
+            }, {}),
+            logger: logger
         };
     };
     return updateLoop;

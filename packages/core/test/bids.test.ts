@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { Logger, scenarios } from "../src/index";
+import { scenarios } from "../src/index";
 
 
 
@@ -15,18 +16,19 @@ test("a requested event that is not blocked will advance", () => {
         yield bp.request("A");
         hasAdvanced = true;
     }
-    const logger = new Logger();
+
     scenarios((enable) => {
         enable(thread1);
-    }, null, logger);
-    expect(hasAdvanced).toBe(true);
-    expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactions().threadIds).toContain("thread1");
+    }, ({logger})=> {
+        expect(hasAdvanced).toBe(true);
+        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(logger.getLatestReactions().threadIds).toContain("thread1");
+    });
 });
 
 
 test("a request will also advance waiting threads", () => {
-    let requestProgressed, waitProgressed;
+    let requestProgressed: any, waitProgressed: any;
 
     function* thread1() {
         yield bp.request("A");
@@ -37,17 +39,16 @@ test("a request will also advance waiting threads", () => {
         waitProgressed = true;
     }
 
-    const logger = new Logger();
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    }, null, logger);
-
-    expect(requestProgressed).toBe(true);
-    expect(waitProgressed).toBe(true);
-    expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactions().threadIds).toContain("thread1");
-    expect(logger.getLatestReactions().threadIds).toContain("thread2");
+    }, ({logger}) => {
+        expect(requestProgressed).toBe(true);
+        expect(waitProgressed).toBe(true);
+        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(logger.getLatestReactions().threadIds).toContain("thread1");
+        expect(logger.getLatestReactions().threadIds).toContain("thread2");
+    });
 });
 
 
@@ -56,23 +57,22 @@ test("waits will return the value that has been requested", () => {
         yield bp.request("A", 1000);
     }
 
-    let receivedValue = null;
+    let receivedValue: any = null;
 
     function* receiveThread() {
         receivedValue = yield bp.wait("A");
     }
 
-    const logger = new Logger();
     scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
-    }, null, logger);
-
-    expect(receivedValue).toBe(1000);
-    expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestAction().payload).toBe(1000);
-    expect(logger.getLatestReactions().threadIds).toContain("requestThread");
-    expect(logger.getLatestReactions().threadIds).toContain("receiveThread");
+    }, ({logger}) => {
+        expect(receivedValue).toBe(1000);
+        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(logger.getLatestAction().payload).toBe(1000);
+        expect(logger.getLatestReactions().threadIds).toContain("requestThread");
+        expect(logger.getLatestReactions().threadIds).toContain("receiveThread");
+    });
 });
 
 

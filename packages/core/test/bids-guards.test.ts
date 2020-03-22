@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { scenarios, Logger } from '../src/index';
+import { scenarios } from '../src/index';
 
 
 
@@ -25,18 +25,16 @@ test("a wait is not advanced, if the guard returns false", () => {
         yield bp.wait("A", (pl: number) => pl === 1000);
         waitCAdvanced = true;
     }
-
-    const logger = new Logger();
     scenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    }, null, logger);
-
-    expect(requestAdvanced).toBe(true);
-    expect(waitBAdvanced).toBe(false);
-    expect(waitCAdvanced).toBe(true);
-    expect(logger.getLatestAction().eventName).toBe("A");
+    }, ({logger}) => {
+        expect(requestAdvanced).toBe(true);
+        expect(waitBAdvanced).toBe(false);
+        expect(waitCAdvanced).toBe(true);
+        expect(logger.getLatestAction().eventName).toBe("A");
+    });
 });
 
 
@@ -61,17 +59,16 @@ test("an intercept is not applied, if the guard returns false.", () => {
         waitCAdvanced = true;
     }
 
-    const logger = new Logger();
     scenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    }, null, logger);
-
-    expect(requestAdvanced).toBe(true);
-    expect(waitBAdvanced).toBe(true);
-    expect(waitCAdvanced).toBe(false);
-    expect(logger.getLatestAction().eventName).toBe("A");
+    }, ({logger}) => {
+        expect(requestAdvanced).toBe(true);
+        expect(waitBAdvanced).toBe(true);
+        expect(waitCAdvanced).toBe(false);
+        expect(logger.getLatestAction().eventName).toBe("A");
+    });
 });
 
 
@@ -101,19 +98,18 @@ test("if an intercept is not applied, than the next intercept will get the event
         waitDAdvanced = true;
     }
 
-    const logger = new Logger();
     scenarios((enable) => {
         enable(requestThread);
         enable(waitThread);
         enable(interceptPrioLowThread);
         enable(interceptPrioHighThread);
-    }, null, logger);
-
-    expect(requestAdvanced).toBe(true);
-    expect(waitBAdvanced).toBe(false);
-    expect(waitCAdvanced).toBe(true);
-    expect(waitDAdvanced).toBe(false);
-    expect(logger.getLatestAction().eventName).toBe("A");
+    }, ({logger}) => {
+        expect(requestAdvanced).toBe(true);
+        expect(waitBAdvanced).toBe(false);
+        expect(waitCAdvanced).toBe(true);
+        expect(waitDAdvanced).toBe(false);
+        expect(logger.getLatestAction().eventName).toBe("A");
+    });
 });
 
 

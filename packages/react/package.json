@@ -15,14 +15,10 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "tsc --build",
-    "prepare": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
   },
   "license": "MIT",
-  "devDependencies": {
-    "@types/react": ">=16.8.0",
-    "react": ">=16.8.0"
-  },
   "dependencies": {
     "@flowcards/core": "^0.3.10"
   },

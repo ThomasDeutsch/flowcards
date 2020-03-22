@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { Logger, scenarios} from "../src/index";
+import { scenarios } from "../src/index";
 
 
 function delay(ms: number) {
@@ -14,13 +14,13 @@ test("A promise can be requested", () => {
     function* thread1() {
         yield bp.request("A", delay(100));
     }
-    const logger = new Logger();
     scenarios((enable) => {
         enable(thread1);
-    }, null, logger);
-    expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactions().threadIds).toContain("thread1");
-    expect(logger.getLatestReactions().type.thread1).toBe("promise");
+    }, ({logger}) => {
+        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(logger.getLatestReactions().threadIds).toContain("thread1");
+        expect(logger.getLatestReactions().type.thread1).toBe("promise");
+    });
 });
 
 
@@ -28,13 +28,13 @@ test("A promise-function can be requested", () => {
     function* thread1() {
         yield bp.request("A", () => delay(100));
     }
-    const logger = new Logger();
     scenarios((enable) => {
         enable(thread1);
-    }, null, logger);
-    expect(logger.getLatestAction().eventName).toBe("A");
-    expect(logger.getLatestReactions().threadIds).toContain("thread1");
-    expect( logger.getLatestReactions().type.thread1).toBe("promise");
+    }, (({logger}) => {
+        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(logger.getLatestReactions().threadIds).toContain("thread1");
+        expect(logger.getLatestReactions().type.thread1).toBe("promise");
+    }));
 });
 
 

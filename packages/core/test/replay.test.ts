@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { Logger, scenarios} from "../src/index";
+import { scenarios} from "../src/index";
 import { ActionType } from '../src/action';
 
 test("an array of actions can be used as a replay", done => {
@@ -14,10 +14,10 @@ test("an array of actions can be used as a replay", done => {
         yield bp.wait("C");
         done();
     }
-    const logger = new Logger();
+
     scenarios((enable) => {
         enable(thread1);
-    }, ({replay}) => {
+    }, ({replay, logger}) => {
         if(x === 0) {
             x = 1;
             replay([
@@ -34,8 +34,11 @@ test("an array of actions can be used as a replay", done => {
                     eventName: 'C'
                 }
             ]);
+        } else {
+            expect(logger.getLatestReactions().threadIds).toContain("thread1");
+            expect(logger.getLatestAction().eventName).toEqual("C");
         }
-    }, logger);
-    expect(logger.getLatestReactions().threadIds).toContain("thread1");
-    expect(logger.getLatestAction().eventName).toEqual("C");
+
+    });
+
 });
