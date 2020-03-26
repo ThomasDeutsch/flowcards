@@ -11,13 +11,13 @@ export enum ReactionType {
 interface Reaction {
     threadId: string;
     type: ReactionType;
-    cancelledEvents?: Set<string>;
-    pendingEvents?: Set<string>;
+    cancelledEvents: Set<string> | null;
+    pendingEvents: Set<string> | null;
 }
 
 interface ActionLog {
     pastActions: Action[];
-    latestReactions: ReactionInfo;
+    latestReactions: LatestReactionInfo;
 }
 
 interface ActionAndReactions {
@@ -25,7 +25,7 @@ interface ActionAndReactions {
     reactionDictionary: Record<string, Reaction>;
 }
 
-interface ReactionInfo {
+interface LatestReactionInfo {
     threadIds: Set<string>;
     pendingEvents: Set<string>;
     type: Record<string, ReactionType>;
@@ -51,7 +51,7 @@ export class Logger {
         this._latestActionAndReactions = this._getNewActionsReactions(action);
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledEvents?: Set<string>, pendingEvents?: Set<string>): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledEvents: Set<string> | null = null, pendingEvents: Set<string> | null = null): void {
         const reaction: Reaction = {
             type: type,
             threadId: threadId,
@@ -75,7 +75,7 @@ export class Logger {
         return this._latestActionAndReactions.action;
     }
 
-    public getLatestReactions(): ReactionInfo  {
+    public getLatestReactions(): LatestReactionInfo  {
         const reactionThreadIds = Object.keys(this._latestActionAndReactions.reactionDictionary);
         return {
             threadIds: new Set(reactionThreadIds),

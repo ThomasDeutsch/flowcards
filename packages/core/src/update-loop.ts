@@ -182,7 +182,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             setThreadsAndBids();
             return updateLoop(null, restActions);
         }
-        const dbw = dispatchByWait(actionDispatch, bids.wait)
+        const dbw = dispatchByWait(actionDispatch, bids.wait);
         return {
             dispatch: dbw,
             replay: replayDispatch,
