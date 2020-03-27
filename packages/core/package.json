@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/core",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "description": "",
   "main": "build/index.js",
   "types": "build/index.d.ts",
