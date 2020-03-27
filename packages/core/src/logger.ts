@@ -77,4 +77,8 @@ export class Logger {
     public getPendingEventsByThreadId(): Record<string, Set<string>> {
         return this._pendingEventsByThreadId;
     }
+
+    public getPendingEventNames(): string[] {
+        return Object.keys(this._pendingEventsByThreadId).reduce((acc: string[], threadId): string[] => [...acc, ...Array.from(this._pendingEventsByThreadId[threadId])], []);
+    }
 }
