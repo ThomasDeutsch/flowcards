@@ -18,8 +18,8 @@ test("A promise can be requested", () => {
         enable(thread1);
     }, ({logger}) => {
         expect(logger.getLatestAction().eventName).toBe("A");
-        expect(logger.getLatestReactions().threadIds).toContain("thread1");
-        expect(logger.getLatestReactions().type.thread1).toBe("promise");
+        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
+        expect(logger.getLatestReactionsByThreadId().thread1.type).toBe("promise");
     });
 });
 
@@ -32,8 +32,8 @@ test("A promise-function can be requested", () => {
         enable(thread1);
     }, (({logger}) => {
         expect(logger.getLatestAction().eventName).toBe("A");
-        expect(logger.getLatestReactions().threadIds).toContain("thread1");
-        expect(logger.getLatestReactions().type.thread1).toBe("promise");
+        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
+        expect(logger.getLatestReactionsByThreadId().thread1.type).toBe("promise");
     }));
 });
 

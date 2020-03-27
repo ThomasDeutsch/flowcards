@@ -35,7 +35,7 @@ test("an array of actions can be used as a replay", done => {
                 }
             ]);
         } else {
-            expect(logger.getLatestReactions().threadIds).toContain("thread1");
+            expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
             expect(logger.getLatestAction().eventName).toEqual("C");
         }
 

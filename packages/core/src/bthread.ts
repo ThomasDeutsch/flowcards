@@ -186,7 +186,7 @@ export class BThread {
         } else {
             this._addPromise(eventName, promise);
         }
-        if (this._logger) this._logger.logReaction(this.id, ReactionType.promise, null, this.pendingEvents);
+        if (this._logger) this._logger.logReaction(this.id, ReactionType.promise, null, this._pendingEvents);
     }
 
     public advanceRequest(eventName: string, payload: any): void {

@@ -15,30 +15,20 @@ interface Reaction {
     pendingEvents: Set<string> | null;
 }
 
-interface ActionLog {
-    pastActions: Action[];
-    latestReactions: LatestReactionInfo;
-}
-
 interface ActionAndReactions {
     action: Action;
-    reactionDictionary: Record<string, Reaction>;
-}
-
-interface LatestReactionInfo {
-    threadIds: Set<string>;
-    pendingEvents: Set<string>;
-    type: Record<string, ReactionType>;
+    reactionByThreadId: Record<string, Reaction>;
 }
 
 export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
+    private _pendingEventsByThreadId: Record<string, Set<string>> = {};
 
     private _getNewActionsReactions(action?: Action): ActionAndReactions {
         return this._latestActionAndReactions = {
             action: action ? {...action} : { eventName: "", type: ActionType.init },
-            reactionDictionary: {}
+            reactionByThreadId: {}
         }
     }
 
@@ -58,7 +48,12 @@ export class Logger {
             cancelledEvents: cancelledEvents,
             pendingEvents: pendingEvents
         };
-        this._latestActionAndReactions.reactionDictionary[reaction.threadId] = reaction;
+        if(pendingEvents) {
+            this._pendingEventsByThreadId[threadId] = pendingEvents;
+        } else {
+            delete this._pendingEventsByThreadId[threadId];
+        }
+        this._latestActionAndReactions.reactionByThreadId[reaction.threadId] = reaction;
     }
 
     public getCompleteLog() : ActionAndReactions[] {
@@ -75,29 +70,11 @@ export class Logger {
         return this._latestActionAndReactions.action;
     }
 
-    public getLatestReactions(): LatestReactionInfo  {
-        const reactionThreadIds = Object.keys(this._latestActionAndReactions.reactionDictionary);
-        return {
-            threadIds: new Set(reactionThreadIds),
-            pendingEvents: Object.keys(reactionThreadIds).reduce((acc, threadId: string): Set<string> => {
-                const thread = this._latestActionAndReactions.reactionDictionary[threadId];
-                const pe = thread ? this._latestActionAndReactions.reactionDictionary[threadId].pendingEvents : null;
-                if(pe) {
-                    return new Set([...acc, ...pe]);
-                }
-                return acc;
-            }, new Set<string>()),
-            type: reactionThreadIds.reduce((acc: Record<string, ReactionType>, threadId: string): Record<string, ReactionType> => {
-                acc[threadId] = this._latestActionAndReactions.reactionDictionary[threadId].type;
-                return acc;
-            }, {})
-        }
+    public getLatestReactionsByThreadId(): Record<string, Reaction>  {
+        return this._latestActionAndReactions.reactionByThreadId
     }
 
-    public getActionLog(): ActionLog {
-        return {
-            pastActions: [...this._log.map((x):Action => x.action), this._latestActionAndReactions.action],
-            latestReactions: this.getLatestReactions()
-        }
+    public getPendingEventsByThreadId(): Record<string, Set<string>> {
+        return this._pendingEventsByThreadId;
     }
 }
