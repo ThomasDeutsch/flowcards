@@ -1,6 +1,6 @@
 # flowcards
 
-using scenarios to enable modular behavior.
+using scenarios and enable modular behavior.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems.<br/>
@@ -13,10 +13,10 @@ for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
 Behavior is described in an intra-object (within object) fashion.
 
-flowcards enable behavior descriptions as inter-object flows.<br/>
-You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a meaningful goal.<br/>
-In this case, a system is not defined by the reactivity of each component,<br/>
-but by scenarios / flows that are enabled.<br/>
+On the other hand, flowcards enable behavior descriptions as inter-object flows.<br/>
+You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
+In this case, a system is not defined by the reactivity of each component / object,<br/>
+but by the sum of all scenarios / flows that are enabled.<br/>
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
 
 ## Packages
@@ -24,34 +24,40 @@ flowcards is based on [behavioral programming principles](http://www.wisdom.weiz
 - [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
 - [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks (core included)
 
-## Quick Start
+## Quick Start [🚀 `codesandbox`](https://codesandbox.io/s/hello-flowcards-7qkxs)
 
 ```
 npm install @flowcards/core
 ```
 
 ```javascript
-import { scenarios, request, wait } from @flowcards/core;
+import { scenarios, request, wait, ThreadContext } from "@flowcards/core";
 
-const delayed = (data, ms) => new Promise(r => setTimeout(() => r(data), ms));
+const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(data), ms));
 
-// JS Generators define your scenarios
 function* sender() {
-    yield request('event1', 'well done!'); // request an event
-    yield request('event2', delayed('you are making progress', 2000)); // async request
+  yield request("greetingOne", "thank you for ..."); // request
+  yield request("greetingTwo", delayed("taking a look at flowcards", 2000)); // async request
 }
 
-function* receiver() {
-    let message = yield wait('event1'); // wait for event
-    console.log(message);
-    message = yield wait('event2'); // wait for async event
-    console.log(message);
+function* receiver(this: ThreadContext) {
+  let msg = yield wait("greetingOne"); // wait for event
+  this.show("messagebox", () => `message: ${msg}`);
+  msg = yield wait("greetingTwo"); // wait for async event
+  this.show("messagebox", () => `message: "${msg}"`);
 }
 
-scenarios(enable => {
+scenarios(
+  enable => {
     enable(sender);
     enable(receiver);
-});
+  },
+  s => {
+    for (let id in s.overrides) {
+      document.getElementById(id).innerHTML = s.overrides[id].overrides[0];
+    }
+  }
+);
 ```
 
 ## Why?
