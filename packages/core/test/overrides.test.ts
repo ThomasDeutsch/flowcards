@@ -5,10 +5,12 @@ import * as bp from "../src/bid";
 import { scenarios, ThreadContext } from '../src/index';
 
 
-test("a state can be created that will listen for requests in its name", () => {
+test("overrides are created with .show or .hide", () => {
 
     function* thread1(this: ThreadContext) {
         this.show("Button", () => () => null);
+        this.show("Test", () => () => null);
+        this.hide("HiddenComponent");
         yield bp.wait("event");
     }
 
@@ -16,5 +18,22 @@ test("a state can be created that will listen for requests in its name", () => {
         enable(thread1);
     }, (scenario) => {
         expect(scenario.overrides["Button"]).toBeDefined();
+        expect(scenario.overrides["Test"]).toBeDefined();
+        expect(scenario.overrides["HiddenComponent"]).toBeDefined();
+    });
+});
+
+
+test("overrides are removed when the thread progresses.", () => {
+
+    function* thread1(this: ThreadContext) {
+        this.show("Button", () => () => null);
+        yield bp.request("event");
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+    }, (scenario) => {
+        expect(scenario.overrides["Button"]).toBeUndefined();
     });
 });

@@ -57,6 +57,7 @@ function advanceThreads(threadDictionary: ThreadDictionary, bids: BidDictionarie
 
 function changeStates(stateDictionary: StateDictionary, action: Action): void {
     if ((action.type === ActionType.request) && (action.eventName in stateDictionary)) {
+        stateDictionary[action.eventName].previous = stateDictionary[action.eventName].value;
         stateDictionary[action.eventName].value = action.payload;
     }
 }
@@ -66,14 +67,15 @@ function changeStates(stateDictionary: StateDictionary, action: Action): void {
 // UPDATE & DELETE THREADS
 
 
-interface State {
+interface EventState {
     value: any;
+    previous: any;
 }
-type StateDictionary = Record<string, State>;
+type StateDictionary = Record<string, EventState>;
 
 
 type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => ThreadState;
-type EnableStateFunctionType = (id: string, initialValue: any) => State;
+type EnableStateFunctionType = (id: string, initialValue: any) => EventState;
 
 
 export type ScaffoldingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
@@ -105,10 +107,10 @@ function setupAndDeleteThreads(
         return threadDictionary[id].state;
     };
 
-    const enableState: EnableStateFunctionType = (id: string, initialValue: any): State => {
+    const enableState: EnableStateFunctionType = (id: string, initialValue: any): EventState => {
         stateIds.add(id);
         if(!stateDictionary[id]) {
-            stateDictionary[id] = {value: initialValue};
+            stateDictionary[id] = {value: initialValue, previous: null};
         }
         return stateDictionary[id];
     }
@@ -140,7 +142,7 @@ export interface Scenario {
     dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
     overrides: OverridesByComponent;
-    state: Record<string, State>;
+    state: Record<string, EventState>;
     thread: Record<string, ThreadState>;
     logger: Logger;
 }
@@ -218,7 +220,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             acc[threadId] = threadDictionary[threadId].state;
             return acc;
         }, {});
-        const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, State>, stateId: any): Record<string, State> => {
+        const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, EventState>, stateId: any): Record<string, EventState> => {
             acc[stateId] = stateDictionary[stateId].value;
             return acc;
         }, {});
