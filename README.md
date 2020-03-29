@@ -6,7 +6,7 @@ You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br
 They both enable ways to describe & model reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 
-Instead of describing reactivty object-by-object (like xState), we can describe it differently.<br/>
+We can describe reactivty object-by-object (like xState). But there is another way.<br/>
 You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
 A user-flow is an intra-object description of a reactive system.<br/>
 Instead of describing the full reactivity of each component (object-by-object), we define a reactive system flow-by-flow.<br/>
