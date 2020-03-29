@@ -11,7 +11,7 @@ You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g
 A user-flow is an intra-object description of a reactive system.<br/>
 Instead of describing the full reactivity of each component (object-by-object),<br/>
 we can define a reactive system by the scenarios we want to enable (flow-by-flow).<br/>
-This approach is used by flowcards.<br/>
+This is what flowcards is all about.<br/>
 
 With flowcards, you can organize code by requirement/scenario.<br/>
 [🔰 this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will get you started.<br/>
