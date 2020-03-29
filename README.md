@@ -6,15 +6,16 @@ You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br
 They both enable ways to describe & model reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 
-We can describe reactivty object-by-object (like xState). But there is another way.<br/>
+Reactivty can be described object-by-object (like xState), or flow-by-flow.<br/>
 You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
 A user-flow is an intra-object description of a reactive system.<br/>
-Instead of describing the full reactivity of each component (object-by-object), we define a reactive system flow-by-flow.<br/>
-This idea is used by flowcards.<br/>
+Instead of describing the full reactivity of each component (object-by-object),<br/>
+we can define a reactive system by the scenarios we want to enable (flow-by-flow).<br/>
+This approach is used by flowcards.<br/>
 
-By using a flow-by-flow approach, we create new possibilites to describe behaviour in a modular fashion.<br/>
-You are able to organize your code not only on a compoent-level, but also by requirement/scenario.
+With flowcards, we are able to organize code not only on a compoent-level, but also by requirement/scenario.<br/>
 [This tutorial](https://github.com) will demonstrate this fact.<br/>
+By doing so, we create a common ground for requirements, code and tests.
 <br/>
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
 <br/>
