@@ -6,18 +6,11 @@ You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br
 They both enable ways to describe & model reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 
-## 
-
-finite-state machines and statecharts (XState), provide a way<br/>
-for specifying the behavior of the system per object (intra-object).<br/>
-For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
-
-flowcards is a bit different.<br/>
 You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
 A user-flow is not bound to a single object/component.<br/>
 It describes behaviour accross multiple objects (inter-object).<br/> 
-This idea is used by flowcards. Instead of describing behaviour object by object, we describe it flow by flow.<br/>
-By using flows (aka: scenarios), you are able to translate software-requirements to central elements in your code.<br/>
+This idea is used by flowcards. Instead of describing reactivty object-by-object, we describe it flow-by-flow.<br/>
+By using flows (aka: scenarios), you are able to translate software-requirements to central code-elements.<br/>
 See for yourself. [This tutorial](https://github.com) will get you started.<br/>
 <br/>
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
@@ -64,3 +57,5 @@ scenarios(
   }
 );
 ```
+
+
