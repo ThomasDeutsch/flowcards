@@ -30,7 +30,7 @@ flowcards is based on [behavioral programming principles](http://www.wisdom.weiz
 npm install @flowcards/core
 ```
 
-```javascript
+```ts
 import { scenarios, request, wait, ThreadContext } from "@flowcards/core";
 
 const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(data), ms));
