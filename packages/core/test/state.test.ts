@@ -60,7 +60,6 @@ test("a state will return a ref. Passed to a function, it will not update on cha
 
 
 test("disabled states will get deleted", () => {
-    let st: any;
 
     function* thread1() {
         yield bp.request("count", 2);
@@ -71,7 +70,7 @@ test("disabled states will get deleted", () => {
     scenarios((enable, state) => {
         const threadState = enable(thread1);
         if(threadState.nrProgressions != 2) {
-            st = state("count", 0);
+            state("count", 0);
         }
     }, (scenario) => {
         expect(scenario.state["count"]).toEqual(0);
@@ -80,7 +79,6 @@ test("disabled states will get deleted", () => {
 
 
 test("if there are multiple state changes at the same time, the highest priority change will win.", () => {
-    let st: any;
 
     function* threadLow() {
         yield bp.request("count", 2);
@@ -90,7 +88,7 @@ test("if there are multiple state changes at the same time, the highest priority
     }
 
     scenarios((enable, state) => {
-        st = state("count", 0);
+        state("count", 0);
         enable(threadLow);
         enable(threadHigh);
     }, (scenario) => {
@@ -110,7 +108,7 @@ test("the state function will also return the previous value", () => {
     scenarios((enable, state) => {
         st = state("count", 0);
         enable(thread);
-    }, (scenario) => {
+    }, () => {
         expect(st.previous).toEqual(1);
     });
 });
