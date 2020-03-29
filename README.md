@@ -15,8 +15,8 @@ This approach is used by flowcards.<br/>
 
 With flowcards, we are able to organize code not only on a compoent-level, but also by requirement/scenario.<br/>
 [This tutorial](https://github.com) will demonstrate this fact.<br/>
-By doing so, we create a common ground for requirements, code and tests.
-<br/>
+By doing so, we create a common ground for requirements, code and tests.<br/>
+
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
 <br/>
 
