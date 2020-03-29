@@ -24,7 +24,7 @@ flowcards is based on [behavioral programming principles](http://www.wisdom.weiz
 - [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
 - [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks (core included)
 
-## Quick Start [🚀 `codesandbox`](https://codesandbox.io/s/hello-flowcards-7qkxs)
+## Quick Start [` -> codesandbox`](https://codesandbox.io/s/hello-flowcards-7qkxs)
 
 ```
 npm install @flowcards/core
