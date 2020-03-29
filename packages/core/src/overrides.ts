@@ -20,7 +20,7 @@ export function getOverridesByComponentName(orderedThreadIds: string[], dispatch
                 const override = overrideFnByComponentName[name](dispatchByWait, threadDictionary[id].pendingEvents);
                 if (!o[name]) o[name] = { id: "", overrides: [] };
                 o[name].id = `${o[name].id}${id}${threadDictionary[id].state.nrProgressions}`;
-                o[name].overrides.push(override[name]);
+                o[name].overrides.push(override);
             });
         }
     });
