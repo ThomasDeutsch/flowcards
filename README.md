@@ -1,6 +1,6 @@
 # flowcards
 
-using scenarios and enable modular behavior.
+a tool to describe behaviour - flow by flow.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems.<br/>
@@ -13,16 +13,20 @@ for specifying the behavior of the system per object / component.<br/>
 For example, take a look at a [traffic-light machine](https://github.com/davidkpiano/xstate#finite-state-machines).<br>
 Behavior is described in an intra-object (within object) fashion.
 
-On the other hand, flowcards enable behavior descriptions as inter-object flows.<br/>
-You know this from UX [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
-In this case, a system is not defined by the reactivity of each component / object,<br/>
-but by the sum of all scenarios / flows that are enabled.<br/>
+flowcards is a bit different.<br/>
+You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
+A user-flow is not bound to a single component. It describes behaviour as an inter-object flow.<br/> 
+This idea is used by flowcards. Instead of describing behaviour object by object, we describe it flow by flow.<br/>
+By enabling modular flows (scenarios) we can describe software-requirements as a central elements in our code.
+This small tutorial demonstrates this fact.
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
+
 
 ## Packages
 
 - [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
 - [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks (core included)
+<br/>
 
 ## Quick Start [` -> codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
 
@@ -59,16 +63,3 @@ scenarios(
   }
 );
 ```
-
-## Why?
-
-Traditionally, we make changes to parts of our system, so that a requirement is fulfilled.<br/>
-For Example: We made changes to 3 components and a user now gets a message after he logged out.<br/>
-5 month into your project, you look at one of those components and you are not able to tell<br/>
-why there is so much code - simply because you do not know about all the scenarios<br/>
-you have enabled that touch this component.<br/>
-This will make it very difficult to change your code, even with tests.<br/>
-
-flowcards will enable you to keep requirements as modular behaviors in your code.<br/>
-This changes perspectives, because you are not complecting scenario-parts into your components.<br/>
-What the software does, can be found right at the very top of your application.<br/>
