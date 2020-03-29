@@ -14,7 +14,7 @@ we can define a reactive system by the scenarios we want to enable (flow-by-flow
 This approach is used by flowcards.<br/>
 
 With flowcards, you can organize code by requirement/scenario.<br/>
-[This tutorial](https://github.com) will demonstrate this fact.<br/>
+[This tutorial](https://github.com) will get you started.<br/>
 
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
 <br/>
