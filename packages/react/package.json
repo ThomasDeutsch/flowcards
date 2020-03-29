@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/react",
-  "version": "0.3.15",
+  "version": "0.4.0",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -20,7 +20,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@flowcards/core": "^0.3.14"
+    "@flowcards/core": "^0.4.0"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0",
