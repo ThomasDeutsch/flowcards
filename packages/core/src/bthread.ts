@@ -23,6 +23,7 @@ export interface ThreadContext {
     show: Function;
     setState: Function;
     state: Function;
+    hide: Function;
 }
 
 export function scenarioId(generator: ThreadGen, key?: string | number): string {
@@ -59,16 +60,19 @@ export class BThread {
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
-    private _override: Function | null;
-    public get override(): Function | null {
-        return this._override;
+    private _overrideByComponentName: Record<string, Function> = {};
+    public get overrideByComponentName(): Record<string, Function> {
+        return this._overrideByComponentName;
     }
 
     private _getThreadContext(): ThreadContext {
         return {
             key: this.key,
-            show: (overrideFn: Function): void => {
-                this._override = overrideFn;
+            show: (defaultComponentName: string, overrideFn: Function): void => {
+                this._overrideByComponentName[defaultComponentName] = overrideFn;
+            },
+            hide: (defaultComponentName: string): void => {
+                this._overrideByComponentName[defaultComponentName] = (): Function => (): null => null;
             },
             setState: (val: any): void => {
                 this._stateValue = val;
@@ -82,7 +86,7 @@ export class BThread {
         if (key || key === 0) {
             this.key = key;
         }
-        this._override = null;
+        this._overrideByComponentName = {};
         this._dispatch = dispatch;
         this._generator = generator.bind(this._getThreadContext());
         this._currentArguments = args;
@@ -112,7 +116,7 @@ export class BThread {
 
     private _processNextBid(returnValue?: any): Set<string> {
         const cancelledPromises = this._cancelPendingPromises();
-        this._override = null;
+        this._overrideByComponentName = {};
         const next: any = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;
