@@ -13,7 +13,7 @@ Instead of describing the full reactivity of each component (object-by-object),<
 we can define a reactive system by the scenarios we want to enable (flow-by-flow).<br/>
 This approach is used by flowcards.<br/>
 
-flowcards, enables you to organize code by requirement/scenario.<br/>
+With flowcards, you can organize code by requirement/scenario.<br/>
 [This tutorial](https://github.com) will demonstrate this fact.<br/>
 
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).
