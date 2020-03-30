@@ -1,3 +1,9 @@
-1. define flow-by-flow
-2. show requirements -> code transition
-3. first runnin example with codesandbox link
+# From Requirements to Code
+This tutorial will demonstrate the basic flowcards building blocks.
+
+- requirements from todo-mvc.
+- list the requirements.
+
+- step 1. the static site
+- adding the "no todo" requirement.
+
