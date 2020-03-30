@@ -38,28 +38,21 @@ import { scenarios, request, wait, ThreadContext } from "@flowcards/core";
 const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(data), ms));
 
 function* sender() {
-  yield request("greetingOne", "thank you for ..."); // request
-  yield request("greetingTwo", delayed("taking a look at flowcards", 2000)); // async request
+  yield request("eventOne", "thank you for ..."); // request
+  yield request("eventTwo", delayed("taking a look at flowcards", 2000)); // async request
 }
 
 function* receiver(this: ThreadContext) {
-  let msg = yield wait("greetingOne"); // wait for event
-  this.show("messagebox", () => `message: ${msg}`);
-  msg = yield wait("greetingTwo"); // wait for async event
-  this.show("messagebox", () => `message: "${msg}"`);
+  let msg = yield wait("eventOne"); // wait for event
+  console.log(msg);
+  msg = yield wait("eventTwo"); // wait for async event
+  console.log(msg)
 }
 
-scenarios(
-  enable => {
-    enable(sender);
-    enable(receiver);
-  },
-  s => {
-    for (let id in s.overrides) {
-      document.getElementById(id).innerHTML = s.overrides[id].overrides[0];
-    }
-  }
-);
+scenarios(enable => {
+  enable(sender);
+  enable(receiver);
+});
 ```
 
 
