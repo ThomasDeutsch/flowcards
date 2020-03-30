@@ -12,9 +12,9 @@ They enable you to say things like "I have finished my work" or "can you do this
 It is nice to have them around.<br/>
 We find requirements on both ends - planning and testing - but what about coding?<br/>
 They are nowhere to be found in our code.<br/>
-We as Developers look at those requirements, we will understand and use them,<br/>
-to make needed changes to different parts of our software.<br/>
-They shape our code, but the requirements are nowhere to be found - they are burried.<br/>
+We as Developers look at those requirements and use them to make needed changes<br/> 
+to different parts of our software to fullfill them.<br/>
+They shape our code, but the requirement itself is nowhere to be found - they have no place.<br/>
 Not a great way to treat your friend.<br/>
 
 ### Digging
@@ -23,7 +23,11 @@ You find yourself asking questions like "do we need the property x?" or "why is 
 Requirements would help answer those questions, but they are burried, so you start digging.<br/>
 
 ### Experiment
-What would happen if requirements are not abandoned?
-What would this mean for developing software when requirements play a central role in planning, coding and testing?
-We can will this out - right now.
+What would happen if requirements have a place in our code?
+What would this do to software development, if requirements are found in planning, coding and testing?
+We can try this out - right now.
 
+## TodoMVC Requirements
+The TodoMVC team [created a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).
+Will skip the fun part of coming up with our own ideas. Yes, sometimes it is just like that...<br/> 
+Sometimes this is 
