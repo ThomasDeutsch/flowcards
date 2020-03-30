@@ -98,3 +98,6 @@ __tests__/
 
 # MacOS
 .DS_Store
+
+# no package lock for this lib: https://dev.to/gajus/stop-using-package-lock-json-or-yarn-lock-3ddi
+package-lock.json
