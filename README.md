@@ -13,7 +13,7 @@ we can define a reactive system by the scenarios we want to enable (flow-by-flow
 This is what flowcards is all about.<br/>
 
 With flowcards, you can organize code by requirement/scenario.<br/>
-[👩‍🎓 this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will get you started.<br/>
+[👉 this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will get you started.<br/>
 
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).<br/>
 Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-programming-in-a-way-that-allows-for-easier-changes-5d95b9fb6928). I can also recommend [this talk](https://www.youtube.com/watch?v=_BLQIE-_prc).
