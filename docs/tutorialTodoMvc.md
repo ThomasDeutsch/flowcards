@@ -1,8 +1,8 @@
-## Tutorial 1:  Requirements -> Code
+# Tutorial 1:  Requirements -> Code
 In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application.<br/>
 The goal of this tutorial is to illustrate how flowcards enables a software-requirement centric coding style.<br/>
 
-### Begin With the End in Mind
+## Begin With the End in Mind
 In the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
 Answering this question is only possible if you have defined software requirements.<br/>
 
@@ -27,15 +27,15 @@ What would happen if requirements have a place in our code?
 What would this do to software development, if requirements are found in planning, coding and testing?
 We can try this out - right now.
 
-## TodoMVC Requirements
+## TodoMVC
 The TodoMVC team [created a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).
-Will skip the fun part of coming up with our own ideas.<br/> 
+Will skip the fun part of coming up with our own ideas and simply use those.<br/> 
 
-## 1. Project Setup
+### 1. Project Setup
 The team also provides a [template-project](https://github.com/tastejs/todomvc-app-template/).
 I used this template project to create a basic React-Application with multiple components and no functionality.
 This is the result - lets get to the fun part.
 
-## 2. NoTodos
+### 2. NoTodos
 
 
