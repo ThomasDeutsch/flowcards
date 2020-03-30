@@ -4,7 +4,7 @@ The goal of this tutorial is to illustrate how flowcards enables a software-requ
 
 ### Begin With the End in Mind
 In the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
-Answering this question is only possible if you have worked out a design and software requirements.<br/>
+Answering this question is only possible if you have defined software requirements.<br/>
 
 ### A Friend
 As a developer, requirements are your friend.<br/>
