@@ -35,7 +35,7 @@ You do not need to understand react to be able to follow this tutorial.
 
 ### 1. NoTodos
 The first requirement is simple: When there are no todos, #main and #footer should be hidden.
-This requirement can be translated into this function:
+This requirement can be translated into this [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5):
 ```ts
 function* noTodosWillHideHeaderAndFooter(this: ThreadContext, itemCount) {
   if(itemCount === 0) {
@@ -45,7 +45,7 @@ function* noTodosWillHideHeaderAndFooter(this: ThreadContext, itemCount) {
   }
 }
 ```
-```function*``` is a [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5). Every scenario we want to enable needs to be defined as a generator.<br/>
+Every scenario we want to enable needs to be defined as a generator.<br/>
 All you need to know at this point is that a generator will pause its execution when it reaches the yield keyword.
 ```yield null```means - wait here forever.<br/>
 This generator is later used to create something called a BThread.<br/>
