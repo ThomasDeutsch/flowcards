@@ -13,6 +13,12 @@ We find requirements on both ends - planning and testing software - but what abo
 They are nowhere to be found in our code.<br/>
 We as Developers look at the requirements, we will understand them to the best ouf our abilities and use them<br/>
 to make the needed changes to different parts of our software.<br/>
-They shape our code, but the requirement itself is nowhere to be found - they are dissolved.<br/>
+They shape our code, but the requirement itself is nowhere to be found - they are burried.<br/>
+Not a great way to treat your friend.<br/>
 
-## The Problem
+## the Problem
+This becomes a problem when you want to make code-changes.<br/>
+You find yourself asking questions like "why is this if/else here?".<br/>
+Those questions need answers you can find in the requirements - but they are burried. You start digging.<br/>
+
+## Invite your Friends
