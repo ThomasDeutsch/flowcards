@@ -4,7 +4,15 @@ The goal of this tutorial is to illustrate how flowcards enables a software-requ
 ## Begin With the End in Mind
 At the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
 Answering this question is only possible if you have worked out a design and software requirements.<br/>
-<br/>
+
+## Requirements
 As a developer, requirements are your friend.<br/>
-They enable you to say something like "I have finished my work" or "can you do this task for me?".<br/>
+They enable you to say things like "I have finished my work" or "can you do this task for me?".<br/>
 It is nice to have them around.<br/>
+We find requirements on both ends - planning and testing software - but what about coding?<br/>
+They are nowhere to be found in our code.<br/>
+We as Developers look at the requirements, we will understand them to the best ouf our abilities and use them<br/>
+to make the needed changes to different parts of our software.<br/>
+They shape our code, but the requirement itself is nowhere to be found - they are dissolved.<br/>
+
+## The Problem
