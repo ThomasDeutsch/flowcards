@@ -19,10 +19,10 @@ Not a great way to treat your friend.<br/>
 ## Digging
 This becomes a problem when you want to make code-changes.<br/>
 You find yourself asking questions like "why is this if/else here?".<br/>
-Those questions need answers. Answeres you can find in the requirements - but they are burried. You start digging.<br/>
+Those questions need answers. Answeres you can find in the requirements - but they are burried, so you start digging.<br/>
 There is also a focus problem: powerful software > enabling users<br/>
 By not having the requirements in our code, the focus is clearly on creating a powerful software that can handle all<br/>
 those requirements - and even more (premature optimizations).<br/>
-What happens enabling your users?
 
 ## Invite your Friends
+There are more 
