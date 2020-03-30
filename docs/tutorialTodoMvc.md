@@ -1,5 +1,5 @@
 In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application.<br/>
-The goal of this tutorial is to illustrate a key benefit of using flowcards: How we work with software-requirements.<br/>
+The goal of this tutorial is to illustrate how flowcards enables a software-requirement centric coding style<br/>
 
 ## Begin With the End in Mind
 At the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
