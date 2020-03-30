@@ -28,13 +28,13 @@ What would this do to software development, if requirements are found in plannin
 We can try this out - right now.
 
 ## TodoMVC
-The TodoMVC team [created a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).
-Will skip the fun part of coming up with our own ideas and simply use those.<br/> 
+The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).<br/>
+We skip the fun part of coming up with our own ideas and simply use those.<br/> 
 
 ### 1. Project Setup
-The team also provides a [template-project](https://github.com/tastejs/todomvc-app-template/).
-I used this template project to create a basic React-Application with multiple components and no functionality.
-This is the result - lets get to the fun part.
+The team also provides a [template-project](https://github.com/tastejs/todomvc-app-template/).<br/>
+I used this template project to create a basic React-Application with multiple components and no functionality.<br/>
+This is the result - lets get to the fun part.<br/>
 
 ### 2. NoTodos
 
