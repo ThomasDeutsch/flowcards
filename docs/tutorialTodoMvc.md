@@ -18,11 +18,9 @@ Not a great way to treat your friend.<br/>
 
 ## Digging
 This becomes a problem when you want to make code-changes.<br/>
-You find yourself asking questions like "why is this if/else here?".<br/>
-Those questions need answers. Answeres you can find in the requirements - but they are burried, so you start digging.<br/>
-There is also a focus problem: powerful software > enabling users<br/>
-By not having the requirements in our code, the focus is clearly on creating a powerful software that can handle all<br/>
-those requirements - and even more (premature optimizations).<br/>
+You find yourself asking questions like "do we need the property x?" or "why is this if/else here?".<br/>
+Requirements would help to answer those questions, but they are burried.<br/>
+So you start digging.<br/>
 
-## Invite your Friends
+## A Place for Requirements
 There are more 
