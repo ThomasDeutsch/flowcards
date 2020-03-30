@@ -30,9 +30,8 @@ We can try this out - right now.
 ## TodoMVC
 The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).<br/>
 We will use the provided specification for our tutorial.<br/>
-I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a basic react-Application with multiple components and no functionality.<br/>
+I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a basic react application with multiple components and no functionality.<br/>
 You do not need to understand react to be able to follow this tutorial.
-This is the result - lets get to the fun part.<br/>
 
 ### 1. NoTodos
 The first requirement is simple: When there are no todos, #main and #footer should be hidden.
@@ -51,23 +50,35 @@ All you need to know at this point is that a generator will pause its execution 
 ```yield null```means - wait here forever.<br/>
 This generator is later used to create something called a BThread.<br/>
 BThreads come with some special properties. The first one is:<br/>
-```1. when an argument changes, a BThread is reset```. 
+```1. when an argument changes, a BThread is reset```.
 
-Before we create BThreads, lets take a look at the second requirement.
+Lets take a look at the second requirement.
 
 ### 2. NewTodo
 - the todoInput gets an autofocus property. ( we do this in html )
 - pressing Enter creates a todo (appends it to the todo list)
-- when the todo is added, the input is cleared.
 - an empty input can not be added
+- when the todo is added, the input is cleared.
+
 ```ts
-function* newTodoCanBeAdded(todos: Todo[]) {
+function* newTodoCanBeAdded(todos: TodosRef) {
+  let latestId = 0;
   while(true) {
-    yield wait('inputOnEnter', (val) => val.trim().length > 0);
-    yield request
+    this.override('input', ({inputOnEnter}) => {onEnter: inputOnEnter});
+    const todoTitle = yield wait('inputOnEnter', (val) => val.trim().length > 0);;
+    yield request('s_todos', [...todos, {id: latestId++, title: todoTitle, isCompleted: false}]);
   }
-  
 }
+```
+
+Now we use our two new generators to create BThreads.
+```ts
+useScenarios((enable, state) => {
+  const todosRef = state('s_todos', []);
+  enable(noTodosWillHideHeaderAndFooter, [todosRef.value.length]);
+  enable(newTodoCanBeAdded, [todosRef]);
+})
+
 ```
 
 
