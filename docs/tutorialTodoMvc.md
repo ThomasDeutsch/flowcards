@@ -29,13 +29,28 @@ We can try this out - right now.
 
 ## TodoMVC
 The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).<br/>
-We skip the fun part of coming up with our own ideas and simply use those.<br/> 
-
-### 1. Project Setup
-The team also provides a [template-project](https://github.com/tastejs/todomvc-app-template/).<br/>
-I used this template project to create a basic React-Application with multiple components and no functionality.<br/>
+We will use the provided specification for our tutorial.<br/>
+They also provide a [template-project](https://github.com/tastejs/todomvc-app-template/).<br/>
+I used this template to create a basic react-Application with multiple components and no functionality.<br/>
+You do not need to understand react to be able to follow this tutorial.
 This is the result - lets get to the fun part.<br/>
 
-### 2. NoTodos
+### 1. NoTodos
+The first requirement is simple: When there are no todos, #main and #footer should be hidden.
+This requirement can be translated into this function:
+```ts
+function* noTodos(this: ThreadContext, itemCount) {
+  if(itemCount === 0) {
+    this.hide('main');
+    this.hide('footer');
+    yield null; // wait
+  }
+}
+```
+function* means, this function is a [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5). Every scenario we want to enable needs to be defined as a generator.<br/>
+
+
+
+
 
 
