@@ -63,10 +63,19 @@ Lets take a look at the second requirement.
 ```ts
 function* newTodoCanBeAdded(todos: TodosRef) {
   let latestId = 0;
+  let inputVal = "";
   while(true) {
-    this.override('input', ({inputOnEnter}) => {onEnter: inputOnEnter});
-    const todoTitle = yield wait('inputOnEnter', (val) => val.trim().length > 0);;
+    this.override('input', ({inputOnEnter}) => {onEnter: inputOnEnter, inputVal: inputVal});
+    const [val, type] = [
+      yield wait('inputOnEnter', (val) => val.trim().length > 0),
+      yield wait('inputOnChange')
+    ];
+    if(type === 'inputOnChange') {
+      inputVal = val;
+      continue;
+    }
     yield request('s_todos', [...todos, {id: latestId++, title: todoTitle, isCompleted: false}]);
+    inputVal = "";
   }
 }
 ```
