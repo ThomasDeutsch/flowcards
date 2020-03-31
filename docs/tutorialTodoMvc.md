@@ -35,7 +35,7 @@ You do not need to understand react to be able to follow this tutorial.<br/>
 This codesandbox is the base for the next steps.<br/>
 
 ### 1. NoTodos
-The first requirement is simple: When there are no todos, #main and #footer should be hidden.
+The first requirement is simple: When there are no todos, #main and #footer should be hidden.<br/>
 This requirement can be translated into this [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5):
 ```ts
 function* noTodosWillHideHeaderAndFooter(this: ThreadContext, itemCount) {
@@ -46,16 +46,15 @@ function* noTodosWillHideHeaderAndFooter(this: ThreadContext, itemCount) {
   }
 }
 ```
-Every scenario we want to enable needs to be defined as a generator.<br/>
+Every scenario we want to enable will be defined as a generator.<br/>
 All you need to know at this point is that a generator will pause its execution when it reaches the yield keyword.
 ```yield null```means - wait here forever.<br/>
 This generator is later used to create something called a BThread.<br/>
-BThreads come with some special properties. The first one is:<br/>
-```1. when an argument changes, a BThread is reset```.
+<br/>
+Let's take a look at the second requirement.
 
-Lets take a look at the second requirement.
-
-### 2. NewTodo
+### 2. New Todo
+In this requirement we will find a bit more functionality.<br>
 - the todoInput gets an autofocus property. ( we do this in html )
 - pressing Enter creates a todo (appends it to the todo list)
 - an empty input can not be added
@@ -63,7 +62,7 @@ Lets take a look at the second requirement.
 
 ```ts
 function* newTodoCanBeAdded(todos: TodosRef) {
-  let latestId = 0;
+  let latestId = 0;   
   let inputVal = "";
   while(true) {
     this.override('input', ({inputOnEnter}) => {onEnter: inputOnEnter, inputVal: inputVal});
@@ -80,6 +79,12 @@ function* newTodoCanBeAdded(todos: TodosRef) {
   }
 }
 ```
+The first thing i want to point out are the variables `latestId` and `inputVal`.<br/>
+They are local state. Not local to a component! They are local to the scenario.<br/>
+`this.override` is a function that will accept a component name and an override expression. This idea comes from the uber-team - called [overrides pattern](https://medium.com/@dschnr/better-reusable-react-components-with-the-overrides-pattern-9eca2339f646). In this case, we change 3 properties of the `input` component.<br/>
+`({inputOnEnter, inputOnChange})`are two dispatch functions. When the input calls them, they will trigger the corresponding events `inputOnEnter` and `inputOnChange`.
+
+
 
 Now we use our two new generators to create BThreads.
 ```ts
