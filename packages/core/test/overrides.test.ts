@@ -8,8 +8,8 @@ import { scenarios, ThreadContext } from '../src/index';
 test("overrides are created with .show or .hide", () => {
 
     function* thread1(this: ThreadContext) {
-        this.show("Button", () => () => null);
-        this.show("Test", () => () => null);
+        this.override("Button", () => () => null);
+        this.override("Test", () => () => null);
         this.hide("HiddenComponent");
         yield bp.wait("event");
     }
@@ -27,7 +27,7 @@ test("overrides are created with .show or .hide", () => {
 test("overrides are removed when the thread progresses.", () => {
 
     function* thread1(this: ThreadContext) {
-        this.show("Button", () => () => null);
+        this.override("Button", () => () => null);
         yield bp.request("event");
     }
 

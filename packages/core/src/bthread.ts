@@ -19,12 +19,12 @@ export interface ThreadState {
 }
 
 type OverrideFn = (dispatchByWait: Record<string, Function>, pendingEvents: Set<string>) => void;
-type ShowFn = (defaultComponentName: string, overrideFn: OverrideFn) => void;
+type InitOverrideFn = (defaultComponentName: string, overrideFn: OverrideFn) => void;
 type HideFn = (defaultComponentName: string) => void;
 
 export interface ThreadContext {
     key: string | number | null;
-    show: ShowFn;
+    override: InitOverrideFn;
     hide: HideFn;
     setState: Function;
     state: Function;
@@ -73,7 +73,7 @@ export class BThread {
     private _getThreadContext(): ThreadContext {
         return {
             key: this.key,
-            show: (defaultComponentName: string, overrideFn: OverrideFn): void => {
+            override: (defaultComponentName: string, overrideFn: OverrideFn): void => {
                 this._overrideByComponentName[defaultComponentName] = overrideFn;
             },
             hide: (defaultComponentName: string): void => {
