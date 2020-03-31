@@ -84,16 +84,23 @@ They are local state. Not local to a component! They are local to the scenario.<
 `this.override` is a function that will accept a component name and an override expression. This idea comes from the uber-team - called [overrides pattern](https://medium.com/@dschnr/better-reusable-react-components-with-the-overrides-pattern-9eca2339f646). In this case, we change 3 properties of the `input` component.<br/>
 `({inputOnEnter, inputOnChange})`are two dispatch functions. When the input calls them, they will trigger the corresponding events `inputOnEnter` and `inputOnChange`.
 
+### Create BThreads
+BThreads are created by using the `enable` function.<br/>
+The first argument is the genartor-function, the second is an array of arguments for the generator-function. The `state` function is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.
+Feel free to change the function names to `flow, eventCache` if you like.
 
-
-Now we use our two new generators to create BThreads.
 ```ts
 useScenarios((enable, state) => {
   const todosRef = state('s_todos', []);
   enable(noTodosWillHideHeaderAndFooter, [todosRef.value.length]);
   enable(newTodoCanBeAdded, [todosRef]);
 })
-
 ```
+
+Here is the next codesandbox.
+
+### Logging
+This is not a requirement, but at some point
+
 
 
