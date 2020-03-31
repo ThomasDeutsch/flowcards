@@ -32,7 +32,7 @@ The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/bl
 We will use the provided specification for this tutorial.<br/>
 I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a basic react application with multiple components and no functionality.<br/>
 You do not need to understand react to be able to follow this tutorial.<br/>
-This codesandbox is the base for the next steps.<br/>
+I will provide codesandboxes for intermediate steps and link them here. There is no need to type everything in by yourself, but i would encourage you to make small changes and see how they work out.<br/>
 
 ### 1. NoTodos
 The first requirement is simple: When there are no todos, #main and #footer should be hidden.<br/>
