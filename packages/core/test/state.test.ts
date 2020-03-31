@@ -19,7 +19,7 @@ test("a state can be created that will listen for requests in its name", done =>
     }, (scenario) => {
         expect(scenario.thread["thread1"].nrProgressions).toEqual(1);
         expect(scenario.state["count"]).toEqual(2);
-        expect(st.value).toEqual(2);
+        expect(st.current).toEqual(2);
     });
 });
 
@@ -47,13 +47,13 @@ test("a state will return a ref. Passed to a function, it will not update on cha
         st = state("count", 0);
         enable(thread1);
         enable(thread2, [st]);
-        enable(thread3, [st.value]);
+        enable(thread3, [st.current]);
     }, (scenario) => {
         expect(scenario.thread["thread1"].nrProgressions).toEqual(1);
         expect(scenario.state["count"]).toEqual(2);
         expect(threadRefInit).toEqual(1);
         expect(threadValueInit).toEqual(2);
-        expect(st.value).toEqual(2);
+        expect(st.current).toEqual(2);
     });
 });
 

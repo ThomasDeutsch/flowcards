@@ -57,8 +57,8 @@ function advanceThreads(threadDictionary: ThreadDictionary, bids: BidDictionarie
 
 function changeStates(stateDictionary: StateDictionary, action: Action): void {
     if ((action.type === ActionType.request) && (action.eventName in stateDictionary)) {
-        stateDictionary[action.eventName].previous = stateDictionary[action.eventName].value;
-        stateDictionary[action.eventName].value = action.payload;
+        stateDictionary[action.eventName].previous = stateDictionary[action.eventName].current;
+        stateDictionary[action.eventName].current = action.payload;
     }
 }
 
@@ -68,7 +68,7 @@ function changeStates(stateDictionary: StateDictionary, action: Action): void {
 
 
 interface EventState {
-    value: any;
+    current: any;
     previous: any;
 }
 type StateDictionary = Record<string, EventState>;
@@ -110,7 +110,7 @@ function setupAndDeleteThreads(
     const enableState: EnableStateFunctionType = (id: string, initialValue: any): EventState => {
         stateIds.add(id);
         if(!stateDictionary[id]) {
-            stateDictionary[id] = {value: initialValue, previous: null};
+            stateDictionary[id] = {current: initialValue, previous: null};
         }
         return stateDictionary[id];
     }
@@ -221,7 +221,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             return acc;
         }, {});
         const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, EventState>, stateId: any): Record<string, EventState> => {
-            acc[stateId] = stateDictionary[stateId].value;
+            acc[stateId] = stateDictionary[stateId].current;
             return acc;
         }, {});
         return {

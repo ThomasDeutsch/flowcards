@@ -12,7 +12,7 @@ type ReactComponent = FunctionComponent<{}> | ComponentClass<{}, any>;
 type ComponentDictionary = Record<string, ReactComponent>;
 
 
-// from: https://github.com/tlrobinson/overrides
+// from: https://github.com/tlrobinson/overrides
 function applyOverride(override: any, Component: ReactComponent, props: any = {}): [ReactComponent, any] {
     // component override shortcut:
     if (typeof override === "function" || typeof override === "string" || override instanceof React.Component) {
@@ -40,7 +40,7 @@ function mergeOverrides(component: any, props: any, overrides: any[]): [ReactCom
     return overrides.reduce(([c, p], o): [ReactComponent, any] => applyOverride(o, c, p), [component, props]);
 }
 
-function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any, name: string): ReactComponent {
+function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any[], name: string): ReactComponent {
     const Comp = (props: any): any => {
         const [Component, mergedProps] = mergeOverrides(DefaultComponent, props, overrides);
         return React.createElement(Component, {...mergedProps}, null);
