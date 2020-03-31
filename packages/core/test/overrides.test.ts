@@ -5,7 +5,7 @@ import * as bp from "../src/bid";
 import { scenarios, ThreadContext } from '../src/index';
 
 
-test("overrides are created with .show or .hide", () => {
+test("overrides are created with .override or .hide", () => {
 
     function* thread1(this: ThreadContext) {
         this.override("Button", () => () => null);
@@ -35,5 +35,37 @@ test("overrides are removed when the thread progresses.", () => {
         enable(thread1);
     }, (scenario) => {
         expect(scenario.overrides["Button"]).toBeUndefined();
+    });
+});
+
+
+test("a component override will receive a dispatch function for the waiting event", () => {
+
+    function* thread1(this: ThreadContext) {
+        this.override('componentX', ({eventOne}): any => () => eventOne);
+        yield bp.wait("eventOne");
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+    }, (scenario) => {
+        const eventOneDispatchFn = scenario.overrides.componentX.overrides[0]();
+        expect(eventOneDispatchFn).toBeDefined();
+    });
+});
+
+test("the component-override will receive all waiting event dispatch functions", () => {
+
+    function* thread1(this: ThreadContext) {
+        this.override('componentX', ({eventOne, eventTwo}): any => () => [eventOne, eventTwo]);
+        yield [bp.wait("eventOne"), bp.wait("eventTwo")];
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+    }, (scenario) => {
+        const [eventOne, eventTwo] = scenario.overrides.componentX.overrides[0]();
+        expect(eventOne).toBeDefined();
+        expect(eventTwo).toBeDefined();
     });
 });
