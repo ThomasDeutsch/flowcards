@@ -42,7 +42,7 @@ function* sender() {
   yield request("eventTwo", delayed("taking a look at flowcards", 2000)); // async request
 }
 
-function* receiver(this: ThreadContext) {
+function* receiver() {
   let msg = yield wait("eventOne"); // wait for event
   console.log(msg);
   msg = yield wait("eventTwo"); // wait for async event
