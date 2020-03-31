@@ -67,15 +67,15 @@ function changeStates(stateDictionary: StateDictionary, action: Action): void {
 // UPDATE & DELETE THREADS
 
 
-interface EventState {
+export interface StateRef {
     current: any;
     previous: any;
 }
-type StateDictionary = Record<string, EventState>;
+type StateDictionary = Record<string, StateRef>;
 
 
 type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => ThreadState;
-type EnableStateFunctionType = (id: string, initialValue: any) => EventState;
+type EnableStateFunctionType = (id: string, initialValue: any) => StateRef;
 
 
 export type ScaffoldingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
@@ -107,7 +107,7 @@ function setupAndDeleteThreads(
         return threadDictionary[id].state;
     };
 
-    const enableState: EnableStateFunctionType = (id: string, initialValue: any): EventState => {
+    const enableState: EnableStateFunctionType = (id: string, initialValue: any): StateRef => {
         stateIds.add(id);
         if(!stateDictionary[id]) {
             stateDictionary[id] = {current: initialValue, previous: null};
@@ -142,7 +142,7 @@ export interface Scenario {
     dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
     overrides: OverridesByComponent;
-    state: Record<string, EventState>;
+    state: Record<string, StateRef>;
     thread: Record<string, ThreadState>;
     logger: Logger;
 }
@@ -220,7 +220,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             acc[threadId] = threadDictionary[threadId].state;
             return acc;
         }, {});
-        const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, EventState>, stateId: any): Record<string, EventState> => {
+        const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, StateRef>, stateId: any): Record<string, StateRef> => {
             acc[stateId] = stateDictionary[stateId].current;
             return acc;
         }, {});
