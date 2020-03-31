@@ -33,7 +33,7 @@ npm install @flowcards/core
 ```
 
 ```ts
-import { scenarios, request, wait, ThreadContext } from "@flowcards/core";
+import { scenarios, request, wait } from "@flowcards/core";
 
 const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(data), ms));
 
@@ -46,7 +46,7 @@ function* receiver() {
   let msg = yield wait("eventOne"); // wait for event
   console.log(msg);
   msg = yield wait("eventTwo"); // wait for async event
-  console.log(msg)
+  console.log(msg);
 }
 
 scenarios(enable => {
