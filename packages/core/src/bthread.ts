@@ -18,17 +18,18 @@ export interface ThreadState {
     value?: any;
 }
 
-type OverrideFn = (dispatchByWait: Record<string, Function>, pendingEvents: Set<string>) => void;
-type InitOverrideFn = (defaultComponentName: string, overrideFn: OverrideFn) => void;
+type ComponentName = string;
+type PropsStyleComponent = "style" | "props" | "component";
+type OverrideFn = (dispatchByWait: Record<string, Function>, pendingEvents: Set<string>) => Record<ComponentName, Record<PropsStyleComponent, any> | any>;
+type setOverrideFn = (overrideFn: OverrideFn) => void;
 type HideFn = (defaultComponentName: string) => void;
 
 export interface ThreadContext {
     key: string | number | null;
-    override: InitOverrideFn;
+    override: setOverrideFn;
     hide: HideFn;
     setState: Function;
     state: Function;
-    
 }
 
 export function scenarioId(generator: ThreadGen, key?: string | number): string {
@@ -65,19 +66,19 @@ export class BThread {
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
-    private _overrideByComponentName: Record<string, Function> = {};
-    public get overrideByComponentName(): Record<string, Function> {
-        return this._overrideByComponentName;
+    private _overrides: OverrideFn[] = [];
+    public get overrides(): OverrideFn[] {
+        return this._overrides;
     }
 
     private _getThreadContext(): ThreadContext {
         return {
             key: this.key,
-            override: (defaultComponentName: string, overrideFn: OverrideFn): void => {
-                this._overrideByComponentName[defaultComponentName] = overrideFn;
+            override: (overrideFn: OverrideFn): void => {
+                this._overrides.push(overrideFn);
             },
             hide: (defaultComponentName: string): void => {
-                this._overrideByComponentName[defaultComponentName] = (): OverrideFn => (): null => null;
+                this._overrides.push((): any => ({[defaultComponentName]: (): any => null}));
             },
             setState: (val: any): void => {
                 this._stateValue = val;
@@ -91,7 +92,7 @@ export class BThread {
         if (key || key === 0) {
             this.key = key;
         }
-        this._overrideByComponentName = {};
+        this._overrides = [];
         this._dispatch = dispatch;
         this._generator = generator.bind(this._getThreadContext());
         this._currentArguments = args;
@@ -121,7 +122,7 @@ export class BThread {
 
     private _processNextBid(returnValue?: any): Set<string> {
         const cancelledPromises = this._cancelPendingPromises();
-        this._overrideByComponentName = {};
+        this._overrides = [];
         const next: any = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;

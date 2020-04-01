@@ -8,8 +8,8 @@ import { scenarios, ThreadContext } from '../src/index';
 test("overrides are created with .override or .hide", () => {
 
     function* thread1(this: ThreadContext) {
-        this.override("Button", () => () => null);
-        this.override("Test", () => () => null);
+        this.override(() => ({Button:  () => () => null}));
+        this.override(() => ({Test:  () => () => null}));
         this.hide("HiddenComponent");
         yield bp.wait("event");
     }
@@ -27,7 +27,7 @@ test("overrides are created with .override or .hide", () => {
 test("overrides are removed when the thread progresses.", () => {
 
     function* thread1(this: ThreadContext) {
-        this.override("Button", () => () => null);
+        this.override(() => ({Button:  () => () => null}));
         yield bp.request("event");
     }
 
@@ -42,7 +42,7 @@ test("overrides are removed when the thread progresses.", () => {
 test("a component override will receive a dispatch function for the waiting event", () => {
 
     function* thread1(this: ThreadContext) {
-        this.override('componentX', ({eventOne}): any => () => eventOne);
+        this.override(({eventOne}) => ({componentX:  () => eventOne}));
         yield bp.wait("eventOne");
     }
 
@@ -57,7 +57,7 @@ test("a component override will receive a dispatch function for the waiting even
 test("the component-override will receive all waiting event dispatch functions", () => {
 
     function* thread1(this: ThreadContext) {
-        this.override('componentX', ({eventOne, eventTwo}): any => () => [eventOne, eventTwo]);
+        this.override(({eventOne, eventTwo}): any => ({componentX : () => [eventOne, eventTwo]}));
         yield [bp.wait("eventOne"), bp.wait("eventTwo")];
     }
 
@@ -75,11 +75,11 @@ test("the component-override will receive all waiting event dispatch functions",
 test("override props get merged", () => {
 
     function* thread1(this: ThreadContext) {
-        this.override('ComponentA', (): any => ({props: {A: 1}}));
+        this.override(() => ({ComponentA: {props: {A: 1}}}));
         yield null;
     }
     function* thread2(this: ThreadContext) {
-        this.override('ComponentA', (): any => ({props: {B: 1}}));     
+        this.override(() => ({ComponentA: {props: {B: 1}}}));
         yield null;
     }
 
