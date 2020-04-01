@@ -67,15 +67,15 @@ function changeStates(stateDictionary: StateDictionary, action: Action): void {
 // UPDATE & DELETE THREADS
 
 
-export interface StateRef {
-    current: any;
-    previous: any;
+export interface StateRef<T> {
+    current: T;
+    previous: T;
 }
-type StateDictionary = Record<string, StateRef>;
+type StateDictionary = Record<string, StateRef<any>>;
 
 
 type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => ThreadState;
-type EnableStateFunctionType = (id: string, initialValue: any) => StateRef;
+type EnableStateFunctionType = (id: string, initialValue: any) => StateRef<any>;
 
 
 export type ScaffoldingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
@@ -107,7 +107,7 @@ function setupAndDeleteThreads(
         return threadDictionary[id].state;
     };
 
-    const enableState: EnableStateFunctionType = (id: string, initialValue: any): StateRef => {
+    const enableState: EnableStateFunctionType = (id: string, initialValue: any): StateRef<any> => {
         stateIds.add(id);
         if(!stateDictionary[id]) {
             stateDictionary[id] = {current: initialValue, previous: null};
@@ -142,7 +142,7 @@ export interface Scenario {
     dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
     overrides: OverridesByComponent;
-    state: Record<string, StateRef>;
+    state: Record<string, StateRef<any>>;
     thread: Record<string, ThreadState>;
     logger: Logger;
 }
@@ -220,7 +220,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             acc[threadId] = threadDictionary[threadId].state;
             return acc;
         }, {});
-        const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, StateRef>, stateId: any): Record<string, StateRef> => {
+        const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, StateRef<any>>, stateId: any): Record<string, any> => {
             acc[stateId] = stateDictionary[stateId].current;
             return acc;
         }, {});
