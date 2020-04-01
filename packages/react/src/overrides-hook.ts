@@ -48,8 +48,7 @@ function withOverrides(WrappedComponent: any, overrides: any): any {
     let renderTree: any;
     if (isClassComponent(WrappedComponent)) {
       return class Enhancer extends WrappedComponent {
-        // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-        render(): any {
+        public render(): ReactElement {
           renderTree = super.render();
           const [Component, mergedProps] = mergeOverrides(WrappedComponent, renderTree.props, overrides);
           return React.createElement(Component, {...mergedProps}, renderTree.props.children);
@@ -58,14 +57,15 @@ function withOverrides(WrappedComponent: any, overrides: any): any {
     }
     // If WrappedComponent is functional, we extend from React.Component instead
     return class EnhancerFunctional extends React.Component {
-        // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-        render(): any {
+        public render(): ReactElement {
             renderTree = WrappedComponent(this.props);
-            const [Component, mergedProps] = mergeOverrides(WrappedComponent, renderTree.props, overrides);
-            return React.createElement(Component, {...mergedProps}, renderTree.props.children);
+            console.log('this vs rendertree: ', this.props, renderTree.props);
+            const [Component, mergedProps] = mergeOverrides(WrappedComponent, this.props, overrides);
+            console.log('mergedProps: ', mergedProps);
+            return React.createElement(Component, {...mergedProps, children: renderTree.props.children}, renderTree.props.children);
         }
     };
-  }
+}
 
 function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any[], name: string): ReactComponent {
     const Comp = withOverrides(DefaultComponent, overrides);
