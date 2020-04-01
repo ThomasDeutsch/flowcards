@@ -2,6 +2,11 @@
   "name": "@flowcards/core",
   "version": "0.4.5",
   "description": "",
+  "author": {
+    "name": "Thomas Deutsch",
+    "email": "deutsch.thomas+flowcards@gmail.com",
+    "url": "https://thomasdeutsch.de"
+  },
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "directories": {
@@ -12,11 +17,6 @@
     "test:watch": "jest --watch",
     "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "npm run build"
-  },
-  "author": {
-    "name": "Thomas Deutsch",
-    "email": "deutsch.thomas+flowcards@gmail.com",
-    "url": "https://thomasdeutsch.de"
   },
   "license": "MIT",
   "gitHead": "209aede3f382f5d6df3ba529e033d0a2c011dc99",
