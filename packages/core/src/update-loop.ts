@@ -142,7 +142,7 @@ export interface Scenario {
     dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
     overrides: OverridesByComponent;
-    state: Record<string, StateRef<any>>;
+    state: Record<string, any>;
     thread: Record<string, ThreadState>;
     logger: Logger;
 }
