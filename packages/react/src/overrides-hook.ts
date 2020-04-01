@@ -45,7 +45,7 @@ const isClassComponent = (Component: ReactComponent): boolean => Boolean(Compone
 
 // render hijacking: https://callstack.com/blog/sweet-render-hijacking-with-react/
 function withOverrides(WrappedComponent: any, overrides: any): any {
-    console.log('withOverride')
+    console.log('withOverride---------------------------')
     let renderTree: any;
     if (isClassComponent(WrappedComponent)) {
       return class Enhancer extends WrappedComponent {
