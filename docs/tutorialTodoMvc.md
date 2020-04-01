@@ -108,6 +108,9 @@ This way, you do not need to make input validation checks in your component. The
   //since TypeScript 3.7 you can do this:
   props.onEnter(e.target.value)?();
 ```
+The last thing that happens in this generator is a `request` to change the todos.<br/>
+There are only 4 functions you can use: `wait`, `request`, `block` and `intercept`.<br/>
+Read more about it [here](https://medium.com/@lmatteis/react-behavioral-cf6523747aaf).<br/>
 
 ### Create BThreads
 BThreads are created by using the `enable` function.<br/>
@@ -128,7 +131,7 @@ However, you can use flowcards without overrides if you want.
 The `useScenarios` hook will return a `Scenarios` object, that will contain all the information you need to update your UI<br/>
 For example: The todoMVC spec is missing a requirement that todo-items are listed in the main-section<br/>
 If you are working with flowcards this is very noticeable.<br/>
-You can create a new requirement or if you or your team dicide to let it be, you simply get the state from the `useScenarios` hook and render those Items without a BThread.<br/>
+You can create a new requirement or you get the state from the `useScenarios` hook and render those Items without a BThread.<br/>
 ```ts
 <Main>
   {state.s_todos.map(todo => (
