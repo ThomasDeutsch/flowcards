@@ -38,11 +38,11 @@ I will provide codesandboxes for intermediate steps and link them here. There is
 The first requirement is simple: When there are no todos, #main and #footer should be hidden.<br/>
 This requirement can be translated into this [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5):
 ```ts
-function* noTodosWillHideHeaderAndFooter(this: ThreadContext, itemCount) {
-  if(itemCount === 0) {
-    this.hide('main');
-    this.hide('footer');
-    yield null; // wait
+function* noTodosWillHideHeaderAndFooter(this: ThreadContext, itemCount: number) {
+  if (itemCount === 0) {
+    this.hide("Main");
+    this.hide("Footer");
+    yield null;
   }
 }
 ```
@@ -61,20 +61,27 @@ In this requirement we will find a bit more functionality.<br>
 - when the todo is added, the input is cleared.
 
 ```ts
-function* newTodoCanBeAdded(todos: TodosRef) {
-  let latestId = 0;   
+
+function* newTodoCanBeAdded(this: ThreadContext, todos: StateRef<string[]>) {
+  let latestId = 0;
   let inputVal = "";
-  while(true) {
-    this.override('input', ({inputOnEnter}) => {onEnter: inputOnEnter, inputVal: inputVal});
-    const [val, type] = [
-      yield wait('inputOnEnter', (val) => val.trim().length > 0),
-      yield wait('inputOnChange')
-    ];
-    if(type === 'inputOnChange') {
+  while (true) {
+    this.override(
+      "TodoInput",
+      ({ inputOnEnter, inputOnChange }): any => ({
+        props: {
+          onEnter: inputOnEnter,
+          onChange: inputOnChange,
+          inputVal: inputVal
+        }
+      })
+    );
+    const [type, val] = yield [wait("inputOnChange"), wait("inputOnEnter", () => inputVal.trim().length > 0)];
+    if (type === "inputOnChange") {
       inputVal = val;
       continue;
     }
-    yield request('s_todos', [...todos, {id: latestId++, title: todoTitle, isCompleted: false}]);
+    yield request("s_todos", [...todos.current, { id: latestId++, title: inputVal, isCompleted: false }]);
     inputVal = "";
   }
 }
@@ -98,9 +105,6 @@ useScenarios((enable, state) => {
 ```
 
 Here is the next codesandbox.
-
-### Logging
-This is not a requirement, but at some point
 
 
 
