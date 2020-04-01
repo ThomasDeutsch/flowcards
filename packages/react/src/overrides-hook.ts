@@ -45,12 +45,15 @@ const isClassComponent = (Component: ReactComponent): boolean => Boolean(Compone
 
 // render hijacking: https://callstack.com/blog/sweet-render-hijacking-with-react/
 function withOverrides(WrappedComponent: any, overrides: any): any {
+    console.log('withOverride')
     let renderTree: any;
     if (isClassComponent(WrappedComponent)) {
       return class Enhancer extends WrappedComponent {
         public render(): ReactElement {
+          console.log('NF: this vs rendertree: ', this.props, renderTree.props);
           renderTree = super.render();
           const [Component, mergedProps] = mergeOverrides(WrappedComponent, renderTree.props, overrides);
+          console.log('mergedProps: ', mergedProps);
           return React.createElement(Component, {...mergedProps}, renderTree.props.children);
         }
       };
@@ -59,7 +62,7 @@ function withOverrides(WrappedComponent: any, overrides: any): any {
     return class EnhancerFunctional extends React.Component {
         public render(): ReactElement {
             renderTree = WrappedComponent(this.props);
-            console.log('this vs rendertree: ', this.props, renderTree.props);
+            console.log('F: this vs rendertree: ', this.props, renderTree.props);
             const [Component, mergedProps] = mergeOverrides(WrappedComponent, this.props, overrides);
             console.log('mergedProps: ', mergedProps);
             return React.createElement(Component, {...mergedProps, children: renderTree.props.children}, renderTree.props.children);
