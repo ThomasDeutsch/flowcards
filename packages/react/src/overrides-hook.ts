@@ -71,7 +71,11 @@ function withOverrides(WrappedComponent: any, overrides: any): any {
 }
 
 function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any[], name: string): ReactComponent {
-    const Comp = withOverrides(DefaultComponent, overrides);
+    //const Comp = withOverrides(DefaultComponent, overrides);
+    const Comp = (props: any): any => {
+        const [Component, mergedProps] = mergeOverrides(DefaultComponent, props, overrides);
+        return React.createElement(Component, {...mergedProps}, props.children);
+    }
     Comp.displayName = `${name}_override`;
     return Comp;
 }
