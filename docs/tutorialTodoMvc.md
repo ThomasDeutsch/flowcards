@@ -98,10 +98,10 @@ Feel free to change the function names to `flow, eventCache` if you like.
 
 ```ts
 useScenarios((enable, state) => {
-  const todosRef = state('s_todos', []);
-  enable(noTodosWillHideHeaderAndFooter, [todosRef.value.length]);
+  const todosRef = state("s_todos", []);
+  enable(noTodosWillHideHeaderAndFooter, [todosRef.current.length]);
   enable(newTodoCanBeAdded, [todosRef]);
-})
+});
 ```
 
 Here is the next codesandbox.
