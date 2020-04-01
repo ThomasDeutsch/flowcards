@@ -101,3 +101,4 @@ __tests__/
 
 # no package lock for this lib: https://dev.to/gajus/stop-using-package-lock-json-or-yarn-lock-3ddi
 package-lock.json
+packages/*/package-lock.json
