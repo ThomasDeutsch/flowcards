@@ -133,7 +133,7 @@ const { Main, Footer, TodoInput } = useOverrides(Components, overrides);
 However, you can use flowcards without overrides if you want.<br/>
 The `useScenarios` hook will return a `Scenarios` object, that will contain all the information you need to update your UI.<br/>
 For example: The todoMVC spec is missing a requirement that todo-items are listed in the main-section.<br/>
-If you are working with flowcards this is very noticeable.<br/>
+With flowcards this is very noticeable and it shows the importance of a well defined specification. Not only for the Developers.<br/>
 You can create a new requirement or you get the state from the `useScenarios` hook and render those Items without a BThread.<br/>
 ```ts
 <Main>
