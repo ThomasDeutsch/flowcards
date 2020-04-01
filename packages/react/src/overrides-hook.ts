@@ -43,7 +43,7 @@ function mergeOverrides(component: any, props: any, overrides: any[]): [ReactCom
 function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any[], name: string): ReactComponent {
     const Comp = (props: any): any => {
         const [Component, mergedProps] = mergeOverrides(DefaultComponent, props, overrides);
-        return React.createElement(Component, {...mergedProps}, null);
+        return React.createElement(Component, {...mergedProps}, props.children);
     };
     Comp.displayName = `${name}_override`;
     return Comp;

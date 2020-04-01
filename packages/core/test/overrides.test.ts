@@ -69,3 +69,25 @@ test("the component-override will receive all waiting event dispatch functions",
         expect(eventTwo).toBeDefined();
     });
 });
+
+
+
+test("override props get merged", () => {
+
+    function* thread1(this: ThreadContext) {
+        this.override('ComponentA', (): any => ({props: {A: 1}}));
+        yield null;
+    }
+    function* thread2(this: ThreadContext) {
+        this.override('ComponentA', (): any => ({props: {B: 1}}));     
+        yield null;
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    }, (scenario) => {
+        console.log(scenario.overrides.ComponentA.overrides);
+        expect(scenario.overrides.ComponentA.overrides.length).toEqual(2);
+    });
+});
