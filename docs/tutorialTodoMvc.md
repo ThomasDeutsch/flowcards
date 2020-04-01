@@ -89,7 +89,7 @@ function* newTodoCanBeAdded(this: ThreadContext, todos: StateRef<string[]>) {
 }
 ```
 The first thing i want to point out are the variables `latestId` and `inputVal`.<br/>
-They are local state. Not local to a component! They are local to the scenario.<br/>
+They are local state. Not local to a component, but local to the scenario.<br/>
 `this.override` is a function that will accept a component name and an override expression. This idea comes from the uber-team - called [overrides pattern](https://medium.com/@dschnr/better-reusable-react-components-with-the-overrides-pattern-9eca2339f646). In this case, we change 3 properties of the `TodoInput` component.<br/>
 `({inputOnEnter, inputOnChange})`are two dispatch functions. When the input calls them, they will trigger the corresponding events `inputOnEnter` and `inputOnChange`.
 
