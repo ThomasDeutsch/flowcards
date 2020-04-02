@@ -9,7 +9,7 @@ function maybeMerge(a: Record<string, any>, b?: Record<string, any>): Record<str
 }
 
 type ReactComponent = FunctionComponent<{}> | ComponentClass<{}, any>;
-type ComponentDictionary = Record<string, ReactComponent>;
+type ComponentDictionary = Record<string, any>;
 
 
 // from: https://github.com/tlrobinson/overrides

@@ -87,7 +87,6 @@ test("override props get merged", () => {
         enable(thread1);
         enable(thread2);
     }, (scenario) => {
-        console.log(scenario.overrides.ComponentA.overrides);
         expect(scenario.overrides.ComponentA.overrides.length).toEqual(2);
     });
 });

@@ -163,7 +163,6 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
     let bids: BidDictionariesByType;
     let loopCount = 0;
     const logger = new Logger();
-
     const actionDispatch: DispatchFunction = (a: Action): void => {
         const x: DispatchedAction = {
             id: loopCount+1,
@@ -171,7 +170,6 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         }
         dispatch(x);
     };
-
     const replayDispatch: ReplayDispatchFunction = (actions: Action[]): void => {
         const x: DispatchedAction = {
             id: loopCount+1,
@@ -179,29 +177,21 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         }
         dispatch(x);
     }
-
     const setThreadsAndBids = (): void => {
         orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, stateDictionary, actionDispatch, logger);
         const threadBids = orderedThreadIds.map((id): BidDictionaries | null => threadDictionary[id].getBids());
         bids = getAllBids(threadBids);
     };
-
-    setThreadsAndBids(); // initial setup
-
     const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): Scenario => {
         loopCount++;
+        setThreadsAndBids();
         if (dAction && (dAction.id === loopCount)) {
             if (dAction.replay) {
                 Object.keys(threadDictionary).forEach((key): void => { delete threadDictionary[key] });
-                setThreadsAndBids();
                 return updateLoop(null, dAction.replay); // start a replay
             }
             nextActions = dAction.payload ? [dAction.payload] : null; // select a dispatched action
         } 
-        else if(dAction && (dAction.id !== loopCount)) { // component was reloaded
-            setThreadsAndBids();
-            return updateLoop(null);
-        }
         nextActions = (nextActions && nextActions.length > 0) ? nextActions : null;
         if(!nextActions) {
             const action = getNextActionFromRequests(bids.request)
@@ -212,7 +202,6 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             if (logger) logger.logAction(nextAction);
             advanceThreads(threadDictionary, bids, nextAction);
             changeStates(stateDictionary, nextAction);
-            setThreadsAndBids();
             return updateLoop(null, restActions);
         }
         const dbw = dispatchByWait(actionDispatch, bids.wait);

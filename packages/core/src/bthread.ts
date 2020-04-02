@@ -120,9 +120,10 @@ export class BThread {
     }
 
     private _processNextBid(returnValue?: any): Set<string> {
+        this._isCompleted = false; // thread could have been reset
         const cancelledPromises = this._cancelPendingPromises();
         this._overrides = [];
-        const next: IteratorResult<any> = this._thread.next(returnValue);
+        const next = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;
             this._nextBid = null;
@@ -168,11 +169,11 @@ export class BThread {
     public getBids(): BidDictionaries | null {
         if(this._nextBid === null || this._isCompleted) {
             this._currentBids = null;
-            return null;
         }
-        if(typeof this._nextBid === 'function') {
+        else if(typeof this._nextBid === 'function') {
             this._currentBids = getBidDictionaries(this.id, this._nextBid(), this._pendingEvents);
-        } else if(this._currentBids === null) {
+        } 
+        else if(this._currentBids === null) {
             this._currentBids = getBidDictionaries(this.id, this._nextBid, this._pendingEvents);
         }
         return this._currentBids;
