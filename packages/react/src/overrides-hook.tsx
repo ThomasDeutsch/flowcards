@@ -48,7 +48,7 @@ function mergeOverrides(component: any, props: any, overrides: any[]): [ReactCom
 function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any[], name: string): ReactComponent {
     const Comp = React.forwardRef((props: any, ref: any): any => {
         const [Component, mergedProps] = mergeOverrides(DefaultComponent, props, overrides);
-        return <Component ref={ref} {...mergedProps}>{props.children}</Component>;
+        return React.cloneElement(<DefaultComponent ref={ref} {...mergedProps}>{props.children}</DefaultComponent>);
     });
     Comp.displayName = `${name}_override`;
     return React.memo(Comp);
