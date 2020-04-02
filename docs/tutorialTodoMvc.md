@@ -1,6 +1,7 @@
 # Tutorial 1:  Requirements -> Code
 In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application.<br/>
 The goal of this tutorial is to illustrate how flowcards enables a requirement-centric coding style.<br/>
+This is the [final result](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
 
 ## Begin With the End in Mind
 In the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
@@ -27,14 +28,15 @@ What would happen if requirements have a place in our code?
 What would this do to software development, if requirements are found in planning, coding and testing?
 We can try this out - right now.
 
-## TodoMVC
+# TodoMVC
 The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).<br/>
 We will use the provided specification for this tutorial.<br/>
 I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a [basic react application](https://codesandbox.io/s/todomvc-step-1-44z8u) with multiple components and no functionality.<br/>
 You do not need to understand react to be able to follow this tutorial.<br/>
 I will provide codesandboxes for intermediate steps and link them here. There is no need to type everything in by yourself, but i would encourage you to make small changes and see how they work out.<br/>
-<br/>
-Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from the next steps.
+
+## Step 1
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from this step.
 
 ### NoTodos
 The first requirement is simple: When there are no todos, #main and #footer should be hidden.<br/>
@@ -144,10 +146,14 @@ You can create a new requirement or you get the state from the `useScenarios` ho
 </Main>
 ```
 
+## Step 2
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from this step.
+
 ### TODO
 
 - Zeige die umsetzung des nächsten Scenarios
 - Zeige wie man in der Komponente überprüfen kann, ob eine funktionalität vorhanden ist
+  -> Dann reicht es einfach Scenarien ein/auszukommentieren.
 - Zeige im scaffolden das if (todos.length > 0) ...
 
 
