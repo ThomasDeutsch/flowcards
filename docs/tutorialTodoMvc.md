@@ -178,3 +178,8 @@ Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that wi
 - Zeige wie man in der Komponente überprüfen kann, ob eine funktionalität vorhanden ist
   -> Dann reicht es einfach Scenarien ein/auszukommentieren.
 - Zeige im scaffolden das if (todos.length > 0) ...
+
+
+## Step 3 - extending behaviours
+- block delete and check, as log as there is an item in edit mode.
+- props override can be a function
