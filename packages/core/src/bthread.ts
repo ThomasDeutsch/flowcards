@@ -92,11 +92,10 @@ export class BThread {
         if (key || key === 0) {
             this.key = key;
         }
-        this._overrides = [];
         this._dispatch = dispatch;
         this._generator = generator.bind(this._getThreadContext());
-        this._currentArguments = args;
         this._logger = logger;
+        this._currentArguments = args;
         this._thread = this._generator(...this._currentArguments);
         this._processNextBid();
         if (this._logger) this._logger.logReaction(this.id, ReactionType.init);
@@ -123,7 +122,7 @@ export class BThread {
     private _processNextBid(returnValue?: any): Set<string> {
         const cancelledPromises = this._cancelPendingPromises();
         this._overrides = [];
-        const next: any = this._thread.next(returnValue);
+        const next: IteratorResult<any> = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;
             this._nextBid = null;
