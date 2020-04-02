@@ -2,7 +2,7 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
-import { ThreadContext } from "../src/bthread";
+import { BTContext } from "../src/bthread";
 
 
 test("a thread will accept an optional array of arguments", () => {
@@ -26,12 +26,12 @@ test("a thread will accept an optional array of arguments", () => {
 test("a thread will accept an optional key", () => {
     let receivedKeyA, receivedKeyB;
 
-    function* thread(this: ThreadContext) {
+    function* thread(this: BTContext) {
         receivedKeyA = this.key;
         yield bp.wait('A');
     }
 
-    function* threadB(this: ThreadContext) {
+    function* threadB(this: BTContext) {
         receivedKeyB = this.key;
         yield bp.wait('A');
     }
@@ -50,7 +50,7 @@ test("a thread will accept an optional key", () => {
 test("if no key is provided, the default key value is null", () => {
     let receivedKeyA;
 
-    function* thread(this: ThreadContext) {
+    function* thread(this: BTContext) {
         receivedKeyA = this.key;
         yield bp.wait('A');
     }

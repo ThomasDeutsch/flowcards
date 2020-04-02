@@ -3,7 +3,7 @@
 
 
 import * as bp from "../src/bid";
-import { ThreadContext } from '../src/bthread';
+import { BTContext } from '../src/bthread';
 import { scenarios } from '../src/index';
 
 
@@ -59,7 +59,7 @@ test("if promises are pending, the thread will return a set of those pending pro
 
 test("the thread will return the state value, and a completed-flag if the thread completes", () => {
     let state: any = null
-    function* thread(this: ThreadContext) {
+    function* thread(this: BTContext) {
         this.setState('foo');
         yield bp.request("A");
     }

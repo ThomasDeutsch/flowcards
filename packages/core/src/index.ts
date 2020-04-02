@@ -5,7 +5,7 @@ type UpdateCallback = (scenario: Scenario) => any;
 
 
 export { OverridesByComponent } from './overrides';
-export { ThreadContext } from './bthread';
+export { BTContext } from './bthread';
 export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, Scenario, StateRef } from './update-loop';
 export { wait, intercept, block, request } from "./bid";
 export { DispatchByWait } from './dispatch-by-wait';

@@ -2,13 +2,13 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
-import { ThreadContext, ThreadState } from '../src/bthread';
+import { BTContext, ThreadState } from '../src/bthread';
 
 
 test("a thread gets reset, when the arguments change", () => {
     let initCount = 0;
     let receivedValue;
-    function* threadA(this: ThreadContext) {
+    function* threadA(this: BTContext) {
         yield bp.request('A');
         this.setState('foo');
     }
@@ -32,7 +32,7 @@ test("a thread gets reset, when the arguments change", () => {
 test("a state from another thread is a fixed Ref-Object. Passing this Object will not reset a receiving thread", () => {
     let initCount = 0;
     let receivedValue;
-    function* threadA(this: ThreadContext) {
+    function* threadA(this: BTContext) {
         this.setState('foo');
         yield bp.request('A');
     }
@@ -56,7 +56,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
 
 test("when a thread resets, the bids will be re-evaluated", () => {
     let threadBCount = 0;
-    function* threadA(this: ThreadContext) {
+    function* threadA(this: BTContext) {
         yield bp.request('A');
     }
 

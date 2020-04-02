@@ -4,7 +4,9 @@ import { Bid, BidArrayDictionary } from './bid';
 import { ActionType } from './action';
 import { DispatchFunction } from './update-loop';
 
-export type DispatchByWait = Record<string, Function>;
+type TriggerDispatch = Function | null;
+type DispatchValueEvaluation = (valueToDispatch: any) => TriggerDispatch;
+export type DispatchByWait = Record<string, DispatchValueEvaluation>;
 
 
 export function dispatchByWait(dispatch: DispatchFunction, waits: BidArrayDictionary): DispatchByWait {

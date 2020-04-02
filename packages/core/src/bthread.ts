@@ -24,7 +24,7 @@ type OverrideFn = (dispatchByWait: Record<string, Function>, pendingEvents: Set<
 type setOverrideFn = (overrideFn: OverrideFn) => void;
 type HideFn = (defaultComponentName: string) => void;
 
-export interface ThreadContext {
+export interface BTContext {
     key: string | number | null;
     override: setOverrideFn;
     hide: HideFn;
@@ -71,7 +71,7 @@ export class BThread {
         return this._overrides;
     }
 
-    private _getThreadContext(): ThreadContext {
+    private _getBTContext(): BTContext {
         return {
             key: this.key,
             override: (overrideFn: OverrideFn): void => {
@@ -93,7 +93,7 @@ export class BThread {
             this.key = key;
         }
         this._dispatch = dispatch;
-        this._generator = generator.bind(this._getThreadContext());
+        this._generator = generator.bind(this._getBTContext());
         this._logger = logger;
         this._currentArguments = args;
         this._thread = this._generator(...this._currentArguments);
