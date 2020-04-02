@@ -148,6 +148,7 @@ You can create a new requirement or you get the state from the `useScenarios` ho
 
 - Zeige die umsetzung des nächsten Scenarios
 - Zeige wie man in der Komponente überprüfen kann, ob eine funktionalität vorhanden ist
+  -> Dann reicht es einfach Scenarien ein/auszukommentieren.
 - Zeige im scaffolden das if (todos.length > 0) ...
 
 
