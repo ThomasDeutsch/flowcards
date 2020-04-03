@@ -6,7 +6,7 @@ This is the [final result](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
 Goals of this tutorial: 
 - to tell you about my motivation
 - show how requirements can have a place in code
-- show first basics of @flowcards
+- show first flowcards basics
 
 ## Begin With the End in Mind
 
