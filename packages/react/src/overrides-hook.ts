@@ -23,7 +23,7 @@ function applyOverride(override: any, Component: ReactComponent, props: any = {}
             Component = component;
         }
         if (propsOverride) { // props override
-            props.style = maybeMerge(props, typeof style === "function" ? propsOverride(props) : propsOverride);            
+            props = maybeMerge(props, typeof style === "function" ? propsOverride(props) : propsOverride);            
         }
         if (style) { // style override
             props.style = maybeMerge(props.style, typeof style === "function" ? style(props) : style);
@@ -45,7 +45,7 @@ function initializeOverrideWrappers(defaultComponents: Record<string, ReactCompo
     const components: Record<string, ReactComponent> = {};
     for (const name of Object.keys(defaultComponents)) {
       components[name] = React.forwardRef((props: any, ref: any): any => { // this is the wrapper component
-        const overrides = getOverrides(name) || {};
+        const overrides = getOverrides(name);
         const [Component, mergedProps] = mergeOverrides(defaultComponents[name], props, overrides);
         return React.createElement(Component, Object.assign({ ref: ref }, mergedProps), props.children);
       });
@@ -54,10 +54,10 @@ function initializeOverrideWrappers(defaultComponents: Record<string, ReactCompo
     return components;
   }
 
-export function useOverrides(defaultComponents: ComponentDictionary, overrideByComponent: OverridesByComponent): ComponentDictionary {
+export function useOverrides(defaultComponents: Record<string, any>, overrideByComponent: OverridesByComponent): ComponentDictionary {
     const overrideDictRef: any = useRef<ComponentDictionary>({});
     overrideDictRef.current = overrideByComponent;
     return React.useMemo<ComponentDictionary>((): ComponentDictionary => 
-        initializeOverrideWrappers(defaultComponents, (componentName: string): any[] => overrideDictRef.current[componentName])
+        initializeOverrideWrappers(defaultComponents, (componentName: string): any[] => overrideDictRef.current[componentName] || {})
     , [defaultComponents]);
 }
