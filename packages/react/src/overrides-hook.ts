@@ -23,7 +23,7 @@ function applyOverride(override: any, Component: ReactComponent, props: any = {}
             Component = component;
         }
         if (propsOverride) { // props override
-            props = maybeMerge(props, typeof style === "function" ? propsOverride(props) : propsOverride);            
+            props = maybeMerge(props, typeof propsOverride === "function" ? propsOverride(props) : propsOverride);            
         }
         if (style) { // style override
             props.style = maybeMerge(props.style, typeof style === "function" ? style(props) : style);
