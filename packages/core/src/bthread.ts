@@ -23,12 +23,14 @@ type ComponentName = string;
 type PropsStyleComponent = "style" | "props" | "component";
 type OverrideFn = (dispatchByWait: DispatchByWait, pendingEvents: Set<string>) => Record<ComponentName, Record<PropsStyleComponent, any> | any>;
 type setOverrideFn = (overrideFn: OverrideFn) => void;
-type HideFn = (defaultComponentName: string) => void;
+type HideFn = (...defaultComponentName: string[]) => void;S
+type PropsFunction = (componentName: string, propsFn: OverrideFn) => void;
 
 export interface BTContext {
     key: string | number | null;
     override: setOverrideFn;
     hide: HideFn;
+    props: PropsFunction;
     setState: Function;
     state: Function;
 }
@@ -78,10 +80,16 @@ export class BThread {
             override: (overrideFn: OverrideFn): void => {
                 this._overrides.push(overrideFn);
             },
-            hide: (...componentNames: string[]): void => {
+            hide: (...componentNames: string[]): void => { // shortcut for component override
                 componentNames.forEach((componentName :string): void => {
                     this._overrides.push((): any => ({[componentName]: (): any => null}));
                 });
+            },
+            props: (componentName: string, propsOverride: OverrideFn): void => { // shortcut for props override
+                const fn: OverrideFn = (dispatch: DispatchByWait, pendingEvents: Set<string>): Record<string, any> => {
+                    return {[componentName] : {props: propsOverride(dispatch, pendingEvents)}};
+                }
+                this.overrides.push(fn);
             },
             setState: (val: any): void => {
                 this._stateValue = val;
