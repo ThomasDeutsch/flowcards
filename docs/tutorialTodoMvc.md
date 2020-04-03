@@ -53,8 +53,7 @@ This requirement can be translated into this [generator function](https://codebu
 ```ts
 function* noTodosWillHideHeaderAndFooter(this: BTContext, itemCount: number) {
   if (itemCount === 0) {
-    this.hide('Main');
-    this.hide('Footer');
+    this.hide("Main", "Footer");
     yield null;
   }
 }
@@ -77,30 +76,22 @@ In this requirement we will find a bit more functionality.<br>
 - when the todo is added, the input is cleared.
 
 ```ts
-function* newTodoCanBeAdded(this: BTContext, todos: StateRef<string[]>) {
-  let latestId = 0;
-  let inputVal = '';
-  while (true) {
-    this.override('TodoInput', ({ inputOnEnter, inputOnChange }): any => ({
-      props: {
-        onEnter: inputOnEnter,
-        onChange: inputOnChange,
-        inputVal: inputVal
-      }
-    }));
-    const [type, val] = yield [
-      wait('inputOnChange'),
-      wait('inputOnEnter', val => val.trim().length > 0)
-    ];
-    if (type === 'inputOnChange') {
-      inputVal = val;
-      continue;
+const handleKeyDown = (onEnter: GuardedDispatch) => (e: any) => {
+  if (e.key === "Enter") {
+    const dispatch = onEnter(e.target.value);
+    if (dispatch) {
+      e.target.value = "";
+      dispatch();
     }
-    yield request('s_todos', [
-      ...todos.current,
-      { id: latestId++, title: inputVal, isCompleted: false }
-    ]);
-    inputVal = '';
+  }
+};
+
+function* newTodoCanBeAdded(this: BTContext, todos: StateRef<Todo[]>) {
+  let latestId = 0;
+  while (true) {
+    this.props("TodoInput", ({ inputOnEnter }) => ({ onKeyDown: handleKeyDown(inputOnEnter) }));
+    const val = yield wait("inputOnEnter", (val: string) => val.trim().length > 0);
+    yield request("s_todos", [...todos.current, { id: latestId++, title: val, isCompleted: false }]);
   }
 }
 ```
@@ -113,19 +104,6 @@ They are local state. Not local to a component, but local to the scenario.<br/>
 The `inputOnEnter` wait function has a second argument. A guard function `(val) => val.trim().length > 0`. If this
 guard will return false, the inputOnEnter event can not be dispatched.<br/>
 This way, you do not need to make input validation checks in your component. The scenario takes care of it.<br/>
-
-```ts
-  // you can find this in the TodoInput component:
-  const handleKeyDown = (e: any) => {
-    if (e.key === "Enter") {
-      const dispatch = props.onEnter(e.target.value);
-      if (dispatch) dispatch();
-    }
-  };
-
-  //since TypeScript 3.7 you can do this:
-  props.onEnter(e.target.value)?();
-```
 
 The last thing that happens in this generator is a `request` to change the todos.<br/>
 There are only 4 functions you can use: `wait`, `request`, `block` and `intercept`.<br/>
