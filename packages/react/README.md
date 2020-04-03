@@ -1,1 +1,3 @@
-![updateLoop](/docs/img/updateloop.png "updateLoop").
+### TODO: Core Docs
+
+![updateLoop](/docs/img/updateloop.png 'updateLoop').
