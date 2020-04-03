@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { scenarioId, ThreadGen, BThread, ThreadDictionary, ThreadState } from './bthread';
-import { getAllBids, BidDictionariesByType, BidType, BidDictionaries } from './bid';
+import { getAllBids, BidDictionariesByType, BidType, BidDictionaries, GuardFunction } from './bid';
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { dispatchByWait, DispatchByWait } from "./dispatch-by-wait";
@@ -163,6 +163,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
     let loopCount = 0;
     const logger = new Logger();
     const dwpObj: DispatchByWait = {};
+    const combinedGuardByWait: Record<string, GuardFunction> = {};
     const actionDispatch: DispatchFunction = (a: Action): void => {
         const x: DispatchedAction = {
             id: loopCount+1,
@@ -202,7 +203,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             changeStates(stateDictionary, nextAction);
             return updateLoop(null, restActions);
         }
-        const dbw = dispatchByWait(actionDispatch, dwpObj, bids.wait);
+        const dbw = dispatchByWait(actionDispatch, dwpObj, combinedGuardByWait, bids.wait);
 
         const threadStateById = Object.keys(threadDictionary).reduce((acc: Record<string, ThreadState>, threadId: string): Record<string, ThreadState> => {
             acc[threadId] = threadDictionary[threadId].state;

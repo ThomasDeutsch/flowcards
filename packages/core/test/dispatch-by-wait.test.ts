@@ -80,22 +80,26 @@ test("the evaluated dispatch function is the same Object, as long as there is th
 test("The guard will always reflect the current bids", (done) => {
     let x: any;
     let y: any;
+    let firstDispatch: any;
 
     function* thread1(this: BTContext) {
         yield [bp.request("asyncRequest1", () => delay(100)), bp.wait("X"), bp.wait("A", (x:any) => x > 1)];
         yield [bp.request("asyncRequest2", () => delay(100)), bp.wait("Y"), bp.wait("A", (x:any) => x < 1)];
-        yield bp.wait("FIN");
+        yield [bp.wait("FIN"), bp.wait("A")];
     }
 
     scenarios((enable) => {
         enable(thread1);
     }, ({dispatch}) => {
-        console.log('dispatch: ', dispatch);
-        if(dispatch["X"]) x = dispatch["A"](0);
+        if(dispatch["X"]) {
+            x = dispatch["A"](0);
+            firstDispatch = dispatch["A"];
+        }
         else if(dispatch["Y"]) y = dispatch["A"](0);
         else {
-            const l = x;
-            expect(l).toEqual(1);
+            const isSame = Object.is(dispatch["A"], firstDispatch);
+            expect(isSame).toBeTruthy();
+            expect(x).not.toBe(y);
             done();  
         }  
     });
