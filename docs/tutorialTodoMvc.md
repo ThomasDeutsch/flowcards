@@ -7,7 +7,8 @@ This is the [final result](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
 ## Begin With the End in Mind
 
 In the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
-Answering this question is only possible if you have defined software requirements.<br/>
+How do we find out?<br/>
+Answering this question is only possible if we have agreed on a goal. The requirements we want to fulfill.<br/>
 
 ### A Friend
 
@@ -29,9 +30,9 @@ Requirements would help answer those questions - but they are burried - so you s
 
 I think that the abandonment of requirements in our code<br/>
 leads to a systemic problem in software development.<br/>
-I want to bring development, planning and testing together.<br/>
-When all disciplines share the same artifact ( the requirement ) we have created a common ground,<br/>
-where we share the same language. This will create new possibilites for effective teams.<br/>
+I want to offer a tool, to bring development, planning and testing together.<br/>
+To create a common ground, where we share the same language.<br/> 
+This will create new possibilites for effective and creative teams.<br/>
 This is what i want.<br/> 
 You do not have to take my word for it. See for yourself.<br/>
 
