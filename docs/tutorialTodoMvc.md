@@ -1,8 +1,12 @@
 # Tutorial 1: Requirements -> Code
 
 In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application.<br/>
-The goal of this tutorial is to illustrate how flowcards enables a requirement-centric coding style.<br/>
 This is the [final result](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
+<br/>
+Goals of this tutorial: 
+- to tell you about my motivation
+- show how requirements can have a place in code
+- show first basics of @flowcards
 
 ## Begin With the End in Mind
 
@@ -23,23 +27,24 @@ Not a great way to treat your friend.<br/>
 ### Digging
 
 This becomes a problem when you want to make code-changes.<br/>
-You find yourself asking questions like "do we need the property x?" or "why is this if/else here?".<br/>
-Requirements would help answer those questions - but they are burried - so you start digging.<br/>
+You find yourself asking questions like "do we need this part?" or "why is this if/else here?".<br/>
+Requirements would help answer those questions. They are the reason WHY you wrote that code.<br/>
+But we forget about them, they are burried - so you start digging.<br/>
 
-### Desired Future
+### My Desired Future
 
 I think that the abandonment of requirements in our code<br/>
 leads to a systemic problem in software development.<br/>
 I want to offer a tool, to bring development, planning and testing together.<br/>
 To create a common ground, where we share the same language.<br/> 
-This will create new possibilites for effective and creative teams.<br/>
-This is what i want.<br/> 
-You do not have to take my word for it. See for yourself.<br/>
+I want to make software development a bit more welcoming.<br/>
+<br/>
 
 # TodoMVC
 
-The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality).<br/>
-We will use the provided specification for this tutorial.<br/>
+This is not about framework comparisons.<br/>
+I chose to write the TodoMVC app, because you all know what to expect.<br/>
+The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) and we will use the provided specification for this tutorial.<br/>
 I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a [basic react application](https://codesandbox.io/s/todomvc-step-1-44z8u) with multiple components and no functionality.<br/>
 You do not need to understand react to be able to follow this tutorial.<br/>
 I will provide codesandboxes for intermediate steps and link them here. There is no need to type everything in by yourself, but i would encourage you to make small changes and see how they work out.<br/>
