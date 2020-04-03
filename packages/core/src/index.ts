@@ -8,7 +8,7 @@ export { OverridesByComponent } from './overrides';
 export { BTContext } from './bthread';
 export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, Scenario, StateRef } from './update-loop';
 export { wait, intercept, block, request } from "./bid";
-export { DispatchByWait } from './dispatch-by-wait';
+export { DispatchByWait, GuardedDispatch } from './dispatch-by-wait';
 
 export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback | null): void {
     const updateLoop = createUpdateLoop(enable, (a: DispatchedAction): void => {

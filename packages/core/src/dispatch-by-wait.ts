@@ -5,8 +5,8 @@ import { ActionType } from './action';
 import { DispatchFunction } from './update-loop';
 
 type TriggerDispatch = Function | null;
-type DispatchValueEvaluation = (valueToDispatch: any) => TriggerDispatch;
-export type DispatchByWait = Record<string, DispatchValueEvaluation>;
+export type GuardedDispatch = (valueToDispatch: any) => TriggerDispatch;
+export type DispatchByWait = Record<string, GuardedDispatch>;
 interface EventCache {
     payload?: any;
     dispatch?: Function;
