@@ -16,8 +16,6 @@ They enable you to say things like "I have finished my work" or "can you do this
 It is nice to have them around.<br/>
 We find requirements on both ends - planning and testing - but what about coding?<br/>
 They are nowhere to be found in our code.<br/>
-We as Developers look at those requirements and use them to make needed changes<br/>
-to different parts of our software to fullfill them.<br/>
 They shape our code, but the requirement itself is nowhere to be found - they have no place.<br/>
 Not a great way to treat your friend.<br/>
 
@@ -25,13 +23,17 @@ Not a great way to treat your friend.<br/>
 
 This becomes a problem when you want to make code-changes.<br/>
 You find yourself asking questions like "do we need the property x?" or "why is this if/else here?".<br/>
-Requirements would help answer those questions, but they are burried, so you start digging.<br/>
+Requirements would help answer those questions - but they are burried - so you start digging.<br/>
 
-### Experiment
+### Desired Future
 
-What would happen if requirements have a place in our code?
-What would this do to software development, if requirements are found in planning, coding and testing?
-We can try this out - right now.
+I think that the abandonment of requirements in our code<br/>
+leads to a systemic problem in software development.<br/>
+I want to bring development, planning and testing together.<br/>
+When all disciplines share the same artifact ( the requirement ) we have created a common ground,<br/>
+where we share the same language. This will create new possibilites for effective teams.<br/>
+This is what i want.<br/> 
+You do not have to take my word for it. See for yourself.<br/>
 
 # TodoMVC
 
