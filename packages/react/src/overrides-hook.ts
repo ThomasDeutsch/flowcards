@@ -58,6 +58,6 @@ export function useOverrides(defaultComponents: Record<string, any>, overrideByC
     const overrideDictRef: any = useRef<ComponentDictionary>({});
     overrideDictRef.current = overrideByComponent;
     return React.useMemo<ComponentDictionary>((): ComponentDictionary => 
-        initializeOverrideWrappers(defaultComponents, (componentName: string): any[] => overrideDictRef.current[componentName] || {})
+        initializeOverrideWrappers(defaultComponents, (componentName: string): any[] => overrideDictRef.current[componentName] || [])
     , [defaultComponents]);
 }
