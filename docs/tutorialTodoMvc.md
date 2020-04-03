@@ -76,9 +76,9 @@ In this requirement we will find a bit more functionality.<br>
 - when the todo is added, the input is cleared.
 
 ```ts
-const handleKeyDown = (onEnter: GuardedDispatch) => (e: any) => {
+const handleKeyDown = (onKeyDown: GuardedDispatch) => (e: any) => {
   if (e.key === "Enter") {
-    const dispatch = onEnter(e.target.value);
+    const dispatch = onKeyDown(e.target.value);
     if (dispatch) {
       e.target.value = "";
       dispatch();
