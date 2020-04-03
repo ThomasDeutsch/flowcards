@@ -5,6 +5,7 @@ import * as utils from "./utils";
 import { Logger, ReactionType } from "./logger";
 import { ActionType } from './action';
 import { DispatchFunction } from './update-loop';
+import { DispatchByWait } from './dispatch-by-wait';
 
 export type ThreadGen = any; // TODO: Type this generator
 export interface ThreadDictionary {
@@ -20,7 +21,7 @@ export interface ThreadState {
 
 type ComponentName = string;
 type PropsStyleComponent = "style" | "props" | "component";
-type OverrideFn = (dispatchByWait: Record<string, Function>, pendingEvents: Set<string>) => Record<ComponentName, Record<PropsStyleComponent, any> | any>;
+type OverrideFn = (dispatchByWait: DispatchByWait, pendingEvents: Set<string>) => Record<ComponentName, Record<PropsStyleComponent, any> | any>;
 type setOverrideFn = (overrideFn: OverrideFn) => void;
 type HideFn = (defaultComponentName: string) => void;
 

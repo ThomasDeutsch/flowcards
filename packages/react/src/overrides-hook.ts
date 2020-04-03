@@ -11,7 +11,6 @@ function maybeMerge(a: Record<string, any>, b?: Record<string, any>): Record<str
 type ReactComponent = FunctionComponent<{}> | ComponentClass<{}, any>;
 type ComponentDictionary = Record<string, any>;
 
-
 // from: https://github.com/tlrobinson/overrides
 function applyOverride(override: any, Component: ReactComponent, props: any = {}): [ReactComponent, any] {
     // component override shortcut:
@@ -24,12 +23,7 @@ function applyOverride(override: any, Component: ReactComponent, props: any = {}
             Component = component;
         }
         if (propsOverride) { // props override
-            if(typeof propsOverride === "function") {
-                props = {...props, ...propsOverride(props)};
-            } else {
-                props = {...props, ...propsOverride};
-            }
-            
+            props.style = maybeMerge(props, typeof style === "function" ? propsOverride(props) : propsOverride);            
         }
         if (style) { // style override
             props.style = maybeMerge(props.style, typeof style === "function" ? style(props) : style);
@@ -45,30 +39,25 @@ function mergeOverrides(component: any, props: any, overrides: any[]): [ReactCom
     return overrides.reduce(([c, p], o): [ReactComponent, any] => applyOverride(o, c, p), [component, props]);
 }
 
-function getOverrideComponent(DefaultComponent: ReactComponent, overrides: any[], name: string): ReactComponent {
-    const Comp = React.forwardRef((props: any, ref: any): any => {
-        const [Component, mergedProps] = mergeOverrides(DefaultComponent, props, overrides);
-        return React.createElement(Component, Object.assign({ ref: ref }, mergedProps), props.children);
-    });
-    Comp.displayName = `${name}_override`;
-    return React.memo(Comp);
-}
+type getOverridesFunction = (componentName: string) => any[];
 
-export function useOverrides(defaultComponents: ComponentDictionary, override: OverridesByComponent): ComponentDictionary {
-    const overrideDict: any = useRef<ComponentDictionary>({});
-    return Object.keys(defaultComponents).reduce((acc:any, name): ComponentDictionary => {
-        if(!override[name]) {
-            delete overrideDict.current[name];
-            acc[name] = defaultComponents[name];
-            return acc;
-        }
-        if(!overrideDict.current[name] || overrideDict.current[name].id !== override[name].id) {
-            overrideDict.current[name] = {
-                id: override[name].id,
-                component: getOverrideComponent(defaultComponents[name], override[name].overrides, name)
-            }
-        }
-        acc[name] = overrideDict.current[name].component;
-        return acc;
-    }, {});
+function initializeOverrideWrappers(defaultComponents: ReactComponent, getOverrides: getOverridesFunction) {
+    const components: Record<string, ReactComponent> = {};
+    for (const name of Object.keys(defaultComponents)) {
+      components[name] = React.forwardRef((props: any, ref: any): any => { // this is the wrapper component
+        const overrides = getOverrides(name) || {};
+        const [Component, mergedProps] = mergeOverrides(defaultComponents[name], props, overrides);
+        return React.createElement(Component, Object.assign({ ref: ref }, mergedProps), props.children);
+      });
+      components[name].displayName = `${name}_Overridable`;
+    }
+    return components;
+  };
+
+export function useOverrides(defaultComponents: ComponentDictionary, overrideByComponent: OverridesByComponent): ComponentDictionary {
+    const overrideDictRef: any = useRef<ComponentDictionary>({});
+    overrideDictRef.current = overrideByComponent;
+    return React.useMemo(() => {
+        initializeOverrideWrappers(defaultComponents, (componentName: string) => overrideDictRef.current[componentName]);
+    }, [defaultComponents]);
 }
