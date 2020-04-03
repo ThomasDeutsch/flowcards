@@ -9,7 +9,7 @@ function maybeMerge(a: Record<string, any>, b?: Record<string, any>): Record<str
 }
 
 type ReactComponent = FunctionComponent<{}> | ComponentClass<{}, any>;
-type ComponentDictionary = Record<string, any>;
+type ComponentDictionary = Record<string, ReactComponent>;
 
 // from: https://github.com/tlrobinson/overrides
 function applyOverride(override: any, Component: ReactComponent, props: any = {}): [ReactComponent, any] {
@@ -41,7 +41,7 @@ function mergeOverrides(component: any, props: any, overrides: any[]): [ReactCom
 
 type getOverridesFunction = (componentName: string) => any[];
 
-function initializeOverrideWrappers(defaultComponents: ReactComponent, getOverrides: getOverridesFunction) {
+function initializeOverrideWrappers(defaultComponents: Record<string, ReactComponent>, getOverrides: getOverridesFunction): Record<string, ReactComponent> {
     const components: Record<string, ReactComponent> = {};
     for (const name of Object.keys(defaultComponents)) {
       components[name] = React.forwardRef((props: any, ref: any): any => { // this is the wrapper component
@@ -52,12 +52,12 @@ function initializeOverrideWrappers(defaultComponents: ReactComponent, getOverri
       components[name].displayName = `${name}_Overridable`;
     }
     return components;
-  };
+  }
 
 export function useOverrides(defaultComponents: ComponentDictionary, overrideByComponent: OverridesByComponent): ComponentDictionary {
     const overrideDictRef: any = useRef<ComponentDictionary>({});
     overrideDictRef.current = overrideByComponent;
-    return React.useMemo(() => {
-        initializeOverrideWrappers(defaultComponents, (componentName: string) => overrideDictRef.current[componentName]);
-    }, [defaultComponents]);
+    return React.useMemo<ComponentDictionary>((): ComponentDictionary => 
+        initializeOverrideWrappers(defaultComponents, (componentName: string): any[] => overrideDictRef.current[componentName])
+    , [defaultComponents]);
 }
