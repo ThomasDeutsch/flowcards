@@ -27,6 +27,19 @@ test("dispatch is always the same Object.", (done) => {
     });
 });
 
+test("a payload is optional", () => {
+
+    function* thread1(this: BTContext) {
+        yield bp.wait("B");
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+    }, ({dispatch}) => {
+        expect(dispatch["B"]()).not.toEqual(null);
+    });
+});
+
 test("dispatch[eventName] is the same Object, as long as there is a wait", (done) => {
     let x: any;
     let y: any;
@@ -54,7 +67,6 @@ test("dispatch[eventName] is the same Object, as long as there is a wait", (done
 test("the evaluated dispatch function is the same Object, as long as there is the same wait and payload", (done) => {
     let x: any;
     let y: any;
-    let z: any;
 
     function* thread1(this: BTContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];

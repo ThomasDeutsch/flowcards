@@ -13,9 +13,9 @@ interface EventCache {
 }
 
 function removeUnusedWaits(rec: Record<string, any>, waits: Record<string, Bid[]>): void {
-    Object.keys(rec).forEach(wait => {
+    Object.keys(rec).forEach((wait): void => {
         if(!waits[wait]) delete rec[wait];
-    })
+    });
 }
 
 function combinedGuardFn(waits: BidArrayDictionary, eventName: string): GuardFunction {
@@ -27,7 +27,7 @@ function combinedGuardFn(waits: BidArrayDictionary, eventName: string): GuardFun
     }, []);
     return (val: any): boolean => {
         if(all.length === 0) return true;
-        return all.some(g => g(val));
+        return all.some((g): boolean => g(val));
     }
 }
 
@@ -39,7 +39,7 @@ export function dispatchByWait(dispatch: DispatchFunction, dbw: DispatchByWait, 
         if(!acc[eventName]) {
             const cache: EventCache = {payload: undefined, dispatch: undefined};
             acc[eventName] = (payload?: any): TriggerDispatch => {
-                if(!Object.is(payload, cache.payload)) {
+                if(!cache.payload || !Object.is(payload, cache.payload)) {
                     cache.payload = payload;
                     cache.dispatch = (): void => dispatch({ type: ActionType.waited, eventName: eventName, payload: payload });
                 }
