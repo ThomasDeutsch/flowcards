@@ -23,7 +23,7 @@ type ComponentName = string;
 type PropsStyleComponent = "style" | "props" | "component";
 type OverrideFn = (dispatchByWait: DispatchByWait, pendingEvents: Set<string>) => Record<ComponentName, Record<PropsStyleComponent, any> | any>;
 type setOverrideFn = (overrideFn: OverrideFn) => void;
-type HideFn = (...defaultComponentName: string[]) => void;S
+type HideFn = (...defaultComponentName: string[]) => void;
 type PropsFunction = (componentName: string, propsFn: OverrideFn) => void;
 
 export interface BTContext {

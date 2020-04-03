@@ -19,7 +19,7 @@
     "prepublishOnly": "npm run build"
   },
   "license": "MIT",
-  "gitHead": "209aede3f382f5d6df3ba529e033d0a2c011dc99",
+  "gitHead": "cd2e017842cb871233bbd21bffb17b3f30e0f6b6",
   "publishConfig": {
     "access": "public"
   }
