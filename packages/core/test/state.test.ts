@@ -121,3 +121,4 @@ test("state changes can not be triggered by dispatch. Only threads can change st
         expect(scenario.dispatch["count"]).toBeUndefined();
     });
 });
+

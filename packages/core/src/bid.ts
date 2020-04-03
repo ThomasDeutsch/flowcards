@@ -8,12 +8,14 @@ export enum BidType {
     pending = "pending"
 }
 
+export type GuardFunction = (payload: any) => boolean
+
 export interface Bid {
     type: BidType;
     threadId: string;
     eventName: string;
     payload?: any;
-    guard?: Function;
+    guard?: GuardFunction;
 }
 
 export type BidArrayDictionary = Record<string, Bid[]>;
@@ -74,7 +76,7 @@ function getAllBidsForType(
     type: BidType,
     coll: BidDictionaries[],
     blockedEventNames: Set<string> | null,
-    guardedBlocks:Record<string, Function> | null
+    guardedBlocks: Record<string, Function> | null
 ): BidArrayDictionary {
     return coll.reduce((acc: BidArrayDictionary, curr: BidDictionaries): BidArrayDictionary => {
         const bidByEventName = curr[type];
@@ -84,7 +86,7 @@ function getAllBidsForType(
             }
             const bid = {...bidByEventName[eventName]}
             if(guardedBlocks && guardedBlocks[eventName]) {
-                bid.guard = bid.guard ? (a: any): boolean => bid.guard && bid.guard(a) && !guardedBlocks[eventName](a) : (a: any): boolean => !guardedBlocks[eventName](a);
+                bid.guard = bid.guard ? (a: any): boolean => (!!bid.guard && bid.guard(a) && !guardedBlocks[eventName](a)) : (a: any): boolean => !guardedBlocks[eventName](a);
             }
             if (acc[eventName]) {
                 acc[eventName].push(bid);
@@ -93,7 +95,6 @@ function getAllBidsForType(
             }
         });
         return acc;
-        
     }, {});
 }
 
@@ -141,11 +142,11 @@ export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByT
 
 // Bid API --------------------------------------------------------------------
 
-export function wait(eventName: string, guard?: Function): Bid {
+export function wait(eventName: string, guard?: GuardFunction): Bid {
     return { type: BidType.wait, eventName: eventName, guard: guard, threadId: ""};
 }
 
-export function intercept(eventName: string, guard?: Function): Bid {
+export function intercept(eventName: string, guard?: GuardFunction): Bid {
     return { type: BidType.intercept, eventName: eventName, guard: guard, threadId: ""};
 }
 
@@ -153,6 +154,6 @@ export function request(eventName: string, payload?: any): Bid {
     return { type: BidType.request, eventName: eventName, payload: payload, threadId: "" };
 }
 
-export function block(eventName: string, guard?: Function): Bid {
+export function block(eventName: string, guard?: GuardFunction): Bid {
     return { type: BidType.block, eventName: eventName, guard: guard, threadId: "" };
 }

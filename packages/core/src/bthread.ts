@@ -140,14 +140,14 @@ export class BThread {
         this._increaseProgress();
         this._pendingPromiseDict[eventName]
             .then((data): void => {
-                if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
+                if (this._pendingPromiseDict[eventName] && Object.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
                     this._pendingEvents.delete(eventName);
                     this._dispatch({ type: ActionType.resolve, threadId: this.id, eventName: eventName, payload: data });
                 }
             })
             .catch((e): void => {
-                if (this._pendingPromiseDict[eventName] && utils.is(promise, this._pendingPromiseDict[eventName])) {
+                if (this._pendingPromiseDict[eventName] && Object.is(promise, this._pendingPromiseDict[eventName])) {
                     delete this._pendingPromiseDict[eventName];
                     this._pendingEvents.delete(eventName);
                     this._dispatch({ type: ActionType.reject, threadId: this.id, eventName: eventName, payload: e });

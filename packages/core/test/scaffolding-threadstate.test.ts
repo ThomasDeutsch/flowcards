@@ -73,7 +73,26 @@ test("the thread will return the state value, and a completed-flag if the thread
         expect(state.nrProgressions).toBe(1);
         expect(state.value).toEqual('foo');
     }
-    
-    
+});
 
+
+test("a thread state is always the same Object.", (done) => {
+    let previous:any;
+
+    function* thread1(this: BTContext) {
+        this.setState(0);
+        yield [bp.request("asyncRequest", () => delay(100)), bp.wait("A")];
+        this.setState(1);
+        yield bp.wait("B");
+    }
+
+    scenarios((enable) => {
+        const x = enable(thread1);
+    }, ({thread}) => {
+        if(thread["thread1"].value !== 1) previous = thread["thread1"];
+        else {
+            expect(Object.is(previous, thread["thread1"])).toBeTruthy();
+            done();
+        }
+    });
 });
