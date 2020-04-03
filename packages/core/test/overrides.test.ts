@@ -49,7 +49,7 @@ test("a component override will receive a dispatch function for the waiting even
     scenarios((enable) => {
         enable(thread1);
     }, (scenario) => {
-        const eventOneDispatchFn = scenario.overrides.componentX.overrides[0]();
+        const eventOneDispatchFn = scenario.overrides.componentX[0]();
         expect(eventOneDispatchFn).toBeDefined();
     });
 });
@@ -64,7 +64,7 @@ test("the component-override will receive all waiting event dispatch functions",
     scenarios((enable) => {
         enable(thread1);
     }, (scenario) => {
-        const [eventOne, eventTwo] = scenario.overrides.componentX.overrides[0]();
+        const [eventOne, eventTwo] = scenario.overrides.componentX[0]();
         expect(eventOne).toBeDefined();
         expect(eventTwo).toBeDefined();
     });
@@ -87,6 +87,6 @@ test("override props get merged", () => {
         enable(thread1);
         enable(thread2);
     }, (scenario) => {
-        expect(scenario.overrides.ComponentA.overrides.length).toEqual(2);
+        expect(scenario.overrides.ComponentA.length).toEqual(2);
     });
 });
