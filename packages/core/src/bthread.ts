@@ -78,8 +78,10 @@ export class BThread {
             override: (overrideFn: OverrideFn): void => {
                 this._overrides.push(overrideFn);
             },
-            hide: (defaultComponentName: string): void => {
-                this._overrides.push((): any => ({[defaultComponentName]: (): any => null}));
+            hide: (...componentNames: string[]): void => {
+                componentNames.forEach((componentName :string): void => {
+                    this._overrides.push((): any => ({[componentName]: (): any => null}));
+                });
             },
             setState: (val: any): void => {
                 this._stateValue = val;
