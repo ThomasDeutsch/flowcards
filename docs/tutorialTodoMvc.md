@@ -12,7 +12,7 @@ Goals of this tutorial:
 ## Begin With the End in Mind
 
 In the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
-Answering this question is only possible if we have agreed on a goal. The requirements we want to fulfill.<br/>
+Answering this question is only possible if everyony has agreed on a goal. The requirements we want to fulfill.<br/>
 
 ### A Friend
 
