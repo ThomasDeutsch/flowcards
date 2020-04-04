@@ -77,7 +77,7 @@ function* noTodosWillHideHeaderAndFooter(this: BTContext, itemCount: number) {
 ```
 
 Every scenario we want to enable will be defined as a generator.<br/>
-All you need to know at this point, is that a generator will pause its execution when it reaches the `yield` keyword.
+All you need to know at this point, is that a generator will pause its execution when it reaches the `yield` keyword.<br/>
 `yield null` means: wait here forever.<br/>
 This generator is later used to create something called a BThread.<br/>
 `this` will be bound to a BThread context (BTContext).<br/>
