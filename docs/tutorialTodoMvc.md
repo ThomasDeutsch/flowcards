@@ -12,25 +12,24 @@ Goals of this tutorial:
 ## Begin With the End in Mind
 
 In the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
-How do we find out?<br/>
 Answering this question is only possible if we have agreed on a goal. The requirements we want to fulfill.<br/>
 
 ### A Friend
 
 As a developer, requirements are your friend.<br/>
 They enable you to say things like "I have finished my work" or "can you do this task for me?".<br/>
-It is nice to have them around.<br/>
+It is nice to have them around, particularly in a professional setting.<br/>
 We find requirements on both ends - planning and testing - but what about coding?<br/>
 They are nowhere to be found in our code.<br/>
-They shape our code, but the requirement itself is nowhere to be found - they have no place.<br/>
+They shape our code, but the requirements are nowhere to be found - they have no place.<br/>
 Not a great way to treat your friend.<br/>
 
 ### Digging
 
-This becomes a problem when you want to make code-changes.<br/>
-You find yourself asking questions like "do we need this part?" or "why is this if/else here?".<br/>
-Requirements would help answer those questions. They are the reason WHY you wrote that code.<br/>
-But we forget about them, they are burried - so you start digging.<br/>
+This becomes an obvious problem when you want to make changes to a bigger codebase.<br/>
+You find yourself asking questions like "do we need this part?" or "why is this if/else here? - this is stupid".<br/>
+Requirements would help answer those questions. They are the reason WHY someone wrote that code.<br/>
+But they are burried - so you start digging.<br/>
 
 ### My Desired Future
 
