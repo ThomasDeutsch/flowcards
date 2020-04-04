@@ -48,8 +48,8 @@ I used a template to create a [basic React application](https://codesandbox.io/s
 How does flowcards fit into the React framework?<br/>
 React will take a state and turn it into its UI-representation. You can think of it as a function: `React(state) => UI`.<br/>
 flowcards is a tool to define state as a combination of scenarios we want to enable.<br/>
-So you we end up with: `React(flowcards(requirements)) => UI`.<br/>
-This tutorial is not about React. We will focus on the `flowcards(requirements)` bit.<br/>
+So you we end up with: `React(flowcards(scenarios)) => UI`.<br/>
+This tutorial is not about React. We will focus on the `flowcards(scenarios)` bit.<br/>
 
 When you follow the tutorial, there is no need to type everything in by yourself.<br/> 
 For every step, there is a codesanbox you can use.<br/>
@@ -57,12 +57,15 @@ I would encourage you to make small changes and see how they work out.<br/>
 
 ## Step 1
 
+In the provided specification, we can find functional requirements. We take those requirements to define "scenarios" or "flows". Every scenario will enable a behaviour.<br/>
 Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from this step.
 
 ### NoTodos
 
-The first requirement is simple: When there are no todos, #main and #footer should be hidden.<br/>
-This requirement can be translated into this [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5):
+To the first requirement: 
+- When there are no todos, Main and Footer should be hidden
+
+We tranlate this requirement to a [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5):
 
 ```ts
 function* noTodosWillHideHeaderAndFooter(this: BTContext, itemCount: number) {
@@ -74,9 +77,10 @@ function* noTodosWillHideHeaderAndFooter(this: BTContext, itemCount: number) {
 ```
 
 Every scenario we want to enable will be defined as a generator.<br/>
-All you need to know at this point is that a generator will pause its execution when it reaches the yield keyword.
-`yield null`means - wait here forever.<br/>
+All you need to know at this point, is that a generator will pause its execution when it reaches the `yield` keyword.
+`yield null` means: wait here forever.<br/>
 This generator is later used to create something called a BThread.<br/>
+`this` will be bound to a BThread context (BTContext).<br/>
 <br/>
 Let's take a look at the second requirement.
 
