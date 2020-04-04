@@ -4,7 +4,7 @@ In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application.<br
 This is the [final result](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
 <br/>
 Goals of this tutorial: 
-- to talk about my motivation
+- to talk about the "why"
 - show how requirements can have a place in code
 - show first flowcards basics
 <br/>
