@@ -44,8 +44,8 @@ to make software development a bit more welcoming.<br/>
 
 The TodoMVC application is a good starting point, because you already know what to expect, and the TodoMVC team provided [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) we will use for our implementation.<br/>
 A main goal of this tutorial is to show how we can use the provided specification in our code.<br/>
-I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a [basic React application](https://codesandbox.io/s/todomvc-step-1-44z8u).
-How does flowcards fit into the React framework?<br/>. 
+I used a template to create a [basic React application](https://codesandbox.io/s/todomvc-step-1-44z8u).<br>
+How does flowcards fit into the React framework?<br/>
 React will take a state and turn it into its UI-representation. You can think of it as a function: `React(state) => UI`.<br/>
 flowcards is a tool to define state as a combination of scenarios we want to enable.<br/>
 So you we end up with: `React(flowcards(requirements)) => UI`.<br/>
