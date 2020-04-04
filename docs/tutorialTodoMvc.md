@@ -4,9 +4,10 @@ In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application.<br
 This is the [final result](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
 <br/>
 Goals of this tutorial: 
-- to tell you about my motivation
+- to talk about my motivation
 - show how requirements can have a place in code
 - show first flowcards basics
+<br/>
 
 ## Begin With the End in Mind
 
@@ -36,16 +37,18 @@ But we forget about them, they are burried - so you start digging.<br/>
 I think that the abandonment of requirements in our code<br/>
 leads to a systemic problem in software development.<br/>
 I want to offer a tool, to bring development, planning and testing together.<br/>
-To create a common ground, where we share the same language.<br/> 
-I want to make software development a bit more welcoming.<br/>
+To create a common ground, where we share the same language and<br/> 
+to make software development a bit more welcoming.<br/>
 <br/>
 
 # TodoMVC
 
-This application is a good starting point, because you already know what to expect, and the TodoMVC team provided [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) that we will use for our implementation.<br/>
+The TodoMVC application is a good starting point, because you already know what to expect, and the TodoMVC team provided [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) that we will use for our implementation.<br/>
 A goal of this tutorial is to show that we can have a place in our code for the TodoMVC requirements.<br/>
-I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a [basic React application](https://codesandbox.io/s/todomvc-step-1-44z8u). This application is divided into multiple components, but it is static - without behaviour.<br/>
-How does flowcards fit into the React ecosystem?<br/>. React will take a state and turn it into its UI-representation. You can think of it as a function: `React(state) => UI`.  flowcards helps us to define the state.<br/>
+I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a [basic React application](https://codesandbox.io/s/todomvc-step-1-44z8u). This application is divided into multiple components, but it is static - without state.<br/>
+How does flowcards fit into the React ecosystem?<br/>. 
+React will take a state and turn it into its UI-representation. You can think of it as a function: `React(state) => UI`.  flowcards is a tool to define state as a combination of scenarios we want to enable.<br/>
+So you we end up with: `React(flowcards(requirements)) => UI`.<br/>
 <br/>
 There is no need to type everything in by yourself, but i would encourage you to make small changes and see how they work out. For every step, there is a codesanbox you can use.<br/>
 
