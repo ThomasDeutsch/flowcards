@@ -42,12 +42,12 @@ I want to make software development a bit more welcoming.<br/>
 
 # TodoMVC
 
-This is not about framework comparisons.<br/>
-I chose to write the TodoMVC app, because you all know what to expect.<br/>
-The TodoMVC team created [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) and we will use the provided specification for this tutorial.<br/>
-I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a [basic react application](https://codesandbox.io/s/todomvc-step-1-44z8u) with multiple components and no functionality.<br/>
-You do not need to understand react to be able to follow this tutorial.<br/>
-I will provide codesandboxes for intermediate steps and link them here. There is no need to type everything in by yourself, but i would encourage you to make small changes and see how they work out.<br/>
+This application is a good starting point, because you already know what to expect, and the TodoMVC team provided [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) that we will use for our implementation.<br/>
+A goal of this tutorial is to show that we can have a place in our code for the TodoMVC requirements.<br/>
+I used this [template](https://github.com/tastejs/todomvc-app-template/) to create a [basic React application](https://codesandbox.io/s/todomvc-step-1-44z8u). This application is divided into multiple components, but it is static - without behaviour.<br/>
+How does flowcards fit into the React ecosystem?<br/>. React will take a state and turn it into its UI-representation. You can think of it as a function: `React(state) => UI`.  flowcards helps us to define the state.<br/>
+<br/>
+There is no need to type everything in by yourself, but i would encourage you to make small changes and see how they work out. For every step, there is a codesanbox you can use.<br/>
 
 ## Step 1
 
