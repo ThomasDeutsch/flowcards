@@ -2,6 +2,7 @@
 
 In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application.<br/>
 This is the [final result](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
+The audience i want to target in this tutorial are JavaScript/TypeScript Frontend Developers.<br/>
 <br/>
 Goals of this tutorial: 
 - to talk about the "why"
