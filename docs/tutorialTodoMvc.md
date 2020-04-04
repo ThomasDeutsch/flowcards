@@ -24,7 +24,7 @@ They are nowhere to be found in our code.<br/>
 They shape our code, but the requirement itself is nowhere to be found - they have no place.<br/>
 Not a great way to treat your friend.<br/>
 
-### Digging
+### The hidden WHY
 
 This becomes an obvious problem when you want to make changes to a bigger codebase.<br/>
 You find yourself asking questions like "do we need this part?" or "why is this if/else here? - this is stupid".<br/>
