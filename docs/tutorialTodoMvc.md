@@ -4,7 +4,7 @@ In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application. [`
 It is targeted towards JavaScript/TypeScript Developers.<br/>
 <br/>
 Goals of this tutorial: 
-- to talk about the "why"
+- to tell you about the "why"
 - show how requirements can have a place in our code ⭐
 - show first flowcards basics
 <br/>
