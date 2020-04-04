@@ -68,7 +68,7 @@ To the first requirement:
 We tranlate this requirement to a [generator function](https://codeburst.io/understanding-generators-in-es6-javascript-with-examples-6728834016d5):
 
 ```ts
-function* noTodosWillHideHeaderAndFooter(this: BTContext, itemCount: number) {
+function* noTodosWillHideMainAndFooter(this: BTContext, itemCount: number) {
   if (itemCount === 0) {
     this.hide("Main", "Footer");
     yield null;
@@ -103,13 +103,11 @@ const handleKeyDown = (onEnter: GuardedDispatch) => (e: any) => {
     }
   }
 };
-
 function* newTodoCanBeAdded(this: BTContext, todos: StateRef<Todo[]>) {
-  let latestId = 0;
   while (true) {
     this.props("TodoInput", ({ inputOnEnter }) => ({ onKeyDown: handleKeyDown(inputOnEnter) }));
     const val = yield wait("inputOnEnter", (val: string) => val.trim().length > 0);
-    yield request("s_todos", [...todos.current, { id: latestId++, title: val, isCompleted: false }]);
+    yield request("s_todos", [...todos.current, { id: utils.uuid(), title: val, isCompleted: false }]);
   }
 }
 ```
