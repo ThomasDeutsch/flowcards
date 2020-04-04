@@ -14,7 +14,7 @@ Goals of this tutorial:
 In the end, it comes down to a simple question: Is the software working as desined / expected?<br/>
 Answering this question is only possible if we agreed on a goal. The requirements we want to fulfill.<br/>
 
-### A Friend
+### Friend
 
 As a developer, requirements are your friend.<br/>
 They enable you to say things like "I have finished my work" or "can you do this task for me?".<br/>
@@ -24,14 +24,14 @@ They are nowhere to be found in our code.<br/>
 They shape our code, but the requirement itself is nowhere to be found - they have no place.<br/>
 Not a great way to treat your friend.<br/>
 
-### The hidden WHY
+### lost the "why"
 
 This becomes an obvious problem when you want to make changes to a bigger codebase.<br/>
 You find yourself asking questions like "do we need this part?" or "why is this if/else here? - this is stupid".<br/>
 Requirements would help you to understand. They are the reason WHY someone wrote that code.<br/>
 But they are burried - so you start digging.<br/>
 
-### My Desired Future
+### my Desired Future
 
 I think that the abandonment of requirements in our code<br/>
 leads to a systemic problem in software development.<br/>
