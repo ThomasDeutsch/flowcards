@@ -38,7 +38,7 @@ const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(d
 
 function* sender() {
   yield request("eventOne", "thank you for ..."); // request
-  yield request("eventTwo", delayed("taking a look at flowcards", 3000)); // async request
+  yield request("eventTwo", () => delayed("taking a look at flowcards", 3000)); // async request
 }
 
 function* receiver() {
