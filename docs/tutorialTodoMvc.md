@@ -26,7 +26,7 @@ Not a great way to treat your friend.<br/>
 ### lost the "why"
 
 This becomes an obvious problem when you want to make changes to a bigger codebase.<br/>
-You find yourself asking questions like "do we need this part?" or "why is this if/else here? - this is stupid".<br/>
+You find yourself asking questions like "do we need this part?" or "why is this if/else here?<br/>
 Requirements would help you to understand. They are the reason WHY someone wrote that code.<br/>
 But they are burried - so you start digging.<br/>
 
