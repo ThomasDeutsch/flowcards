@@ -10,9 +10,9 @@ You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g
 A user-flow is an intra-object description of a reactive system.<br/>
 Instead of describing the full reactivity of each component object-by-object (like XState),<br/>
 we define a system by the scenarios we want to enable flow-by-flow.<br/>
-This creates new possibilities in how we word with requirements and with each other.<br/>
+This creates new possibilities in how we work with requirements - and with each other.<br/>
 
-👉 [this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will get you started on the idea and show you first basics.<br/>
+👉 [this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
 
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).<br/>
 Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-programming-in-a-way-that-allows-for-easier-changes-5d95b9fb6928). I can also recommend [this talk](https://www.youtube.com/watch?v=_BLQIE-_prc).
