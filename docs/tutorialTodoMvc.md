@@ -142,7 +142,7 @@ Arguments can be seen as BThread context. If they change, the BThreads get reset
 So, if the length of the todos change, the `noTodosWillHideHeaderAndFooter` BThread will be created again.<br/>
 The `newTodoCanBeAdded` will never reset. It receives an object that is always the same.<br/>
 The check is done by an [Object.is](https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Object/is) for every argument.<br/>
-To make it reset on todo-changes, you can pass the argument `todosRef.current`.<br/>
+If you want to make it reset on todo-changes, you can pass the argument `todosRef.current`.<br/>
 
 
 ### using Overrides
