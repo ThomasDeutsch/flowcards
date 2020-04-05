@@ -138,9 +138,10 @@ const { overrides, state } = useScenarios((enable, state) => {
 });
 ```
 The `state` function is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.<br/>
-Arguments can be seen as BThread context. If they change, the BThreads gets reset.<br/>
-If the length of the todos change, the `noTodosWillHideHeaderAndFooter` BThread will be created again.<br/>
+Arguments can be seen as BThread context. If they change, the BThreads get reset.<br/>
+So, if the length of the todos change, the `noTodosWillHideHeaderAndFooter` BThread will be created again.<br/>
 The `newTodoCanBeAdded` will never reset. It receives an object that is always the same.<br/>
+The check is done by an [Object.is](https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Object/is) for every argument.<br/>
 To make it reset on todo-changes, you can pass the argument `todosRef.current`.<br/>
 
 
