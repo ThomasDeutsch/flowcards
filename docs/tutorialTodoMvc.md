@@ -247,4 +247,9 @@ You don't want to enable a "count goals" behaviour, if the soccer game hasn't ev
 
 
 ## Final Step
+This is the final result: [codesandbox](https://codesandbox.io/s/todomvc-final-xbll0).<br/>
+I have implemented 
+  - clear all completed
+  - filter (without routing)
+  - local storage
 
