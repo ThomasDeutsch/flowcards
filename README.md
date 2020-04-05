@@ -1,12 +1,11 @@
 # flowcards
 
 a tool to describe behaviour - flow by flow.
+You go from `App(state) => UI` to `App(flowcards(scenarios)) => UI` 
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
-
-`flowcards(scenarios) => state`
 
 You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
 A user-flow is an intra-object description of a reactive system.<br/>
