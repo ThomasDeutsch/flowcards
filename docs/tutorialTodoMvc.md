@@ -188,6 +188,7 @@ When you take a look at the `Main` component, you can see how we use the toggleA
 It is a good practice to assume that the toggleAll-handler could be absent.<br/>
 If at some point a new behaviour is introduced, for example that you can only toggle less then 10 todos,<br>
 then props.toggleAll might be undefined. It also lets you think about possible UI-states in your component.<br/>
+If you plan to create reusable components, this is a must.<br/>
 ```ts
   const setCompleteAll = props.toggleAll && props.toggleAll(true);
   const setUnCompleteAll = props.toggleAll && props.toggleAll(false);
