@@ -200,3 +200,27 @@ You can use "optional chaining" ( since [Typescript 3.7](https://www.typescriptl
   const setUnCompleteAll = props.toggleAll?.(false);
 ```
 
+# complete & delete todos
+```ts
+function* itemCanBeCompleted(this: BTContext, todos: StateRef<Todo[]>) {
+  while (true) {
+    this.override(({ toggleCompleteItem }) => ({ TodoItem: { props: { onComplete: toggleCompleteItem } } }));
+    let todoId = yield wait("toggleCompleteItem");
+    let newTodos = todos.current.map((todo: Todo) =>
+      todoId === todo.id ? { ...todo, isCompleted: !todo.isCompleted } : todo
+    );
+    yield request("s_todos", newTodos);
+  }
+}
+```
+
+```ts
+function* itemCanBeDeleted(this: BTContext, todos: StateRef<Todo[]>) {
+  while (true) {
+    this.override(({ deleteTodoItem }) => ({ TodoItem: { props: { onDelete: deleteTodoItem } } }));
+    let todoId = yield wait("deleteTodoItem");
+    let newTodos = todos.current.filter((todo: Todo) => todoId !== todo.id);
+    yield request("s_todos", newTodos);
+  }
+}
+```
