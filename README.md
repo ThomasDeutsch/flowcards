@@ -38,20 +38,29 @@ const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(d
 
 function* sender() {
   yield request("eventOne", "thank you for ..."); // request
-  yield request("eventTwo", delayed("taking a look at flowcards", 2000)); // async request
+  yield request("eventTwo", delayed("taking a look at flowcards", 3000)); // async request
 }
 
 function* receiver() {
-  let msg = yield wait("eventOne"); // wait for event
-  console.log(msg);
-  msg = yield wait("eventTwo"); // wait for async event
-  console.log(msg);
+  let messageOne = yield wait("eventOne"); // wait for event
+  console.log(messageOne);
+  let [type, messageTwo] = yield [wait("eventTwo"), wait("cancel")];
+  if (type === "eventTwo") console.log(messageTwo);
+  else console.log("async call has been canceled");
 }
 
-scenarios(enable => {
-  enable(sender);
-  enable(receiver);
-});
+scenarios(
+  enable => {
+    enable(sender);
+    enable(receiver);
+  },
+  ({ dispatch }) => {
+    const btn = document.getElementById("cancelBtn");
+    if (btn && dispatch.cancel) {
+      btn.onclick = dispatch.cancel();
+    }
+  }
+);
 ```
 
 
