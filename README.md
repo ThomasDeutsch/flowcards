@@ -60,9 +60,12 @@ scenarios(
     enable(receiver);
   },
   ({ dispatch }) => {
-    const btn = document.getElementById("cancelBtn");
-    if (btn && dispatch.cancel) {
+    const btn = <HTMLInputElement>document.getElementById("cancelBtn");
+    if(!btn) return;
+    if (dispatch.cancel) {
       btn.onclick = dispatch.cancel();
+    } else {
+      btn.disabled = true;
     }
   }
 );
