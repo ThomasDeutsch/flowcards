@@ -41,7 +41,7 @@ function mergeOverrides(component: any, props: any, overrides: any[]): [ReactCom
 
 type getOverridesFunction = (componentName: string) => any[];
 
-function initializeOverrideWrappers(defaultComponents: Record<string, ReactComponent>, getOverrides: getOverridesFunction): Record<string, ReactComponent> {
+function initializeOverrideWrappers(defaultComponents: Record<string, ReactComponent>, getOverrides: getOverridesFunction): Record<string, any> {
     const components: Record<string, ReactComponent> = {};
     for (const name of Object.keys(defaultComponents)) {
       components[name] = React.forwardRef((props: any, ref: any): any => { // this is the wrapper component
