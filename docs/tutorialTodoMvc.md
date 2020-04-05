@@ -200,7 +200,7 @@ You can use "optional chaining" ( since [Typescript 3.7](https://www.typescriptl
   const setUnCompleteAll = props.toggleAll?.(false);
 ```
 
-# complete & delete todos
+### complete & delete todos
 - Clicking the checkbox marks the todo as complete 
 ```ts
 function* itemCanBeCompleted(this: BTContext, todos: StateRef<Todo[]>) {
