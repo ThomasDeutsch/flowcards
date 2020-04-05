@@ -111,8 +111,8 @@ function* newTodoCanBeAdded(this: BTContext, todos: StateRef<Todo[]>) {
 }
 ```
 For this requirement, we will define an eventhandler and a gernerator function.<br/>
-The eventhandler gets a `GuardedDispatch` function. It will make use of a guard-function that we have expressed in our generator:  `(val: string) => val.trim().length > 0`.<br/>
-If the guard-function returns true, the `onEnter(e.target.value)` will return a `dispatch` function.<br/>
+The eventhandler gets a `GuardedDispatch` function. A guard for this function is defined in the generator function:  `(val: string) => val.trim().length > 0`.<br/>
+If the guard-function returns true, the `onEnter(e.target.value)` will return a `dispatch` function - null otherwise.<br/>
 This way, you do not need to make input validation checks in your component. The scenario takes care of it.<br/>
 <br/>
 When we look at the generator, we can see that the onKeyDown gets passed to the TodoInput component by using an override expression:<br/>
