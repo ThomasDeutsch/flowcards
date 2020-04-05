@@ -214,7 +214,6 @@ function* itemCanBeCompleted(this: BTContext, todos: StateRef<Todo[]>) {
   }
 }
 ```
-for delete:
 - Hovering over the todo shows the remove button ( clicking it will remove the item )
 ```ts
 function* itemCanBeDeleted(this: BTContext, todos: StateRef<Todo[]>) {
@@ -226,6 +225,7 @@ function* itemCanBeDeleted(this: BTContext, todos: StateRef<Todo[]>) {
   }
 }
 ```
+<br/>
 
 The new behaviours get enabled in the `useScenarios` function.
 ```ts 
@@ -243,3 +243,7 @@ useScenarios((enable, state) => {
 As you can see, the new behaviours are only enabled if we have some todos.<br/>
 You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
 For performance reasons, but also to show a dependency between behaviours.<br/>
+
+
+## Final Step
+
