@@ -49,7 +49,7 @@ function* receiver() {
   if (type === "eventTwo") {
     console.log(messageTwo);
   } else {
-    console.log("async call has been canceled");
+    console.log("async call has been cancelled");
   }
 }
 
