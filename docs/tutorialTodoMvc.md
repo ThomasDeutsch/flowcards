@@ -123,7 +123,7 @@ The last thing that happens in this generator is a `request` to change the todos
 `yield request("s_todos", ...)` can be translated to:  This BThrad makes a request to change the todos state.<br/>
 If the request is fullfilled, the generator-function will continue.<br/>
 There are only 3 basic functions the generator can use `wait`, `request` and `block`.<br/>
-They define an interface for BThrad to BThread communication.<br/>.
+They define an interface for BThrad to BThread communication.<br/>
 Read more about it [here](https://medium.com/@lmatteis/react-behavioral-cf6523747aaf).<br/>
 
 ### from generators to BThreads
