@@ -58,7 +58,7 @@ I would encourage you to make small changes and see how they work out.<br/>
 ## Step 1
 
 In the provided specification, we can find functional requirements. We take those requirements to define "scenarios" or "flows". Every scenario will enable a behaviour.<br/>
-Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that includes the code from this step.
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-pt4ie) that includes the code from this step.
 
 ### no todos
 
@@ -163,7 +163,7 @@ It is no longer about modular components. We are now talking about modular behav
 ## Step 2
 
 In this part, we will continue to implement behaviours, based on the requirements from the TodoMVC specification.<br/>
-Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that includes the code from this step.<br/>
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-pt4ie) that includes the code from this step.<br/>
 
 ### mark all as complete
 
