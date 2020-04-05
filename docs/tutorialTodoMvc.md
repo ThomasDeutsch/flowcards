@@ -201,7 +201,7 @@ You can use "optional chaining" ( since [Typescript 3.7](https://www.typescriptl
 ```
 
 # complete & delete todos
-This is the generator function for the item complete behaviour: 
+- Clicking the checkbox marks the todo as complete 
 ```ts
 function* itemCanBeCompleted(this: BTContext, todos: StateRef<Todo[]>) {
   while (true) {
@@ -214,7 +214,8 @@ function* itemCanBeCompleted(this: BTContext, todos: StateRef<Todo[]>) {
   }
 }
 ```
-and this is for delete:
+for delete:
+- Hovering over the todo shows the remove button ( clicking it will remove the item )
 ```ts
 function* itemCanBeDeleted(this: BTContext, todos: StateRef<Todo[]>) {
   while (true) {
@@ -226,7 +227,7 @@ function* itemCanBeDeleted(this: BTContext, todos: StateRef<Todo[]>) {
 }
 ```
 
-All the new behaviour gets enabled in the `useScenarios` function.
+The new behaviours get enabled in the `useScenarios` function.
 ```ts 
 useScenarios((enable, state) => {
   const todosRef = state("s_todos", []);
@@ -239,5 +240,6 @@ useScenarios((enable, state) => {
   }
 });
 ```
-As you can see, the three new behaviours are only enabled if we have some todos.<br/>
+As you can see, the new behaviours are only enabled if we have some todos.<br/>
 You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
+For performance reasons, but also to show a dependency between behaviours.<br/>
