@@ -242,7 +242,7 @@ useScenarios((enable, state) => {
 ```
 As you can see, the new behaviours are only enabled if we have some todos.<br/>
 You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
-For performance reasons, but also to show a dependency between behaviours.<br/>
+Not only for performance reasons, but also to show dependencies between BThreads / states.<br/>
 
 
 ## Final Step
