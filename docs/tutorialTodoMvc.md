@@ -77,7 +77,7 @@ function* noTodosWillHideMainAndFooter(this: BTContext, itemCount: number) {
 ```
 
 Every scenario we want to enable will be defined as a generator.<br/>
-All you need to know at this point, is that a generator will pause its execution when it reaches the `yield` keyword.<br/>
+A generator will pause its execution when it reaches the `yield` keyword.<br/>
 `yield null` means: wait here forever.<br/>
 This generator is later used to create something called a BThread.<br/>
 `this` will be bound to a BThread context (BTContext).<br/>
@@ -111,56 +111,46 @@ function* newTodoCanBeAdded(this: BTContext, todos: StateRef<Todo[]>) {
   }
 }
 ```
-
-The first thing i want to point out are the variables `latestId` and `inputVal`.<br/>
-They are local state. Not local to a component, but local to the scenario.<br/>
-`this.override` is a function that will accept a component name and an override expression. This idea comes from the uber-team - called [overrides pattern](https://medium.com/@dschnr/better-reusable-react-components-with-the-overrides-pattern-9eca2339f646). In this case, we change 3 properties of the `TodoInput` component.<br/>
-`({inputOnEnter, inputOnChange})`are two dispatch functions. When the input calls them, they will trigger the corresponding events `inputOnEnter` and `inputOnChange`.
-
-The `inputOnEnter` wait function has a second argument. A guard function `(val) => val.trim().length > 0`. If this
-guard will return false, the inputOnEnter event can not be dispatched.<br/>
+For this requirement, we will define an eventhandler and a gernerator function.<br/>
+The eventhandler gets a `GuardedDispatch` function. It will make use of a guard-function that we have expressed in our generator:  `(val: string) => val.trim().length > 0`.<br/>
+If the guard-function returns true, the `onEnter(e.target.value)` will return a `dispatch` function.<br/>
 This way, you do not need to make input validation checks in your component. The scenario takes care of it.<br/>
-
+<br/>
+When we look at the generator, we can see that the onKeyDown gets passed to the TodoInput component by using an override expression:<br/>
+`this.props("TodoInput", ({ inputOnEnter }) => ({ onKeyDown: handleKeyDown(inputOnEnter) }));`
+This is the [overrides pattern](https://medium.com/@dschnr/better-reusable-react-components-with-the-overrides-pattern-9eca2339f646) in action. `this.hide` from the first generator is also an override.<br>
+<br/>
 The last thing that happens in this generator is a `request` to change the todos.<br/>
-There are only 4 functions you can use: `wait`, `request`, `block` and `intercept`.<br/>
+`yield request("s_todos", ...)` can be translated to:  This BThrad makes a request to change the todos state.<br/>
+If the request is fullfilled, the generator-function will continue.<br/>
+There are only 3 basic functions the generator can use `wait`, `request` and `block`.<br/>
+They define an interface for BThrad to BThread communication.<br/>.
 Read more about it [here](https://medium.com/@lmatteis/react-behavioral-cf6523747aaf).<br/>
 
-### Create BThreads
+### from generators to BThreads
 
 BThreads are created by using the `enable` function.<br/>
-The first argument is the genartor-function, the second is an array of arguments for the generator-function. The `state` function is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.
-Feel free to change the function names to `flow, eventCache` if you like.
+It will receive the generator-fn and an array of arguments passed to that generator-fn. The `state` function is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.
 
 ```ts
-useScenarios((enable, state) => {
-  const todosRef = state('s_todos', []);
+const { overrides, state } = useScenarios((enable, state) => {
+  const todosRef = state("s_todos", []);
   enable(noTodosWillHideHeaderAndFooter, [todosRef.current.length]);
   enable(newTodoCanBeAdded, [todosRef]);
 });
 ```
 
-### Apply Overrides
+### using Overrides
 
-The `useOverrides` hook will take the calculated overrides and apply them to selected Components.<br/>
+There is a second hook that comes with @flowcards/react. The `useOverrides` hook will take the calculated overrides, and create a wrapper component that makes the passed in component overridable.<br/>
 
 ```ts
 const { Main, Footer, TodoInput } = useOverrides(Components, overrides);
 ```
 
 However, you can use flowcards without overrides if you want.<br/>
-The `useScenarios` hook will return a `Scenarios` object, that will contain all the information you need to update your UI.<br/>
+The `useScenarios` hook returns a `Scenarios` object, that will contain all the information you need to update your UI.<br/>
 <br/>
-For example: The todoMVC spec is missing a requirement that todo-items are listed in the main-section.<br/>
-If you work directly with the requirements, it is very noticeable.<br/>
-You can create a new requirement or you get the state from the `useScenarios` hook and render those Items without a BThread.<br/>
-
-```ts
-<Main>
-  {state.s_todos.map(todo => (
-    <TodoItem title={todo.title} />
-  ))}
-</Main>
-```
 
 ## Step 2
 
