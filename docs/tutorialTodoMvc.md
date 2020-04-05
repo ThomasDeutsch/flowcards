@@ -201,26 +201,43 @@ You can use "optional chaining" ( since [Typescript 3.7](https://www.typescriptl
 ```
 
 # complete & delete todos
+This is the generator function for the item complete behaviour: 
 ```ts
 function* itemCanBeCompleted(this: BTContext, todos: StateRef<Todo[]>) {
   while (true) {
-    this.override(({ toggleCompleteItem }) => ({ TodoItem: { props: { onComplete: toggleCompleteItem } } }));
-    let todoId = yield wait("toggleCompleteItem");
+    this.props("TodoItem", ({ toggleCompleteItem }) => ({ onComplete: toggleCompleteItem }));
+    let toggledTodoId = yield wait("toggleCompleteItem");
     let newTodos = todos.current.map((todo: Todo) =>
-      todoId === todo.id ? { ...todo, isCompleted: !todo.isCompleted } : todo
+      toggledTodoId === todo.id ? { ...todo, isCompleted: !todo.isCompleted } : todo
     );
     yield request("s_todos", newTodos);
   }
 }
 ```
-
+and this is for delete:
 ```ts
 function* itemCanBeDeleted(this: BTContext, todos: StateRef<Todo[]>) {
   while (true) {
-    this.override(({ deleteTodoItem }) => ({ TodoItem: { props: { onDelete: deleteTodoItem } } }));
+    this.props("TodoItem", ({ deleteTodoItem }) => ({ onDelete: deleteTodoItem }));
     let todoId = yield wait("deleteTodoItem");
     let newTodos = todos.current.filter((todo: Todo) => todoId !== todo.id);
     yield request("s_todos", newTodos);
   }
 }
 ```
+
+All the new behaviour gets enabled in the `useScenarios` function.
+```ts 
+useScenarios((enable, state) => {
+  const todosRef = state("s_todos", []);
+  enable(noTodosWillHideHeaderAndFooter, [todosRef.current.length]);
+  enable(newTodoCanBeAdded, [todosRef]);
+  if (todosRef.current.length > 0) {
+    enable(toggleCompleteForAllTodos, [todosRef]);
+    enable(itemCanBeCompleted, [todosRef]);
+    enable(itemCanBeDeleted, [todosRef]);
+  }
+});
+```
+As you can see, the three new behaviours are only enabled if we have some todos.<br/>
+You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
