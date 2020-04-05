@@ -58,9 +58,9 @@ I would encourage you to make small changes and see how they work out.<br/>
 ## Step 1
 
 In the provided specification, we can find functional requirements. We take those requirements to define "scenarios" or "flows". Every scenario will enable a behaviour.<br/>
-Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from this step.
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that includes the code from this step.
 
-### NoTodos
+### no todos
 
 To the first requirement: 
 - When there are no todos, Main and Footer should be hidden
@@ -84,7 +84,7 @@ This generator is later used to create something called a BThread.<br/>
 <br/>
 Let's take a look at the second requirement.
 
-### New Todo
+### new todo
 
 In this requirement we will find a bit more functionality.<br>
 
@@ -162,16 +162,88 @@ It is no longer about modular components. We are now talking about modular behav
 
 ## Step 2
 
-Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from this step.
+In this part, we will continue to implement behaviours, based on the requirements from the TodoMVC specification.<br/>
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that includes the code from this step.<br/>
 
-### TODO
+### mark all as complete
 
-- Zeige die umsetzung des nächsten Scenarios
-- Zeige wie man in der Komponente überprüfen kann, ob eine funktionalität vorhanden ist
-  -> Dann reicht es einfach Scenarien ein/auszukommentieren.
-- Zeige im scaffolden das if (todos.length > 0) ...
+The "Mark all as complete" checkbox should: 
+- toggle all todos.
+- reflect the current state (checked, when all TodoItems are checked)
+
+```ts
+const areAllCompleted = (todos: Todo[]) => todos.every((t: Todo) => t.isCompleted === true);
+const setAllCompleted = (todos: Todo[], val: boolean) => todos.map((t: Todo) => ({ ...t, isCompleted: val }));
+
+function* toggleCompleteForAllTodos(this: BTContext, todos: StateRef<Todo[]>) {
+  while (true) {
+    this.props("Main", ({ toggleAll }) => ({ toggleAll: toggleAll }));
+    const toggleTo = yield wait("toggleAll", (next: boolean) => (areAllCompleted(todos.current) ? !next : next));
+    yield request("s_todos", setAllCompleted(todos.current, toggleTo));
+  }
+}
+```
+
+When you take a look at the `Main` component, you can see how we use the toggleAll event handler.<br/>
+It is a good practice to assume that toggleAll could be absent.<br/>
+If at some point a new behaviour is introduced, for example that you can only toggle less then 10 todos,<br>
+then props.toggleAll might be undefined. It also lets you think about possible UI-states in your component.<br/>
+If you plan to create reusable components, this is a must.<br/>
+```ts
+  const setCompleteAll = props.toggleAll && props.toggleAll(true);
+  const setUnCompleteAll = props.toggleAll && props.toggleAll(false);
+```
+
+You can use "optional chaining" ( since [Typescript 3.7](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html), [babel 7](https://babeljs.io/docs/en/next/babel-plugin-proposal-optional-chaining.html), or check [native](https://caniuse.com/#feat=mdn-javascript_operators_optional_chaining) support ) for this.
+```ts
+  const setCompleteAll = props.toggleAll?.(true);
+  const setUnCompleteAll = props.toggleAll?.(false);
+```
+
+### complete & delete todos
+- Clicking the checkbox marks the todo as complete 
+```ts
+function* itemCanBeCompleted(this: BTContext, todos: StateRef<Todo[]>) {
+  while (true) {
+    this.props("TodoItem", ({ toggleCompleteItem }) => ({ onComplete: toggleCompleteItem }));
+    let toggledTodoId = yield wait("toggleCompleteItem");
+    let newTodos = todos.current.map((todo: Todo) =>
+      toggledTodoId === todo.id ? { ...todo, isCompleted: !todo.isCompleted } : todo
+    );
+    yield request("s_todos", newTodos);
+  }
+}
+```
+- Hovering over the todo shows the remove button ( clicking it will remove the item )
+```ts
+function* itemCanBeDeleted(this: BTContext, todos: StateRef<Todo[]>) {
+  while (true) {
+    this.props("TodoItem", ({ deleteTodoItem }) => ({ onDelete: deleteTodoItem }));
+    let todoId = yield wait("deleteTodoItem");
+    let newTodos = todos.current.filter((todo: Todo) => todoId !== todo.id);
+    yield request("s_todos", newTodos);
+  }
+}
+```
+<br/>
+
+The new behaviours get enabled in the `useScenarios` function.
+```ts 
+useScenarios((enable, state) => {
+  const todosRef = state("s_todos", []);
+  enable(noTodosWillHideHeaderAndFooter, [todosRef.current.length]);
+  enable(newTodoCanBeAdded, [todosRef]);
+  if (todosRef.current.length > 0) {
+    enable(toggleCompleteForAllTodos, [todosRef]);
+    enable(itemCanBeCompleted, [todosRef]);
+    enable(itemCanBeDeleted, [todosRef]);
+  }
+});
+```
+As you can see, the new behaviours are only enabled if we have some todos.<br/>
+You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
+For performance reasons, but also to show a dependency between behaviours.<br/>
 
 
-## Step 3 - extending behaviours
-- block delete and check, as log as there is an item in edit mode.
-- props override can be a function
+## Final Step
+

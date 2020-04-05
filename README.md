@@ -10,9 +10,9 @@ You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g
 A user-flow is an intra-object description of a reactive system.<br/>
 Instead of describing the full reactivity of each component object-by-object (like XState),<br/>
 we define a system by the scenarios we want to enable flow-by-flow.<br/>
-This is what flowcards is all about.<br/>
+This creates new possibilities in how we work with requirements - and with each other.<br/>
 
-👉 [this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will get you started.<br/>
+👉 [this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
 
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).<br/>
 Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-programming-in-a-way-that-allows-for-easier-changes-5d95b9fb6928). I can also recommend [this talk](https://www.youtube.com/watch?v=_BLQIE-_prc).
@@ -38,20 +38,32 @@ const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(d
 
 function* sender() {
   yield request("eventOne", "thank you for ..."); // request
-  yield request("eventTwo", delayed("taking a look at flowcards", 2000)); // async request
+  yield request("eventTwo", () => delayed("taking a look at flowcards", 3000)); // async request
 }
 
 function* receiver() {
-  let msg = yield wait("eventOne"); // wait for event
-  console.log(msg);
-  msg = yield wait("eventTwo"); // wait for async event
-  console.log(msg);
+  let messageOne = yield wait("eventOne"); // wait for event
+  console.log(messageOne);
+  let [type, messageTwo] = yield [wait("eventTwo"), wait("cancel")]; // cancelable
+  if (type === "eventTwo") {
+    console.log(messageTwo);
+  } else {
+    console.log("async call has been canceled");
+  }
 }
 
-scenarios(enable => {
-  enable(sender);
-  enable(receiver);
-});
+scenarios(
+  enable => {
+    enable(sender);
+    enable(receiver);
+  },
+  ({ dispatch }) => {
+    const btn = document.getElementById("cancelBtn");
+    if (btn && dispatch.cancel) {
+      btn.onclick = dispatch.cancel();
+    }
+  }
+);
 ```
 
 
