@@ -130,8 +130,7 @@ Read more about it [here](https://medium.com/@lmatteis/react-behavioral-cf652374
 ### from generators to BThreads
 
 BThreads are created by using the `enable` function.<br/>
-It will receive the generator-fn and an array of arguments passed to that generator-fn. The `state` function is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.
-
+It will receive the generator-fn and an array of arguments passed to that generator-fn. <br/>
 ```ts
 const { overrides, state } = useScenarios((enable, state) => {
   const todosRef = state("s_todos", []);
@@ -139,6 +138,12 @@ const { overrides, state } = useScenarios((enable, state) => {
   enable(newTodoCanBeAdded, [todosRef]);
 });
 ```
+The `state` function is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.<br/>
+Arguments can be seen as BThread context. If they change, the BThreads gets reset.<br/>
+If the length of the todos change, the `noTodosWillHideHeaderAndFooter` BThread will be created again.<br/>
+The `newTodoCanBeAdded` will never reset. It receives an object that is always the same.<br/>
+To make it reset on todo-changes, you can pass the argument `todosRef.current`.<br/>
+
 
 ### using Overrides
 
@@ -147,10 +152,13 @@ There is a second hook that comes with @flowcards/react. The `useOverrides` hook
 ```ts
 const { Main, Footer, TodoInput } = useOverrides(Components, overrides);
 ```
-
-However, you can use flowcards without overrides if you want.<br/>
+You can use flowcards without overrides if you want.<br/>
 The `useScenarios` hook returns a `Scenarios` object, that will contain all the information you need to update your UI.<br/>
 <br/>
+So far, we have implemented two requirements.<br/>
+You can disable the new behaviours simply by un-commenting them from the useScenarios function.<br/>
+For reusable components, this is an amazing thing to have.<br/>
+It is no longer about modular components. We are now talking about modular behaviour.<br/>
 
 ## Step 2
 
