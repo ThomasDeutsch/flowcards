@@ -196,7 +196,7 @@ If you plan to create reusable components, this is a must.<br/>
 
 You can use "optional chaining" ( since [Typescript 3.7](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html), [babel 7](https://babeljs.io/docs/en/next/babel-plugin-proposal-optional-chaining.html), or check [native](https://caniuse.com/#feat=mdn-javascript_operators_optional_chaining) support ) for this.
 ```ts
-  const setCompleteAll = props.toggleAll?(true);
-  const setUnCompleteAll = props.toggleAll?(false);
+  const setCompleteAll = props.toggleAll?.(true);
+  const setUnCompleteAll = props.toggleAll?.(false);
 ```
 
