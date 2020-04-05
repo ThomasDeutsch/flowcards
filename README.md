@@ -44,9 +44,12 @@ function* sender() {
 function* receiver() {
   let messageOne = yield wait("eventOne"); // wait for event
   console.log(messageOne);
-  let [type, messageTwo] = yield [wait("eventTwo"), wait("cancel")];
-  if (type === "eventTwo") console.log(messageTwo);
-  else console.log("async call has been canceled");
+  let [type, messageTwo] = yield [wait("eventTwo"), wait("cancel")]; // cancelable
+  if (type === "eventTwo") {
+    console.log(messageTwo);
+  } else {
+    console.log("async call has been canceled");
+  }
 }
 
 scenarios(
