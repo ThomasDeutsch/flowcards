@@ -111,10 +111,9 @@ function* newTodoCanBeAdded(this: BTContext, todos: StateRef<Todo[]>) {
 }
 ```
 For this requirement, we will define an eventhandler and a gernerator function.<br/>
-The eventhandler gets a `GuardedDispatch` function. A guard for this function is defined in the generator function:  `(val: string) => val.trim().length > 0`.<br/>
+The eventhandler gets a `GuardedDispatch` function. This guard is defined in the generator function:  `(val: string) => val.trim().length > 0`.<br/>
 If the guard-function returns true, the `onEnter(e.target.value)` will return a `dispatch` function - null otherwise.<br/>
-This way, you do not need to make input validation checks in your component. The scenario takes care of it.<br/>
-<br/>
+This way, you can only dispatch valid payloads. No need to make input validation checks in your component.<br/>
 When we look at the generator, we can see that the onKeyDown gets passed to the TodoInput component by using an override expression:<br/>
 `this.props("TodoInput", ({ inputOnEnter }) => ({ onKeyDown: handleKeyDown(inputOnEnter) }));`
 This is the [overrides pattern](https://medium.com/@dschnr/better-reusable-react-components-with-the-overrides-pattern-9eca2339f646) in action. `this.hide` from the first generator is also an override.<br>
