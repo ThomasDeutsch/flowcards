@@ -58,9 +58,9 @@ I would encourage you to make small changes and see how they work out.<br/>
 ## Step 1
 
 In the provided specification, we can find functional requirements. We take those requirements to define "scenarios" or "flows". Every scenario will enable a behaviour.<br/>
-Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from this step.
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that includes the code from this step.
 
-### NoTodos
+### no todos
 
 To the first requirement: 
 - When there are no todos, Main and Footer should be hidden
@@ -84,7 +84,7 @@ This generator is later used to create something called a BThread.<br/>
 <br/>
 Let's take a look at the second requirement.
 
-### New Todo
+### new todo
 
 In this requirement we will find a bit more functionality.<br>
 
@@ -162,16 +162,33 @@ It is no longer about modular components. We are now talking about modular behav
 
 ## Step 2
 
-Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that will include the code from this step.
+In this part, we will continue to implement behaviours, based on the requirements from the TodoMVC specification.<br/>
+Here is the [codesandbox](https://codesandbox.io/s/todomvc-step-2-gbj7o) that includes the code from this step.<br/>
 
-### TODO
+### mark all as complete
 
-- Zeige die umsetzung des nächsten Scenarios
-- Zeige wie man in der Komponente überprüfen kann, ob eine funktionalität vorhanden ist
-  -> Dann reicht es einfach Scenarien ein/auszukommentieren.
-- Zeige im scaffolden das if (todos.length > 0) ...
+The "Mark all as complete" checkbox should: 
+- toggle all todos.
+- reflect the current state (checked, when all TodoItems are checked)
 
+```ts
+const areAllCompleted = (todos: Todo[]) => todos.every((t: Todo) => t.isCompleted === true);
+const setAllCompleted = (todos: Todo[], val: boolean) => todos.map((t: Todo) => ({ ...t, isCompleted: val }));
 
-## Step 3 - extending behaviours
-- block delete and check, as log as there is an item in edit mode.
-- props override can be a function
+function* toggleCompleteForAllTodos(this: BTContext, todos: StateRef<Todo[]>) {
+  while (true) {
+    this.props("Main", ({ toggleAll }) => ({ toggleAll: toggleAll }));
+    const toggleTo = yield wait("toggleAll", (next: boolean) => (areAllCompleted(todos.current) ? !next : next));
+    yield request("s_todos", setAllCompleted(todos.current, toggleTo));
+  }
+}
+```
+
+When you take a look at the `Main` component, you can see how we use the toggleAll event handler.<br/>
+It is also a good practice to assume that the toggleAll-handler could be absent.<br/>
+If at some point a new behaviour is introduced, for example that you can only toggle less then 10 todos,<br>
+then props.toggleAll might be undefined. It also lets you think about possible UI-states in your component.<br/>
+```ts
+  const setCompleteAll = props.toggleAll && props.toggleAll(true);
+  const setUnCompleteAll = props.toggleAll && props.toggleAll(false);
+```
