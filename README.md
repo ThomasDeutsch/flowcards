@@ -11,6 +11,7 @@ You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g
 A user-flow is an inter-object description of a reactive system.<br/>
 Instead of describing the full reactivity of each component object-by-object (like XState),<br/>
 we define a system by the scenarios we want to enable flow-by-flow.<br/>
+To create a reactive system flow-by-flow is what flowcards is all about.<br/>
 This creates new possibilities in how we work with requirements - and with each other.<br/>
 
 👉 [this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
