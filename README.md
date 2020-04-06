@@ -26,8 +26,10 @@ Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-progra
 - [✴️ `@flowcards/svelte`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/svelte) - Svelte store (core included)
 <br/>
 
-## Quick Start [` -> codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
-
+## Quick Start 
+- [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
+- [`react codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
+- [`svelte codesandbox`](https://codesandbox.io/s/flowcards-hello-svelte-sscxp)
 ```
 npm install @flowcards/core
 ```
