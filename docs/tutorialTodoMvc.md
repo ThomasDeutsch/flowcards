@@ -109,7 +109,7 @@ This api is based on [Behavioral Programming Principles](http://www.wisdom.weizm
 
 The `newTodoCanBeAdded` generator shows that the BThread will place two bids.<br/>
 1. `yield wait("inputOnEnter", (title: string) => title.trim().length > 0);`<br/>
-   = wait for the `inputOnEnter` event. Only accept this event if the payload length is > 0.
+   = wait for the inputOnEnter event. Only accept this event if the payload length is > 0.
 2. `yield request("s_todos", [...todos.current, newTodo(title)]);`<br/>
-   = request to set the new `s_todos` state.
+   = request to set the new s_todos state.
 
