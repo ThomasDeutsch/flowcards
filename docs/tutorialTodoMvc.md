@@ -59,7 +59,7 @@ In the provided specification, we can find functional requirements. We take thos
 Open the todoMVC application and go to line 100.<br/>
 In the App root component, you can find the `useScenarios` function.<br/>
 The behaviours we want to enable are listed here.<br/>
-You can disable a behaviour by uncommenting it.<br/>
+You can disable a behaviour by uncommenting them.<br/>
 
 ```ts
   const sc = useScenarios((enable, state) => {
@@ -78,16 +78,16 @@ You can disable a behaviour by uncommenting it.<br/>
 ```
 
 As you can see, some behaviours are only enabled if we have some todos.<br/>
-Not only for performance reasons, but also to show dependencies between them.<br/>
+Not only for performance reasons, but also to show dependencies.<br/>
 For example: You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
 There are two functions that can be used.<br/>
-The `state` function is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.<br/>
+The `state` function. This is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.<br/>
 The other is the `enable` function.<br/>
 
 ### from generators to BThreads
 
 The enable function can take 3 arguments. The first is a generator function.<br/>
-The generator function for the first behavior is this:
+Let's take a look at the first generator function `newTodoCanBeAdded`:
 ```ts
 function* newTodoCanBeAdded(todos: StateRef<Todo[]>) {
   while (true) {
@@ -105,11 +105,9 @@ At every `yield` a BThread can place a bid (or multiple bids). There are 4 types
 - block (blocking an event, no request or wait can continue for this event)
 - intercept (continue this BThread only - instead of other BThreads waiting for this event)
 
+The `newTodoCanBeAdded` generator shows that the BThread will place two bids.<br/>
+
 request, wait and block are based on [Behavioral Programming Principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html)
-
-You can get information about the current state of a BThread, by looking at its return value.<br/>
-For example, you can `console.log(enable(itemCanBeDeleted, [todosRef]))`.
-
 
 Arguments can be seen as BThread context. If they change, the BThreads get reset.<br/>
 So, if the length of the todos change, the `noTodosWillHideHeaderAndFooter` BThread will be created again.<br/>
