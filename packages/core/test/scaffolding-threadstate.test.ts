@@ -1,17 +1,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-
 import * as bp from "../src/bid";
 import { BTContext } from '../src/bthread';
 import { scenarios, ThreadState } from '../src/index';
 
-
-
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 
 test("the enable function will return the current thread state", () => {
     function* thread() {
@@ -121,7 +116,6 @@ test("a state value can be accessed from the thread itself", () => {
         this.setState(1);
         yield bp.request("event");
         state = this.state;
-        yield bp.wait("B");
     }
 
     scenarios((enable) => {
