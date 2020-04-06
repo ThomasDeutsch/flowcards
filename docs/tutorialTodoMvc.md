@@ -1,12 +1,12 @@
 # Tutorial 1: from Requirements to Code
 
-In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application. [` final result `](https://codesandbox.io/s/todomvc-final-xbll0)<br/>
+In this tutorial, we will write a [TodoMVC](http://todomvc.com/) application. [` final result `](https://codesandbox.io/s/todomvc-final-qnfjr)<br/>
 It is targeted towards JavaScript/TypeScript Developers.<br/>
 <br/>
 Goals of this tutorial: 
 - to tell you about the "why"
 - show how requirements can have a place in our code ⭐
-- show first flowcards basics
+- show first behavioural programming basics (wait, request and block)
 <br/>
 
 ## Begin With the End in Mind
