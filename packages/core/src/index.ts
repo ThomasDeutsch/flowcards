@@ -3,7 +3,7 @@
 import { ScaffoldingFunction, createUpdateLoop, Scenario, DispatchedAction } from './update-loop';
 type UpdateCallback = (scenario: Scenario) => any;
 
-export { BTContext } from './bthread';
+export { BTContext, ThreadState } from './bthread';
 export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, Scenario, StateRef } from './update-loop';
 export { wait, intercept, block, request } from "./bid";
 export { DispatchByWait, GuardedDispatch } from './dispatch-by-wait';

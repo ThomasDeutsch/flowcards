@@ -21,13 +21,15 @@ export interface ThreadState {
 export interface BTContext {
     key: string | number | null;
     setState: Function;
-    state: Function;
+    state: ThreadState;
 }
 
 export function scenarioId(generator: ThreadGen, key?: string | number): string {
     const id = generator.name;
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
+
+type StateUpdateFunction = (previousState: any) => void;
 
 export class BThread {
     public readonly id: string;
@@ -62,10 +64,14 @@ export class BThread {
     private _getBTContext(): BTContext {
         return {
             key: this.key,
-            setState: (val: any): void => {
-                this._stateValue = val;
+            setState: (newState: any | StateUpdateFunction): void => {
+                if(typeof newState === `function`) {
+                    this._stateValue = newState(this._stateValue);
+                } else {
+                    this._stateValue = newState;
+                }
             },
-            state: ():any => this._stateValue
+            state: this.state
         };
     }
 

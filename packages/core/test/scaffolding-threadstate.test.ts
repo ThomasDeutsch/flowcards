@@ -4,7 +4,7 @@
 
 import * as bp from "../src/bid";
 import { BTContext } from '../src/bthread';
-import { scenarios } from '../src/index';
+import { scenarios, ThreadState } from '../src/index';
 
 
 
@@ -94,5 +94,39 @@ test("a thread state is always the same Object.", (done) => {
             expect(Object.is(previous, thread["thread1"])).toBeTruthy();
             done();
         }
+    });
+});
+
+test("a setState argument can be a function", () => {
+
+    function* thread1(this: BTContext) {
+        this.setState(1);
+        yield bp.request("event");
+        this.setState((a: number) => a + 1);
+        yield bp.wait("B");
+    }
+
+    scenarios((enable) => {
+        const x = enable(thread1);
+    }, ({thread}) => {
+        expect(thread["thread1"].value).toEqual(2);
+    });
+});
+
+
+test("a state value can be accessed from the thread itself", () => {
+    let state: ThreadState;
+    
+    function* thread1(this: BTContext) {
+        this.setState(1);
+        yield bp.request("event");
+        state = this.state;
+        yield bp.wait("B");
+    }
+
+    scenarios((enable) => {
+        const x = enable(thread1);
+    }, () => {
+        expect(state.value).toEqual(1);
     });
 });
