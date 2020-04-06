@@ -113,7 +113,3 @@ The `newTodoCanBeAdded` generator shows that the BThread will place two bids.<br
 2. `yield request("s_todos", [...todos.current, newTodo(title)]);`<br/>
    = request to set the new `s_todos` state.
 
-The `enable` function takes a second argument. It is an array passed as arguments to the generator function.<br/>
-They can be seen as BThread context. If they change, the BThreads get reset.<br/>
-For this Todo Application, the BThreads will never reset. They receive a Ref-object that is always the same.<br/>
-The check is done by an [Object.is](https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Object/is) for every argument.<br/>
