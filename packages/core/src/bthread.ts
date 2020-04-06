@@ -5,7 +5,6 @@ import * as utils from "./utils";
 import { Logger, ReactionType } from "./logger";
 import { ActionType } from './action';
 import { DispatchFunction } from './update-loop';
-import { DispatchByWait } from './dispatch-by-wait';
 
 export type ThreadGen = any; // TODO: Type this generator
 export interface ThreadDictionary {
@@ -19,18 +18,8 @@ export interface ThreadState {
     value?: any;
 }
 
-type ComponentName = string;
-type PropsStyleComponent = "style" | "props" | "component";
-type OverrideFn = (dispatchByWait: DispatchByWait, pendingEvents: Set<string>) => Record<ComponentName, Record<PropsStyleComponent, any> | any>;
-type setOverrideFn = (overrideFn: OverrideFn) => void;
-type HideFn = (...defaultComponentName: string[]) => void;
-type PropsFunction = (componentName: string, propsFn: OverrideFn) => void;
-
 export interface BTContext {
     key: string | number | null;
-    override: setOverrideFn;
-    hide: HideFn;
-    props: PropsFunction;
     setState: Function;
     state: Function;
 }
@@ -69,28 +58,10 @@ export class BThread {
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
-    private _overrides: OverrideFn[] = [];
-    public get overrides(): OverrideFn[] {
-        return this._overrides;
-    }
 
     private _getBTContext(): BTContext {
         return {
             key: this.key,
-            override: (overrideFn: OverrideFn): void => {
-                this._overrides.push(overrideFn);
-            },
-            hide: (...componentNames: string[]): void => { // shortcut for component override
-                componentNames.forEach((componentName :string): void => {
-                    this._overrides.push((): any => ({[componentName]: (): any => null}));
-                });
-            },
-            props: (componentName: string, propsOverride: OverrideFn): void => { // shortcut for props override
-                const fn: OverrideFn = (dispatch: DispatchByWait, pendingEvents: Set<string>): Record<string, any> => {
-                    return {[componentName] : {props: propsOverride(dispatch, pendingEvents)}};
-                }
-                this.overrides.push(fn);
-            },
             setState: (val: any): void => {
                 this._stateValue = val;
             },
@@ -133,7 +104,6 @@ export class BThread {
     private _processNextBid(returnValue?: any): Set<string> {
         this._isCompleted = false; // thread could have been reset
         const cancelledPromises = this._cancelPendingPromises();
-        this._overrides = [];
         const next = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;

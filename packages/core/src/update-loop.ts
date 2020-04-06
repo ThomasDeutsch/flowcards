@@ -5,7 +5,6 @@ import { getAllBids, BidDictionariesByType, BidType, BidDictionaries, GuardFunct
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { dispatchByWait, DispatchByWait } from "./dispatch-by-wait";
-import { getOverridesByComponentName, OverridesByComponent } from './overrides';
 
 
 // -----------------------------------------------------------------------------------
@@ -141,7 +140,6 @@ type ReplayDispatchFunction = (actions: Action[]) => void;
 export interface Scenario {
     dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
-    overrides: OverridesByComponent;
     state: Record<string, any>;
     thread: Record<string, ThreadState>;
     logger: Logger;
@@ -216,7 +214,6 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         return {
             dispatch: dbw,
             replay: replayDispatch,
-            overrides: getOverridesByComponentName(orderedThreadIds, dbw, threadDictionary),
             state: stateById,
             thread: threadStateById,
             logger: logger

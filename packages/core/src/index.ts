@@ -3,8 +3,6 @@
 import { ScaffoldingFunction, createUpdateLoop, Scenario, DispatchedAction } from './update-loop';
 type UpdateCallback = (scenario: Scenario) => any;
 
-
-export { OverridesByComponent } from './overrides';
 export { BTContext } from './bthread';
 export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, Scenario, StateRef } from './update-loop';
 export { wait, intercept, block, request } from "./bid";
