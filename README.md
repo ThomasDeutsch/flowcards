@@ -1,18 +1,17 @@
 # flowcards
 
-a tool to describe behaviour - flow by flow.
+a tool to enable behaviour - flow by flow.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
 They both enable ways to describe & model reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 `App(state) => UI` becomes `App(flowcards(scenarios)) => UI`<br/>
 
-You may know [user-flows](https://miro.medium.com/max/1548/1*JGL_2ffE9foLaDbjp5g92g.png): A series of steps a user needs to take, to reach a goal.<br/>
-A user-flow is an inter-object description of a reactive system.<br/>
+The idea behind [user-flows] is to provide an inter-object description of a reactive system.<br/>
 Instead of describing the full reactivity of each component object-by-object (like XState),<br/>
-we define a system by the scenarios we want to enable flow-by-flow.<br/>
-To create a reactive system flow-by-flow is what flowcards is all about.<br/>
-This creates new possibilities in how we work with requirements - and with each other.<br/>
+we can define a system by the scenarios we want to enable flow-by-flow.<br/>
+To enable behaviour flow-by-flow is what flowcards is all about.<br/>
+This creates new possibilities in how we structure our code to be in line with the requirements.<br/>
 
 👉 [this tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
 
