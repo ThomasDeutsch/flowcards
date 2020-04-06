@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ScaffoldingFunction, createUpdateLoop, Scenario, DispatchedAction } from './update-loop';
-type UpdateCallback = (scenario: Scenario) => any;
+import { ScaffoldingFunction, createUpdateLoop, ScenariosContext, DispatchedAction } from './update-loop';
+type UpdateCallback = (scenario: ScenariosContext) => any;
 
 export { BTContext, ThreadState } from './bthread';
-export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, Scenario, StateRef } from './update-loop';
+export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAction, ScenariosContext, StateRef } from './update-loop';
 export { wait, intercept, block, request } from "./bid";
-export { DispatchByWait, GuardedDispatch } from './dispatch-by-wait';
+export { DispatchByWait, GuardedDispatch, TriggerDispatch } from './dispatch-by-wait';
 
 export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback | null): void {
     const updateLoop = createUpdateLoop(enable, (a: DispatchedAction): void => {
-        const scenario: Scenario = updateLoop(a);
+        const scenario: ScenariosContext = updateLoop(a);
         if(updateCb) updateCb(scenario);
     });
     const states = updateLoop(null);

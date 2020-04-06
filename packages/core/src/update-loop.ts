@@ -137,7 +137,7 @@ function setupAndDeleteThreads(
 
 type ReplayDispatchFunction = (actions: Action[]) => void;
 
-export interface Scenario {
+export interface ScenariosContext {
     dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
     state: Record<string, any>;
@@ -151,7 +151,7 @@ export interface DispatchedAction {
     payload?: Action;
 }
 
-export type UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null) => Scenario;
+export type UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null) => ScenariosContext;
 
 
 export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function): UpdateLoopFunction {
@@ -176,7 +176,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         }
         dispatch(x);
     }
-    const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): Scenario => {
+    const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): ScenariosContext => {
         loopCount++;
         orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, stateDictionary, actionDispatch, logger);
         const threadBids = orderedThreadIds.map((id): BidDictionaries | null => threadDictionary[id].getBids());
