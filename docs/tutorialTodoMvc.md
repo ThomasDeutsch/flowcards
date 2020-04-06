@@ -98,19 +98,22 @@ function* newTodoCanBeAdded(todos: StateRef<Todo[]>) {
 ```
 
 `enable` will use the generator function to create something called a BThread.<br/>
-A Bthread is a wrapper around the generator and enables us to use a very simple api for BThread-to-BThread communication.<br/>
+A Bthread is a wrapper around the generator and enables a very simple api for BThread-to-BThread communication:<br/>
 At every `yield` a BThread can place a bid (or multiple bids). There are 4 types of bids:
 - request  (requesting an event and only continue if the request has been granted)
 - wait (waiting for an event)
 - block (blocking an event, no request or wait can continue for this event)
 - intercept (continue this BThread only - instead of other BThreads waiting for this event)
 
+This api is based on [Behavioral Programming Principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).<br/>
+
 The `newTodoCanBeAdded` generator shows that the BThread will place two bids.<br/>
+1. `yield wait("inputOnEnter", (title: string) => title.trim().length > 0);`<br/>
+   = wait for the `inputOnEnter` event. Only accept this event if the payload length is > 0
+2. `yield request("s_todos", [...todos.current, newTodo(title)]);`
+   = request to set the new `s_todos` state 
 
-request, wait and block are based on [Behavioral Programming Principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html)
-
-Arguments can be seen as BThread context. If they change, the BThreads get reset.<br/>
-So, if the length of the todos change, the `noTodosWillHideHeaderAndFooter` BThread will be created again.<br/>
-The `newTodoCanBeAdded` will never reset. It receives an object that is always the same.<br/>
+The `enable` function takes a second argument. It is an array passed as arguments to the generator function.<br/>
+They can be seen as BThread context. If they change, the BThreads get reset.<br/>
+For this Todo Application, the BThreads will never reset. They receive a Ref-object that is always the same.<br/>
 The check is done by an [Object.is](https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Object/is) for every argument.<br/>
-If you want to make it reset on todo-changes, you can pass the argument `todosRef.current`.<br/>
