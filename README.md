@@ -28,7 +28,6 @@ Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-progra
 
 ## Quick Start 
 - [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
-- [`react codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
 - [`svelte codesandbox`](https://codesandbox.io/s/flowcards-hello-svelte-sscxp)
 ```
 npm install @flowcards/core
