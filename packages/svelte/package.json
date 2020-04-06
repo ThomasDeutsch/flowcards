@@ -1,0 +1,35 @@
+{
+  "name": "@flowcards/svelte",
+  "version": "0.5.0",
+  "description": "",
+  "author": {
+    "name": "Thomas Deutsch",
+    "email": "deutsch.thomas+flowcards@gmail.com",
+    "url": "https://thomasdeutsch.de"
+  },
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "svelte": "^3.20.1"
+  },
+  "dependencies": {
+    "@flowcards/core": "^0.5.1"
+  },
+  "peerDependencies": {
+    "svelte": "^3.7.0"
+  },
+  "license": "MIT",
+  "gitHead": "cd2e017842cb871233bbd21bffb17b3f30e0f6b6",
+  "publishConfig": {
+    "access": "public"
+  }
+}

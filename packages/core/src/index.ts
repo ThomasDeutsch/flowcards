@@ -8,8 +8,8 @@ export { UpdateLoopFunction, ScaffoldingFunction, createUpdateLoop, DispatchedAc
 export { wait, intercept, block, request } from "./bid";
 export { DispatchByWait, GuardedDispatch, TriggerDispatch } from './dispatch-by-wait';
 
-export function scenarios(enable: ScaffoldingFunction, updateCb?: UpdateCallback | null): void {
-    const updateLoop = createUpdateLoop(enable, (a: DispatchedAction): void => {
+export function scenarios(scaffoldingFn: ScaffoldingFunction, updateCb?: UpdateCallback | null): void {
+    const updateLoop = createUpdateLoop(scaffoldingFn, (a: DispatchedAction): void => {
         const scenario: ScenariosContext = updateLoop(a);
         if(updateCb) updateCb(scenario);
     });
