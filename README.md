@@ -23,6 +23,7 @@ Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-progra
 
 - [🌀 `@flowcards/core`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
 - [⚛️ `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hooks (core included)
+- [✴️ `@flowcards/svelte`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/svelte) - Svelte store (core included)
 <br/>
 
 ## Quick Start [` -> codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
