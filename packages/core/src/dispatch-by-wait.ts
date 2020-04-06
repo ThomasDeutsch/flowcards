@@ -4,7 +4,7 @@ import { Bid, BidArrayDictionary, GuardFunction } from './bid';
 import { ActionType } from './action';
 import { DispatchFunction } from './update-loop';
 
-type TriggerDispatch = Function | undefined;
+export type TriggerDispatch = Function | undefined;
 export type GuardedDispatch = (valueToDispatch: any) => TriggerDispatch;
 export type DispatchByWait = Record<string, GuardedDispatch>;
 interface EventCache {
