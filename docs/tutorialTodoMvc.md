@@ -43,6 +43,7 @@ to make software development a bit more welcoming.<br/>
 
 The TodoMVC application is a good starting point, because you already know what to expect, and the TodoMVC team provided [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) we will use for our implementation.<br/>
 A main goal of this guide is to demonstrate that we are able to give requirements a place in our code.<br/>
+
 For this example we will use the React framework.<br>
 React takes a state and turns it into a UI-representation. You can think of it as a function: `ReactApp(state) => UI`.<br/>
 flowcards is a tool to define state as a combination of scenarios we want to enable.<br/>
@@ -82,6 +83,7 @@ For example, disable the "toggleCompleteAllTodos" behaviour and see what happens
 Some behaviours are only enabled if we have some todos in our list.<br/>
 Not only for performance reasons, but also to show dependencies.<br/>
 For example: You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
+
 There are two functions that can be used.<br/>
 The `state` function: This is nothing more than an event-cache.<br/>
 It will listen for the `s_totos` event and update itself with the new payload.<br/>
