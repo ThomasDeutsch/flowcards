@@ -27,8 +27,8 @@ Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-progra
 <br/>
 
 ## Quick Start 
-- [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl)
-- [`svelte codesandbox`](https://codesandbox.io/s/flowcards-hello-svelte-sscxp)
+- [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl?file=/src/index.ts)
+- [`svelte codesandbox`](https://codesandbox.io/s/flowcards-hello-svelte-sscxp?file=/App.svelte)
 ```
 npm install @flowcards/core
 ```
@@ -37,16 +37,17 @@ npm install @flowcards/core
 import { scenarios, request, wait } from "@flowcards/core";
 
 const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(data), ms));
+const delayedMessage = () => delayed("taking a look at flowcards", 3000);
 
 function* sender() {
   yield request("eventOne", "thank you for ..."); // request
-  yield request("eventTwo", () => delayed("taking a look at flowcards", 3000)); // async request
+  yield [request("eventTwo", delayedMessage), wait("cancel")];
 }
 
 function* receiver() {
   let messageOne = yield wait("eventOne"); // wait for event
   console.log(messageOne);
-  let [type, messageTwo] = yield [wait("eventTwo"), wait("cancel")]; // cancelable
+  let [type, messageTwo] = yield [wait("eventTwo"), wait("cancel")];
   if (type === "eventTwo") {
     console.log(messageTwo);
   } else {
