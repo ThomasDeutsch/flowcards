@@ -96,9 +96,10 @@ function* newTodoCanBeAdded(todos: StateRef<Todo[]>) {
   }
 }
 ```
+If you want to learn more about generators - [here is a good introduction](https://medium.com/dailyjs/a-simple-guide-to-understanding-javascript-es6-generators-d1c350551950). But all you need to know at this point it that a generator will pause at every `yied`.<br/>
 
 `enable` will use the generator function to create something called a BThread.<br/>
-A Bthread is a wrapper around the generator and enables a very simple api for BThread-to-BThread communication:<br/>
+It creates a wrapper around the generator and enables a very simple api for BThread-to-BThread communication:<br/>
 At every `yield` a BThread can place a bid (or multiple bids). There are 4 types of bids:
 - request  (requesting an event and only continue if the request has been granted)
 - wait (waiting for an event)
