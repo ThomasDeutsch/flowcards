@@ -83,8 +83,9 @@ Some behaviours are only enabled if we have some todos in our list.<br/>
 Not only for performance reasons, but also to show dependencies.<br/>
 For example: You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
 There are two functions that can be used.<br/>
-The `state` function. This is nothing more than an event-cache. It will listen for the `s_totos` event and update itself with the new payload.<br/>
-The other is the `enable` function.<br/>
+The `state` function: This is nothing more than an event-cache.<br/>
+It will listen for the `s_totos` event and update itself with the new payload.<br/>
+And the `enable` function.<br/>
 
 ### from generators to BThreads
 
