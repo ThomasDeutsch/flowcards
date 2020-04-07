@@ -60,7 +60,8 @@ Looking at our code, we can see that every scenario has a direct connection to o
 Open the [TodoMVC](https://codesandbox.io/s/todomvc-final-qnfjr) application and go to line 100.<br/>
 In the App root component, you can find the `useScenarios` function.<br/>
 The behaviours we want to enable are listed here.<br/>
-You can disable a behaviour by uncommenting them.<br/>
+You can disable a behaviours by uncommenting them.<br/>
+For example, disable the "toggleCompleteAllTodos" behaviour and see what happens.<br/>
 
 ```ts
   const sc = useScenarios((enable, state) => {
@@ -78,7 +79,7 @@ You can disable a behaviour by uncommenting them.<br/>
   });
 ```
 
-As you can see, some behaviours are only enabled if we have some todos.<br/>
+Some behaviours are only enabled if we have some todos in our list.<br/>
 Not only for performance reasons, but also to show dependencies.<br/>
 For example: You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
 There are two functions that can be used.<br/>
