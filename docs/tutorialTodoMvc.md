@@ -57,7 +57,7 @@ Looking at our code, we can see that every scenario has a direct connection to o
 
 ### A first look
 
-Open the todoMVC application and go to line 100.<br/>
+Open the [TodoMVC](https://codesandbox.io/s/todomvc-final-qnfjr) application and go to line 100.<br/>
 In the App root component, you can find the `useScenarios` function.<br/>
 The behaviours we want to enable are listed here.<br/>
 You can disable a behaviour by uncommenting them.<br/>
