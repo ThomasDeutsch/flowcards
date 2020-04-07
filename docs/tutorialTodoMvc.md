@@ -42,9 +42,9 @@ to make software development a bit more welcoming.<br/>
 # TodoMVC
 
 The TodoMVC application is a good starting point, because you already know what to expect, and the TodoMVC team provided [a specification](https://github.com/tastejs/todomvc/blob/master/app-spec.md#functionality) we will use for our implementation.<br/>
-A main goal of this guide is to demonstrate that we are able to give requirements a place our code.<br/>
+A main goal of this guide is to demonstrate that we are able to give requirements a place in our code.<br/>
 For this example we will use the React framework.<br>
-React takes a state and turns it into its UI-representation. You can think of it as a function: `ReactApp(state) => UI`.<br/>
+React takes a state and turns it into a UI-representation. You can think of it as a function: `ReactApp(state) => UI`.<br/>
 flowcards is a tool to define state as a combination of scenarios we want to enable.<br/>
 So you we end up with: `ReactApp(flowcards(scenarios)) => UI`.<br/>
 This guide is not about React. We will focus on the `flowcards(scenarios)` bit.<br/>
