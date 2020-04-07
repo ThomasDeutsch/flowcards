@@ -52,7 +52,8 @@ This guide is not about React. We will focus on the `flowcards(scenarios)` bit.<
 I would encourage you to make small changes to the app and see how they work out.<br/>
 
 ### from Specification to Behaviour
-In the provided specification, we can find functional requirements. We take those requirements to define "scenarios" or "flows". Every scenario will enable a behaviour. Every scenario we have created in our app has a direct connection to a requirement.<br/>
+In the provided specification, we can find functional requirements. We take those requirements to define "scenarios" or "flows". Every scenario will enable a behaviour.<br/>
+Looking at our code, we can see that every scenario has a direct connection to one of the requirements.<br/>
 
 ### A first look
 
