@@ -89,20 +89,20 @@ export class BThread {
         this._currentBids = null;
     }
 
-    private _cancelPendingPromises(): Set<string> {
-        const cancelledPromises = new Set<string>();
+    private _cancelPendingPromises(): string[] {
+        const cancelledPromises: string[] = [];
         const eventNames = Object.keys(this._pendingPromiseDict);
         this._pendingEvents = new Set<string>();
         if (eventNames.length > 0) {   
             eventNames.forEach((eventName):void => {
                 delete this._pendingPromiseDict[eventName];
-                cancelledPromises.add(eventName);
+                cancelledPromises.push(eventName);
             });
         }
         return cancelledPromises;
     }
 
-    private _processNextBid(returnValue?: any): Set<string> {
+    private _processNextBid(returnValue?: any): string[] {
         this._isCompleted = false; // thread could have been reset
         const cancelledPromises = this._cancelPendingPromises();
         const next = this._thread.next(returnValue);

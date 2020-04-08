@@ -6,9 +6,11 @@ interface ActionAndReactions {
     reactionByThreadId: Record<string, Reaction>;
 }
 
+type PendingEventsByThreadId = Record<string, string[] | null>;
+
 export interface Log {
     actionsAndReactions: ActionAndReactions[],
-    pendingEventsByThreadId: Record<string, Set<string>>;
+    pendingEventsByThreadId: PendingEventsByThreadId;
 }
 
 function newActionsReactions(action?: Action): ActionAndReactions {
@@ -21,7 +23,7 @@ function newActionsReactions(action?: Action): ActionAndReactions {
 export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
-    private _pendingEventsByThreadId: Record<string, Set<string>> = {};
+    private _pendingEventsByThreadId: PendingEventsByThreadId = {};
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
@@ -38,15 +40,16 @@ export class Logger {
         this._latestActionAndReactions = newActionsReactions(action);
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledEvents: Set<string> | null = null, pendingEvents: Set<string> | null = null): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledPromises: string[] | null = null, pendingEvents: Set<string> | null = null): void {
+        const pendingEventsArray = pendingEvents ? Array.from(pendingEvents) : null;
         const reaction: Reaction = {
             type: type,
             threadId: threadId,
-            cancelledEvents: cancelledEvents,
-            pendingEvents: pendingEvents
+            cancelledPromises: cancelledPromises,
+            pendingEvents: pendingEventsArray
         };
         if(pendingEvents) {
-            this._pendingEventsByThreadId[threadId] = pendingEvents;
+            this._pendingEventsByThreadId[threadId] = pendingEventsArray;
         } else {
             delete this._pendingEventsByThreadId[threadId];
         }
