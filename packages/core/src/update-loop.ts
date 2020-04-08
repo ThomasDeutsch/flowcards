@@ -170,6 +170,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Fun
             if (dAction.replay) {
                 Object.keys(bThreadDictionary).forEach((key): void => { delete bThreadDictionary[key] }); // delete all BThreads
                 Object.keys(eventCacheDictionary).forEach((key): void => { delete eventCacheDictionary[key] }); // delete event-cache
+                logger.resetLog(); // empty current log
                 return updateLoop(null, dAction.replay); // start a replay
             }
             nextActions = dAction.payload ? [dAction.payload] : null; // select a dispatched action

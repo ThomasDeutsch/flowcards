@@ -36,6 +36,12 @@ export class Logger {
         this._latestActionAndReactions = this._getNewActionsReactions();
     }
 
+    public resetLog(): void {
+        this._log = [];
+        this._latestActionAndReactions = this._getNewActionsReactions();
+        this._pendingEventsByThreadId = {};
+    }
+
     public logAction(action: Action): void {
         this._log.push(this._latestActionAndReactions);
         this._latestActionAndReactions = this._getNewActionsReactions(action);
