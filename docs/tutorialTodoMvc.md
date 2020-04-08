@@ -55,6 +55,7 @@ I would encourage you to make small changes to the app and see how they work out
 ### from Specification to Behaviour
 In the provided specification, we can find functional requirements. We take those requirements to define "scenarios" or "flows". Every scenario will enable a behaviour.<br/>
 Looking at our code, we can see that every scenario has a direct connection to one of the requirements.<br/>
+It's no longer about modular components only. We are talking about modular behaviour.<br/>
 
 ### A first look
 
