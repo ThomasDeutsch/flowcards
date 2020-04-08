@@ -21,7 +21,6 @@ They enable you to say things like "I have finished my work" or "can you do this
 It is nice to have them around, particularly in a professional setting.<br/>
 We find requirements on both ends - planning and testing - but what about coding?<br/>
 They shape our code, but the requirement itself is nowhere to be found - they have no place.<br/>
-Not a great way to treat your friend.<br/>
 
 ### lost the "why"
 
