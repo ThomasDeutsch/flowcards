@@ -84,7 +84,6 @@ For example, disable the "toggleCompleteAllTodos" behaviour and see what happens
 Some behaviours are only enabled if we have some todos in our list.<br/>
 Not only for performance reasons, but also to show dependencies.<br/>
 For example: You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
-What would this mean for truly reusable components? A goal, all of the modern component libraries try to get right.<br/>
 
 ### from generators to BThreads
 There are two functions that can be used.<br/>
