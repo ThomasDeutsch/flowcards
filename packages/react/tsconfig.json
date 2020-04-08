@@ -1,4 +1,7 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "jsx": "preserve" /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
+  }
 }

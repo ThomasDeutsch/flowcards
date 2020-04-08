@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.build.json",
   "include": ["src/**/*"],
   "compilerOptions": {
-    "outDir": "./build"
+    "outDir": "./build",
+    "jsx": "preserve" /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
   }
 }
