@@ -1,12 +1,12 @@
 import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
 
-interface ActionAndReactions {
+export interface ActionAndReactions {
     action: Action;
     reactionByThreadId: Record<string, Reaction>;
 }
 
-type PendingEventsByThreadId = Record<string, string[] | null>;
+export type PendingEventsByThreadId = Record<string, string[]>;
 
 export interface Log {
     actionsAndReactions: ActionAndReactions[],
@@ -46,10 +46,11 @@ export class Logger {
             type: type,
             threadId: threadId,
             cancelledPromises: cancelledPromises,
-            pendingEvents: pendingEventsArray
+            pendingEvents: null
         };
-        if(pendingEvents) {
+        if(pendingEventsArray && pendingEventsArray.length > 0) {
             this._pendingEventsByThreadId[threadId] = pendingEventsArray;
+            reaction.pendingEvents = pendingEventsArray;
         } else {
             delete this._pendingEventsByThreadId[threadId];
         }
