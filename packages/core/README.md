@@ -16,7 +16,5 @@ scenarios(StagingFunction, UpdateCallback)
  - When a selected event is requested by two or more b-threads, all b-threads requesting it are notified (in addition to those who are only listening-out for it). Each requesting b-thread will advance in the same manner as it would have had it been the only requester. If the event is associated with some execution external to the b-threads, such as logging or execution of an associated method, this processing/effect will occur only once. (also done by the "advance BThreads step)
  - B-threads can use standard interfaces to their environment (e.g., access services, other js-libs, ...) in order to translate external occurrences into behavioral events and vice versa.
  
- All [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html) are provided by the BP-Team around [Prof. David Harel](http://www.wisdom.weizmann.ac.il/~harel/) - the mind behind Statecharts.
- 
 <img src="/docs/img/update-loop-chart.svg" width="730">
-
+ All [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html) are provided by the BP-Team around [Prof. David Harel](http://www.wisdom.weizmann.ac.il/~harel/) - the mind behind Statecharts.
