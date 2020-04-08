@@ -17,4 +17,5 @@ scenarios(StagingFunction, UpdateCallback)
  - B-threads can use standard interfaces to their environment (e.g., access services, other js-libs, ...) in order to translate external occurrences into behavioral events and vice versa.
  
 <img src="/docs/img/update-loop-chart.svg" width="730">
+
  All [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html) are provided by the BP-Team around [Prof. David Harel](http://www.wisdom.weizmann.ac.il/~harel/) - the mind behind Statecharts.
