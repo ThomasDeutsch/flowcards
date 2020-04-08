@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { scenarioId, ThreadGen, BThread, ThreadDictionary, ThreadState } from './bthread';
+import { scenarioId, ThreadGen, BThread, BThreadDictionary, BThreadState } from './bthread';
 import { getAllBids, BidDictionariesByType, BidType, BidDictionaries, GuardFunction } from './bid';
 import { Logger } from "./logger";
 import { Action, getNextActionFromRequests, ActionType } from './action';
@@ -10,15 +10,15 @@ import { dispatchByWait, DispatchByWait } from "./dispatch-by-wait";
 // -----------------------------------------------------------------------------------
 // ADVANCE THREADS
 
-function advanceThreads(threadDictionary: ThreadDictionary, bids: BidDictionariesByType, action: Action): void {
+function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: BidDictionariesByType, action: Action): void {
     if (bids.request[action.eventName]) {
         if(action.type === ActionType.request) {
             bids.request[action.eventName].forEach((bid): void => {
-                threadDictionary[bid.threadId].advanceRequest(action.eventName, action.payload);
+                bThreadDictionary[bid.threadId].advanceRequest(action.eventName, action.payload);
             });
         } else if(action.type === ActionType.promise) {
             bids.request[action.eventName].forEach((bid): void => {
-                threadDictionary[bid.threadId].addPromise(action.eventName, action.threadId === bid.threadId ? action.payload : null);
+                bThreadDictionary[bid.threadId].addPromise(action.eventName, action.threadId === bid.threadId ? action.payload : null);
             });
             return;
         }
@@ -26,12 +26,12 @@ function advanceThreads(threadDictionary: ThreadDictionary, bids: BidDictionarie
     if (bids.pending[action.eventName]) {
         if(action.type === ActionType.resolve || action.type === ActionType.request) {
             bids.pending[action.eventName].forEach((bid): void => {
-                threadDictionary[bid.threadId].advanceRequest(action.eventName, action.payload);
+                bThreadDictionary[bid.threadId].advanceRequest(action.eventName, action.payload);
             });
         }
         else if(action.type === ActionType.reject) {
             bids.pending[action.eventName].forEach((bid): void => {
-                threadDictionary[bid.threadId].rejectPromise(action.eventName, action.payload, action.threadId === bid.threadId);
+                bThreadDictionary[bid.threadId].rejectPromise(action.eventName, action.payload, action.threadId === bid.threadId);
             });
             return;
         }
@@ -42,22 +42,22 @@ function advanceThreads(threadDictionary: ThreadDictionary, bids: BidDictionarie
             while(i.length) {
                 const nextThread = i.pop();
                 if(nextThread) {
-                    const wasIntercepted = threadDictionary[nextThread.threadId].progressWaitIntercept(BidType.intercept, action.eventName, action.payload);
+                    const wasIntercepted = bThreadDictionary[nextThread.threadId].progressWaitIntercept(BidType.intercept, action.eventName, action.payload);
                     if(wasIntercepted) return;
                 }
             }  
         }
         bids.wait[action.eventName].forEach(({ threadId }): void => {
-            threadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, action.payload);
+            bThreadDictionary[threadId].progressWaitIntercept(BidType.wait, action.eventName, action.payload);
         });
     }
 }
 
-
-function updateState(stateDictionary: StateDictionary, action: Action): void {
-    if ((action.type === ActionType.request) && (action.eventName in stateDictionary)) {
-        stateDictionary[action.eventName].previous = stateDictionary[action.eventName].current;
-        stateDictionary[action.eventName].current = action.payload;
+type EventCacheDictionary = Record<string, StateRef<any>>;
+function updateEventCache(eventCacheDictionary: EventCacheDictionary, action: Action): void {
+    if ((action.type === ActionType.request) && (action.eventName in eventCacheDictionary)) {
+        eventCacheDictionary[action.eventName].previous = eventCacheDictionary[action.eventName].current;
+        eventCacheDictionary[action.eventName].current = action.payload;
     }
 }
 
@@ -69,17 +69,17 @@ export interface StateRef<T> {
     previous: T;
 }
 
-type StateDictionary = Record<string, StateRef<any>>;
-type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => ThreadState;
+
+type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => BThreadState;
 type EnableStateFunctionType = (id: string, initialValue: any) => StateRef<any>;
-export type ScaffoldingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
+export type StagingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
 export type DispatchFunction = (action: Action) => void;
 
 
-function setupAndDeleteThreads(
-    scaffolding: ScaffoldingFunction,
-    threadDictionary: ThreadDictionary,
-    stateDictionary: StateDictionary,
+function setupAndDeleteBThreadsAndEventCaches(
+    stagingFunction: StagingFunction,
+    bThreadDictionary: BThreadDictionary,
+    eventCacheDictionary: EventCacheDictionary,
     dispatch: DispatchFunction,
     logger?: Logger
 ): string[] {
@@ -87,38 +87,38 @@ function setupAndDeleteThreads(
     const stateIds: Set<string> = new Set();
     const orderedThreadIds: string[] = [];
 
-    const enableThread: EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number): ThreadState => {
+    const enableThread: EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number): BThreadState => {
         if(!args) args = [];
         const id: string = scenarioId(gen, key);
         threadIds.add(id);
         orderedThreadIds.push(id);
-        if (threadDictionary[id]) {
-            threadDictionary[id].resetOnArgsChange(args);
+        if (bThreadDictionary[id]) {
+            bThreadDictionary[id].resetOnArgsChange(args);
         } else {
-            threadDictionary[id] = new BThread(gen, args, dispatch, key, logger);
+            bThreadDictionary[id] = new BThread(gen, args, dispatch, key, logger);
         }
-        return threadDictionary[id].state;
+        return bThreadDictionary[id].state;
     };
 
     const enableState: EnableStateFunctionType = (id: string, initialValue: any): StateRef<any> => {
         stateIds.add(id);
-        if(!stateDictionary[id]) {
-            stateDictionary[id] = {current: initialValue, previous: null};
+        if(!eventCacheDictionary[id]) {
+            eventCacheDictionary[id] = {current: initialValue, previous: null};
         }
-        return stateDictionary[id];
+        return eventCacheDictionary[id];
     }
 
-    scaffolding(enableThread, enableState); 
-    Object.keys(threadDictionary).forEach((id): void => { // delete unused threads
-        const notEnabledAndNotProgressed = !threadIds.has(id) && threadDictionary[id].state.nrProgressions === 0;
+    stagingFunction(enableThread, enableState); 
+    Object.keys(bThreadDictionary).forEach((id): void => { // delete unused threads
+        const notEnabledAndNotProgressed = !threadIds.has(id) && bThreadDictionary[id].state.nrProgressions === 0;
         if (notEnabledAndNotProgressed) {
-            threadDictionary[id].onDelete();
-            delete threadDictionary[id];
+            bThreadDictionary[id].onDelete();
+            delete bThreadDictionary[id];
         }
     });
-    Object.keys(stateDictionary).forEach((id): void => { // delete unused states
+    Object.keys(eventCacheDictionary).forEach((id): void => { // delete unused states
         if(!stateIds.has(id)) {
-            delete stateDictionary[id];
+            delete eventCacheDictionary[id];
         }
     });
     return orderedThreadIds;
@@ -134,7 +134,7 @@ export interface ScenariosContext {
     dispatch: Record<string, Function>;
     replay: ReplayDispatchFunction;
     state: Record<string, any>;
-    thread: Record<string, ThreadState>;
+    thread: Record<string, BThreadState>;
     logger: Logger;
 }
 
@@ -146,9 +146,9 @@ export interface DispatchedAction {
 export type UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null) => ScenariosContext;
 
 
-export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Function): UpdateLoopFunction {
-    const threadDictionary: ThreadDictionary = {};
-    const stateDictionary: StateDictionary  = {};
+export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Function): UpdateLoopFunction {
+    const bThreadDictionary: BThreadDictionary = {};
+    const eventCacheDictionary: EventCacheDictionary  = {};
     let orderedThreadIds: string[];
     const logger = new Logger();
     const dwpObj: DispatchByWait = {};
@@ -166,12 +166,12 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         dispatch(x);
     }
     const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): ScenariosContext => {
-        orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, stateDictionary, actionDispatch, logger);
-        const threadBids = orderedThreadIds.map((id): BidDictionaries | null => threadDictionary[id].getBids());
+        orderedThreadIds = setupAndDeleteBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCacheDictionary, actionDispatch, logger);
+        const threadBids = orderedThreadIds.map((id): BidDictionaries | null => bThreadDictionary[id].getBids());
         const bids = getAllBids(threadBids);
         if (dAction) { 
             if (dAction.replay) {
-                Object.keys(threadDictionary).forEach((key): void => { delete threadDictionary[key] });
+                Object.keys(bThreadDictionary).forEach((key): void => { delete bThreadDictionary[key] });
                 return updateLoop(null, dAction.replay); // start a replay
             }
             nextActions = dAction.payload ? [dAction.payload] : null; // select a dispatched action
@@ -184,18 +184,18 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
         if (nextActions && nextActions.length > 0) { 
             const [nextAction, ...restActions] = nextActions;
             if (logger) logger.logAction(nextAction);
-            advanceThreads(threadDictionary, bids, nextAction);
-            updateState(stateDictionary, nextAction);
+            advanceBThreads(bThreadDictionary, bids, nextAction);
+            updateEventCache(eventCacheDictionary, nextAction);
             return updateLoop(null, restActions);
         }
         const dbw = dispatchByWait(actionDispatch, dwpObj, combinedGuardByWait, bids.wait);
 
-        const threadStateById = Object.keys(threadDictionary).reduce((acc: Record<string, ThreadState>, threadId: string): Record<string, ThreadState> => {
-            acc[threadId] = threadDictionary[threadId].state;
+        const threadStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
+            acc[threadId] = bThreadDictionary[threadId].state;
             return acc;
         }, {});
-        const stateById = Object.keys(stateDictionary).reduce((acc: Record<string, StateRef<any>>, stateId: any): Record<string, any> => {
-            acc[stateId] = stateDictionary[stateId].current;
+        const stateById = Object.keys(eventCacheDictionary).reduce((acc: Record<string, StateRef<any>>, stateId: any): Record<string, any> => {
+            acc[stateId] = eventCacheDictionary[stateId].current;
             return acc;
         }, {});
         return {

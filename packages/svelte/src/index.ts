@@ -1,11 +1,11 @@
 import { writable} from "svelte/store";
-import { ScaffoldingFunction, scenarios } from '@flowcards/core';
+import { StagingFunction, scenarios } from '@flowcards/core';
 
 export * from '@flowcards/core';
 
-export function scenariosStore(scaffoldingFn: ScaffoldingFunction): any {
+export function scenariosStore(stagingFunction: StagingFunction): any {
   const { subscribe, set } = writable({});
-  scenarios(scaffoldingFn, set);
+  scenarios(stagingFunction, set);
   return {
     subscribe
   };

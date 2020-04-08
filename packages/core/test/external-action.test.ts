@@ -3,8 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, ScaffoldingFunction, DispatchedAction } from '../src/update-loop';
-import { Logger } from "../src/logger";
+import { createUpdateLoop, StagingFunction, DispatchedAction } from '../src/update-loop';
 
 function rejectedDelay(ms: number) {
     return new Promise((resolve, reject) => setTimeout(() => reject('reject reason'), ms));
@@ -16,7 +15,7 @@ function delay(ms: number) {
 
 test("when a promise is resolved, it will dispatch an ExternalAction.", done => {
 
-    const testLoop = (enable: ScaffoldingFunction): void => {
+    const testLoop = (enable: StagingFunction): void => {
         const updateLoop = createUpdateLoop(enable, (action: DispatchedAction) => {
             if(action.payload) {
                 expect(action.payload.type).toBe('resolve');
@@ -42,7 +41,7 @@ test("when a promise is resolved, it will dispatch an ExternalAction.", done => 
 
 describe('external actions', () => {
 
-    const testLoop = (enable: ScaffoldingFunction): void => {
+    const testLoop = (enable: StagingFunction): void => {
         const updateLoop = createUpdateLoop(enable, (a: DispatchedAction) => {
             updateLoop(a, null);
         });

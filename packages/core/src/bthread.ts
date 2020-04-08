@@ -7,11 +7,11 @@ import { ActionType } from './action';
 import { DispatchFunction } from './update-loop';
 
 export type ThreadGen = any; // TODO: Type this generator
-export interface ThreadDictionary {
+export interface BThreadDictionary {
     [Key: string]: BThread;
 }
 
-export interface ThreadState {
+export interface BThreadState {
     isCompleted: boolean;
     nrProgressions: number;
     pendingEvents?: Set<string>;
@@ -21,7 +21,7 @@ export interface ThreadState {
 export interface BTContext {
     key: string | number | null;
     setState: Function;
-    state: ThreadState;
+    state: BThreadState;
 }
 
 export function scenarioId(generator: ThreadGen, key?: string | number): string {
@@ -46,8 +46,8 @@ export class BThread {
     private _isCompleted: boolean = false;
     private _nrProgressions: number = -1;
     private _stateValue?: any;
-    private _stateRef: ThreadState = { isCompleted: this._isCompleted, nrProgressions: this._nrProgressions };
-    public get state(): ThreadState {
+    private _stateRef: BThreadState = { isCompleted: this._isCompleted, nrProgressions: this._nrProgressions };
+    public get state(): BThreadState {
         this._stateRef.isCompleted = this._isCompleted;
         this._stateRef.nrProgressions = this._nrProgressions;
         this._stateRef.pendingEvents = this._pendingEvents;

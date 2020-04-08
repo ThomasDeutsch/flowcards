@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios, BTContext, ScaffoldingFunction, DispatchedAction, ScenariosContext, createUpdateLoop } from '../src/index';
+import { scenarios, StagingFunction, DispatchedAction, createUpdateLoop } from '../src/index';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -42,8 +42,8 @@ test("there will be a dispatch-function every waiting event", () => {
 });
 
 
-function loggerScenarios(scaffoldingFn: ScaffoldingFunction, da: Set<string>): void {
-    const updateLoop = createUpdateLoop(scaffoldingFn, (a: DispatchedAction): void => {
+function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): void {
+    const updateLoop = createUpdateLoop(stagingFunction, (a: DispatchedAction): void => {
         if(a.payload) da.add(a.payload.eventName);
         updateLoop(a);   
     });
