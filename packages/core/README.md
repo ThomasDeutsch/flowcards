@@ -8,7 +8,7 @@ When there is a new update, the update callback function gets called with an a n
 scenarios(StagingFunction, UpdateCallback)
  ```
  
- ### The architecture is based on the following principles
+ ### The architecture is based on these principles
  - The behavioral programming infrastructure causes b-threads to synchronize with each other (e.g., waiting for each other) before generating events. This gives b-threads the opportunity to forbid or override each other's events. The synchronization is automatic and occurs at the point "setup and delete BThreads".
  - When a b-thread generates an event it recognizes this as merely putting forward a request for consideration in the execution, and it is prepared to handle situations where the event will in fact not be triggered, or will be postponed, briefly or indefinitely. A b-thread may wish to wait indefinitely until the event is triggered, and the system, in turn, is not negatively affected by a large number of such waiting b-threads. Alternatively, a b-thread may monitor certain events that occur as it waits for the triggering of its requested event, and then withdraw its own request before therequested events are actually triggered.
  - Only events that are requested and not blocked can be triggered ( not blocked bids are calculated at the "get bids" step )
