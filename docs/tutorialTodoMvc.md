@@ -79,18 +79,18 @@ For example, disable the "toggleCompleteAllTodos" behaviour and see what happens
       }
     }
   });
-```
 
+```
 Some behaviours are only enabled if we have some todos in our list.<br/>
 Not only for performance reasons, but also to show dependencies.<br/>
 For example: You don't want to enable a "count goals" behaviour, if the soccer game hasn't even started.<br/>
+What would this mean for truly reusable components? A goal, all of the modern component libraries try to get right.<br/>
 
+### from generators to BThreads
 There are two functions that can be used.<br/>
 The `state` function: This is nothing more than an event-cache.<br/>
 It will listen for the `s_totos` event and update itself with the new payload.<br/>
 And the `enable` function.<br/>
-
-### from generators to BThreads
 
 The enable function can take 3 arguments. The first is a generator function.<br/>
 Let's take a look at the first generator function `newTodoCanBeAdded`:
