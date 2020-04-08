@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 export function areInputsEqual(nextDeps: any[], prevDeps: any[] | null): boolean {
     if (prevDeps === null) {
         return false;
@@ -15,8 +14,7 @@ export function areInputsEqual(nextDeps: any[], prevDeps: any[] | null): boolean
 }
 
 
-// promise duck-typing
-export function isThenable(p: any): boolean {
+export function isThenable(p: any): boolean { // promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
     return p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
 

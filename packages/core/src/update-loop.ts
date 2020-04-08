@@ -54,7 +54,7 @@ function advanceThreads(threadDictionary: ThreadDictionary, bids: BidDictionarie
 }
 
 
-function changeStates(stateDictionary: StateDictionary, action: Action): void {
+function updateState(stateDictionary: StateDictionary, action: Action): void {
     if ((action.type === ActionType.request) && (action.eventName in stateDictionary)) {
         stateDictionary[action.eventName].previous = stateDictionary[action.eventName].current;
         stateDictionary[action.eventName].current = action.payload;
@@ -64,21 +64,15 @@ function changeStates(stateDictionary: StateDictionary, action: Action): void {
 
 // -----------------------------------------------------------------------------------
 // UPDATE & DELETE THREADS
-
-
 export interface StateRef<T> {
     current: T;
     previous: T;
 }
+
 type StateDictionary = Record<string, StateRef<any>>;
-
-
 type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => ThreadState;
 type EnableStateFunctionType = (id: string, initialValue: any) => StateRef<any>;
-
-
 export type ScaffoldingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
-
 export type DispatchFunction = (action: Action) => void;
 
 
@@ -115,9 +109,8 @@ function setupAndDeleteThreads(
     }
 
     scaffolding(enableThread, enableState); 
-
     Object.keys(threadDictionary).forEach((id): void => { // delete unused threads
-        const notEnabledAndNotProgressed = !threadIds.has(id) && threadDictionary[id].nrProgressions === 0;
+        const notEnabledAndNotProgressed = !threadIds.has(id) && threadDictionary[id].state.nrProgressions === 0;
         if (notEnabledAndNotProgressed) {
             threadDictionary[id].onDelete();
             delete threadDictionary[id];
@@ -192,7 +185,7 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
             const [nextAction, ...restActions] = nextActions;
             if (logger) logger.logAction(nextAction);
             advanceThreads(threadDictionary, bids, nextAction);
-            changeStates(stateDictionary, nextAction);
+            updateState(stateDictionary, nextAction);
             return updateLoop(null, restActions);
         }
         const dbw = dispatchByWait(actionDispatch, dwpObj, combinedGuardByWait, bids.wait);

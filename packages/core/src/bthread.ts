@@ -43,14 +43,8 @@ export class BThread {
     private _nextBid: any;
     private _pendingPromiseDict: Record<string, Promise<any>> = {};
     private _pendingEvents: Set<string> = new Set([]);
-    public get pendingEvents(): Set<string> {
-        return this._pendingEvents;
-    }
     private _isCompleted: boolean = false;
     private _nrProgressions: number = -1;
-    public get nrProgressions(): number {
-        return this._nrProgressions;
-    }
     private _stateValue?: any;
     private _stateRef: ThreadState = { isCompleted: this._isCompleted, nrProgressions: this._nrProgressions };
     public get state(): ThreadState {
@@ -216,6 +210,7 @@ export class BThread {
     }
 
     public onDelete(): void {
+        delete this._thread;
         if (this._logger) this._logger.logReaction(this.id, ReactionType.delete);
     }
 }
