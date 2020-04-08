@@ -166,17 +166,18 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Fun
         dispatch(x);
     }
     const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): ScenariosContext => {
-        orderedThreadIds = setupAndDeleteBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCacheDictionary, actionDispatch, logger);
-        const threadBids = orderedThreadIds.map((id): BidDictionaries | null => bThreadDictionary[id].getBids());
-        const bids = getAllBids(threadBids);
         if (dAction) { 
             if (dAction.replay) {
-                Object.keys(bThreadDictionary).forEach((key): void => { delete bThreadDictionary[key] });
+                Object.keys(bThreadDictionary).forEach((key): void => { delete bThreadDictionary[key] }); // delete all BThreads
+                Object.keys(eventCacheDictionary).forEach((key): void => { delete eventCacheDictionary[key] }); // delete event-cache
                 return updateLoop(null, dAction.replay); // start a replay
             }
             nextActions = dAction.payload ? [dAction.payload] : null; // select a dispatched action
         } 
         nextActions = (nextActions && nextActions.length > 0) ? nextActions : null;
+        orderedThreadIds = setupAndDeleteBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCacheDictionary, actionDispatch, logger);
+        const threadBids = orderedThreadIds.map((id): BidDictionaries | null => bThreadDictionary[id].getBids());
+        const bids = getAllBids(threadBids);
         if(!nextActions) {
             const action = getNextActionFromRequests(bids.request)
             nextActions = action ? [action] : null;  // select a requested action
