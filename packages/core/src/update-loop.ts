@@ -146,7 +146,6 @@ export interface ScenariosContext {
 }
 
 export interface DispatchedAction {
-    id?: number;
     replay?: Action[];
     payload?: Action;
 }
@@ -158,31 +157,26 @@ export function createUpdateLoop(scaffolding: ScaffoldingFunction, dispatch: Fun
     const threadDictionary: ThreadDictionary = {};
     const stateDictionary: StateDictionary  = {};
     let orderedThreadIds: string[];
-    let loopCount = 0;
     const logger = new Logger();
     const dwpObj: DispatchByWait = {};
     const combinedGuardByWait: Record<string, GuardFunction> = {};
     const actionDispatch: DispatchFunction = (a: Action): void => {
         const x: DispatchedAction = {
-            id: loopCount+1,
             payload: a
         }
         dispatch(x);
     };
     const replayDispatch: ReplayDispatchFunction = (actions: Action[]): void => {
         const x: DispatchedAction = {
-            id: loopCount+1,
             replay: actions
         }
         dispatch(x);
     }
     const updateLoop: UpdateLoopFunction = (dAction: DispatchedAction | null, nextActions?: Action[] | null): ScenariosContext => {
-        loopCount++;
         orderedThreadIds = setupAndDeleteThreads(scaffolding, threadDictionary, stateDictionary, actionDispatch, logger);
         const threadBids = orderedThreadIds.map((id): BidDictionaries | null => threadDictionary[id].getBids());
         const bids = getAllBids(threadBids);
-        // do not get actions from old dispatches. Every dispatch belongs to a loop-iteration.
-        if (dAction && (dAction.id === loopCount)) { 
+        if (dAction) { 
             if (dAction.replay) {
                 Object.keys(threadDictionary).forEach((key): void => { delete threadDictionary[key] });
                 return updateLoop(null, dAction.replay); // start a replay

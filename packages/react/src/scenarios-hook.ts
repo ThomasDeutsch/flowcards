@@ -1,25 +1,16 @@
-import { useReducer, useRef } from "react";
-import { 
-    UpdateLoopFunction, 
-    ScaffoldingFunction, 
-    createUpdateLoop,
-    ScenariosContext,
-    DispatchedAction } from "@flowcards/core";
+import { useState } from "react";
+import { ScaffoldingFunction, ScenariosContext, scenarios } from "@flowcards/core";
 
 
-function reducer(latestAction: DispatchedAction, nextAction: DispatchedAction): DispatchedAction {
-    if(latestAction.id === nextAction.id) return latestAction;
-    return nextAction;
+
+export function useScenarios(scaffoldingFn: ScaffoldingFunction) : ScenariosContext | null {
+    const [state, setState] = useState((): ScenariosContext => scenarios(scaffoldingFn, setState, false));
+    return state;
 }
 
-const initialState: DispatchedAction = { id: -1 };
 
-export function useScenarios(scaffoldingFn: ScaffoldingFunction) : ScenariosContext {
-    const [nextAction, dispatch] = useReducer(reducer, initialState);
-    const updateLoopRef = useRef<null | UpdateLoopFunction>(null);
-    if(updateLoopRef.current === null) {
-        updateLoopRef.current = createUpdateLoop(scaffoldingFn, dispatch);
-    }
-    const scenarioUtils: ScenariosContext = updateLoopRef.current(nextAction, null);
-    return scenarioUtils;
-}
+// Example: solution for using a useReducer instead of useState
+// export function useScenarios(scaffoldingFn: ScaffoldingFunction) : ScenariosContext | null {
+//     const [state, dispatch] = useReducer((): ScenariosContext | null => scenarios(scaffoldingFn, dispatch), null);
+//     return state;
+// }

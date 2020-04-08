@@ -1,12 +1,9 @@
 import { writable} from "svelte/store";
-import { createUpdateLoop, ScaffoldingFunction, DispatchedAction } from '@flowcards/core';
+import { ScaffoldingFunction, scenarios } from '@flowcards/core';
 
-export function scenarios(scaffoldingFn: ScaffoldingFunction): any {
+export function scenariosStore(scaffoldingFn: ScaffoldingFunction): any {
   const { subscribe, set } = writable({});
-  const updateLoop = createUpdateLoop(scaffoldingFn, (a: DispatchedAction): void => {
-    set(updateLoop(a, null));
-  });
-  set(updateLoop(null));
+  scenarios(scaffoldingFn, set);
   return {
     subscribe
   };

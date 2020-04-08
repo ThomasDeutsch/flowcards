@@ -47,7 +47,7 @@ test("multiple promises can be requested and pending", () => {
 
     scenarios((enable) => {
         state = enable(thread1);
-    });
+    }, null);
 
     if(state) {
         expect(state.pendingEvents).toContain("A");
@@ -66,7 +66,7 @@ test("while a thread is pending a request, it will not request it again", () => 
     }
     scenarios((enable) => {
         state = enable(thread1);
-    });
+    }, null);
 
     if(state) {
         expect(state.nrProgressions).toBe(1);
@@ -90,7 +90,7 @@ test("a pending request can be cancelled", () => {
         if (pendingEvents && pendingEvents.size > 0) {
             enable(thread2);
         }
-    });
+    }, null);
     expect(isCancelled).toBe(true);
 });
 
@@ -104,7 +104,7 @@ test("when an async request is fulfilled, the thread will not progress until the
     }
     scenarios((enable) => {
         enable(thread1);
-    });
+    }, null);
     
     expect(isAdvanced).toBe(false);
 });
@@ -118,7 +118,7 @@ test("If one promise is resolved, other promises for this yield are cancelled", 
     }
     scenarios((enable) => {
         enable(thread1);
-    });
+    }, null);
 });
 
 
@@ -139,7 +139,7 @@ test("If a higher prio thread is a promise, it will also reflect in the lower pr
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    });
+    }, null);
 });
 
 
@@ -164,7 +164,7 @@ test("if a request from a higher thread is rejected, the lower thread will use i
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    });
+    }, null);
 });
 
 
@@ -181,5 +181,5 @@ test("a request for the same event can be used as a promise cancellation", done 
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    });
+    }, null);
 });

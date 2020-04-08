@@ -15,7 +15,7 @@ test("a thread will accept an optional array of arguments", () => {
 
     scenarios((enable) => {
         enable(thread, ["A", "B", "C"]);
-    });
+    }, null);
 
     expect(receivedArgs[0]).toBe("A");
     expect(receivedArgs[1]).toBe("B"); 
@@ -39,7 +39,7 @@ test("a thread will accept an optional key", () => {
     scenarios((enable) => {
         enable(thread, [], 0);
         enable(threadB, [], "foo");
-    });
+    }, null);
 
     expect(receivedKeyA).toBe(0); 
     expect(receivedKeyB).toBe("foo");
@@ -57,7 +57,7 @@ test("if no key is provided, the default key value is null", () => {
 
     scenarios((enable) => {
         enable(thread);
-    });
+    }, null);
 
     expect(receivedKeyA).toBeNull(); 
 });

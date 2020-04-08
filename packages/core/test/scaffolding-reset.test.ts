@@ -22,7 +22,7 @@ test("a thread gets reset, when the arguments change", () => {
     scenarios((enable) => {
         const state = enable(threadA);
         enable(threadB, [state.value]);
-    });
+    }, null);
 
     expect(initCount).toBe(2);
     expect(receivedValue).toBe('foo');
@@ -46,7 +46,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
     scenarios((enable) => {
         const state = enable(threadA);
         enable(threadB, [state]);  // instead of state.value, we will pass state.
-    });
+    }, null);
 
     expect(initCount).toBe(1);
     expect(receivedValue).toBe('foo');

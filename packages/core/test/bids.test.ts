@@ -96,7 +96,7 @@ test("multiple requests will return an array of [eventName, value].", () => {
         enable(requestThread);
         enable(receiveThreadA);
         enable(receiveThreadB);
-    });
+    }, null);
 
     if (progressedEventName === "A") {
         expect(receivedValueA).toBe(1000);
@@ -122,7 +122,7 @@ test("multiple waits will return an array of [value, eventName].", () => {
     scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
-    });
+    }, null);
 
     expect(receivedValue).toBe(1000);
     expect(receivedEventName).toBe("A");
@@ -143,7 +143,7 @@ test("A request-value can be a function. It will get called, when the event is s
     scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
-    });
+    }, null);
 
     expect(receivedValue).toBe(1000);
     expect(receivedEventName).toBe("A");
@@ -174,7 +174,7 @@ test("if a request value is a function, it will only be called once.", () => {
         enable(requestThread);
         enable(receiveThread1);
         enable(receiveThread2);
-    });
+    }, null);
 
     expect(receivedValue1).toBe(1000);
     expect(receivedValue2).toBe(1000);
@@ -200,7 +200,7 @@ test("When there are multiple requests with the same event-name, the payload fro
         enable(requestThreadLower);
         enable(requestThreadHigher);
         enable(receiveThread);
-    });
+    }, null);
 
     expect(receivedValue).toBe(2);
 });
@@ -230,7 +230,7 @@ test("events can be blocked", () => {
         enable(requestThread);
         enable(waitingThread);
         enable(blockingThread);
-    });
+    }, null);
 
     expect(advancedRequest).toBeUndefined();
     expect(advancedWait).toBeUndefined();
@@ -264,7 +264,7 @@ test("waits can be intercepted", () => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
-    });
+    }, null);
 
     expect(progressedRequest).toBe(true);
     expect(progressedWait).toBe(false);
@@ -291,7 +291,7 @@ test("intercepts will receive a value (like waits)", () => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
-    });
+    }, null);
 
     expect(interceptedValue).toBe(1000);
 });
@@ -311,7 +311,7 @@ test("intercepts are only advanced, if there is a wait for the same eventName", 
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    });
+    }, null);
 
     expect(interceptedValue).toBeUndefined();
 });
@@ -343,7 +343,7 @@ test("the last intercept that is enabled has the highest priority", () => {
         enable(waitThread);
         enable(interceptThread1);
         enable(interceptThread2);
-    });
+    }, null);
 
     expect(advancedThread1).toBeFalsy();
     expect(advancedThread2).toBe(true);

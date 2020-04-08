@@ -138,7 +138,7 @@ test("a block is applied, if the guard returns true", () => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    });
+    }, null);
 
     expect(requestAdvanced).toBe(false);
     expect(waitBAdvanced).toBe(false);
@@ -169,7 +169,7 @@ test("a block is not applied, if the guard returns false", () => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    });
+    }, null);
 
     expect(requestAdvanced).toBe(true);
     expect(waitAdvanced).toBe(true);
@@ -204,7 +204,7 @@ test("guards for blocks will be merged", () => {
         enable(blockingThreadA);
         enable(blockingThreadB);
         enable(waitingThread);
-    });
+    }, null);
 
     expect(requestAdvanced).toBe(false);
     expect(waitAdvanced).toBe(false);
@@ -239,7 +239,7 @@ test("if there is a block without a guard, the guard will be ignored", () => {
         enable(blockingThreadA);
         enable(blockingThreadB);
         enable(waitingThread);
-    });
+    }, null);
 
     expect(requestAdvanced).toBe(false);
     expect(waitAdvanced).toBe(false);
