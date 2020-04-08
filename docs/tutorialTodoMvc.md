@@ -33,9 +33,10 @@ But they are burried - so you start digging.<br/>
 
 I think that the abandonment of requirements in our code leads to<br/> 
 a systemic problem in software development.<br/>
-I want to offer a tool, to bring development, planning and testing together.<br/>
-To create a common ground, where we share the same language and<br/> 
-to make software development a bit more welcoming.<br/>
+I want to offer a tool to resolve this problem.<br/>
+To bring development, planning and testing together.<br/>
+So that we share the same language and<br/> 
+make software development a bit more welcoming.<br/>
 <br/>
 
 # TodoMVC
