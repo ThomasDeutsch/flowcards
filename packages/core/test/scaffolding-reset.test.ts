@@ -2,7 +2,7 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
-import { BTContext, ThreadState } from '../src/bthread';
+import { BTContext, BThreadState } from '../src/bthread';
 
 
 test("a thread gets reset, when the arguments change", () => {
@@ -37,7 +37,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
         yield bp.request('A');
     }
 
-    function* threadB(stateFromThreadA: ThreadState) {
+    function* threadB(stateFromThreadA: BThreadState) {
         initCount++;
         yield bp.wait('A');
         receivedValue = stateFromThreadA.value;
@@ -68,8 +68,8 @@ test("when a thread resets, the bids will be re-evaluated", () => {
     scenarios((enable) => {
         const threadAState = enable(threadA);
         enable(threadB, [threadAState.nrProgressions]);  // instead of state.value, we will pass state.
-    }, ({dispatch, thread}) => {
-        expect(thread.threadB.isCompleted === false);
+    }, ({dispatch, bThreadState}) => {
+        expect(bThreadState.threadB.isCompleted === false);
         expect(threadBCount).toEqual(2);
         expect(dispatch).toHaveProperty('A');
     });

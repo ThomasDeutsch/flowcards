@@ -2,8 +2,9 @@
 
 import { BidDictionaries, getBidDictionaries, BidType, BidDictionaryType } from './bid';
 import * as utils from "./utils";
-import { Logger, ReactionType } from "./logger";
+import { Logger } from "./logger";
 import { ActionType } from './action';
+import { ReactionType } from './reaction';
 import { DispatchFunction } from './update-loop';
 
 export type ThreadGen = any; // TODO: Type this generator

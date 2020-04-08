@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as bp from "../src/bid";
 import { BTContext } from '../src/bthread';
-import { scenarios, ThreadState } from '../src/index';
+import { scenarios, BThreadState } from '../src/index';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -82,11 +82,11 @@ test("a thread state is always the same Object.", (done) => {
     }
 
     scenarios((enable) => {
-        const x = enable(thread1);
-    }, ({thread}) => {
-        if(thread["thread1"].value !== 1) previous = thread["thread1"];
+        enable(thread1);
+    }, ({bThreadState}) => {
+        if(bThreadState.thread1.value !== 1) previous = bThreadState.thread1;
         else {
-            expect(Object.is(previous, thread["thread1"])).toBeTruthy();
+            expect(Object.is(previous, bThreadState.thread1)).toBeTruthy();
             done();
         }
     });
@@ -102,15 +102,15 @@ test("a setState argument can be a function", () => {
     }
 
     scenarios((enable) => {
-        const x = enable(thread1);
-    }, ({thread}) => {
-        expect(thread["thread1"].value).toEqual(2);
+        enable(thread1);
+    }, ({bThreadState}) => {
+        expect(bThreadState.thread1.value).toEqual(2);
     });
 });
 
 
 test("a state value can be accessed from the thread itself", () => {
-    let state: ThreadState;
+    let state: BThreadState;
     
     function* thread1(this: BTContext) {
         this.setState(1);
@@ -119,7 +119,7 @@ test("a state value can be accessed from the thread itself", () => {
     }
 
     scenarios((enable) => {
-        const x = enable(thread1);
+        enable(thread1);
     }, () => {
         expect(state.value).toEqual(1);
     });

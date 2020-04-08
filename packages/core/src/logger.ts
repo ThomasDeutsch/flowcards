@@ -1,23 +1,21 @@
 import { Action, ActionType } from './action';
-
-export enum ReactionType {
-    init = "init",
-    delete = "delete",
-    reset = "reset",
-    promise = "promise",
-    progress = "progress"
-}
-
-interface Reaction {
-    threadId: string;
-    type: ReactionType;
-    cancelledEvents: Set<string> | null;
-    pendingEvents: Set<string> | null;
-}
+import { Reaction, ReactionType } from './reaction';
 
 interface ActionAndReactions {
     action: Action;
     reactionByThreadId: Record<string, Reaction>;
+}
+
+export interface Log {
+    actionsAndReactions: ActionAndReactions[],
+    pendingEventsByThreadId: Record<string, Set<string>>;
+}
+
+function newActionsReactions(action?: Action): ActionAndReactions {
+    return {
+        action: action ? {...action} : { eventName: "", type: ActionType.init },
+        reactionByThreadId: {}
+    }
 }
 
 export class Logger {
@@ -25,26 +23,19 @@ export class Logger {
     private _latestActionAndReactions: ActionAndReactions;
     private _pendingEventsByThreadId: Record<string, Set<string>> = {};
 
-    private _getNewActionsReactions(action?: Action): ActionAndReactions {
-        return this._latestActionAndReactions = {
-            action: action ? {...action} : { eventName: "", type: ActionType.init },
-            reactionByThreadId: {}
-        }
-    }
-
     public constructor() {
-        this._latestActionAndReactions = this._getNewActionsReactions();
+        this._latestActionAndReactions = newActionsReactions();
     }
 
     public resetLog(): void {
         this._log = [];
-        this._latestActionAndReactions = this._getNewActionsReactions();
+        this._latestActionAndReactions = newActionsReactions();
         this._pendingEventsByThreadId = {};
     }
 
     public logAction(action: Action): void {
         this._log.push(this._latestActionAndReactions);
-        this._latestActionAndReactions = this._getNewActionsReactions(action);
+        this._latestActionAndReactions = newActionsReactions(action);
     }
 
     public logReaction(threadId: string, type: ReactionType, cancelledEvents: Set<string> | null = null, pendingEvents: Set<string> | null = null): void {
@@ -62,29 +53,12 @@ export class Logger {
         this._latestActionAndReactions.reactionByThreadId[reaction.threadId] = reaction;
     }
 
-    public getCompleteLog() : ActionAndReactions[] {
+    public getLog(): Log {
         const log = [...this._log];
-        log.push(this._latestActionAndReactions);
-        return log;
-    }
-
-    public getJSONString(): string {
-        return JSON.stringify(this.getCompleteLog());
-    }
-
-    public getLatestAction(): Action {
-        return this._latestActionAndReactions.action;
-    }
-
-    public getLatestReactionsByThreadId(): Record<string, Reaction>  {
-        return this._latestActionAndReactions.reactionByThreadId
-    }
-
-    public getPendingEventsByThreadId(): Record<string, Set<string>> {
-        return this._pendingEventsByThreadId;
-    }
-
-    public getPendingEventNames(): string[] {
-        return Object.keys(this._pendingEventsByThreadId).reduce((acc: string[], threadId): string[] => [...acc, ...Array.from(this._pendingEventsByThreadId[threadId])], []);
+        log.push({...this._latestActionAndReactions});
+        return {
+            actionsAndReactions: log,
+            pendingEventsByThreadId: {...this._pendingEventsByThreadId}
+        };
     }
 }

@@ -17,7 +17,7 @@ test("a state can be created that will listen for requests in its name", done =>
         st = state("count", 0);
         enable(thread1);
     }, (scenario) => {
-        expect(scenario.thread["thread1"].nrProgressions).toEqual(1);
+        expect(scenario.bThreadState["thread1"].nrProgressions).toEqual(1);
         expect(scenario.state["count"]).toEqual(2);
         expect(st.current).toEqual(2);
     });
@@ -49,7 +49,7 @@ test("a state will return a ref. Passed to a function, it will not update on cha
         enable(thread2, [st]);
         enable(thread3, [st.current]);
     }, (scenario) => {
-        expect(scenario.thread["thread1"].nrProgressions).toEqual(1);
+        expect(scenario.bThreadState["thread1"].nrProgressions).toEqual(1);
         expect(scenario.state["count"]).toEqual(2);
         expect(threadRefInit).toEqual(1);
         expect(threadValueInit).toEqual(2);
@@ -68,8 +68,8 @@ test("disabled states will get deleted", () => {
     }
 
     scenarios((enable, state) => {
-        const threadState = enable(thread1);
-        if(threadState.nrProgressions != 2) {
+        const bThreadState = enable(thread1);
+        if(bThreadState.nrProgressions != 2) {
             state("count", 0);
         }
     }, (scenario) => {

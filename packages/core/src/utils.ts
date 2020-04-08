@@ -26,3 +26,7 @@ export function getRandomString(coll: string[]): string {
     const randomItemIndex = Math.floor(Math.random() * coll.length);
     return coll[randomItemIndex];
 }
+
+export function last<T>(a: T[]): T {
+    return a[a.length-1];
+}

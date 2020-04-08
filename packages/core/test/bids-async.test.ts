@@ -3,11 +3,14 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
+import { ActionType } from '../src/action';
+import { last } from '../src/utils';
 
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
 
 
 test("A promise can be requested", () => {
@@ -16,10 +19,11 @@ test("A promise can be requested", () => {
     }
     scenarios((enable) => {
         enable(thread1);
-    }, ({logger}) => {
-        expect(logger.getLatestAction().eventName).toBe("A");
-        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
-        expect(logger.getLatestReactionsByThreadId().thread1.type).toBe("promise");
+    }, ({log}) => {
+        log.actionsAndReactions
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
+        expect(last(log.actionsAndReactions).action.threadId).toBe("thread1");
+        expect(last(log.actionsAndReactions).action.type).toBe(ActionType.promise);
     });
 });
 
@@ -30,10 +34,10 @@ test("A promise-function can be requested", () => {
     }
     scenarios((enable) => {
         enable(thread1);
-    }, (({logger}) => {
-        expect(logger.getLatestAction().eventName).toBe("A");
-        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
-        expect(logger.getLatestReactionsByThreadId().thread1.type).toBe("promise");
+    }, (({log}) => {
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
+        expect(last(log.actionsAndReactions).action.threadId).toBe("thread1");
+        expect(last(log.actionsAndReactions).action.type).toBe(ActionType.promise);
     }));
 });
 
@@ -126,7 +130,7 @@ function delayedTwo(ms: number) {
     return new Promise(resolve => setTimeout(() => resolve(2), ms));
 }
 
-test("If a higher prio thread is a promise, it will also reflect in the lower prio thread", done => {
+test("If a higher priority thread is a promise, it will also reflect in the lower priority thread", done => {
     function* thread1() {
         const val = yield bp.request("A", 1);
         expect(val).toEqual(2);

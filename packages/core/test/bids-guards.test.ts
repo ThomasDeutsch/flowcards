@@ -2,6 +2,7 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from '../src/index';
+import { last } from '../src/utils';
 
 
 
@@ -29,11 +30,11 @@ test("a wait is not advanced, if the guard returns false", () => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    }, ({logger}) => {
+    }, ({log}) => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
-        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
     });
 });
 
@@ -63,11 +64,11 @@ test("an intercept is not applied, if the guard returns false.", () => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
-    }, ({logger}) => {
+    }, ({log}) => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(true);
         expect(waitCAdvanced).toBe(false);
-        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
     });
 });
 
@@ -88,12 +89,12 @@ test("if an intercept is not applied, than the next intercept will get the event
         waitBAdvanced = true;
     }
 
-    function* interceptPrioLowThread() {
+    function* interceptPriorityLowThread() {
         yield bp.intercept("A", (pl: number) => pl === 1000);
         waitCAdvanced = true;
     }
 
-    function* interceptPrioHighThread() {
+    function* interceptPriorityHighThread() {
         yield bp.intercept("A", (pl: number) => pl !== 1000);
         waitDAdvanced = true;
     }
@@ -101,14 +102,14 @@ test("if an intercept is not applied, than the next intercept will get the event
     scenarios((enable) => {
         enable(requestThread);
         enable(waitThread);
-        enable(interceptPrioLowThread);
-        enable(interceptPrioHighThread);
-    }, ({logger}) => {
+        enable(interceptPriorityLowThread);
+        enable(interceptPriorityHighThread);
+    }, ({log}) => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
         expect(waitDAdvanced).toBe(false);
-        expect(logger.getLatestAction().eventName).toBe("A");
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
     });
 });
 

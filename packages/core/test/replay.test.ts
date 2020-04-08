@@ -5,6 +5,7 @@
 import * as bp from "../src/bid";
 import { scenarios} from "../src/index";
 import { ActionType } from '../src/action';
+import { last } from '../src/utils';
 
 test("an array of actions can be used as a replay", done => {
     let x = 0;
@@ -17,7 +18,7 @@ test("an array of actions can be used as a replay", done => {
 
     scenarios((enable) => {
         enable(thread1);
-    }, ({replay, logger}) => {
+    }, ({replay, log}) => {
         if(x === 0) {
             x = 1;
             replay([
@@ -35,8 +36,8 @@ test("an array of actions can be used as a replay", done => {
                 }
             ]);
         } else {
-            expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
-            expect(logger.getLatestAction().eventName).toEqual("C");
+            expect(last(log.actionsAndReactions).action.eventName).toBe("C");
+            expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread1");
         }
 
     });

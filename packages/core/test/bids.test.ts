@@ -3,7 +3,7 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
-
+import { last } from "../src/utils";
 
 
 // REQUESTS & WAITS
@@ -19,10 +19,10 @@ test("a requested event that is not blocked will advance", () => {
 
     scenarios((enable) => {
         enable(thread1);
-    }, ({logger})=> {
+    }, ({log})=> {
         expect(hasAdvanced).toBe(true);
-        expect(logger.getLatestAction().eventName).toBe("A");
-        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
+        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -42,12 +42,12 @@ test("a request will also advance waiting threads", () => {
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    }, ({logger}) => {
+    }, ({log}) => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(true);
-        expect(logger.getLatestAction().eventName).toBe("A");
-        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread1");
-        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("thread2");
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
+        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread1");
+        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread2");
     });
 });
 
@@ -66,12 +66,12 @@ test("waits will return the value that has been requested", () => {
     scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
-    }, ({logger}) => {
+    }, ({log}) => {
         expect(receivedValue).toBe(1000);
-        expect(logger.getLatestAction().eventName).toBe("A");
-        expect(logger.getLatestAction().payload).toBe(1000);
-        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("requestThread");
-        expect(logger.getLatestReactionsByThreadId()).toHaveProperty("receiveThread");
+        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
+        expect(last(log.actionsAndReactions).action.payload).toBe(1000);
+        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("requestThread");
+        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("receiveThread");
     });
 });
 
