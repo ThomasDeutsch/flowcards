@@ -17,4 +17,4 @@ scenarios(StagingFunction, UpdateCallback)
  - B-threads can use standard interfaces to their environment (e.g., access services, other js-libs, ...) in order to translate external occurrences into behavioral events and vice versa.
  
 
-![Solution Architecture](/docs/img/update-loop-chart.svg "solution architecture").
+<img src="/docs/img/update-loop-chart.svg" width="730">
