@@ -1,6 +1,8 @@
 ## @flowcards/core
 
-The flowcards core package has one main function. It will initialize an update-loop.<br/>
+The flowcards core package has one main function. It will create an update-loop and make the initial setup call.<br/>
+When ever there is a new update, the update callback gets called.<br/>
+
  ```ts
  export function scenarios(stagingFunction: StagingFunction, updateCb: UpdateCallback | null, updateInitial: boolean = true): ScenariosContext {
     const updateLoop = createUpdateLoop(stagingFunction, (a: DispatchedAction): void => {
