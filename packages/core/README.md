@@ -2,7 +2,7 @@
 
 The flowcards core package has one main `scenarios` function.<br/>
 It will create an update-loop and make the initial setup call.<br/>
-When there is a new update, the update callback gets called with an updated scenarios-context that includes a dispatcher.<br/>
+When there is a new update, the update callback function gets called with an a new scenarios-context and dispatcher.<br/>
 
  ```ts
  export function scenarios(stagingFunction: StagingFunction, updateCb: UpdateCallback | null, updateInitial: boolean = true): ScenariosContext {
