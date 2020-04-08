@@ -8,8 +8,8 @@ Use them for well defined state-transitions, and free yourself from switch-case 
 `App(state) => UI` becomes `App(flowcards(scenarios)) => UI`<br/>
 
 The idea comes from [user-flows](https://miro.medium.com/max/1400/1*fTafSXeAHjbELTxDHttWuQ.png). They provide an inter-object description of a reactive system.<br/>
-Instead of describing the full reactivity of each component object by object (like XState),<br/>
-we can define a system by the scenarios we want to enable flow by flow.<br/>
+Instead of describing the full reactivity of each component object-by-object (like XState),<br/>
+we can define a system by the scenarios we want to enable flow-by-flow.<br/>
 To enable behaviour - flow by flow - is what flowcards is all about.<br/>
 
 👉 [This guide & sample application](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
