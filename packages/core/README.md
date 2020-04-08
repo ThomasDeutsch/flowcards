@@ -1,1 +1,5 @@
-![updateLoop](/docs/img/updateloop.png "updateLoop").
+# @flowcards/core
+
+### Solution Architecture
+
+![Solution Architecture](/docs/img/update-loop-chart.svg "solution architecture").
