@@ -28,7 +28,7 @@ Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-progra
 
 ## Quick Start 
 - [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl?file=/src/index.ts)
-- [`react codesandbox (TodoMVC app)`](https://codesandbox.io/s/todomvc-final-qnfjr)
+- [`react codesandbox (TodoMVC App + EventTool)`](https://codesandbox.io/s/flowcardsreact-playground-knebp)
 - [`svelte codesandbox`](https://codesandbox.io/s/flowcards-hello-svelte-sscxp?file=/App.svelte)
 ```
 npm install @flowcards/core
