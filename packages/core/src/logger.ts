@@ -27,7 +27,7 @@ function newActionsReactions(action?: Action): ActionAndReactions {
 
 function toThreadsByWait(wbt: Record<string, Bid[]>): ThreadsByWait {
     return Object.keys(wbt).reduce((tfw: ThreadsByWait, threadId: string): ThreadsByWait => {
-        wbt[threadId].map(bid => bid.eventName).forEach(wait => {
+        wbt[threadId].map((bid): string => bid.eventName).forEach((wait): void => {
             if(!tfw[wait]) tfw[wait] = [threadId];
             else tfw[wait].push(threadId);
         });
@@ -73,7 +73,7 @@ export class Logger {
         this._latestActionAndReactions.reactionByThreadId[reaction.threadId] = reaction;
     }
 
-    public logWaits(waits: Record<string, Bid[]>) {
+    public logWaits(waits: Record<string, Bid[]>): void {
         this._waitsByBThreadId = waits;
     }
 
