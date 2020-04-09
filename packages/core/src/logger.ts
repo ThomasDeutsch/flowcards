@@ -26,12 +26,12 @@ function newActionsReactions(action?: Action): ActionAndReactions {
 
 
 function toThreadsByWait(wbt: Record<string, Bid[]>): ThreadsByWait {
-    return Object.keys(wbt).reduce((tfw: ThreadsByWait, threadId: string): ThreadsByWait => {
-        wbt[threadId].map((bid): string => bid.eventName).forEach((wait): void => {
-            if(!tfw[wait]) tfw[wait] = [threadId];
-            else tfw[wait].push(threadId);
+    return Object.keys(wbt).reduce((tbw: ThreadsByWait, eventName: string): ThreadsByWait => {
+        wbt[eventName].map((bid): string => bid.threadId).forEach((threadId): void => {
+            if(!tbw[eventName]) tbw[eventName] = [threadId];
+            else tbw[eventName].push(threadId);
         });
-        return tfw;
+        return tbw;
     }, {});
 }
 
@@ -39,7 +39,7 @@ export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
     private _pendingEventsByThreadId: PendingEventsByThreadId = {};
-    private _waitsByBThreadId: Record<string, Bid[]> = {};
+    private _waitsByEventName: Record<string, Bid[]> = {};
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
@@ -74,7 +74,7 @@ export class Logger {
     }
 
     public logWaits(waits: Record<string, Bid[]>): void {
-        this._waitsByBThreadId = waits;
+        this._waitsByEventName = waits;
     }
 
     public getLog(): Log {
@@ -83,7 +83,7 @@ export class Logger {
         return {
             actionsAndReactions: log,
             pendingEventsByThreadId: {...this._pendingEventsByThreadId},
-            threadsByWait: toThreadsByWait(this._waitsByBThreadId)
+            threadsByWait: toThreadsByWait(this._waitsByEventName)
         };
     }
 }
