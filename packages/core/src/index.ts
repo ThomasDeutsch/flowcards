@@ -4,9 +4,9 @@ import { StagingFunction, createUpdateLoop, ScenariosContext, DispatchedAction }
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 export { BTContext, BThreadState } from './bthread';
 export { UpdateLoopFunction, StagingFunction, createUpdateLoop, DispatchedAction, ScenariosContext, StateRef } from './update-loop';
-export { wait, intercept, block, request } from "./bid";
+export { wait, intercept, block, request, Bid } from "./bid";
 export { DispatchByWait, GuardedDispatch, TriggerDispatch } from './dispatch-by-wait';
-export { Log, ActionAndReactions, PendingEventsByThreadId } from './logger';
+export { Log, ActionAndReactions, PendingEventsByThreadId, ThreadsByWait } from './logger';
 
 
 export function scenarios(stagingFunction: StagingFunction, updateCb: UpdateCallback | null, updateInitial: boolean = true): ScenariosContext {

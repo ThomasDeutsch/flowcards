@@ -4,7 +4,7 @@ import { scenarioId, ThreadGen, BThread, BThreadDictionary, BThreadState } from 
 import { getAllBids, BidDictionariesByType, BidType, BidDictionaries, GuardFunction } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
-import { dispatchByWait, DispatchByWait } from "./dispatch-by-wait";
+import { dispatchByWait, DispatchByWait, GuardedDispatch } from "./dispatch-by-wait";
 
 
 type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => BThreadState;
@@ -22,7 +22,7 @@ export interface StateRef<T> {
 }
 
 export interface ScenariosContext {
-    dispatch: Record<string, Function>;
+    dispatch: Record<string, GuardedDispatch>;
     replay: ReplayDispatchFunction;
     state: Record<string, any>;
     bThreadState: Record<string, BThreadState>;
@@ -179,12 +179,13 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Fun
         }
         if (nextActions && nextActions.length > 0) { 
             const [nextAction, ...restActions] = nextActions;
-            if (logger) logger.logAction(nextAction);
+            logger.logAction(nextAction);
             advanceBThreads(bThreadDictionary, bids, nextAction);
             updateEventCache(eventCacheDictionary, nextAction);
             return updateLoop(null, restActions);
         }
         // create the return value:
+        logger.logWaits(bids.wait);
         const dbw = dispatchByWait(actionDispatch, dwpObj, combinedGuardByWait, bids.wait);
         const bThreadStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
             acc[threadId] = bThreadDictionary[threadId].state;

@@ -1,5 +1,6 @@
 import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
+import { Bid } from './bid';
 
 export interface ActionAndReactions {
     action: Action;
@@ -7,10 +8,13 @@ export interface ActionAndReactions {
 }
 
 export type PendingEventsByThreadId = Record<string, string[]>;
+export type ThreadsByWait = Record<string, string[]>;
+
 
 export interface Log {
-    actionsAndReactions: ActionAndReactions[],
+    actionsAndReactions: ActionAndReactions[];
     pendingEventsByThreadId: PendingEventsByThreadId;
+    threadsByWait: ThreadsByWait;
 }
 
 function newActionsReactions(action?: Action): ActionAndReactions {
@@ -20,10 +24,22 @@ function newActionsReactions(action?: Action): ActionAndReactions {
     }
 }
 
+
+function toThreadsByWait(wbt: Record<string, Bid[]>): ThreadsByWait {
+    return Object.keys(wbt).reduce((tfw: ThreadsByWait, threadId: string): ThreadsByWait => {
+        wbt[threadId].map(bid => bid.eventName).forEach(wait => {
+            if(!tfw[wait]) tfw[wait] = [threadId];
+            else tfw[wait].push(threadId);
+        });
+        return tfw;
+    }, {});
+}
+
 export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
     private _pendingEventsByThreadId: PendingEventsByThreadId = {};
+    private _waitsByBThreadId: Record<string, Bid[]> = {};
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
@@ -57,12 +73,17 @@ export class Logger {
         this._latestActionAndReactions.reactionByThreadId[reaction.threadId] = reaction;
     }
 
+    public logWaits(waits: Record<string, Bid[]>) {
+        this._waitsByBThreadId = waits;
+    }
+
     public getLog(): Log {
         const log = [...this._log];
         log.push({...this._latestActionAndReactions});
         return {
             actionsAndReactions: log,
-            pendingEventsByThreadId: {...this._pendingEventsByThreadId}
+            pendingEventsByThreadId: {...this._pendingEventsByThreadId},
+            threadsByWait: toThreadsByWait(this._waitsByBThreadId)
         };
     }
 }
