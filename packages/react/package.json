@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/react",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -19,7 +19,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@flowcards/core": "^0.6.3"
+    "@flowcards/core": "^0.6.4"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0",
