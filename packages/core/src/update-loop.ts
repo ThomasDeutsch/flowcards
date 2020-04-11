@@ -71,19 +71,19 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: BidDictiona
             bThreadDictionary[action.threadId].addPromise(action.eventName, action.payload);
             return;
         }
-        if(interceptEvent()) return
+        if(interceptEvent()) return;
         advanceRequests();
         advanceWaits();
     }
     else if(action.type === ActionType.dispatched) {
-        if(interceptEvent()) return
+        if(interceptEvent()) return;
         advanceWaits();
     }
     else if(action.type === ActionType.resolved) {
         if(action.threadId && bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].resolvePending(action);
         }
-        if(interceptEvent()) return
+        if(interceptEvent()) return;
         advanceRequests();
         advanceWaits();
     }

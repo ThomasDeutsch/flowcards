@@ -8,6 +8,7 @@
 
 // test: a pending event can not be requested
 // test: an intercept will create a pending event
+// test: a pending event can not be intercepted
 // test: waits can be intercepted ( do this by a dispatched action )
 // test: requests that are pending are not intercepted. 
 // test: if an intercept thread has completed, it will not release the intercepted events.

@@ -124,7 +124,7 @@ export class BThread {
 
     public getBids(): BidDictionaries | null {
         if(this._currentBidsIsFunction) {
-            return getBidDictionaries(this.id, this._nextBid(), this.state.pendingEvents);
+            this._currentBids = getBidDictionaries(this.id, this._nextBid(), this.state.pendingEvents);
         } 
         return this._currentBids;
     }
@@ -146,8 +146,6 @@ export class BThread {
             .then((data): void => {
                 if (this._pendingPromiseRecord[eventName] && Object.is(promise, this._pendingPromiseRecord[eventName])) {
                     this._dispatch({ type: ActionType.resolved, threadId: this.id, eventName: eventName, payload: data });
-                    console.log('dispatch: ', eventName);
-                    if(eventName === "AAA" || eventName === "XXX") console.log('dispatched: ', eventName);
                 }
             })
             .catch((e): void => {

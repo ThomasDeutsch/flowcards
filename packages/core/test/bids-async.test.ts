@@ -185,21 +185,34 @@ test("if a request from a higher thread is rejected, the lower thread will use i
 });
 
 
-test("a pending event can not be requested", done => {
+test("a pending event can not be requested", (done) => {
     let count = 0;
+
     function* thread1() {
-        yield bp.request('XXX', () => delay(100));
-        const val = yield bp.request('AAA', 1);
-        expect(val).toEqual(1);
-        expect(count).toEqual(5);
-        done();
+        yield bp.request('X', () => delay(100));
+        yield bp.request('A', 1);
+        yield bp.wait('FIN');
     }
+
     function* thread2() {
-        yield bp.request('AAA', () => delay(200));
+        yield bp.request('A', () => delay(200));
     }
+
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-        count++; //init, X, A(1), resolve(A1) && A(2), resolve A(2)
-    }, ({log}) => console.log(log.actionsAndReactions.map(x => [x.action.eventName, x.action.type])));
+        count++;
+    }, ({log}) => {
+        if(log.currentWaits['FIN']) {
+            expect(count).toEqual(8);
+            // 1:   initial
+            // 2,3: x & a request, 
+            // 4:   no request-bid ( waiting for dispatched action, because 'A' is still pending )
+            // 5:   x resolved
+            // 6:   a resolved
+            // 7:   a requested
+            // 8:   no request-bid ( waiting for dispatched action )
+            done();
+        }
+    });
 });
