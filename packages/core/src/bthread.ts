@@ -8,9 +8,6 @@ import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
 
 export type ThreadGen = any; // TODO: Type this generator
-export interface BThreadDictionary {
-    [Key: string]: BThread;
-}
 
 export interface BThreadState {
     isCompleted: boolean;
@@ -60,6 +57,7 @@ export class BThread {
                 }
             },
             state: this.state
+            // Todo: add resolveIntercept and rejectIntercept
         };
     }
 
@@ -164,7 +162,7 @@ export class BThread {
             this._progressBThread(action.eventName, action.payload);
         // resolve a pending promise
         }
-        if(this._pendingPromiseRecord[action.eventName]) {
+        else if(this._pendingPromiseRecord[action.eventName]) {
             this._progressBThread(action.eventName, action.payload);
         }
     }

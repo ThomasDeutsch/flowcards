@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ThreadGen, BThread, BThreadDictionary, BThreadState } from './bthread';
+import { ThreadGen, BThread, BThreadState } from './bthread';
 import { getAllBids, BidDictionariesByType, BidType, BidDictionaries, GuardFunction } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
@@ -15,6 +15,9 @@ export type ActionDispatch = (action: Action) => void;
 type EventCacheDictionary = Record<string, StateRef<any>>;
 export type UpdateLoopFunction = (dispatchedAction: Action | null, nextActions?: Action[] | null) => ScenariosContext;
 
+export interface BThreadDictionary {
+    [Key: string]: BThread;
+}
 
 export interface StateRef<T> {
     current: T;
@@ -66,8 +69,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: BidDictiona
             bThreadDictionary[threadId].progressWait(action);
         });
     }
-    if(action.type === ActionType.requested && action.threadId) {
-        if(utils.isThenable(action.payload)) {
+    if(action.type === ActionType.requested) {
+        if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].addPromise(action.eventName, action.payload);
             return;
         }
@@ -80,7 +83,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: BidDictiona
         advanceWaits();
     }
     else if(action.type === ActionType.resolved) {
-        if(action.threadId && bThreadDictionary[action.threadId]) {
+        if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].resolvePending(action);
         }
         if(interceptEvent()) return;
@@ -88,7 +91,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: BidDictiona
         advanceWaits();
     }
     else if(action.type === ActionType.rejected) {
-        if(action.threadId && bThreadDictionary[action.threadId]) {
+        if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].rejectPending(action);
         }
     }
@@ -190,11 +193,12 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }, {});
         return {
             dispatch: dbw, // dispatch by wait ( ui can only waiting events )
-            dispatchReplay: (actions: Action[]) => dispatch({type: ActionType.replay, payload: actions, eventName: "REPLAY"}), // triggers a replay
+            dispatchReplay: (actions: Action[]) => dispatch({type: ActionType.replay, payload: actions, threadId: "", eventName: ""}), // triggers a replay
             state: stateById, // event caches
             bThreadState: bThreadStateById, // BThread state by id
             log: logger.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
     };
+    // Todo: why not fire initial action here ???
     return updateLoop;
 }

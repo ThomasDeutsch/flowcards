@@ -30,7 +30,7 @@ function combinedGuardFn(waits: BidArrayDictionary, eventName: string): GuardFun
         return all.some((g): boolean => g(val));
     }
 }
-
+// TODO: remove dispatch for waits that are pending!
 export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, combinedGuardByWait: Record<string, GuardFunction>, waits: BidArrayDictionary): DispatchByWait {
     removeUnusedWaits(dbw, waits);
     removeUnusedWaits(combinedGuardByWait, waits);
@@ -41,7 +41,7 @@ export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, co
             acc[eventName] = (payload?: any): TriggerDispatch => {
                 if(!cache.payload || !Object.is(payload, cache.payload)) {
                     cache.payload = payload;
-                    cache.dispatch = (): void => dispatch({ type: ActionType.dispatched, eventName: eventName, payload: payload });
+                    cache.dispatch = (): void => dispatch({ type: ActionType.dispatched, eventName: eventName, payload: payload, threadId: "" });
                 }
                 if(combinedGuardByWait[eventName](payload) && cache.dispatch) {
                     return cache.dispatch;

@@ -22,11 +22,6 @@ export function isThenable(p: any): boolean { // promise duck-typing:  https://w
 
 // ARRAY --------------------
 
-export function last<T>(a: T[]): T | undefined {
-    if(a.length === 0) return undefined;
-    return a[a.length-1];
-}
-
 export function getRandom<T>(coll: T[]): T {
     if (coll.length === 1) {
         return coll[0];

@@ -15,7 +15,7 @@ export enum ActionType {
 
 export interface Action {
     type: ActionType;
-    threadId?: string;
+    threadId: string;
     eventName: string;
     payload?: any;
 }
