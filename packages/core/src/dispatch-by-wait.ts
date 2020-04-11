@@ -2,7 +2,7 @@
 
 import { Bid, BidArrayDictionary, GuardFunction } from './bid';
 import { ActionType } from './action';
-import { DispatchFunction } from './update-loop';
+import { ActionDispatch } from './update-loop';
 
 export type TriggerDispatch = Function | undefined;
 export type GuardedDispatch = (valueToDispatch: any) => TriggerDispatch;
@@ -31,7 +31,7 @@ function combinedGuardFn(waits: BidArrayDictionary, eventName: string): GuardFun
     }
 }
 
-export function dispatchByWait(dispatch: DispatchFunction, dbw: DispatchByWait, combinedGuardByWait: Record<string, GuardFunction>, waits: BidArrayDictionary): DispatchByWait {
+export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, combinedGuardByWait: Record<string, GuardFunction>, waits: BidArrayDictionary): DispatchByWait {
     removeUnusedWaits(dbw, waits);
     removeUnusedWaits(combinedGuardByWait, waits);
     return Object.keys(waits).reduce((acc: DispatchByWait, eventName): DispatchByWait  => {

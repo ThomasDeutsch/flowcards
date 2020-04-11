@@ -5,7 +5,7 @@ import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
 import { ReactionType } from './reaction';
-import { DispatchFunction } from './update-loop';
+import { ActionDispatch} from './update-loop';
 
 export type ThreadGen = any; // TODO: Type this generator
 export interface BThreadDictionary {
@@ -30,7 +30,7 @@ export class BThread {
     public readonly id: string;
     public readonly key: string | number | null = null;
     private readonly _logger?: Logger;
-    private readonly _dispatch: DispatchFunction;
+    private readonly _dispatch: ActionDispatch;
     private readonly _generator: ThreadGen;
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
@@ -63,7 +63,7 @@ export class BThread {
         };
     }
 
-    public constructor(id: string, generator: ThreadGen, args: any[], dispatch: DispatchFunction, key?: string | number, logger?: Logger) {
+    public constructor(id: string, generator: ThreadGen, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger) {
         this.id = id;
         if (key || key === 0) this.key = key;
         this._dispatch = dispatch;

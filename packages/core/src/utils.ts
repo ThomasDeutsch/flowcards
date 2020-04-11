@@ -27,10 +27,6 @@ export function last<T>(a: T[]): T | undefined {
     return a[a.length-1];
 }
 
-export function hasItems<T>(coll: T[] | null): boolean {
-    return (coll !== null && coll.length > 0);
-}
-
 export function getRandom<T>(coll: T[]): T {
     if (coll.length === 1) {
         return coll[0];
