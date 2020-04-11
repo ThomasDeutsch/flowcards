@@ -24,3 +24,7 @@ Gedanken
 Irgendwie ist intercept wie lock. 
 blocke solange den anderen BThread, bis der lock aufgehoben wurde.
 nur lassen sie den original-event zu und geben eine modifizerte version des payloads zurück.d
+
+
+Resolve und Reject
+- Pending Events können nicht dispatched/requested werden - aber resolved oder rejected.

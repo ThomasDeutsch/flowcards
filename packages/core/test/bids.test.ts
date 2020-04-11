@@ -3,9 +3,6 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
-export function last<T>(a: T[]): T  {
-    return a[a.length-1];
-}
 
 
 // REQUESTS & WAITS
@@ -22,10 +19,9 @@ test("a requested event that is not blocked will advance", () => {
     scenarios((enable) => {
         enable(thread1);
     }, ({log})=> {
-        const lastAR = last(log.actionsAndReactions);
         expect(hasAdvanced).toBe(true);
-        expect(lastAR.action.eventName).toBe("A");
-        expect(lastAR.reactionByThreadId).toHaveProperty("thread1");
+        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -48,9 +44,9 @@ test("a request will also advance waiting threads", () => {
     }, ({log}) => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(true);
-        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread1");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread2");
+        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
+        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -71,10 +67,10 @@ test("waits will return the value that has been requested", () => {
         enable(receiveThread);
     }, ({log}) => {
         expect(receivedValue).toBe(1000);
-        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
-        expect(last(log.actionsAndReactions).action.payload).toBe(1000);
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("requestThread");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("receiveThread");
+        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.payload).toBe(1000);
+        expect(log.latestReactionByThreadId).toHaveProperty("requestThread");
+        expect(log.latestReactionByThreadId).toHaveProperty("receiveThread");
     });
 });
 
@@ -271,11 +267,6 @@ test("requests can be intercepted", () => {
     expect(progressedRequest).toBe(false);
     expect(progressedIntercept).toBe(true);
 });
-
-// test: waits can be intercepted ( do this by a dispatched action )
-// test: requests that are pending are not intercepted. 
-// test: if an intercept thread has completed, it will not release the intercepted events.
-// test: if a requested thread has completed, it will not release the pending requests.
 
 test("if an intercepted thread completed, without resolving or rejecting the event, it will keep the event pending", () => {
     let progressedRequest = false,

@@ -10,6 +10,7 @@ export enum ActionType {
     dispatched = "dispatched",
     resolved = "resolved",
     rejected = "rejected",
+    replay = "replay"
 }
 
 export interface Action {
@@ -23,7 +24,7 @@ export interface Action {
 export function getNextActionFromRequests(requestBids: BidArrayDictionary): Action | null {
     const eventNames = Object.keys(requestBids);
     if (eventNames.length > 0) {
-        const chosenEventName = utils.getRandomString(eventNames);
+        const chosenEventName = utils.getRandom(eventNames);
         const bids = requestBids[chosenEventName];
         const bid = bids[bids.length - 1];
         let payload = bid.payload;

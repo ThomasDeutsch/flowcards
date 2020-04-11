@@ -5,9 +5,7 @@ export enum BidType {
     request = "request",
     wait = "wait",
     block = "block",
-    intercept = "intercept",
-    resolve = "resolve",
-    reject = "reject"
+    intercept = "intercept"
 }
 
 export type EventName = string;
@@ -39,8 +37,6 @@ export interface BidDictionaries {
     [BidType.wait]: Record<string, Bid>;
     [BidType.block]: Record<string, Bid>;
     [BidType.intercept]: Record<string, Bid>;
-    [BidType.resolve]: Record<string, Bid>;
-    [BidType.reject]: Record<string, Bid>;
 }
 
 
@@ -52,8 +48,6 @@ export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | nu
         [BidType.wait]: {},
         [BidType.block]: {},
         [BidType.intercept]: {},
-        [BidType.resolve]: {},
-        [BidType.reject]: {},
         pendingEvents: pendingEvents
     }
     if(!bid) return bd;
@@ -132,8 +126,6 @@ export interface BidDictionariesByType {
     [BidType.request]: BidArrayDictionary;
     [BidType.wait]: BidArrayDictionary;
     [BidType.intercept]: BidArrayDictionary;
-    [BidType.resolve]: BidArrayDictionary;
-    [BidType.reject]: BidArrayDictionary;
 }
 
 export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByType {
@@ -145,10 +137,8 @@ export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByT
     return {
         pendingEvents: allPendingEvents,
         [BidType.request]: getAllBidsForType(BidType.request, dictionaries, allPendingAndUnguardedBlocks, guardedBlocks),
-        [BidType.wait]: getAllBidsForType(BidType.wait, dictionaries, allPendingAndUnguardedBlocks, guardedBlocks),
-        [BidType.intercept]: getAllBidsForType(BidType.intercept, dictionaries, allPendingAndUnguardedBlocks, guardedBlocks),
-        [BidType.resolve]: getAllBidsForType(BidType.resolve, dictionaries, unguardedBlocks, guardedBlocks),
-        [BidType.reject]: getAllBidsForType(BidType.reject, dictionaries, unguardedBlocks, guardedBlocks)
+        [BidType.wait]: getAllBidsForType(BidType.wait, dictionaries, unguardedBlocks, guardedBlocks),
+        [BidType.intercept]: getAllBidsForType(BidType.intercept, dictionaries, allPendingAndUnguardedBlocks, guardedBlocks)
     };
 }
 
@@ -169,12 +159,4 @@ export function block(eventName: string, guard?: GuardFunction): Bid {
 
 export function intercept(eventName: string, guard?: GuardFunction): Bid {
     return { type: BidType.intercept, eventName: eventName, guard: guard, threadId: ""};
-}
-
-export function resolve(eventName: string, payload?: any): Bid {
-    return { type: BidType.resolve, eventName: eventName, payload: payload, threadId: ""};
-}
-
-export function reject(eventName: string): Bid {
-    return { type: BidType.reject, eventName: eventName, threadId: ""};
 }
