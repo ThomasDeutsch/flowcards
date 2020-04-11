@@ -1,19 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import * as utils from "./utils";
 
 export enum BidType {
-    wait = "wait",
-    intercept = "intercept",
-    block = "block",
     request = "request",
-    pending = "pending"
+    wait = "wait",
+    block = "block",
+    intercept = "intercept",
+    resolve = "resolve",
+    reject = "reject"
 }
 
+export type EventName = string;
 export type GuardFunction = (payload: any) => boolean
 
 export interface Bid {
     type: BidType;
     threadId: string;
-    eventName: string;
+    eventName: EventName;
     payload?: any;
     guard?: GuardFunction;
 }
@@ -22,7 +25,8 @@ export type BidArrayDictionary = Record<string, Bid[]>;
 
 export enum BidDictionaryType {
     single = "single",
-    array = "array"
+    array = "array",
+    pendingEventsOnly = "pendingEventsOnly"
 }
 
 // Bids from current thread
@@ -30,23 +34,29 @@ export enum BidDictionaryType {
 
 export interface BidDictionaries {
     type: BidDictionaryType;
-    [BidType.wait]: Record<string, Bid>;
-    [BidType.intercept]: Record<string, Bid>;
+    pendingEvents: Set<string>;
     [BidType.request]: Record<string, Bid>;
+    [BidType.wait]: Record<string, Bid>;
     [BidType.block]: Record<string, Bid>;
-    [BidType.pending]: Record<string, Bid>;
+    [BidType.intercept]: Record<string, Bid>;
+    [BidType.resolve]: Record<string, Bid>;
+    [BidType.reject]: Record<string, Bid>;
 }
 
 
 export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | null)[], pendingEvents: Set<string>): BidDictionaries | null {
-    if(!bid) return null;
+    if(!bid && pendingEvents.size === 0) return null;
     const bd = {
-        [BidType.wait]: {},
-        [BidType.intercept]: {},
+        type: BidDictionaryType.pendingEventsOnly,
         [BidType.request]: {},
+        [BidType.wait]: {},
         [BidType.block]: {},
-        [BidType.pending]: {}
+        [BidType.intercept]: {},
+        [BidType.resolve]: {},
+        [BidType.reject]: {},
+        pendingEvents: pendingEvents
     }
+    if(!bid) return bd;
     const rec = {...bd, type: BidDictionaryType.array}
     if(Array.isArray(bid)) {
         rec.type = BidDictionaryType.array;
@@ -57,9 +67,6 @@ export function getBidDictionaries(threadId: string, bid: Bid | null | (Bid | nu
     return bid.reduce((acc: BidDictionaries, b): BidDictionaries => {
         if(b) {
             let type = b.type;
-            if(b.type === BidType.request && pendingEvents.has(b.eventName)) {
-                type = BidType.pending;
-            }
             acc[type][b.eventName] = {
                 ...b, 
                 threadId: threadId
@@ -121,39 +128,53 @@ function getCategorizedBlocks(blocks: BidArrayDictionary): [Record<string,Functi
 }
 
 export interface BidDictionariesByType {
-    [BidType.wait]: BidArrayDictionary;
+    pendingEvents: Set<string>;
     [BidType.request]: BidArrayDictionary;
+    [BidType.wait]: BidArrayDictionary;
     [BidType.intercept]: BidArrayDictionary;
-    [BidType.pending]: BidArrayDictionary;
+    [BidType.resolve]: BidArrayDictionary;
+    [BidType.reject]: BidArrayDictionary;
 }
 
 export function getAllBids(coll: (BidDictionaries | null)[]): BidDictionariesByType {
     const dictionaries = coll.filter((c): c is BidDictionaries => c !== null);
+    const allPendingEvents =  utils.union(dictionaries.map(bd => bd.pendingEvents));
     const allBlockingBids = getAllBidsForType(BidType.block, dictionaries, null, null);
     const [guardedBlocks, unguardedBlocks] = getCategorizedBlocks(allBlockingBids);
+    const allPendingAndUnguardedBlocks = unguardedBlocks ? utils.union([unguardedBlocks, allPendingEvents]) : allPendingEvents;
     return {
-        [BidType.wait]: getAllBidsForType(BidType.wait, dictionaries, unguardedBlocks, guardedBlocks),
-        [BidType.request]: getAllBidsForType(BidType.request, dictionaries, unguardedBlocks, guardedBlocks),
-        [BidType.intercept]: getAllBidsForType(BidType.intercept, dictionaries, unguardedBlocks, guardedBlocks),
-        [BidType.pending]: getAllBidsForType(BidType.pending, dictionaries, null, null)
+        pendingEvents: allPendingEvents,
+        [BidType.request]: getAllBidsForType(BidType.request, dictionaries, allPendingAndUnguardedBlocks, guardedBlocks),
+        [BidType.wait]: getAllBidsForType(BidType.wait, dictionaries, allPendingAndUnguardedBlocks, guardedBlocks),
+        [BidType.intercept]: getAllBidsForType(BidType.intercept, dictionaries, allPendingAndUnguardedBlocks, guardedBlocks),
+        [BidType.resolve]: getAllBidsForType(BidType.resolve, dictionaries, unguardedBlocks, guardedBlocks),
+        [BidType.reject]: getAllBidsForType(BidType.reject, dictionaries, unguardedBlocks, guardedBlocks)
     };
 }
 
 
 // Bid API --------------------------------------------------------------------
 
+export function request(eventName: string, payload?: any): Bid {
+    return { type: BidType.request, eventName: eventName, payload: payload, threadId: "" };
+}
+
 export function wait(eventName: string, guard?: GuardFunction): Bid {
     return { type: BidType.wait, eventName: eventName, guard: guard, threadId: ""};
+}
+
+export function block(eventName: string, guard?: GuardFunction): Bid {
+    return { type: BidType.block, eventName: eventName, guard: guard, threadId: "" };
 }
 
 export function intercept(eventName: string, guard?: GuardFunction): Bid {
     return { type: BidType.intercept, eventName: eventName, guard: guard, threadId: ""};
 }
 
-export function request(eventName: string, payload?: any): Bid {
-    return { type: BidType.request, eventName: eventName, payload: payload, threadId: "" };
+export function resolve(eventName: string, payload?: any): Bid {
+    return { type: BidType.resolve, eventName: eventName, payload: payload, threadId: ""};
 }
 
-export function block(eventName: string, guard?: GuardFunction): Bid {
-    return { type: BidType.block, eventName: eventName, guard: guard, threadId: "" };
+export function reject(eventName: string): Bid {
+    return { type: BidType.reject, eventName: eventName, threadId: ""};
 }

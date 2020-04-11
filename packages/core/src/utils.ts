@@ -27,6 +27,11 @@ export function getRandomString(coll: string[]): string {
     return coll[randomItemIndex];
 }
 
-export function last<T>(a: T[]): T {
+export function last<T>(a: T[]): T | undefined {
+    if(a.length === 0) return undefined;
     return a[a.length-1];
+}
+
+export function union<T>(sets: Set<T>[]): Set<T> {
+    return new Set<T>(sets.reduce((acc: T[], set: Set<T>) => [...acc, ...set], []));
 }

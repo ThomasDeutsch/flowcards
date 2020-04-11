@@ -3,7 +3,9 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
-import { last } from "../src/utils";
+export function last<T>(a: T[]): T  {
+    return a[a.length-1];
+}
 
 
 // REQUESTS & WAITS
@@ -20,9 +22,10 @@ test("a requested event that is not blocked will advance", () => {
     scenarios((enable) => {
         enable(thread1);
     }, ({log})=> {
+        const lastAR = last(log.actionsAndReactions);
         expect(hasAdvanced).toBe(true);
-        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread1");
+        expect(lastAR.action.eventName).toBe("A");
+        expect(lastAR.reactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -144,7 +147,7 @@ test("A request-value can be a function. It will get called, when the event is s
         enable(requestThread);
         enable(receiveThread);
     }, null);
-
+    
     expect(receivedValue).toBe(1000);
     expect(receivedEventName).toBe("A");
 });
@@ -240,19 +243,48 @@ test("events can be blocked", () => {
 // INTERCEPTS
 //-------------------------------------------------------------------------
 
-test("waits can be intercepted", () => {
+test("requests can be intercepted", () => {
     let progressedRequest = false,
-        progressedWait = false,
-        progressedIntercept = false;
+        progressedIntercept = false,
+        setupCount = 0;
 
     function* thread1() {
         yield bp.request("A");
         progressedRequest = true;
     }
 
-    function* thread2() {
-        yield bp.wait("A");
-        progressedWait = true;
+    function* thread3() {
+        yield bp.intercept("A");
+        progressedIntercept = true;
+        yield bp.wait('X');
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread3);
+        setupCount++;
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has('A')).toEqual(true);
+    }
+ );
+    expect(setupCount).toEqual(2);
+    expect(progressedRequest).toBe(false);
+    expect(progressedIntercept).toBe(true);
+});
+
+// test: waits can be intercepted ( do this by a dispatched action )
+// test: requests that are pending are not intercepted. 
+// test: if an intercept thread has completed, it will not release the intercepted events.
+// test: if a requested thread has completed, it will not release the pending requests.
+
+test("if an intercepted thread completed, without resolving or rejecting the event, it will keep the event pending", () => {
+    let progressedRequest = false,
+        progressedIntercept = false,
+        setupCount = 0;
+
+    function* thread1() {
+        yield bp.request("A");
+        progressedRequest = true;
     }
 
     function* thread3() {
@@ -262,12 +294,14 @@ test("waits can be intercepted", () => {
 
     scenarios((enable) => {
         enable(thread1);
-        enable(thread2);
         enable(thread3);
-    }, null);
-
-    expect(progressedRequest).toBe(true);
-    expect(progressedWait).toBe(false);
+        setupCount++;
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has('A')).toEqual(true);
+    }
+ );
+    expect(setupCount).toEqual(2);
+    expect(progressedRequest).toBe(false);
     expect(progressedIntercept).toBe(true);
 });
 
@@ -297,7 +331,7 @@ test("intercepts will receive a value (like waits)", () => {
 });
 
 
-test("intercepts are only advanced, if there is a wait for the same eventName", () => {
+test("intercepts will intercept requests", () => {
     let interceptedValue;
 
     function* thread1() {
@@ -313,7 +347,7 @@ test("intercepts are only advanced, if there is a wait for the same eventName", 
         enable(thread2);
     }, null);
 
-    expect(interceptedValue).toBeUndefined();
+    expect(interceptedValue).toEqual(1000);
 });
 
 
@@ -322,10 +356,6 @@ test("the last intercept that is enabled has the highest priority", () => {
 
     function* requestThread() {
         yield bp.request("A");
-    }
-
-    function* waitThread() {
-        yield bp.wait("A");
     }
 
     function* interceptThread1() {
@@ -340,7 +370,6 @@ test("the last intercept that is enabled has the highest priority", () => {
 
     scenarios((enable) => {
         enable(requestThread);
-        enable(waitThread);
         enable(interceptThread1);
         enable(interceptThread2);
     }, null);

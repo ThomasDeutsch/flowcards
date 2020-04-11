@@ -5,12 +5,11 @@ import { BidArrayDictionary } from "./bid";
 
 
 export enum ActionType {
-    promise = "promise",
-    request = "request",
-    resolve = "resolve",
-    reject = "reject",
-    waited = "waited",
-    init = "init"
+    initial = "initial",
+    requested = "requested",
+    dispatched = "dispatched",
+    resolved = "resolved",
+    rejected = "rejected",
 }
 
 export interface Action {
@@ -37,7 +36,7 @@ export function getNextActionFromRequests(requestBids: BidArrayDictionary): Acti
             return getNextActionFromRequests(requestBids);
         }
         return {
-            type: utils.isThenable(payload) ? ActionType.promise : ActionType.request,
+            type: ActionType.requested,
             threadId: bid.threadId,
             eventName: bid.eventName,
             payload: payload,

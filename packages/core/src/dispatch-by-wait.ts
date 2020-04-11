@@ -41,7 +41,7 @@ export function dispatchByWait(dispatch: DispatchFunction, dbw: DispatchByWait, 
             acc[eventName] = (payload?: any): TriggerDispatch => {
                 if(!cache.payload || !Object.is(payload, cache.payload)) {
                     cache.payload = payload;
-                    cache.dispatch = (): void => dispatch({ type: ActionType.waited, eventName: eventName, payload: payload });
+                    cache.dispatch = (): void => dispatch({ type: ActionType.dispatched, eventName: eventName, payload: payload });
                 }
                 if(combinedGuardByWait[eventName](payload) && cache.dispatch) {
                     return cache.dispatch;
