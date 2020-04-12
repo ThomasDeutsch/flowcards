@@ -25,6 +25,14 @@ export function notNull<T>(value: T | null): value is T {
     return value !== null;
 }
 
+// OBJECT -------------------
+
+export function withoutProperties(properties: string[], obj: Record<string, any>) {
+    const result = {...obj};
+    properties.forEach(prop => delete result[prop]);
+    return result;
+}
+
 // ARRAY --------------------
 
 export function getRandom<T>(coll: T[]): T {

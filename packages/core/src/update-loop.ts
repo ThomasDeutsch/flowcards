@@ -183,9 +183,10 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(null, restActions);
         }
         // ------ create the return value:
-        logger.logWaits(bids.wait);
+        const waitsWithoutPending = utils.withoutProperties(Array.from(bids.pendingEvents), bids.wait);
+        logger.logWaits(waitsWithoutPending);
         logger.logPendingEvents(bids.pendingEvents);
-        const dbw = dispatchByWait(dispatch, dwpObj, combinedGuardByWait, bids.wait);
+        const dbw = dispatchByWait(dispatch, dwpObj, combinedGuardByWait, waitsWithoutPending);
         const bThreadStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
             acc[threadId] = bThreadDictionary[threadId].state;
             return acc;

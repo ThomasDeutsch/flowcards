@@ -7,16 +7,19 @@ import { ActionDispatch } from './update-loop';
 export type TriggerDispatch = Function | undefined;
 export type GuardedDispatch = (valueToDispatch: any) => TriggerDispatch;
 export type DispatchByWait = Record<string, GuardedDispatch>;
+
 interface EventCache {
     payload?: any;
     dispatch?: Function;
 }
+
 
 function removeUnusedWaits(rec: Record<string, any>, waits: Record<string, Bid[]>): void {
     Object.keys(rec).forEach((wait): void => {
         if(!waits[wait]) delete rec[wait];
     });
 }
+
 
 function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunction {
     const all = waits[eventName].reduce((acc: GuardFunction[], curr: Bid): GuardFunction[] => {
@@ -30,7 +33,8 @@ function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunctio
         return all.some((g): boolean => g(val));
     }
 }
-// TODO: remove dispatch for waits that are pending!
+
+
 export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, combinedGuardByWait: Record<string, GuardFunction>, waits: BidsForBidType): DispatchByWait {
     removeUnusedWaits(dbw, waits);
     removeUnusedWaits(combinedGuardByWait, waits);
