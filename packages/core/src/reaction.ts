@@ -3,7 +3,8 @@ export enum ReactionType {
     delete = "delete",
     reset = "reset",
     promise = "promise",
-    progress = "progress"
+    progress = "progress",
+    resolve = "resolve"
 }
 
 export interface Reaction {

@@ -166,11 +166,15 @@ export class BThread {
         if(action.threadId !== this.id || action.type !== ActionType.resolved) return;
         // resolve intercept
         if(this._pendingIntercepts.has(action.eventName)) {
-            this._pendingIntercepts.delete(action.eventName); 
+            this._pendingIntercepts.delete(action.eventName);
+            this._renewCurrentBids();
+
         } // resolve pending promise
         else if(this._pendingPromiseByEventName[action.eventName]) {
             delete this._pendingPromiseByEventName[action.eventName];
-            this._progressBThread(action.eventName, action.payload);
+            const cancelledPromises = this._cancelPendingPromises();
+            this._renewCurrentBids();
+            if (this._logger) this._logger.logReaction(this.id, ReactionType.resolve, cancelledPromises);
         }
     }
 
@@ -188,8 +192,9 @@ export class BThread {
     }
     
     public progressRequest(action: Action): void {
-        if(!this._hasCurrentBidForBidTypeAndEventName(BidType.request, action.eventName)) return;
-        this._progressBThread(action.eventName, action.payload);
+        if(this._hasCurrentBidForBidTypeAndEventName(BidType.request, action.eventName)) {
+            this._progressBThread(action.eventName, action.payload);
+        }
     }
 
     public progressWait(action: Action): void {

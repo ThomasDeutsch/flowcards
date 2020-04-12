@@ -6,8 +6,8 @@ import { scenarios } from "../src/index";
 import { ActionType } from '../src/action';
 
 
-function delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+function delay(ms: number, value?: any) {
+    return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }
 
 test("a pending event can not be requested", () => {
@@ -203,42 +203,42 @@ test("a pending event can not be requested - second example", (done) => {
     });
 });
 
-// test("if a threads waits for an already existing pending-event, it will also progress when the event is resolved", done => {
-//     function* thread1() {
-//         yield bp.request("A", () => delay(500));
-//     }
-//     function* thread2() {
-//         yield bp.request("Y", () => delay(100));
-//         yield bp.wait("A");
-//         yield bp.request('fin');
-//     }
-//     scenarios((enable) => {
-//         enable(thread1);
-//         enable(thread2);
-//     }, ({log}) => {
-//         if(log.latestAction.eventName === "fin") {
-//             console.log('latestAction: ', log.latestAction);
-//             expect(1).toBeTruthy();
-//             done();
-//         }
-//     });
-// });
+test("if a threads waits for an already existing pending-event, it will also progress when the event is resolved", done => {
+    function* thread1() {
+        yield bp.request("A", () => delay(500));
+    }
+    function* thread2() {
+        yield bp.request("Y", () => delay(100));
+        yield bp.wait("A");
+        yield bp.request('fin');
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    }, ({log}) => {
+        if(log.latestAction.eventName === "fin") {
+            expect(1).toBeTruthy();
+            done();
+        }
+    });
+});
 
-// test("if a threads intercepts an already existing pending-event, it will trigger that intercept when the event resolve", done => {
-//     let thread1Progressed = false;
-//     function* thread1() {
-//         yield bp.request("A", () => delay(500));
-//         thread1Progressed = true;
+test("if a threads intercepts an already existing pending-event, it will trigger that intercept when the event resolve", done => {
+    let thread1Progressed = false;
+    function* thread1() {
+        yield bp.request("A", () => delay(500, 'requestedValue'));
+        thread1Progressed = true;
         
-//     }
-//     function* thread2() {
-//         yield bp.request("Y", () => delay(100));
-//         yield bp.intercept("A");
-//         expect(thread1Progressed).toBe(false);
-//         done();
-//     }
-//     scenarios((enable) => {
-//         enable(thread1);
-//         enable(thread2);
-//     }, null);
-// });
+    }
+    function* thread2() {
+        yield bp.request("Y", () => delay(100));
+        const val = yield bp.intercept("A");
+        expect(val).toBe('requestedValue');
+        expect(thread1Progressed).toBe(false);
+        done();
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    }, null);
+});

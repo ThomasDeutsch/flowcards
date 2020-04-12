@@ -85,10 +85,11 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByTy
         advanceWaits();
     }
     else if(action.type === ActionType.resolved) {
-        if(interceptEvent()) return;
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].resolvePending(action);
         }
+        if(interceptEvent()) return;
+        bThreadDictionary[action.threadId].progressRequest(action); // request got resolved
         advanceRequests();
         advanceWaits();
     }
