@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Bid, BidsForBidType, GuardFunction } from './bid';
+import { Bid, BidsForBidType, GuardFunction, EventName } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 
 export type TriggerDispatch = Function | undefined;
 export type GuardedDispatch = (valueToDispatch: any) => TriggerDispatch;
-export type DispatchByWait = Record<string, GuardedDispatch>;
+export type DispatchByWait = Record<EventName, GuardedDispatch>;
 
 interface EventCache {
     payload?: any;
@@ -14,9 +14,9 @@ interface EventCache {
 }
 
 
-function removeUnusedWaits(rec: Record<string, any>, waits: Record<string, Bid[]>): void {
-    Object.keys(rec).forEach((wait): void => {
-        if(!waits[wait]) delete rec[wait];
+function removeUnusedWaits(previous: Record<EventName, any>, waits: Record<EventName, Bid[]>): void {
+    Object.keys(previous).forEach((wait): void => {
+        if(!waits[wait]) delete previous[wait];
     });
 }
 
@@ -35,8 +35,8 @@ function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunctio
 }
 
 
-export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, combinedGuardByWait: Record<string, GuardFunction>, waits: BidsForBidType): DispatchByWait {
-    removeUnusedWaits(dbw, waits);
+export function dispatchByWait(dispatch: ActionDispatch, dbwObj: DispatchByWait, combinedGuardByWait: Record<EventName, GuardFunction>, waits: BidsForBidType): DispatchByWait {
+    removeUnusedWaits(dbwObj, waits);
     removeUnusedWaits(combinedGuardByWait, waits);
     return Object.keys(waits).reduce((acc: DispatchByWait, eventName): DispatchByWait  => {
         combinedGuardByWait[eventName] = combinedGuardFn(waits, eventName);
@@ -55,5 +55,5 @@ export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, co
             }
         }
         return acc;
-    }, dbw);
+    }, dbwObj);
 }

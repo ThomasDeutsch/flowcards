@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getBidsForThread, BidsByType, BidType, BidsForThread } from './bid';
+import { getBidsForBThread, BidsByType, BidType, BidsForBThread } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
@@ -31,7 +31,7 @@ export class BThread {
     private readonly _generator: ThreadGen;
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
-    private _currentBids: BidsForThread | null = null;
+    private _currentBids: BidsForBThread | null = null;
     private _currentBidsIsFunction: boolean = false;
     private _nextBid: any;
     private _pendingPromiseRecord: Record<string, Promise<any>> = {};
@@ -79,7 +79,7 @@ export class BThread {
             this._currentBidsIsFunction = true;
             return;
         }
-        this._currentBids = getBidsForThread(this.id, this._nextBid, this.state.pendingEvents);
+        this._currentBids = getBidsForBThread(this.id, this._nextBid, this.state.pendingEvents);
     }
 
     private _cancelPendingPromises(): string[] {
@@ -129,7 +129,7 @@ export class BThread {
 
     public getBids(): BidsByType | null {
         if(this._currentBidsIsFunction) {
-            this._currentBids = getBidsForThread(this.id, this._nextBid(), this.state.pendingEvents);
+            this._currentBids = getBidsForBThread(this.id, this._nextBid(), this.state.pendingEvents);
         } 
         return this._currentBids ? this._currentBids.bidsByType : null;
     }

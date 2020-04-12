@@ -32,12 +32,12 @@ export interface BidsByType {
     [BidType.intercept]: Record<EventName, Bid>;
 }
 
-export interface BidsForThread {
+export interface BidsForBThread {
     withMultipleBids: boolean;
     bidsByType: BidsByType;
 }
 
-export function getBidsForThread(threadId: string, bidOrBids: Bid | null | (Bid | null)[], pendingEvents: Set<EventName>): BidsForThread | null {
+export function getBidsForBThread(threadId: string, bidOrBids: Bid | null | (Bid | null)[], pendingEvents: Set<EventName>): BidsForBThread | null {
     if(!bidOrBids && pendingEvents.size === 0) return null;
     const withMultipleBids = Array.isArray(bidOrBids);
     const bids = utils.toArray(bidOrBids).filter(utils.notNull);

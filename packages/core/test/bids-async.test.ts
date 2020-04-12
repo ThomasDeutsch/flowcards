@@ -6,8 +6,6 @@ import { scenarios } from "../src/index";
 import { ActionType } from '../src/action';
 
 
-
-
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
