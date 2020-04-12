@@ -43,29 +43,29 @@ function createScenarioId(generator: ThreadGen, key?: string | number): string {
 function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return;
 
-    const interceptEvent = (): boolean => {
-        let interceptBids = bids[BidType.intercept][action.eventName];        
+    const interceptEvent = (a: Action): boolean => {
+        let interceptBids = bids[BidType.intercept][a.eventName];        
         if(!interceptBids || interceptBids.length === 0) return false;
         interceptBids = [...interceptBids];
         while(interceptBids.length > 0) {
             const nextInterceptBid = interceptBids.pop();
             if(nextInterceptBid) {
-                const wasIntercepted = bThreadDictionary[nextInterceptBid.threadId].progressIntercept(action);
+                const wasIntercepted = bThreadDictionary[nextInterceptBid.threadId].progressIntercept(a);
                 if(wasIntercepted) return true;
             }
         } 
         return false;
     }
-    const advanceRequests = (): void => {
-        if(!bids[BidType.request][action.eventName]) return;
-        bids[BidType.request][action.eventName].forEach((bid): void => {
-            bThreadDictionary[bid.threadId].progressRequest(action);
+    const advanceRequests = (a: Action): void => {
+        if(!bids[BidType.request][a.eventName]) return;
+        bids[BidType.request][a.eventName].forEach((bid): void => {
+            bThreadDictionary[bid.threadId].progressRequest(a);
         });
     }
-    const advanceWaits = (): void => {
-        if(!bids[BidType.wait][action.eventName]) return;
-        bids[BidType.wait][action.eventName].forEach(({ threadId }): void => {
-            bThreadDictionary[threadId].progressWait(action);
+    const advanceWaits = (a: Action): void => {
+        if(!bids[BidType.wait][a.eventName]) return;
+        bids[BidType.wait][a.eventName].forEach(({ threadId }): void => {
+            bThreadDictionary[threadId].progressWait(a);
         });
     }
     if(action.type === ActionType.requested) {
@@ -76,22 +76,22 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByTy
             bThreadDictionary[action.threadId].addPendingRequest(action.eventName, action.payload);
             return;
         }
-        if(interceptEvent()) return;
-        advanceRequests();
-        advanceWaits();
+        if(interceptEvent(action)) return;
+        advanceRequests(action);
+        advanceWaits(action);
     }
     else if(action.type === ActionType.dispatched) {
-        if(interceptEvent()) return;
-        advanceWaits();
+        if(interceptEvent(action)) return;
+        advanceWaits(action);
     }
     else if(action.type === ActionType.resolved) {
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].resolvePending(action);
         }
-        if(interceptEvent()) return;
+        if(interceptEvent(action)) return;
         bThreadDictionary[action.threadId].progressRequest(action); // request got resolved
-        advanceRequests();
-        advanceWaits();
+        advanceRequests(action);
+        advanceWaits(action);
     }
     else if(action.type === ActionType.rejected) {
         if(bThreadDictionary[action.threadId]) {
