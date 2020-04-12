@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Bid, BidArrayDictionary, GuardFunction } from './bid';
+import { Bid, BidsForBidType, GuardFunction } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 
@@ -18,7 +18,7 @@ function removeUnusedWaits(rec: Record<string, any>, waits: Record<string, Bid[]
     });
 }
 
-function combinedGuardFn(waits: BidArrayDictionary, eventName: string): GuardFunction {
+function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunction {
     const all = waits[eventName].reduce((acc: GuardFunction[], curr: Bid): GuardFunction[] => {
         if(curr.guard) {
             acc.push(curr.guard);
@@ -31,7 +31,7 @@ function combinedGuardFn(waits: BidArrayDictionary, eventName: string): GuardFun
     }
 }
 // TODO: remove dispatch for waits that are pending!
-export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, combinedGuardByWait: Record<string, GuardFunction>, waits: BidArrayDictionary): DispatchByWait {
+export function dispatchByWait(dispatch: ActionDispatch, dbw: DispatchByWait, combinedGuardByWait: Record<string, GuardFunction>, waits: BidsForBidType): DispatchByWait {
     removeUnusedWaits(dbw, waits);
     removeUnusedWaits(combinedGuardByWait, waits);
     return Object.keys(waits).reduce((acc: DispatchByWait, eventName): DispatchByWait  => {

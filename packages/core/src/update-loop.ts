@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ThreadGen, BThread, BThreadState } from './bthread';
-import { getAllBids, BidDictionariesByType, BidType, BidDictionaries, GuardFunction } from './bid';
+import { getAllBids, BidsByType, BidType, AllBidsByType, GuardFunction } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { dispatchByWait, DispatchByWait, GuardedDispatch } from "./dispatch-by-wait";
@@ -40,12 +40,12 @@ function createScenarioId(generator: ThreadGen, key?: string | number): string {
 }
 
 
-function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: BidDictionariesByType, action: Action): void {
+function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return;
 
     // an intercept can be guarded, so we need this.
     const interceptEvent = (): boolean => {
-        let interceptBids = bids.intercept[action.eventName];        
+        let interceptBids = bids[BidType.intercept][action.eventName];        
         if(!interceptBids || interceptBids.length === 0) return false;
         interceptBids = [...interceptBids];
         while(interceptBids.length > 0) {
@@ -58,18 +58,21 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: BidDictiona
         return false;
     }
     const advanceRequests = (): void => {
-        if(!bids.request[action.eventName]) return;
-        bids.request[action.eventName].forEach((bid): void => {
+        if(!bids[BidType.request][action.eventName]) return;
+        bids[BidType.request][action.eventName].forEach((bid): void => {
             bThreadDictionary[bid.threadId].progressRequest(action);
         });
     }
     const advanceWaits = (): void => {
-        if(!bids.wait[action.eventName]) return;
-        bids.wait[action.eventName].forEach(({ threadId }): void => {
+        if(!bids[BidType.wait][action.eventName]) return;
+        bids[BidType.wait][action.eventName].forEach(({ threadId }): void => {
             bThreadDictionary[threadId].progressWait(action);
         });
     }
     if(action.type === ActionType.requested) {
+        if (typeof action.payload === "function") {
+            action.payload = action.payload();
+        }
         if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].addPromise(action.eventName, action.payload);
             return;
@@ -162,7 +165,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             }
         } 
         orderedThreadIds = stageBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCacheDictionary, dispatch, logger);
-        const threadBids = orderedThreadIds.map((id): BidDictionaries | null => bThreadDictionary[id].getBids());
+        const threadBids = orderedThreadIds.map((id): BidsByType | null  => bThreadDictionary[id].getBids());
         const bids = getAllBids(threadBids);
         // get the next action
         let nextAction: Action | null = null, restActions: Action[] | null = null;

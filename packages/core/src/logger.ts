@@ -20,7 +20,7 @@ export interface Log {
 
 function newActionsReactions(action?: Action): ActionAndReactions {
     return {
-        action: action ? {...action} : { eventName: "", type: ActionType.initial },
+        action: action ? {...action} : { eventName: "", type: ActionType.initial, threadId: "" },
         reactionByThreadId: {}
     }
 }

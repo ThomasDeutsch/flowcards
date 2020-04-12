@@ -19,6 +19,11 @@ export function isThenable(p: any): boolean { // promise duck-typing:  https://w
     return p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
 
+// NULL CHECK --------------
+
+export function notNull<T>(value: T | null): value is T {
+    return value !== null;
+}
 
 // ARRAY --------------------
 
@@ -28,6 +33,11 @@ export function getRandom<T>(coll: T[]): T {
     }
     const randomItemIndex = Math.floor(Math.random() * coll.length);
     return coll[randomItemIndex];
+}
+
+export function toArray<T>(x: T | T[]): T[] {
+    if(Array.isArray(x)) return x;
+    return [x];
 }
 
 // SET ----------------------

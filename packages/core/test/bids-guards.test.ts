@@ -4,6 +4,9 @@ import * as bp from "../src/bid";
 import { scenarios } from '../src/index';
 
 
+// Todo: if a request value is guarded, it will still continue, but not the wait or intercept.
+
+
 test("a wait is not advanced, if the guard returns false", () => {
     let requestAdvanced = false;
     let waitBAdvanced = false;

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { BidDictionaries, getBidDictionaries, BidType, BidDictionaryType } from './bid';
+import { getBidsForThread, BidsByType, BidType, BidsForThread } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
@@ -31,7 +31,7 @@ export class BThread {
     private readonly _generator: ThreadGen;
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
-    private _currentBids: BidDictionaries | null = null;
+    private _currentBids: BidsForThread | null = null;
     private _currentBidsIsFunction: boolean = false;
     private _nextBid: any;
     private _pendingPromiseRecord: Record<string, Promise<any>> = {};
@@ -57,7 +57,6 @@ export class BThread {
                 }
             },
             state: this.state
-            // Todo: add resolveIntercept and rejectIntercept
         };
     }
 
@@ -80,7 +79,7 @@ export class BThread {
             this._currentBidsIsFunction = true;
             return;
         }
-        this._currentBids = getBidDictionaries(this.id, this._nextBid, this.state.pendingEvents);
+        this._currentBids = getBidsForThread(this.id, this._nextBid, this.state.pendingEvents);
     }
 
     private _cancelPendingPromises(): string[] {
@@ -112,19 +111,27 @@ export class BThread {
     private _progressBThread(eventName: string, payload: any, isReject: boolean = false): void {
         let returnVal = null;
         if(!isReject) {
-            returnVal = (this._currentBids && (this._currentBids.type === BidDictionaryType.array)) ? [eventName, payload] : payload;
+            returnVal = this._currentBids && this._currentBids.withMultipleBids ? [eventName, payload] : payload;
         }
         const cancelledPromises = this._processNextBid(returnVal);
         if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);
     }
 
+    private _hasCurrentBidForBidTypeAndEventName(bidType: BidType, eventName: string) {
+        if (!this._currentBids || !this._currentBids.bidsByType[bidType][eventName]) {
+            console.error(`thread '${this.id}' had no current bids for action '${bidType}:${eventName}')`);
+            return false;
+        }
+        return true;
+    }
+
     // --- public
 
-    public getBids(): BidDictionaries | null {
+    public getBids(): BidsByType | null {
         if(this._currentBidsIsFunction) {
-            this._currentBids = getBidDictionaries(this.id, this._nextBid(), this.state.pendingEvents);
+            this._currentBids = getBidsForThread(this.id, this._nextBid(), this.state.pendingEvents);
         } 
-        return this._currentBids;
+        return this._currentBids ? this._currentBids.bidsByType : null;
     }
 
     public resetOnArgsChange(nextArguments: any): void {
@@ -181,32 +188,20 @@ export class BThread {
     }
     
     public progressRequest(action: Action): void {
-        const bidType = BidType.request;
-        if (!this._currentBids || !this._currentBids[bidType] || !this._currentBids[bidType][action.eventName]) {
-            console.error(`thread '${this.id}' had no current bids for action '${bidType}:${action.eventName}')`);
-            return;
-        }
+        if(!this._hasCurrentBidForBidTypeAndEventName(BidType.request, action.eventName)) return;
         this._progressBThread(action.eventName, action.payload);
     }
 
     public progressWait(action: Action): void {
-        const bidType = BidType.wait;
-        if (!this._currentBids || !this._currentBids[bidType] || !this._currentBids[bidType][action.eventName]) {
-            console.error(`thread '${this.id}' had no current bids for action '${bidType}:${action.eventName}')`);
-            return;
-        }
-        const guard = this._currentBids[bidType][action.eventName].guard;
+        if(!this._hasCurrentBidForBidTypeAndEventName(BidType.wait, action.eventName)) return;
+        const guard = this._currentBids!.bidsByType[BidType.wait][action.eventName].guard;
         if(guard && !guard(action.payload)) return;
         this._progressBThread(action.eventName, action.payload);
     }
 
     public progressIntercept(action: Action): boolean {
-        const bidType = BidType.intercept;
-        if (!this._currentBids || !this._currentBids[bidType] || !this._currentBids[bidType][action.eventName]) {
-            console.error(`thread '${this.id}' had no current bids for action '${bidType}:${action.eventName}')`);
-            return false;
-        }
-        const guard = this._currentBids[bidType][action.eventName].guard;
+        if(!this._hasCurrentBidForBidTypeAndEventName(BidType.intercept, action.eventName)) return false;
+        const guard = this._currentBids!.bidsByType[BidType.intercept][action.eventName].guard;
         if(guard && !guard(action.payload)) return false;
         this._pendingIntercepts.add(action.eventName);
         this._progressBThread(action.eventName, action.payload);
