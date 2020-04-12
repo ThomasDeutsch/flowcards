@@ -104,7 +104,7 @@ export function getAllBids(coll: (BidsByType | null)[]): AllBidsByType {
         pendingEvents: allPendingEvents,
         [BidType.request]: getAllBidsForType(BidType.request, bbts, pendingAndBlocks),
         [BidType.wait]: getAllBidsForType(BidType.wait, bbts, blocks),
-        [BidType.intercept]: getAllBidsForType(BidType.intercept, bbts, pendingAndBlocks)
+        [BidType.intercept]: getAllBidsForType(BidType.intercept, bbts, blocks)
     };
 }
 

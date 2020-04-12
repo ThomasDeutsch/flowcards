@@ -164,13 +164,12 @@ export class BThread {
 
     public resolvePending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.resolved) return;
-        // resolve an intercept
+        // resolve intercept
         if(this._pendingIntercepts.has(action.eventName)) {
-            this._pendingIntercepts.delete(action.eventName);
-            this._progressBThread(action.eventName, action.payload);
-        // resolve a pending promise
-        }
+            this._pendingIntercepts.delete(action.eventName); 
+        } // resolve pending promise
         else if(this._pendingPromiseByEventName[action.eventName]) {
+            delete this._pendingPromiseByEventName[action.eventName];
             this._progressBThread(action.eventName, action.payload);
         }
     }
