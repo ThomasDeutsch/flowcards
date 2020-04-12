@@ -10,106 +10,93 @@ function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
-test("A promise can be requested", () => {
-    function* thread1() {
-        yield bp.request("A", delay(100));
-    }
-    scenarios((enable) => {
-        enable(thread1);
-    }, ({log}) => {
-        log.actionsAndReactions
-        expect(log.latestAction.eventName).toBe("A");
-        expect(log.latestAction.threadId).toBe("thread1");
-        expect(log.latestAction.type).toBe(ActionType.requested);
-    });
-});
+// pending: 
+// test: rejected pending events will free-up the pending waiting threads ( waiting threads will not progress )
 
 
-test("A promise-function can be requested", () => {
-    function* thread1() {
-        yield bp.request("A", () => delay(100));
-    }
-    scenarios((enable) => {
-        enable(thread1);
-    }, (({log}) => {
-        expect(log.latestAction.eventName).toBe("A");
-        expect(log.latestAction.threadId).toBe("thread1");
-        expect(log.latestAction.type).toBe(ActionType.requested);
-    }));
-});
-
-
-test("multiple promises can be requested and pending", () => {
-    let threadState: any = null;
-    
-    function* thread1() {
-        yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
-    }
-
-    scenarios((enable) => {
-        threadState = enable(thread1);
-    }, null);
-
-    if(threadState) {
-        expect(threadState.pendingEvents).toContain("A");
-        expect(threadState.pendingEvents).toContain("B");
-    }
-});
-
-
-test("while a thread is pending a request, it will not request it again", () => {
-    let count = 0;
+test("a pending event can not be requested", () => {
     function* thread1() {
         while (true) {
             yield bp.request("A", () => delay(1000));
         }
     }
+    function* thread2() {
+        yield bp.request("A", "hey");
+    }
     scenarios((enable) => {
+        enable(thread2);
         enable(thread1);
-        count++;
-    }, null);
-     expect(count).toBe(2); // initial + request
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has("A")).toBeTruthy();
+        expect(log.latestAction.threadId).toEqual("thread1");
+    });
 });
 
 
-test("a pending request can be cancelled", () => {
-    let isCancelled;
-    
+test("a pending event can not be intercepted", () => {
     function* thread1() {
-        const [eventName] = yield [bp.request("A", () => delay(1000)), bp.wait("B")];
-        isCancelled = eventName === "B" ? true : false;
+        while (true) {
+            yield bp.request("A", () => delay(1000));
+        }
     }
     function* thread2() {
-        yield bp.request("B");
-        isCancelled = true;
-    }
-    scenarios((enable) => {
-        const { pendingEvents } = enable(thread1);
-        if (pendingEvents && pendingEvents.size > 0) {
-            enable(thread2);
-        }
-    }, null);
-    expect(isCancelled).toBe(true);
-});
-
-
-test("a request with a promise will wait for its pending event to resolve", () => {
-    let isAdvanced = false;
-
-    function* thread1() {
-        yield bp.request("A", () => delay(1));
-        isAdvanced = true;
+        yield bp.intercept("A");
     }
     scenarios((enable) => {
         enable(thread1);
-    }, null);
-    
-    expect(isAdvanced).toBe(false);
+        enable(thread2);
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has("A")).toBeTruthy();
+        expect(log.latestAction.threadId).toEqual("thread1");
+        expect(log.actionsAndReactions.length).toEqual(2); // init + request("A"..)
+    });
 });
 
 
-test("After an async promise is resolved, it will continue its execution", done => {
+test("a pending event resolves can not be blocked", done => {
+    function* thread1() {
+        while (true) {
+            yield bp.request("A", () => delay(500));
+            yield bp.wait("fin");
+        }
+    }
+    function* thread2() {
+        yield bp.request("B", () => delay(200));
+        yield bp.block("A");
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    }, ({log, dispatch}) => {
+        if(dispatch.fin) {
+            expect(log.currentPendingEvents.size).toEqual(0);
+            expect(log.latestAction.threadId).toEqual("thread1");
+            expect(log.latestAction.type).toEqual(ActionType.resolved);
+            done();
+        }
+    });
+});
+
+
+test("pening events can not be dispatched", done => {
+    function* thread1() {
+        yield bp.request("A", () => delay(500));
+    }
+    function* thread2() {
+        yield bp.wait("A");
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    }, ({dispatch}) => {
+        if(dispatch) {
+            expect(dispatch["A"]).toBeUndefined();
+            done();
+        }
+    });
+});
+
+test("After a pending event is resolved, a BThread that has requested this event is progressed", done => {
     function* threadOne() {
         yield bp.request("B", () => delay(100));
         expect(1).toBe(1);
@@ -141,28 +128,13 @@ test("If one promise is resolved, other promises for this yield are cancelled", 
     }, null);
 });
 
-test("if a promise is resolved, the thread will progress", done => {
-    function* threadOne() {
-        yield bp.request("B", () => delay(100));
-        expect(1).toBe(1);
-        done();
-    }
 
-    scenarios((enable) => {
-        enable(threadOne);
-    }, null);
-});
-
-
-function delayedTwo(ms: number) {
-    return new Promise(resolve => setTimeout(() => resolve(2), ms));
-}
 
 function rejectedPromise(ms: number) {
     return new Promise((_, reject) => setTimeout(() => reject(2), ms));
 }
 
-test("if a request from a higher thread is rejected, the lower thread will use its request instead", done => {
+test("if a pending event is rejected, the lower thread will use its request instead", done => {
     function* thread1() {
         const val = yield bp.request("A", 1);
         expect(val).toEqual(1);
@@ -183,7 +155,7 @@ test("if a request from a higher thread is rejected, the lower thread will use i
 });
 
 
-test("a pending event can not be requested", (done) => {
+test("a pending event can not be requested - second example", (done) => {
     let count = 0;
 
     function* thread1() {
@@ -213,4 +185,20 @@ test("a pending event can not be requested", (done) => {
             done();
         }
     });
+});
+
+test("if a threads waits for an already existing pending-event, it will also progress when the event is resolved", done => {
+    function* thread1() {
+        yield bp.request("A", () => delay(500));
+    }
+    function* thread2() {
+        yield bp.request("Y", () => delay(100));
+        yield bp.wait("A");
+        expect(1).toEqual(1); // this point is reached!
+        done();
+    }
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    }, null);
 });

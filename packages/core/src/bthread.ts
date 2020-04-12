@@ -7,7 +7,7 @@ import { ActionType, Action } from './action';
 import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
 
-export type ThreadGen = any; // TODO: Type this generator
+export type ThreadGen = any; // TODO: Better typing for this generator
 
 export interface BThreadState {
     isCompleted: boolean;
