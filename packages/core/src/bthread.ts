@@ -168,7 +168,7 @@ export class BThread {
         if(this._pendingIntercepts.has(action.eventName)) {
             this._pendingIntercepts.delete(action.eventName);
             this._renewCurrentBids();
-
+            if (this._logger) this._logger.logReaction(this.id, ReactionType.resolve);
         } // resolve pending promise
         else if(this._pendingPromiseByEventName[action.eventName]) {
             delete this._pendingPromiseByEventName[action.eventName];
@@ -183,12 +183,16 @@ export class BThread {
         // rejection of an intercept
         if(this._pendingIntercepts.has(action.eventName)) { 
             this._pendingIntercepts.delete(action.eventName);
+            this._renewCurrentBids();
+            if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
+
         } // rejection of a pending promise
         else if (this._pendingPromiseByEventName[action.eventName] && this._thread && this._thread.throw) {
             delete this._pendingPromiseByEventName[action.eventName];
+            if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
             this._thread.throw({eventName: action.eventName, error: action.payload});
+            this._progressBThread(action.eventName, action.payload, true);
         }
-        this._progressBThread(action.eventName, action.payload, true);
     }
     
     public progressRequest(action: Action): void {

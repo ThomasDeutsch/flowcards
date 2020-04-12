@@ -4,7 +4,8 @@ export enum ReactionType {
     reset = "reset",
     promise = "promise",
     progress = "progress",
-    resolve = "resolve"
+    resolve = "resolve",
+    reject = "reject"
 }
 
 export interface Reaction {
