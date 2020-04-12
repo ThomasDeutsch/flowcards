@@ -38,7 +38,6 @@ export class BThread {
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
     private _currentBids: BidsForBThread | null = null;
-    private _currentBidsIsFunction: boolean = false;
     private _nextBid: any;
     private _pendingRequestByEventName: Record<EventName, Promise<any>> = {};
     private _pendingInterceptByEventName: Record<EventName, Promise<any>> = {};
@@ -101,7 +100,6 @@ export class BThread {
         } else {
             this._nextBid = next.value;
         }
-        //this._renewCurrentBids();
         return cancelledPromises;
     }
 
@@ -130,9 +128,7 @@ export class BThread {
     }
 
     public resetOnArgsChange(nextArguments: any): void {
-        if (utils.areInputsEqual(this._currentArguments, nextArguments)) {
-            return;
-        }
+        if (utils.areInputsEqual(this._currentArguments, nextArguments)) return;
         this._isCompleted = false;
         this._currentArguments = nextArguments;
         this._thread = this._generator(...this._currentArguments);
@@ -175,7 +171,6 @@ export class BThread {
         if(this._pendingInterceptByEventName[action.eventName]) { 
             delete this._pendingInterceptByEventName[action.eventName];
             if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
-
         } // rejection of a pending promise
         else if (this._pendingRequestByEventName[action.eventName] && this._thread && this._thread.throw) {
             delete this._pendingRequestByEventName[action.eventName];
@@ -186,7 +181,6 @@ export class BThread {
     }
     
     public progressRequest(action: Action): void {
-
         if(this._hasCurrentBidForBidTypeAndEventName(BidType.request, action.eventName)) {
             this._progressBThread(action.eventName, action.payload);
         }
