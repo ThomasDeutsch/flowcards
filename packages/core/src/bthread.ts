@@ -34,14 +34,14 @@ export class BThread {
     private _currentBids: BidsForBThread | null = null;
     private _currentBidsIsFunction: boolean = false;
     private _nextBid: any;
-    private _pendingPromiseRecord: Record<string, Promise<any>> = {};
+    private _pendingPromiseByEventName: Record<string, Promise<any>> = {};
     private _pendingIntercepts: Set<string> = new Set();
     private _isCompleted: boolean = false;
     private _stateValue?: any;
     private _stateRef: BThreadState = { isCompleted: this._isCompleted, pendingEvents: this._pendingIntercepts };
     public get state(): BThreadState {
         this._stateRef.isCompleted = this._isCompleted;
-        this._stateRef.pendingEvents = new Set([...Object.keys(this._pendingPromiseRecord), ...this._pendingIntercepts]);
+        this._stateRef.pendingEvents = new Set([...Object.keys(this._pendingPromiseByEventName), ...this._pendingIntercepts]);
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
@@ -84,10 +84,10 @@ export class BThread {
 
     private _cancelPendingPromises(): string[] {
         const cancelledPromises: string[] = [];
-        const eventNames = Object.keys(this._pendingPromiseRecord);
+        const eventNames = Object.keys(this._pendingPromiseByEventName);
         if (eventNames.length > 0) {   
             eventNames.forEach((eventName):void => {
-                delete this._pendingPromiseRecord[eventName];
+                delete this._pendingPromiseByEventName[eventName];
                 cancelledPromises.push(eventName);
             });
         }
@@ -138,6 +138,7 @@ export class BThread {
         if (utils.areInputsEqual(this._currentArguments, nextArguments)) {
             return;
         }
+        this._isCompleted = false;
         this._currentArguments = nextArguments;
         this._thread = this._generator(...this._currentArguments);
         const cancelledPromises = this._processNextBid();
@@ -145,16 +146,16 @@ export class BThread {
     }
 
     public addPromise(eventName: string, promise: Promise<any>): void {
-        this._pendingPromiseRecord[eventName] = promise;
+        this._pendingPromiseByEventName[eventName] = promise;
         this._renewCurrentBids();
-        this._pendingPromiseRecord[eventName]
+        this._pendingPromiseByEventName[eventName]
             .then((data): void => {
-                if (this._pendingPromiseRecord[eventName] && Object.is(promise, this._pendingPromiseRecord[eventName])) {
+                if (this._pendingPromiseByEventName[eventName] && Object.is(promise, this._pendingPromiseByEventName[eventName])) {
                     this._dispatch({ type: ActionType.resolved, threadId: this.id, eventName: eventName, payload: data });
                 }
             })
             .catch((e): void => {
-                if (this._pendingPromiseRecord[eventName] && Object.is(promise, this._pendingPromiseRecord[eventName])) {
+                if (this._pendingPromiseByEventName[eventName] && Object.is(promise, this._pendingPromiseByEventName[eventName])) {
                     this._dispatch({ type: ActionType.rejected, threadId: this.id, eventName: eventName, payload: e });
                 }
             });
@@ -169,7 +170,7 @@ export class BThread {
             this._progressBThread(action.eventName, action.payload);
         // resolve a pending promise
         }
-        else if(this._pendingPromiseRecord[action.eventName]) {
+        else if(this._pendingPromiseByEventName[action.eventName]) {
             this._progressBThread(action.eventName, action.payload);
         }
     }
@@ -180,8 +181,8 @@ export class BThread {
         if(this._pendingIntercepts.has(action.eventName)) { 
             this._pendingIntercepts.delete(action.eventName);
         } // rejection of a pending promise
-        else if (this._pendingPromiseRecord[action.eventName] && this._thread && this._thread.throw) {
-            delete this._pendingPromiseRecord[action.eventName];
+        else if (this._pendingPromiseByEventName[action.eventName] && this._thread && this._thread.throw) {
+            delete this._pendingPromiseByEventName[action.eventName];
             this._thread.throw({eventName: action.eventName, error: action.payload});
         }
         this._progressBThread(action.eventName, action.payload, true);

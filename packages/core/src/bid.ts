@@ -75,9 +75,7 @@ function getAllBidsForType(type: BidType, coll: BidsByType[], blockedEvents: Set
     return coll.reduce((acc: BidsForBidType, curr: BidsByType): BidsForBidType => {
         const bidByEventName = curr[type];
         Object.keys(bidByEventName).forEach((eventName): BidsForBidType | undefined => {
-            if (blockedEvents && blockedEvents.has(eventName)) {
-                return acc;
-            }
+            if (blockedEvents && blockedEvents.has(eventName)) return;
             const bid = {...bidByEventName[eventName]}
             if (acc[eventName]) {
                 acc[eventName].push(bid);
@@ -97,9 +95,10 @@ export interface AllBidsByType {
 }
 
 export function getAllBids(coll: (BidsByType | null)[]): AllBidsByType {
+    
     const bbts = coll.filter(utils.notNull);
     const allPendingEvents =  utils.union(bbts.map(bbt => bbt.pendingEvents));
-    const blocks = new Set(...bbts.map(bbt => bbt[BidType.block]).map(rec => Object.keys(rec)));
+    const blocks = new Set(bbts.map(bbt => bbt[BidType.block]).map(rec => Object.keys(rec)).reduce((acc, val) => acc.concat(val), []));
     const pendingAndBlocks = blocks ? utils.union([blocks, allPendingEvents]) : allPendingEvents;
     return {
         pendingEvents: allPendingEvents,

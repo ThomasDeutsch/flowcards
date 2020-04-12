@@ -212,17 +212,17 @@ test("events can be blocked", () => {
     let advancedRequest, advancedWait;
 
     function* requestThread() {
-        yield bp.request("A", 1000);
+        yield bp.request("AX", 1000);
         advancedRequest = true;
     }
 
     function* waitingThread() {
-        yield bp.wait("A");
+        yield bp.wait("AX");
         advancedWait = true;
     }
 
     function* blockingThread() {
-        yield bp.block("A");
+        yield bp.block("AX");
     }
 
     scenarios((enable) => {

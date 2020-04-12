@@ -43,7 +43,6 @@ function createScenarioId(generator: ThreadGen, key?: string | number): string {
 function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return;
 
-    // an intercept can be guarded, so we need this.
     const interceptEvent = (): boolean => {
         let interceptBids = bids[BidType.intercept][action.eventName];        
         if(!interceptBids || interceptBids.length === 0) return false;
