@@ -36,7 +36,7 @@ test("a payload is optional", () => {
     scenarios((enable) => {
         enable(thread1);
     }, ({dispatch}) => {
-        expect(dispatch["B"]()).not.toEqual(null);
+        expect(dispatch["B"](1)).not.toEqual(null);
     });
 });
 

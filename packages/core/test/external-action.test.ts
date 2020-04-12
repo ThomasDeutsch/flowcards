@@ -3,7 +3,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { createUpdateLoop, StagingFunction, DispatchedAction } from '../src/update-loop';
+import { Action, ActionType } from '../src/action';
+import { createUpdateLoop, StagingFunction } from '../src/update-loop';
 
 function rejectedDelay(ms: number) {
     return new Promise((resolve, reject) => setTimeout(() => reject('reject reason'), ms));
@@ -16,12 +17,12 @@ function delay(ms: number) {
 test("when a promise is resolved, it will dispatch an ExternalAction.", done => {
 
     const testLoop = (enable: StagingFunction): void => {
-        const updateLoop = createUpdateLoop(enable, (action: DispatchedAction) => {
-            if(action.payload) {
-                expect(action.payload.type).toBe('resolve');
-                expect(action.payload.threadId).toBe('thread1');
-                expect(action.payload.eventName).toBe('A');
-                expect(action.payload.payload).toBe('data');
+        const updateLoop = createUpdateLoop(enable, (action: Action) => {
+            if(action) {
+                expect(action.type).toBe(ActionType.resolved);
+                expect(action.threadId).toBe('thread1');
+                expect(action.eventName).toBe('A');
+                expect(action.payload).toBe('data');
             }
             updateLoop(action);
         });
@@ -42,7 +43,7 @@ test("when a promise is resolved, it will dispatch an ExternalAction.", done => 
 describe('external actions', () => {
 
     const testLoop = (enable: StagingFunction): void => {
-        const updateLoop = createUpdateLoop(enable, (a: DispatchedAction) => {
+        const updateLoop = createUpdateLoop(enable, (a: Action) => {
             updateLoop(a, null);
         });
         updateLoop(null);

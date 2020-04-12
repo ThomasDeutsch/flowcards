@@ -17,7 +17,6 @@ test("the enable function will return the current thread state", () => {
         const state = enable(thread);
         
         expect(state.isCompleted).toBe(false);
-        expect(state.nrProgressions).toBe(0); 
         expect(state.pendingEvents).toEqual(new Set());
         expect(state.value).toBeUndefined();
     }, null);
@@ -43,10 +42,8 @@ test("if promises are pending, the thread will return a set of those pending pro
 
     if(state && state2) {
         expect(state.isCompleted).toBe(false);
-        expect(state.nrProgressions).toBe(1); 
         expect(state.pendingEvents).toEqual(new Set(["A"]));
         expect(state.value).toBeUndefined();
-        expect(state2.nrProgressions).toBe(2); 
         expect(state2.pendingEvents).toEqual(new Set(["C", "D"]));
     }
 });
@@ -65,7 +62,6 @@ test("the thread will return the state value, and a completed-flag if the thread
 
     if(state) {
         expect(state.isCompleted).toBe(true);
-        expect(state.nrProgressions).toBe(1);
         expect(state.value).toEqual('foo');
     }
 });

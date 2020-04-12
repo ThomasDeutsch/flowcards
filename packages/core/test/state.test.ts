@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios } from '../src/index';
+import { scenarios, BTContext } from '../src/index';
 
 
 test("a state can be created that will listen for requests in its name", done => {
@@ -17,7 +17,6 @@ test("a state can be created that will listen for requests in its name", done =>
         st = state("count", 0);
         enable(thread1);
     }, (scenario) => {
-        expect(scenario.bThreadState["thread1"].nrProgressions).toEqual(1);
         expect(scenario.state["count"]).toEqual(2);
         expect(st.current).toEqual(2);
     });
@@ -49,7 +48,6 @@ test("a state will return a ref. Passed to a function, it will not update on cha
         enable(thread2, [st]);
         enable(thread3, [st.current]);
     }, (scenario) => {
-        expect(scenario.bThreadState["thread1"].nrProgressions).toEqual(1);
         expect(scenario.state["count"]).toEqual(2);
         expect(threadRefInit).toEqual(1);
         expect(threadValueInit).toEqual(2);
@@ -59,17 +57,19 @@ test("a state will return a ref. Passed to a function, it will not update on cha
 
 
 
-test("disabled states will get deleted", () => {
+test("if a state is not enabled, it is deleted", () => {
 
-    function* thread1() {
+    function* thread1(this: BTContext) {
+        this.setState(1);
         yield bp.request("count", 2);
-        yield bp.request("some Event"); // state will get deleted
-        yield bp.request("some Event"); // state will get re-initialized
+        this.setState(0);
+        yield bp.request("test");
+        this.setState(1);
     }
 
     scenarios((enable, state) => {
         const bThreadState = enable(thread1);
-        if(bThreadState.nrProgressions != 2) {
+        if(bThreadState.value === 1) {
             state("count", 0);
         }
     }, (scenario) => {

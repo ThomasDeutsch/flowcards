@@ -24,8 +24,9 @@ test("a thread gets reset, when the arguments change", () => {
         enable(threadB, [state.value]);
     }, null);
 
-    expect(initCount).toBe(2);
+
     expect(receivedValue).toBe('foo');
+    expect(initCount).toBe(2);
 });
 
 
@@ -58,6 +59,7 @@ test("when a thread resets, the bids will be re-evaluated", () => {
     let threadBCount = 0;
     function* threadA(this: BTContext) {
         yield bp.request('A');
+        this.setState(1);
     }
 
     function* threadB() {
@@ -67,7 +69,7 @@ test("when a thread resets, the bids will be re-evaluated", () => {
 
     scenarios((enable) => {
         const threadAState = enable(threadA);
-        enable(threadB, [threadAState.nrProgressions]);  // instead of state.value, we will pass state.
+        enable(threadB, [threadAState.value]);  // instead of state.value, we will pass state.
     }, ({dispatch, bThreadState}) => {
         expect(bThreadState.threadB.isCompleted === false);
         expect(threadBCount).toEqual(2);

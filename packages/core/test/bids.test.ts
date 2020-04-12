@@ -3,7 +3,7 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
-import { last } from "../src/utils";
+import { InterceptCB } from "../src/bthread";
 
 
 // REQUESTS & WAITS
@@ -21,8 +21,8 @@ test("a requested event that is not blocked will advance", () => {
         enable(thread1);
     }, ({log})=> {
         expect(hasAdvanced).toBe(true);
-        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread1");
+        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -45,9 +45,9 @@ test("a request will also advance waiting threads", () => {
     }, ({log}) => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(true);
-        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread1");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("thread2");
+        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
+        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -68,10 +68,10 @@ test("waits will return the value that has been requested", () => {
         enable(receiveThread);
     }, ({log}) => {
         expect(receivedValue).toBe(1000);
-        expect(last(log.actionsAndReactions).action.eventName).toBe("A");
-        expect(last(log.actionsAndReactions).action.payload).toBe(1000);
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("requestThread");
-        expect(last(log.actionsAndReactions).reactionByThreadId).toHaveProperty("receiveThread");
+        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.payload).toBe(1000);
+        expect(log.latestReactionByThreadId).toHaveProperty("requestThread");
+        expect(log.latestReactionByThreadId).toHaveProperty("receiveThread");
     });
 });
 
@@ -144,7 +144,7 @@ test("A request-value can be a function. It will get called, when the event is s
         enable(requestThread);
         enable(receiveThread);
     }, null);
-
+    
     expect(receivedValue).toBe(1000);
     expect(receivedEventName).toBe("A");
 });
@@ -213,17 +213,17 @@ test("events can be blocked", () => {
     let advancedRequest, advancedWait;
 
     function* requestThread() {
-        yield bp.request("A", 1000);
+        yield bp.request("AX", 1000);
         advancedRequest = true;
     }
 
     function* waitingThread() {
-        yield bp.wait("A");
+        yield bp.wait("AX");
         advancedWait = true;
     }
 
     function* blockingThread() {
-        yield bp.block("A");
+        yield bp.block("AX");
     }
 
     scenarios((enable) => {
@@ -240,19 +240,43 @@ test("events can be blocked", () => {
 // INTERCEPTS
 //-------------------------------------------------------------------------
 
-test("waits can be intercepted", () => {
+test("requests can be intercepted", () => {
     let progressedRequest = false,
-        progressedWait = false,
-        progressedIntercept = false;
+        progressedIntercept = false,
+        setupCount = 0;
 
     function* thread1() {
         yield bp.request("A");
         progressedRequest = true;
     }
 
-    function* thread2() {
-        yield bp.wait("A");
-        progressedWait = true;
+    function* thread3() {
+        yield bp.intercept("A");
+        progressedIntercept = true;
+        yield bp.wait('X');
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread3);
+        setupCount++;
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has('A')).toEqual(true);
+    }
+ );
+    expect(setupCount).toEqual(2);
+    expect(progressedRequest).toBe(false);
+    expect(progressedIntercept).toBe(true);
+});
+
+test("if an intercepted thread completed, without resolving or rejecting the event, it will keep the event pending", () => {
+    let progressedRequest = false,
+        progressedIntercept = false,
+        setupCount = 0;
+
+    function* thread1() {
+        yield bp.request("A");
+        progressedRequest = true;
     }
 
     function* thread3() {
@@ -262,21 +286,25 @@ test("waits can be intercepted", () => {
 
     scenarios((enable) => {
         enable(thread1);
-        enable(thread2);
         enable(thread3);
-    }, null);
-
-    expect(progressedRequest).toBe(true);
-    expect(progressedWait).toBe(false);
+        setupCount++;
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has('A')).toEqual(true);
+    }
+ );
+    expect(setupCount).toEqual(2);
+    expect(progressedRequest).toBe(false);
     expect(progressedIntercept).toBe(true);
 });
 
 
 test("intercepts will receive a value (like waits)", () => {
-    let interceptedValue;
+    let interceptedValue: InterceptCB;
+    let thread1Advanced = false;
 
     function* thread1() {
         yield bp.request("A", 1000);
+        thread1Advanced = true;
     }
 
     function* thread2() {
@@ -291,29 +319,33 @@ test("intercepts will receive a value (like waits)", () => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
-    }, null);
+    }, ({log}) => {
+        expect(thread1Advanced).toBe(false);
+        expect(interceptedValue.value).toBe(1000);
+        expect(log.currentPendingEvents.has("A"));
+    });
 
-    expect(interceptedValue).toBe(1000);
+    
 });
 
 
-test("intercepts are only advanced, if there is a wait for the same eventName", () => {
-    let interceptedValue;
+test("intercepts will intercept requests", () => {
+    let intercepted: InterceptCB
 
     function* thread1() {
         yield bp.request("A", 1000);
     }
 
     function* thread2() {
-        interceptedValue = yield bp.intercept("A");
+        intercepted = yield bp.intercept("A");
     }
 
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    }, null);
-
-    expect(interceptedValue).toBeUndefined();
+    }, () => {
+        expect(intercepted.value).toEqual(1000);
+    });
 });
 
 
@@ -322,10 +354,6 @@ test("the last intercept that is enabled has the highest priority", () => {
 
     function* requestThread() {
         yield bp.request("A");
-    }
-
-    function* waitThread() {
-        yield bp.wait("A");
     }
 
     function* interceptThread1() {
@@ -340,7 +368,6 @@ test("the last intercept that is enabled has the highest priority", () => {
 
     scenarios((enable) => {
         enable(requestThread);
-        enable(waitThread);
         enable(interceptThread1);
         enable(interceptThread2);
     }, null);

@@ -2,23 +2,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios, StagingFunction, DispatchedAction, createUpdateLoop } from '../src/index';
+import { scenarios, StagingFunction, Action, createUpdateLoop, BTContext } from '../src/index';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 test("scenarios can be used without updateCb and logger", done => {
-    function* thread1() {
+    function* thread1(this: BTContext) {
         yield bp.request("A", delay(1000));
+        this.setState(1)
+        expect(1).toEqual(1); // simple test if this point is reached.
         done();
     }
 
     scenarios((enable) => {
         enable(thread1);
-    }, (scenario) => {
-        expect(scenario.bThreadState.thread1.nrProgressions).toEqual(1);
-    });
+    }, null);
 });
 
 test("there will be a dispatch-function every waiting event", () => {
@@ -43,7 +43,7 @@ test("there will be a dispatch-function every waiting event", () => {
 
 
 function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): void {
-    const updateLoop = createUpdateLoop(stagingFunction, (a: DispatchedAction): void => {
+    const updateLoop = createUpdateLoop(stagingFunction, (a: Action): void => {
         if(a.payload) da.add(a.payload.eventName);
         updateLoop(a);   
     });
