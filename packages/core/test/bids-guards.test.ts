@@ -103,10 +103,10 @@ test("if an intercept is not applied, than the next intercept will get the event
         enable(interceptPriorityLowThread);
         enable(interceptPriorityHighThread);
     }, ({log}) => {
-        expect(requestAdvanced).toBe(false);
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
         expect(waitDAdvanced).toBe(false);
+        expect(requestAdvanced).toBe(false);
         expect(log.currentPendingEvents.has("A")).toBe(true);
         expect(log.latestAction.eventName).toBe("A");
     });

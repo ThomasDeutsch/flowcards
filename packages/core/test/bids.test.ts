@@ -3,6 +3,7 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
+import { InterceptCB } from "../src/bthread";
 
 
 // REQUESTS & WAITS
@@ -298,10 +299,12 @@ test("if an intercepted thread completed, without resolving or rejecting the eve
 
 
 test("intercepts will receive a value (like waits)", () => {
-    let interceptedValue;
+    let interceptedValue: InterceptCB;
+    let thread1Advanced = false;
 
     function* thread1() {
         yield bp.request("A", 1000);
+        thread1Advanced = true;
     }
 
     function* thread2() {
@@ -316,29 +319,33 @@ test("intercepts will receive a value (like waits)", () => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
-    }, null);
+    }, ({log}) => {
+        expect(thread1Advanced).toBe(false);
+        expect(interceptedValue.value).toBe(1000);
+        expect(log.currentPendingEvents.has("A"));
+    });
 
-    expect(interceptedValue).toBe(1000);
+    
 });
 
 
 test("intercepts will intercept requests", () => {
-    let interceptedValue;
+    let intercepted: InterceptCB
 
     function* thread1() {
         yield bp.request("A", 1000);
     }
 
     function* thread2() {
-        interceptedValue = yield bp.intercept("A");
+        intercepted = yield bp.intercept("A");
     }
 
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    }, null);
-
-    expect(interceptedValue).toEqual(1000);
+    }, () => {
+        expect(intercepted.value).toEqual(1000);
+    });
 });
 
 

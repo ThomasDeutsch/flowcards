@@ -232,8 +232,8 @@ test("if a threads intercepts an already existing pending-event, it will trigger
     }
     function* thread2() {
         yield bp.request("Y", () => delay(100));
-        const val = yield bp.intercept("A");
-        expect(val).toBe('requestedValue');
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('requestedValue');
         expect(thread1Progressed).toBe(false);
         done();
     }

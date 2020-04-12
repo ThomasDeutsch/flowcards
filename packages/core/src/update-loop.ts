@@ -73,7 +73,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByTy
             action.payload = action.payload();
         }
         if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
-            bThreadDictionary[action.threadId].addPromise(action.eventName, action.payload);
+            bThreadDictionary[action.threadId].addPendingRequest(action.eventName, action.payload);
             return;
         }
         if(interceptEvent()) return;
