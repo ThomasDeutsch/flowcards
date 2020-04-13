@@ -14,7 +14,7 @@ function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms)).then(() => 'data');
 }
 
-test("when a promise is resolved, it will dispatch an ExternalAction.", done => {
+test("when a promise is resolved, it will dispatch an Action.", done => {
 
     const testLoop = (enable: StagingFunction): void => {
         const updateLoop = createUpdateLoop(enable, (action: Action) => {
@@ -40,7 +40,7 @@ test("when a promise is resolved, it will dispatch an ExternalAction.", done => 
 });
 
 
-describe('external actions', () => {
+describe('dispatched action', () => {
 
     const testLoop = (enable: StagingFunction): void => {
         const updateLoop = createUpdateLoop(enable, (a: Action) => {
