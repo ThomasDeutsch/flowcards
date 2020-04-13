@@ -208,10 +208,10 @@ export class BThread {
                     delete this._pendingInterceptByEventName[action.eventName];
                     this._dispatch({ type: ActionType.resolved, threadId: this.id, eventName: action.eventName, payload: data });
                 }
-            }).catch((data): void => {
+            }).catch((): void => {
                 if (this._pendingInterceptByEventName[action.eventName]) {
                     delete this._pendingInterceptByEventName[action.eventName];
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, eventName: action.eventName, payload: action.payload });
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, eventName: action.eventName });
                 }
             });
             return {resolve: resolveFn, reject: rejectFn, value: action.payload};
