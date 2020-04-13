@@ -208,6 +208,5 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             log: logger.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
     };
-    // Todo: why not fire initial action here ???
     return updateLoop;
 }

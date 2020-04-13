@@ -21,7 +21,7 @@ export interface BTContext {
     state: BThreadState;
 }
 
-export interface InterceptCB {
+export interface InterceptResult {
     resolve: Function;
     reject: Function;
     value: any;
@@ -197,7 +197,7 @@ export class BThread {
         if(!this._hasCurrentBidForBidTypeAndEventName(BidType.intercept, action.eventName)) return false;
         const guard = this._currentBids!.bidsByType[BidType.intercept][action.eventName].guard;
         if(guard && !guard(action.payload)) return false;
-        const createPromise = (): InterceptCB => {
+        const createPromise = (): InterceptResult => {
             let resolveFn = () => {};
             let rejectFn = () => {};
             this._pendingInterceptByEventName[action.eventName] = new Promise((resolve, reject) => {
