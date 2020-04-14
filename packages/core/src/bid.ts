@@ -26,7 +26,7 @@ export type BidsForBidType = Record<EventName, Bid[]>;
 // --------------------------------------------------------------------------------------------------------------------
 
 export interface BidsByType {
-    withMultipleBids: boolean,
+    withMultipleBids: boolean;
     [BidType.request]: Record<EventName, Bid>;
     [BidType.wait]: Record<EventName, Bid>;
     [BidType.block]: Record<EventName, Bid>;
@@ -82,15 +82,15 @@ export interface AllBidsByType {
 }
 
 export function getAllBids(coll: BThreadBids[]): AllBidsByType {
-    const bbts = coll.map(x => x.bidsByType).filter(utils.notNull);
+    const bidsByTypes = coll.map((x) => x.bidsByType).filter(utils.notNull);
     const allPendingEvents = utils.union(coll.map(bbt => bbt.pendingEvents).filter(utils.notNull));
-    const blocks = new Set(bbts.map(bbt => bbt[BidType.block]).map(rec => Object.keys(rec)).reduce((acc, val) => acc.concat(val), []));
+    const blocks = new Set(bidsByTypes.map(bidsByType => bidsByType[BidType.block]).map(rec => Object.keys(rec)).reduce((acc, val) => acc.concat(val), []));
     const pendingAndBlocks = blocks ? utils.union([blocks, allPendingEvents]) : allPendingEvents;
     return {
         pendingEvents: allPendingEvents,
-        [BidType.request]: getAllBidsForType(BidType.request, bbts, pendingAndBlocks),
-        [BidType.wait]: getAllBidsForType(BidType.wait, bbts, blocks),
-        [BidType.intercept]: getAllBidsForType(BidType.intercept, bbts, blocks)
+        [BidType.request]: getAllBidsForType(BidType.request, bidsByTypes, pendingAndBlocks),
+        [BidType.wait]: getAllBidsForType(BidType.wait, bidsByTypes, blocks),
+        [BidType.intercept]: getAllBidsForType(BidType.intercept, bidsByTypes, blocks)
     };
 }
 

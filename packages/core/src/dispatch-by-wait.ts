@@ -16,20 +16,20 @@ interface Cache {
 
 
 function removeUnusedWaits(previous: Record<EventName, any>, waits: Record<EventName, Bid[]>): void {
-    Object.keys(previous).forEach((wait): void => {
+    Object.keys(previous).forEach((wait) => {
         if(!waits[wait]) delete previous[wait];
     });
 }
 
 function clearObject(obj: Record<string, any>): void {
-    Object.keys(obj).forEach((key): void => {
+    Object.keys(obj).forEach((key) => {
         delete obj[key];
     });
 }
 
 
 function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunction {
-    const all = waits[eventName].reduce((acc: GuardFunction[], curr: Bid): GuardFunction[] => {
+    const all = waits[eventName].reduce((acc: GuardFunction[], curr: Bid) => {
         if(curr.guard) {
             acc.push(curr.guard);
         }
@@ -45,7 +45,7 @@ function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunctio
 export function dispatchByWait(dispatch: ActionDispatch, dbwObj: DispatchByWait, combinedGuardByWait: Record<EventName, GuardFunction>, waits: BidsForBidType): DispatchByWait {
     removeUnusedWaits(dbwObj, waits); // keep the cache for all waits
     clearObject(combinedGuardByWait); 
-    return Object.keys(waits).reduce((acc: DispatchByWait, eventName): DispatchByWait  => {
+    return Object.keys(waits).reduce((acc, eventName): DispatchByWait  => {
         combinedGuardByWait[eventName] = combinedGuardFn(waits, eventName); // renew all guard-functions.
         if(!acc[eventName]) {  // create a new cache
             const cacheByKey: Record<string, Cache> = {};
