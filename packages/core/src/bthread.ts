@@ -213,7 +213,7 @@ export class BThread {
         if(!this._hasCurrentBidForBidTypeAndEventName(BidType.intercept, action.eventName)) return false;
         const guard = this._currentBids && this._currentBids[BidType.intercept][action.eventName].guard;
         if(guard && !guard(action.payload)) return false;
-        const createPromise = (): InterceptResult => {
+        const createInterceptPromise = (): InterceptResult => {
             let resolveFn = () => {};
             let rejectFn = () => {};
             this._pendingInterceptByEventName[action.eventName] = new Promise((resolve, reject) => {
@@ -232,7 +232,7 @@ export class BThread {
             });
             return {resolve: resolveFn, reject: rejectFn, value: action.payload};
         }
-        this._progressBThread(action.eventName, createPromise());
+        this._progressBThread(action.eventName, createInterceptPromise());
         return true; // was intercepted
     }
 
