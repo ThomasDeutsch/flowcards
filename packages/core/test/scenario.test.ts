@@ -50,17 +50,17 @@ function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): voi
     updateLoop(null);
 }
 
-test("if a request is rejected, it will fire no update", done => {
+test("if a request is cancelled, it will not trigger the same event-name after resolving - even if there are threads waiting for this event. ", done => {
     const dispatchedActions = new Set<string>();
     
     function* thread1() {
         yield bp.request("cancel", delay(100));
     }
     function* thread2() {
-        const [type] = yield [bp.request('async-event', delay(500)), bp.wait('cancel')];
+        let [type] = yield [bp.request('async-event', () => delay(500)), bp.wait('cancel')];
         expect(type).toEqual('cancel');
-        yield bp.request("async-event-two", delay(1000));
-        expect(dispatchedActions.has('async-event')).toEqual(false);
+        [type] = yield [bp.wait('async-event'), bp.request("async-event-two", () => delay(1000))];
+        expect(type).toEqual('async-event-two');
         done();
     }
     loggerScenarios((enable) => {

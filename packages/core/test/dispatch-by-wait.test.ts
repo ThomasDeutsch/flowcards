@@ -64,7 +64,7 @@ test("dispatch[eventName] is the same Object, as long as there is a wait", (done
     });
 });
 
-test("the evaluated dispatch function is the same Object, as long as there is the same wait and payload", (done) => {
+test("the evaluated dispatch function is the same Object, as long as the same payload is passed, and the event is always present.", (done) => {
     let x: any;
     let y: any;
 
@@ -137,6 +137,30 @@ test("the evaluated dispatch function is a different Object, when the guard Func
             expect(Object.is(x, y)).toBeFalsy();
             const same = (Object.is(y, dispatch["A"](2)));
             expect(same).toEqual(true);
+            done();  
+        }  
+    });
+});
+
+
+test("the evaluated dispatch function is the same Object, for every key/payload combination", (done) => {
+    let x: any;
+    let y: any;
+
+    function* thread1(this: BTContext) {
+        yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
+        yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
+        yield [bp.wait("FIN"), bp.wait("A")];
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+    }, ({dispatch}) => {
+        if(dispatch["X"]) x = dispatch["A"](1, "key1");
+        if(dispatch["Y"]) y = dispatch["A"](2, "key2");
+        if(dispatch["FIN"]) {
+            expect(Object.is(x, dispatch["A"](1, "key1"))).toBeTruthy();
+            expect(Object.is(y, dispatch["A"](2, "key2"))).toBeTruthy();
             done();  
         }  
     });
