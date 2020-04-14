@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ThreadGen, BThread, BThreadState } from './bthread';
-import { getAllBids, BidsByType, BidType, AllBidsByType, GuardFunction } from './bid';
+import { ThreadGen, BThread, BThreadState, BThreadBids } from './bthread';
+import { getAllBids, BidType, AllBidsByType, GuardFunction } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { dispatchByWait, DispatchByWait, GuardedDispatch } from "./dispatch-by-wait";
@@ -170,8 +170,8 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             }
         } 
         orderedThreadIds = stageBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCacheByEventName, dispatch, logger);
-        const threadBids = orderedThreadIds.map((id): BidsByType | null  => bThreadDictionary[id].getBids());
-        const bids = getAllBids(threadBids);
+        const bThreadBids = orderedThreadIds.map((id): BThreadBids  => bThreadDictionary[id].getBids());
+        const bids = getAllBids(bThreadBids);
         // get the next action
         let nextAction: Action | null = null, restActions: Action[] | null = null;
         if(remainingReplayActions !== null && remainingReplayActions.length > 0) {

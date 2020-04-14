@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as utils from "./utils";
+import { BThreadBids } from "./bthread";
 
 export enum BidType {
     request = "request",
@@ -25,34 +26,25 @@ export type BidsForBidType = Record<EventName, Bid[]>;
 // --------------------------------------------------------------------------------------------------------------------
 
 export interface BidsByType {
-    pendingEvents: Set<EventName>;
+    withMultipleBids: boolean,
     [BidType.request]: Record<EventName, Bid>;
     [BidType.wait]: Record<EventName, Bid>;
     [BidType.block]: Record<EventName, Bid>;
     [BidType.intercept]: Record<EventName, Bid>;
 }
 
-export interface BidsForBThread {
-    withMultipleBids: boolean;
-    bidsByType: BidsByType;
-}
-
-export function getBidsForBThread(threadId: string, bidOrBids: Bid | null | (Bid | null)[], pendingEvents: Set<EventName>): BidsForBThread | null {
-    if(!bidOrBids && pendingEvents.size === 0) return null;
-    const withMultipleBids = Array.isArray(bidOrBids);
+export function getBidsForBThread(threadId: string, bidOrBids: Bid | null | (Bid | null)[]): BidsByType | null {
+    if(!bidOrBids) return null;
     const bids = utils.toArray(bidOrBids).filter(utils.notNull);
     const defaultBidsByType = {
-        pendingEvents: pendingEvents,
+        withMultipleBids: Array.isArray(bidOrBids),
         [BidType.request]: {},
         [BidType.wait]: {},
         [BidType.block]: {},
         [BidType.intercept]: {}
     }
-    if(bids.length === 0) return {
-        withMultipleBids: withMultipleBids,
-        bidsByType: defaultBidsByType
-    }
-    const bidsByType = bids.reduce((acc: BidsByType, bid: Bid | null): BidsByType => {
+    if(bids.length === 0) return defaultBidsByType;
+    return bids.reduce((acc: BidsByType, bid: Bid | null): BidsByType => {
         if(bid) {
             acc[bid.type][bid.eventName] = {
                 ...bid, 
@@ -61,11 +53,6 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | null | (Bid
         }
         return acc;
     }, defaultBidsByType);
-    return {
-        withMultipleBids: withMultipleBids,
-        bidsByType: bidsByType
-    }
-    
 }
 
 // Bids from multiple threads
@@ -94,10 +81,9 @@ export interface AllBidsByType {
     [BidType.intercept]: BidsForBidType;
 }
 
-export function getAllBids(coll: (BidsByType | null)[]): AllBidsByType {
-    
-    const bbts = coll.filter(utils.notNull);
-    const allPendingEvents =  utils.union(bbts.map(bbt => bbt.pendingEvents));
+export function getAllBids(coll: BThreadBids[]): AllBidsByType {
+    const bbts = coll.map(x => x.bidsByType).filter(utils.notNull);
+    const allPendingEvents = utils.union(coll.map(bbt => bbt.pendingEvents).filter(utils.notNull));
     const blocks = new Set(bbts.map(bbt => bbt[BidType.block]).map(rec => Object.keys(rec)).reduce((acc, val) => acc.concat(val), []));
     const pendingAndBlocks = blocks ? utils.union([blocks, allPendingEvents]) : allPendingEvents;
     return {

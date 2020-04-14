@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getBidsForBThread, BidsByType, BidType, BidsForBThread, EventName } from './bid';
+import { getBidsForBThread, BidsByType, BidType, EventName } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
@@ -27,6 +27,16 @@ export interface InterceptResult {
     value: any;
 }
 
+interface NextBid {
+    isFunction: boolean;
+    value: any;
+}
+
+export interface BThreadBids {
+    pendingEvents: Set<string> | null;
+    bidsByType: BidsByType | null;
+}
+
 type StateUpdateFunction = (previousState: any) => void;
 
 export class BThread {
@@ -37,8 +47,8 @@ export class BThread {
     private readonly _generator: ThreadGen;
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
-    private _currentBids: BidsForBThread | null = null;
-    private _nextBid: any;
+    private _currentBids: BidsByType | null = null;
+    private _nextBid: NextBid = {isFunction: false, value: null};
     private _pendingRequestByEventName: Record<EventName, Promise<any>> = {};
     private _pendingInterceptByEventName: Record<EventName, Promise<any>> = {};
     private _isCompleted: boolean = false;
@@ -96,10 +106,11 @@ export class BThread {
         const next = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;
-            this._nextBid = null;
+            this._nextBid.value = null;
         } else {
-            this._nextBid = next.value;
+            this._nextBid = {value: next.value, isFunction: typeof next.value === 'function'};
         }
+        this._currentBids = null;
         return cancelledPromises;
     }
 
@@ -113,18 +124,23 @@ export class BThread {
     }
 
     private _hasCurrentBidForBidTypeAndEventName(bidType: BidType, eventName: string) {
-        return (this._currentBids && this._currentBids.bidsByType[bidType][eventName])
+        return (this._currentBids && this._currentBids[bidType][eventName])
     }
 
     // --- public
 
-    public getBids(): BidsByType | null {
-        if(typeof this._nextBid === 'function') {
-            this._currentBids = getBidsForBThread(this.id, this._nextBid(), this.state.pendingEvents);
-        } else {
-            this._currentBids = getBidsForBThread(this.id, this._nextBid, this.state.pendingEvents);
+    public getBids(): BThreadBids {
+        const pendingEvents = this.state.pendingEvents.size ? this.state.pendingEvents : null;
+        if(this._isCompleted) return {
+            pendingEvents: pendingEvents,
+            bidsByType: null
         }
-        return this._currentBids ? this._currentBids.bidsByType : null;
+        if(this._nextBid.isFunction) this._currentBids = getBidsForBThread(this.id, this._nextBid.value());
+        if(this._currentBids === null) this._currentBids = getBidsForBThread(this.id, this._nextBid.value);
+        return {
+            pendingEvents: pendingEvents,
+            bidsByType: this._currentBids
+        }
     }
 
     public resetOnArgsChange(nextArguments: any): void {
@@ -188,14 +204,14 @@ export class BThread {
 
     public progressWait(action: Action): void {
         if(!this._hasCurrentBidForBidTypeAndEventName(BidType.wait, action.eventName)) return;
-        const guard = this._currentBids!.bidsByType[BidType.wait][action.eventName].guard;
+        const guard = this._currentBids && this._currentBids[BidType.wait][action.eventName].guard;
         if(guard && !guard(action.payload)) return;
         this._progressBThread(action.eventName, action.payload);
     }
 
     public progressIntercept(action: Action): boolean {
         if(!this._hasCurrentBidForBidTypeAndEventName(BidType.intercept, action.eventName)) return false;
-        const guard = this._currentBids!.bidsByType[BidType.intercept][action.eventName].guard;
+        const guard = this._currentBids && this._currentBids[BidType.intercept][action.eventName].guard;
         if(guard && !guard(action.payload)) return false;
         const createPromise = (): InterceptResult => {
             let resolveFn = () => {};
