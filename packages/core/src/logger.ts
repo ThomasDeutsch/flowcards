@@ -50,7 +50,7 @@ export class Logger {
         this._waits = waits;
     }
 
-    public logPendingEvents(pendingEvents: Set<string>) {
+    public logPendingEvents(pendingEvents: Set<string>): void {
         this._pendingEvents = pendingEvents;
     }
 

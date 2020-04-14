@@ -21,7 +21,7 @@ function removeUnusedWaits(previous: Record<EventName, any>, waits: Record<Event
     });
 }
 
-function clearObject(obj: Record<string, any>) {
+function clearObject(obj: Record<string, any>): void {
     Object.keys(obj).forEach((key): void => {
         delete obj[key];
     });
