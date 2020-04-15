@@ -1,6 +1,6 @@
 # Guide: from Requirements to Code
 
-In this guide, we will take a look at a [TodoMVC](https://codesandbox.io/s/todomvc-final-qnfjr) application written with flowcards & React.<br/>
+In this guide, we will take a look at a [TodoMVC](https://codesandbox.io/s/todomvc-final-qnfjr?file=/src/App.tsx) application written with flowcards & React.<br/>
 It is targeted towards JavaScript/TypeScript Developers.<br/>
 
 Goals for this guide
