@@ -201,7 +201,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return acc;
         }, {});
         return {
-            dispatch: dbw, // dispatch by wait ( ui can only waiting events )
+            dispatch: dbw, // dispatch by wait ( ui can only dispatch waiting events )
             dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", eventName: ""}), // triggers a replay
             state: stateById, // event caches
             bThreadState: bThreadStateById, // BThread state by id

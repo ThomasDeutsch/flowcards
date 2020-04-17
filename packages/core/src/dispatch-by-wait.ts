@@ -5,7 +5,7 @@ import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 
 export type TriggerDispatch = Function | undefined;
-export type GuardedDispatch = (valueToDispatch: any, key?: string | number) => TriggerDispatch;
+export type GuardedDispatch = (payload?: any, key?: string | number) => TriggerDispatch;
 export type DispatchByWait = Record<EventName, GuardedDispatch>;
 
 interface Cache {
