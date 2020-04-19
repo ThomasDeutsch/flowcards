@@ -18,7 +18,7 @@ test("the log will return an threadsByWait Object", () => {
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
-        expect(log.latestAction.eventName).toEqual('eventOne');
+        expect(log.latestAction.eventId).toEqual('eventOne');
     });
 });
 

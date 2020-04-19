@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Bid, BidsForBidType, GuardFunction, EventName } from './bid';
+import { Bid, BidsForBidType, GuardFunction, eventId } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 
 export type TriggerDispatch = Function | undefined;
 export type GuardedDispatch = (payload?: any, key?: string | number) => TriggerDispatch;
-export type DispatchByWait = Record<EventName, GuardedDispatch>;
+export type DispatchByWait = Record<eventId, GuardedDispatch>;
 
 interface Cache {
     payload?: any;
@@ -15,7 +15,7 @@ interface Cache {
 }
 
 
-function removeUnusedWaits(previous: Record<EventName, any>, waits: Record<EventName, Bid[]>): void {
+function removeUnusedWaits(previous: Record<eventId, any>, waits: Record<eventId, Bid[]>): void {
     Object.keys(previous).forEach((wait) => {
         if(!waits[wait]) delete previous[wait];
     });
@@ -28,8 +28,8 @@ function clearObject(obj: Record<string, any>): void {
 }
 
 
-function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunction {
-    const all = waits[eventName].reduce((acc: GuardFunction[], curr: Bid) => {
+function combinedGuardFn(waits: BidsForBidType, eventId: string): GuardFunction {
+    const all = waits[eventId].reduce((acc: GuardFunction[], curr: Bid) => {
         if(curr.guard) {
             acc.push(curr.guard);
         }
@@ -42,23 +42,23 @@ function combinedGuardFn(waits: BidsForBidType, eventName: string): GuardFunctio
 }
 
 
-export function dispatchByWait(dispatch: ActionDispatch, dbwObj: DispatchByWait, combinedGuardByWait: Record<EventName, GuardFunction>, waits: BidsForBidType): DispatchByWait {
+export function dispatchByWait(dispatch: ActionDispatch, dbwObj: DispatchByWait, combinedGuardByWait: Record<eventId, GuardFunction>, waits: BidsForBidType): DispatchByWait {
     removeUnusedWaits(dbwObj, waits); // keep the cache for all waits
     clearObject(combinedGuardByWait); 
-    return Object.keys(waits).reduce((acc, eventName): DispatchByWait  => {
-        combinedGuardByWait[eventName] = combinedGuardFn(waits, eventName); // renew all guard-functions.
-        if(!acc[eventName]) {  // create a new cache
+    return Object.keys(waits).reduce((acc, eventId): DispatchByWait  => {
+        combinedGuardByWait[eventId] = combinedGuardFn(waits, eventId); // renew all guard-functions.
+        if(!acc[eventId]) {  // create a new cache
             const cacheByKey: Record<string, Cache> = {};
-            acc[eventName] = (payload?: any, key?: string | number): TriggerDispatch => {
+            acc[eventId] = (payload?: any, key?: string | number): TriggerDispatch => {
                 if(key === undefined) key = "default";
-                if(!combinedGuardByWait[eventName](payload)) { // invalid payload
+                if(!combinedGuardByWait[eventId](payload)) { // invalid payload
                     delete cacheByKey[key];
                     return undefined
                 }
                 if(cacheByKey[key] && Object.is(payload, cacheByKey[key].payload)) return cacheByKey[key].dispatch;
                 cacheByKey[key] = { 
                     payload: payload, 
-                    dispatch: (): void => dispatch({ type: ActionType.dispatched, eventName: eventName, payload: payload, threadId: "" })
+                    dispatch: (): void => dispatch({ type: ActionType.dispatched, eventId: eventId, payload: payload, threadId: "" })
                 };
                 return cacheByKey[key].dispatch;
             }

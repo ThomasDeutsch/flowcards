@@ -32,7 +32,7 @@ test("a wait is not advanced, if the guard returns false", () => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.eventId).toBe("A");
     });
 });
 
@@ -66,7 +66,7 @@ test("an intercept is not applied, if the guard returns false.", () => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(true);
         expect(waitCAdvanced).toBe(false);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.eventId).toBe("A");
     });
 });
 

@@ -216,7 +216,7 @@ test("if a threads waits for an already existing pending-event, it will also pro
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
-        if(log.latestAction.eventName === "fin") {
+        if(log.latestAction.eventId === "fin") {
             expect(1).toBeTruthy();
             done();
         }

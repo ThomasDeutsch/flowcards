@@ -12,7 +12,7 @@ type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | nu
 type EnableStateFunctionType = (id: string, initialValue: any) => StateRef<any>;
 export type StagingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
 export type ActionDispatch = (action: Action) => void;
-type eventCacheByEventName = Record<string, StateRef<any>>;
+type eventCacheByeventId = Record<string, StateRef<any>>;
 export type UpdateLoopFunction = (dispatchedAction: Action | null, nextActions?: Action[] | null) => ScenariosContext;
 
 export interface BThreadDictionary {
@@ -44,7 +44,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByTy
     if(action.type === ActionType.initial) return;
 
     const interceptEvent = (a: Action): boolean => {
-        let interceptBids = bids[BidType.intercept][a.eventName];        
+        let interceptBids = bids[BidType.intercept][a.eventId];        
         if(!interceptBids || interceptBids.length === 0) return false;
         interceptBids = [...interceptBids];
         while(interceptBids.length > 0) {
@@ -57,14 +57,14 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByTy
         return false;
     }
     const advanceRequests = (a: Action): void => {
-        if(!bids[BidType.request][a.eventName]) return;
-        bids[BidType.request][a.eventName].forEach((bid): void => {
+        if(!bids[BidType.request][a.eventId]) return;
+        bids[BidType.request][a.eventId].forEach((bid): void => {
             bThreadDictionary[bid.threadId].progressRequest(a);
         });
     }
     const advanceWaits = (a: Action): void => {
-        if(!bids[BidType.wait][a.eventName]) return;
-        bids[BidType.wait][a.eventName].forEach(({ threadId }): void => {
+        if(!bids[BidType.wait][a.eventId]) return;
+        bids[BidType.wait][a.eventId].forEach(({ threadId }): void => {
             bThreadDictionary[threadId].progressWait(a);
         });
     }
@@ -73,7 +73,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByTy
             action.payload = action.payload();
         }
         if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
-            bThreadDictionary[action.threadId].addPendingRequest(action.eventName, action.payload);
+            bThreadDictionary[action.threadId].addPendingRequest(action.eventId, action.payload);
             return;
         }
         if(interceptEvent(action)) return;
@@ -101,10 +101,10 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, bids: AllBidsByTy
 }
 
 
-function updateEventCache(eventCacheByEventName: eventCacheByEventName, action: Action): void {
-    if ((action.type === ActionType.requested) && (action.eventName in eventCacheByEventName)) {
-        eventCacheByEventName[action.eventName].previous = eventCacheByEventName[action.eventName].current;
-        eventCacheByEventName[action.eventName].current = action.payload;
+function updateEventCache(eventCacheByeventId: eventCacheByeventId, action: Action): void {
+    if ((action.type === ActionType.requested) && (action.eventId in eventCacheByeventId)) {
+        eventCacheByeventId[action.eventId].previous = eventCacheByeventId[action.eventId].current;
+        eventCacheByeventId[action.eventId].current = action.payload;
     }
 }
 
@@ -112,7 +112,7 @@ function updateEventCache(eventCacheByEventName: eventCacheByEventName, action: 
 function stageBThreadsAndEventCaches(
     stagingFunction: StagingFunction,
     bThreadDictionary: BThreadDictionary,
-    eventCacheByEventName: eventCacheByEventName,
+    eventCacheByeventId: eventCacheByeventId,
     dispatch: ActionDispatch,
     logger?: Logger
 ): string[] {
@@ -132,15 +132,15 @@ function stageBThreadsAndEventCaches(
     };
     const enableEventCache: EnableStateFunctionType = (id: string, initialValue: any): StateRef<any> => {
         eventCacheIds.add(id);
-        if(!eventCacheByEventName[id]) {
-            eventCacheByEventName[id] = {current: initialValue, previous: null};
+        if(!eventCacheByeventId[id]) {
+            eventCacheByeventId[id] = {current: initialValue, previous: null};
         }
-        return eventCacheByEventName[id];
+        return eventCacheByeventId[id];
     }
     stagingFunction(enableBThread, enableEventCache); 
-    Object.keys(eventCacheByEventName).forEach((id): void => { // delete unused states
+    Object.keys(eventCacheByeventId).forEach((id): void => { // delete unused states
         if(!eventCacheIds.has(id)) {
-            delete eventCacheByEventName[id];
+            delete eventCacheByeventId[id];
         }
     });
     return orderedThreadIds;
@@ -151,7 +151,7 @@ function stageBThreadsAndEventCaches(
 
 export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch): UpdateLoopFunction {
     const bThreadDictionary: BThreadDictionary = {};
-    const eventCacheByEventName: eventCacheByEventName  = {};
+    const eventCacheByeventId: eventCacheByeventId  = {};
     let orderedThreadIds: string[];
     const logger = new Logger();
     const dwpObj: DispatchByWait = {};
@@ -164,12 +164,12 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
                     bThreadDictionary[threadId].onDelete();
                     delete bThreadDictionary[threadId]
                 }); // delete all BThreads
-                Object.keys(eventCacheByEventName).forEach((cacheId): void => { delete eventCacheByEventName[cacheId] }); // delete event-cache
+                Object.keys(eventCacheByeventId).forEach((cacheId): void => { delete eventCacheByeventId[cacheId] }); // delete event-cache
                 logger.resetLog(); // empty current log
                 return updateLoop(null, dispatchedAction.payload); // start a replay
             }
         } 
-        orderedThreadIds = stageBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCacheByEventName, dispatch, logger);
+        orderedThreadIds = stageBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCacheByeventId, dispatch, logger);
         const bThreadBids = orderedThreadIds.map((id): BThreadBids  => bThreadDictionary[id].getBids());
         const bids = getAllBids(bThreadBids);
         // get the next action
@@ -184,7 +184,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         if (nextAction) {
             logger.logAction(nextAction);
             advanceBThreads(bThreadDictionary, bids, nextAction);
-            updateEventCache(eventCacheByEventName, nextAction);
+            updateEventCache(eventCacheByeventId, nextAction);
             return updateLoop(null, restActions);
         }
         // ------ create the return value:
@@ -196,13 +196,13 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             acc[threadId] = bThreadDictionary[threadId].state;
             return acc;
         }, {});
-        const stateById = Object.keys(eventCacheByEventName).reduce((acc: Record<string, StateRef<any>>, stateId: any): Record<string, any> => {
-            acc[stateId] = eventCacheByEventName[stateId].current;
+        const stateById = Object.keys(eventCacheByeventId).reduce((acc: Record<string, StateRef<any>>, stateId: any): Record<string, any> => {
+            acc[stateId] = eventCacheByeventId[stateId].current;
             return acc;
         }, {});
         return {
             dispatch: dbw, // dispatch by wait ( ui can only dispatch waiting events )
-            dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", eventName: ""}), // triggers a replay
+            dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", eventId: ""}), // triggers a replay
             state: stateById, // event caches
             bThreadState: bThreadStateById, // BThread state by id
             log: logger.getLog() // get all actions and reactions + pending event-names by thread-Id

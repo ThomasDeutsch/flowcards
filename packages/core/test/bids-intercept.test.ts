@@ -81,7 +81,7 @@ test("if an intercept is not applied, than the next intercept will get the event
         expect(waitDAdvanced).toBe(false);
         expect(requestAdvanced).toBe(false);
         expect(log.currentPendingEvents.has("A")).toBe(true);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.eventId).toBe("A");
     });
 });
 

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getBidsForBThread, BidsByType, BidType, EventName } from './bid';
+import { getBidsForBThread, BidsByType, BidType, eventId } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
@@ -49,14 +49,14 @@ export class BThread {
     private _thread: IterableIterator<any>;
     private _currentBids: BidsByType | null = null;
     private _nextBid: NextBid = {isFunction: false, value: null};
-    private _pendingRequestByEventName: Record<EventName, Promise<any>> = {};
-    private _pendingInterceptByEventName: Record<EventName, Promise<any>> = {};
+    private _pendingRequestByeventId: Record<eventId, Promise<any>> = {};
+    private _pendingInterceptByeventId: Record<eventId, Promise<any>> = {};
     private _isCompleted: boolean = false;
     private _stateValue?: any;
     private _stateRef: BThreadState = { isCompleted: this._isCompleted, pendingEvents: new Set() };
     public get state(): BThreadState {
         this._stateRef.isCompleted = this._isCompleted;
-        this._stateRef.pendingEvents = new Set([...Object.keys(this._pendingRequestByEventName), ...Object.keys(this._pendingInterceptByEventName)]);
+        this._stateRef.pendingEvents = new Set([...Object.keys(this._pendingRequestByeventId), ...Object.keys(this._pendingInterceptByeventId)]);
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
@@ -90,11 +90,11 @@ export class BThread {
 
     private _cancelPendingPromises(): string[] {
         const cancelledPromises: string[] = [];
-        const eventNames = Object.keys(this._pendingRequestByEventName);
-        if (eventNames.length > 0) {   
-            eventNames.forEach((eventName):void => {
-                delete this._pendingRequestByEventName[eventName];
-                cancelledPromises.push(eventName);
+        const eventIds = Object.keys(this._pendingRequestByeventId);
+        if (eventIds.length > 0) {   
+            eventIds.forEach((eventId):void => {
+                delete this._pendingRequestByeventId[eventId];
+                cancelledPromises.push(eventId);
             });
         }
         return cancelledPromises;
@@ -114,17 +114,17 @@ export class BThread {
         return cancelledPromises;
     }
 
-    private _progressBThread(eventName: string, payload: any, isReject: boolean = false): void {
+    private _progressBThread(eventId: string, payload: any, isReject: boolean = false): void {
         let returnVal = null;
         if(!isReject) {
-            returnVal = this._currentBids && this._currentBids.withMultipleBids ? [eventName, payload] : payload;
+            returnVal = this._currentBids && this._currentBids.withMultipleBids ? [eventId, payload] : payload;
         }
         const cancelledPromises = this._processNextBid(returnVal);
         if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);
     }
 
-    private _hasCurrentBidForBidTypeAndEventName(bidType: BidType, eventName: string) {
-        return (this._currentBids && this._currentBids[bidType][eventName])
+    private _hasCurrentBidForBidTypeAndeventId(bidType: BidType, eventId: string) {
+        return (this._currentBids && this._currentBids[bidType][eventId])
     }
 
     // --- public
@@ -152,17 +152,17 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.reset, cancelledPromises);
     }
 
-    public addPendingRequest(eventName: string, promise: Promise<any>): void {
-        this._pendingRequestByEventName[eventName] = promise;
-        this._pendingRequestByEventName[eventName]
+    public addPendingRequest(eventId: string, promise: Promise<any>): void {
+        this._pendingRequestByeventId[eventId] = promise;
+        this._pendingRequestByeventId[eventId]
             .then((data): void => {
-                if (this._pendingRequestByEventName[eventName] && Object.is(promise, this._pendingRequestByEventName[eventName])) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, eventName: eventName, payload: data });
+                if (this._pendingRequestByeventId[eventId] && Object.is(promise, this._pendingRequestByeventId[eventId])) {
+                    this._dispatch({ type: ActionType.resolved, threadId: this.id, eventId: eventId, payload: data });
                 }
             })
             .catch((e): void => {
-                if (this._pendingRequestByEventName[eventName] && Object.is(promise, this._pendingRequestByEventName[eventName])) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, eventName: eventName, payload: e });
+                if (this._pendingRequestByeventId[eventId] && Object.is(promise, this._pendingRequestByeventId[eventId])) {
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, eventId: eventId, payload: e });
                 }
             });
         if (this._logger) this._logger.logReaction(this.id, ReactionType.promise, null);
@@ -171,12 +171,12 @@ export class BThread {
     public resolvePending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.resolved) return;
         // resolve intercept
-        if(this._pendingInterceptByEventName[action.eventName]) {
-            delete this._pendingInterceptByEventName[action.eventName];
+        if(this._pendingInterceptByeventId[action.eventId]) {
+            delete this._pendingInterceptByeventId[action.eventId];
             if (this._logger) this._logger.logReaction(this.id, ReactionType.resolve);
         } // resolve pending promise
-        else if(this._pendingRequestByEventName[action.eventName]) {
-            delete this._pendingRequestByEventName[action.eventName];
+        else if(this._pendingRequestByeventId[action.eventId]) {
+            delete this._pendingRequestByeventId[action.eventId];
             if (this._logger) this._logger.logReaction(this.id, ReactionType.resolve);
         }
     }
@@ -184,55 +184,55 @@ export class BThread {
     public rejectPending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;
         // rejection of an intercept
-        if(this._pendingInterceptByEventName[action.eventName]) { 
-            delete this._pendingInterceptByEventName[action.eventName];
+        if(this._pendingInterceptByeventId[action.eventId]) { 
+            delete this._pendingInterceptByeventId[action.eventId];
             if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
         } // rejection of a pending promise
-        else if (this._pendingRequestByEventName[action.eventName] && this._thread && this._thread.throw) {
-            delete this._pendingRequestByEventName[action.eventName];
+        else if (this._pendingRequestByeventId[action.eventId] && this._thread && this._thread.throw) {
+            delete this._pendingRequestByeventId[action.eventId];
             if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
-            this._thread.throw({eventName: action.eventName, error: action.payload});
-            this._progressBThread(action.eventName, action.payload, true);
+            this._thread.throw({eventId: action.eventId, error: action.payload});
+            this._progressBThread(action.eventId, action.payload, true);
         }
     }
     
     public progressRequest(action: Action): void {
-        if(this._hasCurrentBidForBidTypeAndEventName(BidType.request, action.eventName)) {
-            this._progressBThread(action.eventName, action.payload);
+        if(this._hasCurrentBidForBidTypeAndeventId(BidType.request, action.eventId)) {
+            this._progressBThread(action.eventId, action.payload);
         }
     }
 
     public progressWait(action: Action): void {
-        if(!this._hasCurrentBidForBidTypeAndEventName(BidType.wait, action.eventName)) return;
-        const guard = this._currentBids && this._currentBids[BidType.wait][action.eventName].guard;
+        if(!this._hasCurrentBidForBidTypeAndeventId(BidType.wait, action.eventId)) return;
+        const guard = this._currentBids && this._currentBids[BidType.wait][action.eventId].guard;
         if(guard && !guard(action.payload)) return;
-        this._progressBThread(action.eventName, action.payload);
+        this._progressBThread(action.eventId, action.payload);
     }
 
     public progressIntercept(action: Action): boolean {
-        if(!this._hasCurrentBidForBidTypeAndEventName(BidType.intercept, action.eventName)) return false;
-        const guard = this._currentBids && this._currentBids[BidType.intercept][action.eventName].guard;
+        if(!this._hasCurrentBidForBidTypeAndeventId(BidType.intercept, action.eventId)) return false;
+        const guard = this._currentBids && this._currentBids[BidType.intercept][action.eventId].guard;
         if(guard && !guard(action.payload)) return false;
         const createInterceptPromise = (): InterceptResult => {
             let resolveFn = () => {};
             let rejectFn = () => {};
-            this._pendingInterceptByEventName[action.eventName] = new Promise((resolve, reject) => {
+            this._pendingInterceptByeventId[action.eventId] = new Promise((resolve, reject) => {
                 resolveFn = resolve;
                 rejectFn = reject;
             }).then((data): void => {
-                if (this._pendingInterceptByEventName[action.eventName]) {
-                    delete this._pendingInterceptByEventName[action.eventName];
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, eventName: action.eventName, payload: data });
+                if (this._pendingInterceptByeventId[action.eventId]) {
+                    delete this._pendingInterceptByeventId[action.eventId];
+                    this._dispatch({ type: ActionType.resolved, threadId: this.id, eventId: action.eventId, payload: data });
                 }
             }).catch((): void => {
-                if (this._pendingInterceptByEventName[action.eventName]) {
-                    delete this._pendingInterceptByEventName[action.eventName];
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, eventName: action.eventName });
+                if (this._pendingInterceptByeventId[action.eventId]) {
+                    delete this._pendingInterceptByeventId[action.eventId];
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, eventId: action.eventId });
                 }
             });
             return {resolve: resolveFn, reject: rejectFn, value: action.payload};
         }
-        this._progressBThread(action.eventName, createInterceptPromise());
+        this._progressBThread(action.eventId, createInterceptPromise());
         return true; // was intercepted
     }
 

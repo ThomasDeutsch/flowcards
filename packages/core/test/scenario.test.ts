@@ -44,7 +44,7 @@ test("there will be a dispatch-function every waiting event", () => {
 
 function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): void {
     const updateLoop = createUpdateLoop(stagingFunction, (a: Action): void => {
-        if(a.payload) da.add(a.payload.eventName);
+        if(a.payload) da.add(a.payload.eventId);
         updateLoop(a);   
     });
     updateLoop(null);

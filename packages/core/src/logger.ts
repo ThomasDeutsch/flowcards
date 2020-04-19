@@ -1,6 +1,6 @@
 import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
-import { Bid, EventName } from './bid';
+import { Bid, eventId } from './bid';
 
 export interface ActionAndReactions {
     action: Action;
@@ -10,7 +10,7 @@ export type ThreadsByWait = Record<string, string[]>;
 
 
 export interface Log {
-    currentWaits: Record<EventName, Bid[]>;
+    currentWaits: Record<eventId, Bid[]>;
     currentPendingEvents: Set<string>;
     latestAction: Action;
     latestReactionByThreadId: Record<string, Reaction>;
@@ -20,16 +20,16 @@ export interface Log {
 
 function newActionsReactions(action?: Action): ActionAndReactions {
     return {
-        action: action ? {...action} : { eventName: "", type: ActionType.initial, threadId: "" },
+        action: action ? {...action} : { eventId: "", type: ActionType.initial, threadId: "" },
         reactionByThreadId: {}
     }
 }
 
 function toThreadsByWait(wbt: Record<string, Bid[]>): ThreadsByWait {
-    return Object.keys(wbt).reduce((tbw: ThreadsByWait, eventName: string): ThreadsByWait => {
-        wbt[eventName].map((bid): string => bid.threadId).forEach((threadId): void => {
-            if(!tbw[eventName]) tbw[eventName] = [threadId];
-            else tbw[eventName].push(threadId);
+    return Object.keys(wbt).reduce((tbw: ThreadsByWait, eventId: string): ThreadsByWait => {
+        wbt[eventId].map((bid): string => bid.threadId).forEach((threadId): void => {
+            if(!tbw[eventId]) tbw[eventId] = [threadId];
+            else tbw[eventId].push(threadId);
         });
         return tbw;
     }, {});
@@ -38,15 +38,15 @@ function toThreadsByWait(wbt: Record<string, Bid[]>): ThreadsByWait {
 export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
-    private _waitsByEventName: Record<string, Bid[]> = {};
-    private _waits: Record<EventName, Bid[]> = {};
+    private _waitsByeventId: Record<string, Bid[]> = {};
+    private _waits: Record<eventId, Bid[]> = {};
     private _pendingEvents: Set<string> = new Set();
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
     }
 
-    public logWaits(waits: Record<EventName, Bid[]>): void {
+    public logWaits(waits: Record<eventId, Bid[]>): void {
         this._waits = waits;
     }
 
@@ -78,7 +78,7 @@ export class Logger {
             latestAction: this._latestActionAndReactions.action,
             latestReactionByThreadId: this._latestActionAndReactions.reactionByThreadId,
             actionsAndReactions: log,
-            threadsByWait: toThreadsByWait(this._waitsByEventName)
+            threadsByWait: toThreadsByWait(this._waitsByeventId)
         };
     }
 

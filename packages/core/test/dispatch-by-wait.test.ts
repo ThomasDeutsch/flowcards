@@ -40,7 +40,7 @@ test("a payload is optional", () => {
     });
 });
 
-test("dispatch[eventName] is the same Object, as long as there is a wait", (done) => {
+test("dispatch[eventId] is the same Object, as long as there is a wait", (done) => {
     let x: any;
     let y: any;
 

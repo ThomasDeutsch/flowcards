@@ -19,7 +19,7 @@ test("A promise can be requested and will create a pending-event", () => {
         enable(thread1);
     }, ({log}) => {
         expect(log.currentPendingEvents.has('A')).toBeTruthy();
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.eventId).toBe("A");
         expect(log.latestAction.threadId).toBe("thread1");
         expect(log.latestAction.type).toBe(ActionType.requested);
     });
@@ -34,7 +34,7 @@ test("A promise-function can be requested and will create a pending-event", () =
         enable(thread1);
     }, (({log}) => {
         expect(log.currentPendingEvents.has('A')).toBeTruthy();
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.eventId).toBe("A");
         expect(log.latestAction.threadId).toBe("thread1");
         expect(log.latestAction.type).toBe(ActionType.requested);
     }));
