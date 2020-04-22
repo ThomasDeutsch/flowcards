@@ -6,7 +6,7 @@ import { Logger } from "./logger";
 import { ActionType, Action } from './action';
 import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
-import { EventMap, reduceEventMaps, Event } from './event';
+import { EventMap, reduceEventMaps, FCEvent } from './event';
 
 export type ThreadGen = any; // TODO: Better typing for this generator
 
@@ -89,12 +89,12 @@ export class BThread {
     }
 
 
-    private _cancelPendingPromises(): Event[] {
+    private _cancelPendingPromises(): FCEvent[] {
         const test = this._pendingRequestRecord.clear();
         return test || [];
     }
 
-    private _processNextBid(returnValue?: any): Event[] {
+    private _processNextBid(returnValue?: any): FCEvent[] {
         if(this._isCompleted) return [];
         const cancelledPromises = this._cancelPendingPromises();
         const next = this._thread.next(returnValue);
@@ -108,7 +108,7 @@ export class BThread {
         return cancelledPromises;
     }
 
-    private _progressBThread(event: Event, payload: any, isReject: boolean = false): void {
+    private _progressBThread(event: FCEvent, payload: any, isReject: boolean = false): void {
         let returnVal = null;
         if(!isReject) {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [event, payload] : payload;
@@ -117,7 +117,7 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);
     }
 
-    private _hasCurrentBidForBidTypeAndeventId(bidType: BidType, event: Event) {
+    private _hasCurrentBidForBidTypeAndeventId(bidType: BidType, event: FCEvent) {
         return (this._currentBids && this._currentBids[bidType] && this._currentBids[bidType]!.has(event));
     }
 
@@ -146,7 +146,7 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.reset, cancelledPromises);
     }
 
-    public addPendingRequest(event: Event, promise: Promise<any>): void {
+    public addPendingRequest(event: FCEvent, promise: Promise<any>): void {
         this._pendingRequestRecord.set(event, promise);
         promise.then((data): void => {
                 const recordedPromise = this._pendingRequestRecord.get(event);

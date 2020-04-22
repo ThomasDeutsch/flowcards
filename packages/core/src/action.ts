@@ -2,7 +2,7 @@
 
 import * as utils from "./utils";
 import { BidsForBidType } from "./bid";
-import { Event } from './event';
+import { FCEvent } from './event';
 
 export enum ActionType {
     initial = "initial",
@@ -16,7 +16,7 @@ export enum ActionType {
 export interface Action {
     type: ActionType;
     threadId: string;
-    event: Event;
+    event: FCEvent;
     payload?: any;
 }
 

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as utils from "./utils";
 import { BThreadBids } from "./bthread";
-import { EventMap, reduceEventMaps, EventKey, toEvent, EventName, Event } from "./event";
+import { EventMap, reduceEventMaps, EventKey, toEvent, EventName, FCEvent } from "./event";
 
 export enum BidType {
     request = "request",
@@ -15,7 +15,7 @@ export type GuardFunction = (payload: any) => boolean
 export interface Bid {
     type: BidType;
     threadId: string;
-    event: Event;
+    event: FCEvent;
     payload?: any;
     guard?: GuardFunction;
 }
@@ -23,7 +23,7 @@ export interface Bid {
 
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
 export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
-export type BidsForBidType = EventMap<Bid[]> | null
+export type BidsForBidType = EventMap<Bid[]> | null;
 
 // Bids from current thread
 // --------------------------------------------------------------------------------------------------------------------
@@ -96,19 +96,19 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
 
 // Bid API --------------------------------------------------------------------
 
-export function request(event: string | Event, payload?: any): Bid {
+export function request(event: string | FCEvent, payload?: any): Bid {
     return { type: BidType.request, event: toEvent(event), payload: payload, threadId: "" };
 }
 
-export function wait(event: string | Event, guard?: GuardFunction): Bid {
+export function wait(event: string | FCEvent, guard?: GuardFunction): Bid {
 
     return { type: BidType.wait, event: toEvent(event), guard: guard, threadId: ""};
 }
 
-export function block(event: string | Event): Bid {
+export function block(event: string | FCEvent): Bid {
     return { type: BidType.block, event: toEvent(event), threadId: "" };
 }
 
-export function intercept(event: string | Event, guard?: GuardFunction): Bid {
+export function intercept(event: string | FCEvent, guard?: GuardFunction): Bid {
     return { type: BidType.intercept, event: toEvent(event), guard: guard, threadId: ""};
 }

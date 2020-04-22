@@ -1,16 +1,17 @@
 export type EventName = string;
 export type EventKey = string | number;
 
-export interface Event {
+export interface FCEvent {
     name: EventName;
     key?: EventKey;
 }
 
-export function toEvent(e: string | Event): Event {
+export function toEvent(e: string | FCEvent): FCEvent {
     return (typeof e === 'string') ? {name: e} : e;
 }
 
-type EventIteratorFunction<T> = (e: Event, value: T) => unknown;
+type EventIteratorFunction<T> = (e: FCEvent, value: T) => unknown;
+type EventMapFunction<T, X> = (e: FCEvent, value: T) => X;
 
 export class EventMap<T>  {
     public noKey: Map<EventName, T>;
@@ -35,7 +36,7 @@ export class EventMap<T>  {
         }
     }
 
-    public set(event: Event, value: T): EventMap<T> {
+    public set(event: FCEvent, value: T): EventMap<T> {
         if(event.key === undefined) {
             this.noKey.set(event.name, value);
         } else {
@@ -45,7 +46,7 @@ export class EventMap<T>  {
         return this;
     }
 
-    public get(event: Event): T | undefined {
+    public get(event: FCEvent): T | undefined {
         if(event.key === undefined) {
             return this.noKey.get(event.name);
         } else {
@@ -53,7 +54,7 @@ export class EventMap<T>  {
         }
     }
 
-    public has(event: Event): boolean {
+    public has(event: FCEvent): boolean {
         if(event.key === undefined) {
             return this.noKey.has(event.name);
         } else {
@@ -65,7 +66,7 @@ export class EventMap<T>  {
         return (this.withKey.size === 0) && (this.noKey.size === 0);
     }
 
-    public delete(event: Event): boolean {
+    public delete(event: FCEvent): boolean {
         if(!this.has(event)) return false;
         if(event.key === undefined) {
             return this.noKey.delete(event.name);
@@ -77,8 +78,8 @@ export class EventMap<T>  {
         return hasDeletedKey;
     }
 
-    public clear(): Event[] | null {
-        let deleted: Event[] = []
+    public clear(): FCEvent[] | null {
+        let deleted: FCEvent[] = []
         this._iterateAll((event) => {
             deleted.push(event);
             this.delete(event);
@@ -86,19 +87,34 @@ export class EventMap<T>  {
         return deleted.length > 0 ? deleted : null;
     }
 
-    public getAllEvents(): Event[] | null {
-        let elements: Event[] = [];
+    public getAllEvents(): FCEvent[] | null {
+        let elements: FCEvent[] = [];
         this._iterateAll((event) => elements.push(event));
         return elements.length > 0 ? elements : null;
     }
 
-    public allElements(): [Event, T][] {
-        let elements: [Event, T][] = [];
+    public allElements(): [FCEvent, T][] {
+        let elements: [FCEvent, T][] = [];
         this._iterateAll((event, value) => {
             elements.push([event, value]);
         });
         return elements;
     }
+
+    public map<X>(mapFunction: EventMapFunction<T, X>):  EventMap<X> {
+        const mapped = new EventMap<X>();
+        this._iterateAll((event, value) => {
+            mapped.set(event, mapFunction(event, value));
+        })
+        return mapped;
+    }
+
+    // public intersect(a: EventMap<unknown>): EventMap<T> {
+    //     this._iterateAll((event) => {
+    //         if(!a.has(event)) this.delete(event);
+    //     });
+    //     return this;
+    // }
 }
 
 

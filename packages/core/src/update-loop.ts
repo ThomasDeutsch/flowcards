@@ -4,16 +4,16 @@ import { ThreadGen, BThread, BThreadState, BThreadBids } from './bthread';
 import { getAllBids, BidType, AllBidsByType, GuardFunction } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
-import { dispatchByWait, DispatchByWait, GuardedDispatch } from "./dispatch-by-wait";
-import { EventMap, Event } from './event';
+import { dispatchByWait } from "./dispatch-by-wait";
+import { EventMap, FCEvent } from './event';
 import * as utils from './utils';
 
 
 type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => BThreadState;
-type EnableStateFunctionType = (event: Event, initialValue: any) => StateRef<any>;
+type EnableStateFunctionType = (event: FCEvent, initialValue: any) => StateRef<any>;
 export type StagingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
 export type ActionDispatch = (action: Action) => void;
-type eventCacheByeventId = Record<string, StateRef<any>>;
+export type TriggerWaitDispatch = (payload: unknown) => void;
 export type UpdateLoopFunction = (dispatchedAction: Action | null, nextActions?: Action[] | null) => ScenariosContext;
 type EventCache = EventMap<StateRef<unknown>>;
 
@@ -29,7 +29,7 @@ export interface StateRef<T> {
 type ReplayDispatch = (actions: Action[]) => void;
 
 export interface ScenariosContext {
-    dispatch: Record<string, GuardedDispatch>;
+    dispatch: EventMap<ActionDispatch>;
     dispatchReplay: ReplayDispatch;
     state: Record<string, any>;
     bThreadState: Record<string, BThreadState>;
@@ -137,7 +137,7 @@ function stageBThreadsAndEventCaches(
         }
         return bThreadDictionary[id].state;
     };
-    const enableEventCache: EnableStateFunctionType = (event: Event, initialValue: unknown): StateRef<unknown> => {
+    const enableEventCache: EnableStateFunctionType = (event: FCEvent, initialValue: unknown): StateRef<unknown> => {
         if(!eventCache.has(event)) {
             eventCache.set(event, {current: initialValue, previous: null});
         }
@@ -155,8 +155,8 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const eventCache: EventCache = new EventMap();
     let orderedThreadIds: string[];
     const logger = new Logger();
-    const dwpObj: DispatchByWait = {};
-    const combinedGuardByWait: Record<string, GuardFunction> = {};
+    const dispatchEventMap: EventMap<TriggerWaitDispatch> = new EventMap();
+    // const combinedGuardByWait: Record<string, GuardFunction> = {};
 
     const updateLoop: UpdateLoopFunction = (dispatchedAction: Action | null, remainingReplayActions: Action[] | null = null): ScenariosContext => {
         if (dispatchedAction) { 
@@ -189,22 +189,16 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(null, restActions);
         }
         // ------ create the return value:
-        const waitsWithoutPending = utils.withoutProperties(Array.from(bids.pendingEvents), bids.wait);
-        logger.logWaits(waitsWithoutPending);
-        logger.logPendingEvents(bids.pendingEvents);
-        const dbw = dispatchByWait(dispatch, dwpObj, combinedGuardByWait, waitsWithoutPending);
+        const dbw = dispatchByWait(dispatch, bids.wait);
         const bThreadStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
             acc[threadId] = bThreadDictionary[threadId].state;
             return acc;
         }, {});
-        const stateById = Object.keys(eventCacheByeventId).reduce((acc: Record<string, StateRef<any>>, stateId: any): Record<string, any> => {
-            acc[stateId] = eventCacheByeventId[stateId].current;
-            return acc;
-        }, {});
+        const stateByEvent = eventCache.map((event, value) => value.current);
         return {
             dispatch: dbw, // dispatch by wait ( ui can only dispatch waiting events )
-            dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", eventId: ""}), // triggers a replay
-            state: stateById, // event caches
+            dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}}), // triggers a replay
+            state: stateByEvent, // event caches
             bThreadState: bThreadStateById, // BThread state by id
             log: logger.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
