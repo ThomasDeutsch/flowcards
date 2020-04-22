@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as utils from "./utils";
 import { BThreadBids } from "./bthread";
+import { EventKeyRecord, reduceEventKeyRecords, EventKey } from "./event";
 
 export enum BidType {
     request = "request",
@@ -9,10 +10,11 @@ export enum BidType {
     intercept = "intercept"
 }
 
-export type eventId = string;
-export interface EventBaseObj {
-    id: string;
-    key?: string | number;
+export type EventName = string;
+export type EventNameAndKey = string
+export interface Event {
+    name: string;
+    key: string;
 }
 
 export type GuardFunction = (payload: any) => boolean
@@ -20,22 +22,25 @@ export type GuardFunction = (payload: any) => boolean
 export interface Bid {
     type: BidType;
     threadId: string;
-    event: EventBaseObj;
+    event: Event;
     payload?: any;
     guard?: GuardFunction;
 }
 
-export type BidsForBidType = Record<eventId, Bid[]>;
+
+export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
+export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
+export type BidsForBidType = EventKeyRecord<Bid[]> | null
 
 // Bids from current thread
 // --------------------------------------------------------------------------------------------------------------------
 
 export interface BidsByType {
     withMultipleBids: boolean;
-    [BidType.request]: Record<eventId, Bid>;
-    [BidType.wait]: Record<eventId, Bid>;
-    [BidType.block]: Record<eventId, Bid>;
-    [BidType.intercept]: Record<eventId, Bid>;
+    [BidType.request]: EventKeyRecord<Bid> | null;
+    [BidType.wait]: EventKeyRecord<Bid> | null;
+    [BidType.block]: EventKeyRecord<Bid> | null;
+    [BidType.intercept]: EventKeyRecord<Bid> | null;
 }
 
 export function getBidsForBThread(threadId: string, bidOrBids: Bid | null | (Bid | null)[]): BidsByType | null {
@@ -43,18 +48,17 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | null | (Bid
     const bids = utils.toArray(bidOrBids).filter(utils.notNull);
     const defaultBidsByType = {
         withMultipleBids: Array.isArray(bidOrBids),
-        [BidType.request]: {},
-        [BidType.wait]: {},
-        [BidType.block]: {},
-        [BidType.intercept]: {}
+        [BidType.request]: null,
+        [BidType.wait]: null,
+        [BidType.block]: null,
+        [BidType.intercept]: null
     }
     if(bids.length === 0) return defaultBidsByType;
     return bids.reduce((acc: BidsByType, bid: Bid | null): BidsByType => {
         if(bid) {
-            acc[bid.type][bid.event.id] = {
-                ...bid, 
-                threadId: threadId
-            };
+            const type = bid.type;
+            if(acc[type] === null) acc[type] = new EventKeyRecord();
+            acc[type]!.add(bid.event, {...bid, threadId: threadId});
         }
         return acc;
     }, defaultBidsByType);
@@ -62,62 +66,60 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | null | (Bid
 
 // Bids from multiple threads
 // --------------------------------------------------------------------------------------------------------------------
+function bidsForType(type: BidType, allBidsByType: BidsByType[]): EventKeyRecord<Bid>[] {
+    return allBidsByType.map(bidsByType => bidsByType[type]).filter(utils.notNull);
+}
 
-function getAllBidsForType(type: BidType, coll: BidsByType[], blockedEvents: Set<eventId> | null): BidsForBidType {
-    return coll.reduce((acc: BidsForBidType, curr: BidsByType): BidsForBidType => {
-        const bidByeventId = curr[type];
-        Object.keys(bidByeventId).forEach((eventId): BidsForBidType | undefined => {
-            if (blockedEvents && blockedEvents.has(eventId)) return;
-            const bid = {...bidByeventId[eventId]}
-            if (acc[eventId]) {
-                acc[eventId].push(bid);
-            } else {
-                acc[eventId] = [bid];
-            }
-        });
-        return acc;
-    }, {});
+function reduceBidsForType(allBidsForType: EventKeyRecord<Bid>[], blocks: EventKeyRecord<boolean>): EventKeyRecord<Bid[]> {
+    const reducer = (acc: Bid[] = [], curr: Bid) => blocks.get(curr.event) ? acc : [...acc, curr];
+    return reduceEventKeyRecords(allBidsForType, reducer);
+}
+
+function reduceBlocks(allBlocks: EventKeyRecord<Bid>[]): EventKeyRecord<true> {
+    // todo: merge bid guards when they are added
+    return reduceEventKeyRecords(allBlocks, (acc: true, curr: Bid) => !!curr);
 }
 
 export interface AllBidsByType {
-    pendingEvents: Set<eventId>;
-    [BidType.request]: BidsForBidType;
-    [BidType.wait]: BidsForBidType;
-    [BidType.intercept]: BidsForBidType;
+    pendingEvents: EventKeyRecord<boolean>;
+    [BidType.request]: EventKeyRecord<Bid[]>;
+    [BidType.wait]: EventKeyRecord<Bid[]>;
+    [BidType.intercept]: EventKeyRecord<Bid[]>;
 }
 
-export function getAllBids(coll: BThreadBids[]): AllBidsByType {
-    const bidsByTypes = coll.map((x) => x.bidsByType).filter(utils.notNull);
-    const allPendingEvents = utils.union(coll.map(bbt => bbt.pendingEvents).filter(utils.notNull));
-    const blocks = new Set(bidsByTypes.map(bidsByType => bidsByType[BidType.block]).map(rec => Object.keys(rec)).reduce((acc, val) => acc.concat(val), []));
-    const pendingAndBlocks = blocks ? utils.union([blocks, allPendingEvents]) : allPendingEvents;
+export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
+    const bidsByTypes = allBThreadBids.map(x => x.bidsByType).filter(utils.notNull);
+    const allPendingEvents = reduceEventKeyRecords(allBThreadBids.map(x => x.pendingEvents).filter(utils.notNull), () => true);
+    const blocks = reduceBlocks(bidsForType(BidType.block, bidsByTypes));
+    const pendingAndBlocks = reduceEventKeyRecords([blocks, allPendingEvents], () => true);
     return {
         pendingEvents: allPendingEvents,
-        [BidType.request]: getAllBidsForType(BidType.request, bidsByTypes, pendingAndBlocks),
-        [BidType.wait]: getAllBidsForType(BidType.wait, bidsByTypes, blocks),
-        [BidType.intercept]: getAllBidsForType(BidType.intercept, bidsByTypes, blocks)
+        [BidType.request]: reduceBidsForType(bidsForType(BidType.request, bidsByTypes), pendingAndBlocks),
+        [BidType.wait]: reduceBidsForType(bidsForType(BidType.wait, bidsByTypes), blocks),
+        [BidType.intercept]: reduceBidsForType(bidsForType(BidType.intercept, bidsByTypes), blocks)
     };
 }
 
-function toEventBaseObj(e: string | EventBaseObj): EventBaseObj {
-    return (typeof e === 'string') ? {id: e} : e;
+function toEvent(e: string | Event): Event {
+    const te = (typeof e === 'string') ? {name: e} : e;
+    return {key: '__NOKEY_', ...te};
 }
 
 // Bid API --------------------------------------------------------------------
 
-export function request(eventId: string, payload?: any): Bid {
-    return { type: BidType.request, event: {id: eventId}, payload: payload, threadId: "" };
+export function request(event: string | Event, payload?: any): Bid {
+    return { type: BidType.request, event: toEvent(event), payload: payload, threadId: "" };
 }
 
-export function wait(event: string | EventBaseObj, guard?: GuardFunction): Bid {
+export function wait(event: string | Event, guard?: GuardFunction): Bid {
 
-    return { type: BidType.wait, event: toEventBaseObj(event), guard: guard, threadId: ""};
+    return { type: BidType.wait, event: toEvent(event), guard: guard, threadId: ""};
 }
 
-export function block(event: string | EventBaseObj): Bid {
-    return { type: BidType.block, event: toEventBaseObj(event), threadId: "" };
+export function block(event: string | Event): Bid {
+    return { type: BidType.block, event: toEvent(event), threadId: "" };
 }
 
-export function intercept(event: string | EventBaseObj, guard?: GuardFunction): Bid {
-    return { type: BidType.intercept, event: toEventBaseObj(event), guard: guard, threadId: ""};
+export function intercept(event: string | Event, guard?: GuardFunction): Bid {
+    return { type: BidType.intercept, event: toEvent(event), guard: guard, threadId: ""};
 }

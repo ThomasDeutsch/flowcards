@@ -1,6 +1,6 @@
 import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
-import { Bid, eventId } from './bid';
+import { Bid } from './bid';
 
 export interface ActionAndReactions {
     action: Action;
@@ -20,7 +20,7 @@ export interface Log {
 
 function newActionsReactions(action?: Action): ActionAndReactions {
     return {
-        action: action ? {...action} : { eventId: "", type: ActionType.initial, threadId: "" },
+        action: action ? {...action} : { event: "", type: ActionType.initial, threadId: "" },
         reactionByThreadId: {}
     }
 }
@@ -59,7 +59,7 @@ export class Logger {
         this._latestActionAndReactions = newActionsReactions(action);
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises: string[] | null = null): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledPromises: Event[] | null = null): void {
         const reaction: Reaction = {
             type: type,
             threadId: threadId,

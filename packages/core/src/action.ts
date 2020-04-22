@@ -2,6 +2,7 @@
 
 import * as utils from "./utils";
 import { BidsForBidType } from "./bid";
+import { Event } from './event';
 
 export enum ActionType {
     initial = "initial",
@@ -15,20 +16,21 @@ export enum ActionType {
 export interface Action {
     type: ActionType;
     threadId: string;
-    eventId: string;
+    event: Event;
     payload?: any;
 }
 
 export function getNextActionFromRequests(requestBids: BidsForBidType): Action | null {
-    const eventIds = Object.keys(requestBids);
-    if(eventIds.length === 0) return null;
-    const selectedeventId = utils.getRandom(eventIds);
-    const bids = requestBids[selectedeventId];
-    const bid = bids[bids.length - 1];
+    if(!requestBids) return null;
+    const events = requestBids.getAllEvents();
+    if(!events) return null;
+    const selectedEvent = utils.getRandom(events);
+    const bids = requestBids.get(selectedEvent);
+    const bid = bids![bids!.length - 1]; // select the bid with the highest priority.
     return {
         type: ActionType.requested,
         threadId: bid.threadId,
-        eventId: bid.event.id,
+        event: bid.event,
         payload: bid.payload,
     };
 }
