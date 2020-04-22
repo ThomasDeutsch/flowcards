@@ -6,13 +6,13 @@ import { Logger } from "./logger";
 import { ActionType, Action } from './action';
 import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
-import { EventKeyRecord, reduceEventKeyRecords, Event } from './event';
+import { EventMap, reduceEventMaps, Event } from './event';
 
 export type ThreadGen = any; // TODO: Better typing for this generator
 
 export interface BThreadState {
     isCompleted: boolean;
-    pendingEvents: EventKeyRecord<boolean>;
+    pendingEvents: EventMap<boolean>;
     value?: any;
 }
 
@@ -34,7 +34,7 @@ interface NextBid {
 }
 
 export interface BThreadBids {
-    pendingEvents: EventKeyRecord<boolean> | null;
+    pendingEvents: EventMap<boolean> | null;
     bidsByType: BidsByType | null;
 }
 
@@ -50,14 +50,14 @@ export class BThread {
     private _thread: IterableIterator<any>;
     private _currentBids: BidsByType | null = null;
     private _nextBid: NextBid = {isFunction: false, value: null};
-    private _pendingRequestRecord: EventKeyRecord<Promise<any>> = new EventKeyRecord();
-    private _pendingInterceptRecord: EventKeyRecord<Promise<any>> = new EventKeyRecord();
+    private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
+    private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted: boolean = false;
     private _stateValue?: any;
-    private _stateRef: BThreadState = { isCompleted: this._isCompleted, pendingEvents: new EventKeyRecord() };
+    private _stateRef: BThreadState = { isCompleted: this._isCompleted, pendingEvents: new EventMap() };
     public get state(): BThreadState {
         this._stateRef.isCompleted = this._isCompleted;
-        this._stateRef.pendingEvents = reduceEventKeyRecords([this._pendingInterceptRecord, this._pendingRequestRecord], () => true);
+        this._stateRef.pendingEvents = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], () => true, true);
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
@@ -147,7 +147,7 @@ export class BThread {
     }
 
     public addPendingRequest(event: Event, promise: Promise<any>): void {
-        this._pendingRequestRecord.add(event, promise);
+        this._pendingRequestRecord.set(event, promise);
         promise.then((data): void => {
                 const recordedPromise = this._pendingRequestRecord.get(event);
                 if (recordedPromise  && Object.is(promise, recordedPromise)) {
@@ -219,7 +219,7 @@ export class BThread {
                     this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event });
                 }
             });
-            this._pendingInterceptRecord.add(action.event, promise);
+            this._pendingInterceptRecord.set(action.event, promise);
             return {resolve: resolveFn, reject: rejectFn, value: action.payload};
         }
         this._progressBThread(action.event, createInterceptPromise());

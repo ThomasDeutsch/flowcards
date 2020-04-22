@@ -1,90 +1,115 @@
-export type EventKey = string;
 export type EventName = string;
+export type EventKey = string | number;
 
 export interface Event {
-    name: string;
-    key: string;
+    name: EventName;
+    key?: EventKey;
 }
 
 export function toEvent(e: string | Event): Event {
-    const te = (typeof e === 'string') ? {name: e} : e;
-    return {key: '__NOKEY_', ...te};
+    return (typeof e === 'string') ? {name: e} : e;
 }
 
+type EventIteratorFunction<T> = (e: Event, value: T) => unknown;
 
-export class EventKeyRecord<T>  {
-    public record: Record<EventName, Record<EventKey, T>> = {}
+export class EventMap<T>  {
+    public noKey: Map<EventName, T>;
+    public withKey: Map<EventName, Map<EventKey, T>>;
+
     constructor() {
+        this.noKey = new Map();
+        this.withKey = new Map();
     }
 
-    public add(event: Event, value: T): EventKeyRecord<T> {
-        if(!this.record[event.name]) this.record[event.name] = {};
-        this.record[event.name][event.key] = value;
+    private _iterateAll(iteratorFn: EventIteratorFunction<T>) {
+        for (let [eventName, value] of this.noKey) {
+            iteratorFn({name: eventName}, value);
+        }
+        for (let [eventName] of this.withKey) {
+            const map = this.withKey.get(eventName);
+            if(map) {
+                for (let [key, value] of map) {
+                    iteratorFn({name: eventName, key: key}, value);
+                }
+            }
+        }
+    }
+
+    public set(event: Event, value: T): EventMap<T> {
+        if(event.key === undefined) {
+            this.noKey.set(event.name, value);
+        } else {
+            if(!this.withKey.has(event.name)) this.withKey.set(event.name, new Map());
+            this.withKey.get(event.name)?.set(event.key, value);
+        }
         return this;
     }
 
     public get(event: Event): T | undefined {
-        return this.record[event.name]?.[event.key];
+        if(event.key === undefined) {
+            return this.noKey.get(event.name);
+        } else {
+            return this.withKey.get(event.name)?.get(event.key);
+        }
     }
 
     public has(event: Event): boolean {
-        return this.record[event.name]?.[event.key] !== undefined;
+        if(event.key === undefined) {
+            return this.noKey.has(event.name);
+        } else {
+            return !!this.withKey.get(event.name)?.has(event.key);
+        }
     }
 
     public isEmpty(): boolean {
-        return Object.keys(this.record).length === 0;
+        return (this.withKey.size === 0) && (this.noKey.size === 0);
     }
 
     public delete(event: Event): boolean {
         if(!this.has(event)) return false;
-        delete this.record[event.name][event.key];
-        if(Object.keys(this.record[event.name]).length === 0) {
-            delete this.record[event.name];
+        if(event.key === undefined) {
+            return this.noKey.delete(event.name);
         }
-        return true;
+        const hasDeletedKey = !!this.withKey.get(event.name)?.delete(event.key);
+        if(hasDeletedKey && this.withKey.get(event.name)?.size === 0) {
+            this.withKey.delete(event.name); // remove the map for this event-name if it is empty.
+        }
+        return hasDeletedKey;
     }
 
     public clear(): Event[] | null {
-        let clearedEvents: Event[] = []
-        Object.keys(this.record).forEach(eventName => {
-            Object.keys(this.record[eventName]).forEach(key => {
-                const event = {name: eventName, key: key};
-                this.delete(event)
-                clearedEvents.push(event);
-            })
+        let deleted: Event[] = []
+        this._iterateAll((event) => {
+            deleted.push(event);
+            this.delete(event);
         });
-        return clearedEvents;
+        return deleted.length > 0 ? deleted : null;
     }
 
     public getAllEvents(): Event[] | null {
         let elements: Event[] = [];
-        Object.keys(this.record).forEach(eventName => {
-            Object.keys(this.record[eventName]).forEach(key => {
-                elements.push({name: eventName, key: key});
-            })
-        });
+        this._iterateAll((event) => elements.push(event));
         return elements.length > 0 ? elements : null;
     }
 
     public allElements(): [Event, T][] {
         let elements: [Event, T][] = [];
-        Object.keys(this.record).forEach(eventName => {
-            Object.keys(this.record[eventName]).forEach(key => {
-                elements.push([{name: eventName, key: key}, this.record[eventName][key]]);
-            })
+        this._iterateAll((event, value) => {
+            elements.push([event, value]);
         });
         return elements;
     }
 }
 
 
-type ReducerFunction<T,X> = (acc: X, curr: T, ) => X;
+type ReducerFunction<T,X> = (acc: X, curr: T) => X;
 
-export function reduceEventKeyRecords<T, X>(records: EventKeyRecord<T>[], reducer: ReducerFunction<T, X>): EventKeyRecord<X> {
-    const result = new EventKeyRecord<X>();
-    records.map(r => r.allElements()).forEach(r => r.map(([event, value]) => {
-        const addValue = reducer(result.record[event.name]?.[event.key], value);
-        result.add(event, addValue);
+export function reduceEventMaps<T, X>(records: EventMap<T>[], reducer: ReducerFunction<T, X>, initialValue: X): EventMap<X> {
+    const result = new EventMap<X>();
+    records.map(r => r.allElements()).forEach(r => r.map(([event, valueCurr]) => {
+        const valueAcc = result.get(event) || initialValue;
+        const addValue = reducer(valueAcc, valueCurr);
+        result.set(event, addValue);
     }));
-    return result
+    return result;
 }

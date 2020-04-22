@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Bid, BidsForBidType, GuardFunction, eventId } from './bid';
+import { Bid, BidsForBidType, GuardFunction } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 
