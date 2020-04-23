@@ -93,7 +93,7 @@ export class EventMap<T>  {
         return elements.length > 0 ? elements : null;
     }
 
-    public allElements(): [FCEvent, T][] {
+    public getAllItems(): [FCEvent, T][] {
         let elements: [FCEvent, T][] = [];
         this._iterateAll((event, value) => {
             elements.push([event, value]);
@@ -109,12 +109,12 @@ export class EventMap<T>  {
         return mapped;
     }
 
-    // public intersect(a: EventMap<unknown>): EventMap<T> {
-    //     this._iterateAll((event) => {
-    //         if(!a.has(event)) this.delete(event);
-    //     });
-    //     return this;
-    // }
+    public difference(a: EventMap<unknown>): EventMap<T> {
+        this._iterateAll((event) => {
+            if(a.has(event)) this.delete(event);
+        });
+        return this;
+    }
 }
 
 
@@ -122,7 +122,7 @@ type ReducerFunction<T,X> = (acc: X, curr: T) => X;
 
 export function reduceEventMaps<T, X>(records: EventMap<T>[], reducer: ReducerFunction<T, X>, initialValue: X): EventMap<X> {
     const result = new EventMap<X>();
-    records.map(r => r.allElements()).forEach(r => r.map(([event, valueCurr]) => {
+    records.map(r => r.getAllItems()).forEach(r => r.map(([event, valueCurr]) => {
         const valueAcc = result.get(event) || initialValue;
         const addValue = reducer(valueAcc, valueCurr);
         result.set(event, addValue);

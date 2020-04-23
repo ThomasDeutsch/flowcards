@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getBidsForBThread, BidsByType, BidType } from './bid';
+import { getBidsForBThread, BidsByType, BidType, Bid } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
@@ -117,8 +117,8 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);
     }
 
-    private _hasCurrentBidForBidTypeAndeventId(bidType: BidType, event: FCEvent) {
-        return (this._currentBids && this._currentBids[bidType] && this._currentBids[bidType]!.has(event));
+    private _getBid(bidType: BidType, event: FCEvent): Bid | undefined {
+        return this._currentBids?.[bidType]?.get(event);
     }
 
     // --- public
@@ -188,37 +188,35 @@ export class BThread {
     }
     
     public progressRequest(action: Action): void {
-        if(this._hasCurrentBidForBidTypeAndeventId(BidType.request, action.event)) {
+        if(this._getBid(BidType.request, action.event)) {
             this._progressBThread(action.event, action.payload);
         }
     }
 
     public progressWait(action: Action): void {
-        if(!this._hasCurrentBidForBidTypeAndeventId(BidType.wait, action.event)) return;
-        const bid = this._currentBids && this._currentBids[BidType.wait] && this._currentBids[BidType.wait]!.get(action.event);
-        if(bid && bid.guard && !bid.guard(action.payload)) return;
+        const bid = this._getBid(BidType.wait, action.event);
+        if(!bid || bid.guard && !bid.guard(action.payload)) return;
         this._progressBThread(action.event, action.payload);
     }
 
     public progressIntercept(action: Action): boolean {
-        if(!this._hasCurrentBidForBidTypeAndeventId(BidType.intercept, action.event)) return false;
-        const bid = this._currentBids && this._currentBids[BidType.wait] && this._currentBids[BidType.intercept]!.get(action.event);
-        if(bid && bid.guard && !bid.guard(action.payload)) return false;
+        const bid = this._getBid(BidType.intercept, action.event)
+        if(!bid || bid.guard && !bid.guard(action.payload)) return false;
         const createInterceptPromise = (): InterceptResult => {
             let resolveFn = () => {};
             let rejectFn = () => {};
             const promise = new Promise((resolve, reject) => {
                 resolveFn = resolve;
-                rejectFn = reject;
-            }).then((data): void => {
-                if (this._pendingInterceptRecord.delete(action.event)) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: action.event, payload: data });
-                }
-            }).catch((): void => {
-                if (this._pendingInterceptRecord.delete(action.event)) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event });
-                }
-            });
+                    rejectFn = reject;
+                }).then((data): void => {
+                    if (this._pendingInterceptRecord.delete(action.event)) {
+                        this._dispatch({ type: ActionType.resolved, threadId: this.id, event: action.event, payload: data });
+                    }
+                }).catch((): void => {
+                    if (this._pendingInterceptRecord.delete(action.event)) {
+                        this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event });
+                    }
+                });
             this._pendingInterceptRecord.set(action.event, promise);
             return {resolve: resolveFn, reject: rejectFn, value: action.payload};
         }

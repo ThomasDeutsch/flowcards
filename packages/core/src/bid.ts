@@ -63,15 +63,16 @@ function bidsForType(type: BidType, allBidsByType: BidsByType[]): EventMap<Bid>[
     return allBidsByType.map(bidsByType => bidsByType[type]).filter(utils.notNull);
 }
 
-function reduceBidsForType(allBidsForType: EventMap<Bid>[], blocks: EventMap<boolean>): EventMap<Bid[]> {
-    const reducer = (acc: Bid[] = [], curr: Bid) => blocks.get(curr.event) ? acc : [...acc, curr];
-    return reduceEventMaps(allBidsForType, reducer, []);
+function reduceMaps(allBidsForType: EventMap<Bid>[], blocks: EventMap<boolean>): EventMap<Bid[]> {
+    const reduced = reduceEventMaps(allBidsForType, (acc: Bid[], curr: Bid) => [...acc, curr], []);
+    return reduced.difference(blocks);
 }
 
-function reduceBlocks(allBlocks: EventMap<Bid>[]): EventMap<true> {
+function reduceBlocks(allBlocks: EventMap<Bid>[]): EventMap<boolean> {
     // todo: merge bid guards when they are added
-    return reduceEventMaps(allBlocks, (acc: true, curr: Bid) => !!curr, true);
+    return reduceEventMaps(allBlocks, (acc: boolean, curr: Bid) => !!curr, true);
 }
+
 
 export interface AllBidsByType {
     pendingEvents: EventMap<boolean>;
@@ -84,12 +85,12 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
     const bidsByTypes = allBThreadBids.map(x => x.bidsByType).filter(utils.notNull);
     const allPendingEvents = reduceEventMaps(allBThreadBids.map(x => x.pendingEvents).filter(utils.notNull), () => true, true);
     const blocks = reduceBlocks(bidsForType(BidType.block, bidsByTypes));
-    const pendingAndBlocks = reduceEventMaps([blocks, allPendingEvents], () => true, true);
+    const pendingAndBlocks = reduceEventMaps([blocks, allPendingEvents], (val) => true, true);
     return {
         pendingEvents: allPendingEvents,
-        [BidType.request]: reduceBidsForType(bidsForType(BidType.request, bidsByTypes), pendingAndBlocks),
-        [BidType.wait]: reduceBidsForType(bidsForType(BidType.wait, bidsByTypes), blocks),
-        [BidType.intercept]: reduceBidsForType(bidsForType(BidType.intercept, bidsByTypes), blocks)
+        [BidType.request]: reduceMaps(bidsForType(BidType.request, bidsByTypes), pendingAndBlocks),
+        [BidType.wait]: reduceMaps(bidsForType(BidType.wait, bidsByTypes), blocks),
+        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, bidsByTypes), blocks)
     };
 }
 

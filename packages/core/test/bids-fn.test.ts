@@ -31,14 +31,14 @@ test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {
 
 
 test("a bid-function can return a single bid", () => {
-    let receivedValue;
 
     function* requestThread() {
         yield bp.request("A", 1000);
     }
 
     function* fnThread() {
-        receivedValue = yield () => bp.wait("A");
+        const receivedValue = yield () => bp.wait("A");
+        expect(receivedValue).toBe(1000);
     }
 
     scenarios((enable) => {
@@ -46,19 +46,20 @@ test("a bid-function can return a single bid", () => {
         enable(fnThread);
     }, null);
 
-    expect(receivedValue).toBe(1000);
+    
 });
 
 
 test("a bid-function can return multiple bids", () => {
-    let receivedValue, receivedEvent;
 
     function* requestThread() {
         yield bp.request("A", 1000);
     }
 
-    function* fnThread() {
-        [receivedEvent, receivedValue] = yield () => [bp.wait("A"), bp.wait("B")];
+    function* fnThread(): any {
+        const [receivedEvent, receivedValue] = yield () => [bp.wait("A"), bp.wait("B")];
+        expect(receivedValue).toBe(1000);
+        expect(receivedEvent.name).toBe("A");
     }
 
     scenarios((enable) => {
@@ -66,6 +67,5 @@ test("a bid-function can return multiple bids", () => {
         enable(fnThread);
     }, null);
 
-    expect(receivedValue).toBe(1000);
-    expect(receivedEvent).toBe("A");
+
 });
