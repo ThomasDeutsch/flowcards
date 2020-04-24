@@ -22,7 +22,7 @@ export class EventMap<T>  {
         this.withKey = new Map();
     }
 
-    private _iterateAll(iteratorFn: EventIteratorFunction<T>) {
+    public iterateAll(iteratorFn: EventIteratorFunction<T>) {
         for (let [eventName, value] of this.noKey) {
             iteratorFn({name: eventName}, value);
         }
@@ -80,7 +80,7 @@ export class EventMap<T>  {
 
     public clear(): FCEvent[] | null {
         let deleted: FCEvent[] = []
-        this._iterateAll((event) => {
+        this.iterateAll((event) => {
             deleted.push(event);
             this.delete(event);
         });
@@ -89,29 +89,28 @@ export class EventMap<T>  {
 
     public getAllEvents(): FCEvent[] | null {
         let elements: FCEvent[] = [];
-        this._iterateAll((event) => elements.push(event));
+        this.iterateAll((event) => elements.push(event));
         return elements.length > 0 ? elements : null;
-    }
-
-    public getAllItems(): [FCEvent, T][] {
-        let elements: [FCEvent, T][] = [];
-        this._iterateAll((event, value) => {
-            elements.push([event, value]);
-        });
-        return elements;
     }
 
     public map<X>(mapFunction: EventMapFunction<T, X>):  EventMap<X> {
         const mapped = new EventMap<X>();
-        this._iterateAll((event, value) => {
+        this.iterateAll((event, value) => {
             mapped.set(event, mapFunction(event, value));
         })
         return mapped;
     }
 
     public difference(a: EventMap<unknown>): EventMap<T> {
-        this._iterateAll((event) => {
+        this.iterateAll((event) => {
             if(a.has(event)) this.delete(event);
+        });
+        return this;
+    }
+    
+    public intersection(a: EventMap<unknown>): EventMap<T> {
+        this.iterateAll((event) => {
+            if(!a.has(event)) this.delete(event);
         });
         return this;
     }
@@ -122,7 +121,7 @@ type ReducerFunction<T,X> = (acc: X, curr: T) => X;
 
 export function reduceEventMaps<T, X>(records: EventMap<T>[], reducer: ReducerFunction<T, X>, initialValue: X): EventMap<X> {
     const result = new EventMap<X>();
-    records.map(r => r.getAllItems()).forEach(r => r.map(([event, valueCurr]) => {
+    records.map(r => r.iterateAll((event, valueCurr) => {
         const valueAcc = result.get(event) || initialValue;
         const addValue = reducer(valueAcc, valueCurr);
         result.set(event, addValue);

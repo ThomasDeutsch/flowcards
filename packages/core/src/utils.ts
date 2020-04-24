@@ -25,6 +25,10 @@ export function notNull<T>(value: T | null): value is T {
     return value !== null;
 }
 
+export function notUndefined<T>(value?: T): value is T {
+    return value !== undefined;
+}
+
 // OBJECT -------------------
 
 export function withoutProperties(properties: string[], obj: Record<string, any>) {
