@@ -16,7 +16,7 @@ function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunct
             guards.push(g);
         }
     }
-    if(guards === undefined) return undefined;
+    if(guards === undefined || guards.length === 0) return undefined;
     return (payload: unknown) => guards!.filter(utils.notUndefined).some(guard => guard(payload));
 }
 

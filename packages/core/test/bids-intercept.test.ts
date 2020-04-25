@@ -35,7 +35,6 @@ test("requests can be intercepted", () => {
         enable(thread3);
         setupCount++;
     }, ({log}) => {
-        console.log('log: ', log)
         expect(setupCount).toEqual(2);
         expect(progressedIntercept).toBe(true);
         expect(progressedRequest).toBe(false);
@@ -247,7 +246,7 @@ test("an intercept can be resolved. This will progress waits and requests", (don
         enable(interceptingThread);
         enable(waitingThread);
     }, ({dispatch}) => {
-        if(dispatch.get({name: 'fin'})) {
+        if(dispatch('fin')) {
             done();
         }  
     });

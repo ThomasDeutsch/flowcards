@@ -94,6 +94,18 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
     };
 }
 
+export function getMatchingBids(bids: EventMap<Bid[]>, event: FCEvent): Bid[] | undefined {
+    let bidsForEvent = bids.get(event);
+    if(event.key !== undefined) {
+        let noKeyBids = bids.get({name: event.name});
+        if(!bidsForEvent && !noKeyBids) return undefined;
+        return [...(bidsForEvent || []), ...(noKeyBids || [])];
+    } else {
+        if(!bidsForEvent) return undefined;
+        return bidsForEvent;
+    }
+}
+
 
 // Bid API --------------------------------------------------------------------
 
