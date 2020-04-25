@@ -51,7 +51,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
             dispatchByEvent.clear();
             return dispatchFunction;
         }
-        dispatchByEvent.difference(waits);
+        dispatchByEvent.intersection(waits);
         allWaitEvents.forEach(waitEvent => {
             guardByEvent.set(waitEvent, getGuardForEvent(waits, waitEvent));
             if(!dispatchByEvent.has(waitEvent)) {

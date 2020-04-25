@@ -41,14 +41,20 @@ function createScenarioId(generator: ThreadGen, key?: string | number): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
 
-function interceptEvent(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, a: Action): boolean {
+function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, a: Action): boolean {
     let bids = getMatchingBids(allBids[BidType.intercept], a.event);
     if(bids === undefined || bids.length === 0) return false;
     bids = [...bids];
     while(bids.length > 0) {
-        const nextInterceptBid = bids.pop();
-        if(nextInterceptBid) {
-            const wasIntercepted = bThreadDictionary[nextInterceptBid.threadId].progressIntercept(a);
+        const next = bids.pop();
+        if(next) {
+            const nextAction = {...a};
+            nextAction.event.key = next.event.key
+            const wasIntercepted = bThreadDictionary[next.threadId].progressIntercept(nextAction);
+            // this can be intercepted in threee ways:
+            // 1. intercept has a payload/payload functino that returns somehting that is not a promise -> the action will be modified and the next bid is chosen
+            // 2. intercept has a payloadfunction that is a promise -> pending-event is created and is resolved when the promise is resolved.
+            // 3. intercept has no payload:  the intercept itself is a promise.
             if(wasIntercepted) return true;
         }
     } 
@@ -58,16 +64,20 @@ function interceptEvent(allBids: AllBidsByType, bThreadDictionary: BThreadDictio
 function advanceRequests(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, a: Action): void {
     const bids = getMatchingBids(allBids[BidType.request], a.event);
     if(bids === undefined || bids.length === 0) return;
-    bids.forEach((bid): void => {
-        bThreadDictionary[bid.threadId].progressRequest(a);
+    bids.forEach(({threadId, event}): void => {
+        const nextAction = {...a};
+        nextAction.event.key = event.key
+        bThreadDictionary[threadId].progressRequest(nextAction);
     });
 }
 
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, a: Action): void {
     const bids = getMatchingBids(allBids[BidType.wait], a.event);
     if(bids === undefined || bids.length === 0) return;
-    bids.forEach(({ threadId }): void => {
-        bThreadDictionary[threadId].progressWait(a);
+    bids.forEach(({ threadId, event }): void => {
+        const nextAction = {...a};
+        nextAction.event.key = event.key
+        bThreadDictionary[threadId].progressWait(nextAction);
     });
 }
 
@@ -82,19 +92,19 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, allBids: AllBidsB
             bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
             return;
         }
-        if(interceptEvent(allBids, bThreadDictionary, action)) return;
+        if(interceptAction(allBids, bThreadDictionary, action)) return;
         advanceRequests(allBids, bThreadDictionary, action);
         advanceWaits(allBids, bThreadDictionary, action);
     }
     else if(action.type === ActionType.dispatched) {
-        if(interceptEvent(allBids, bThreadDictionary, action)) return;
+        if(interceptAction(allBids, bThreadDictionary, action)) return;
         advanceWaits(allBids, bThreadDictionary, action);
     }
     else if(action.type === ActionType.resolved) {
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].resolvePending(action);
         }
-        if(interceptEvent(allBids, bThreadDictionary, action)) return;
+        if(interceptAction(allBids, bThreadDictionary, action)) return;
         bThreadDictionary[action.threadId].progressRequest(action); // request got resolved
         advanceRequests(allBids, bThreadDictionary, action);
         advanceWaits(allBids, bThreadDictionary, action);

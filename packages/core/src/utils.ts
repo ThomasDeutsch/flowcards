@@ -50,6 +50,10 @@ export function toArray<T>(x: T | T[]): T[] {
     return [x];
 }
 
+export function flattenShallow<T>(arr: T[][]): T[] {
+    return arr.reduce((acc, val) => acc.concat(val), []);
+}
+
 // SET ----------------------
 
 export function union<T>(sets: Set<T>[]): Set<T> {

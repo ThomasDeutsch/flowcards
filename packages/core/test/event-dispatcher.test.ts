@@ -165,3 +165,8 @@
 //         }  
 //     });
 // });
+
+/** 
+* waits können mit einem oder mehreren keys dispatched werden.
+* waits können allgemein dispatched werden ( alle keys )
+*/

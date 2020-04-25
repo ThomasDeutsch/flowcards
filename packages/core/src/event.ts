@@ -1,6 +1,7 @@
+import * as utils from './utils';
+
 export type EventName = string;
 export type EventKey = string | number;
-
 export interface FCEvent {
     name: EventName;
     key?: EventKey;
@@ -52,6 +53,26 @@ export class EventMap<T>  {
         } else {
             return this.withKey.get(event.name)?.get(event.key);
         }
+    }
+
+    public getAllValues(event: FCEvent): T[] | undefined {
+        const test = this.withKey.get(event.name)?.values();
+        if(test !== undefined) return [...test];
+        return undefined
+    }
+
+    public getAllMatchingItems(event: FCEvent): T[] | undefined {
+        let result: T[] | undefined;
+        if(event.key === undefined) { // there was no key, so add all items with a key.
+            let noKeyItem = this.get(event);
+            let withKeyItems = this.withKey.get(event.name)?.values();
+            result = [...withKeyItems || [], noKeyItem].filter(utils.notUndefined);
+        } else { // there was a key, so only add the items without a key.
+            let withKeyItem = this.get(event);
+            let noKeyItem = this.get({name: event.name});
+            result = [withKeyItem, noKeyItem].filter(utils.notUndefined);
+        }
+        return (result.length === 0) ? undefined : result;
     }
 
     public has(event: FCEvent): boolean {
