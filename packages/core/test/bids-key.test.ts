@@ -27,6 +27,42 @@ test("The key can be a string or a number", () => {
 });
 
 
+test("an event with a key can be blocked.", () => {
+    let advancedKey1 = false;
+    let advancedKey2 = false;
+
+    function* thread1() {
+        yield bp.wait({name: 'A', key: 1});
+        advancedKey1 = true;
+    }
+
+    function* thread2() {
+        yield bp.wait({name: 'A', key: 2});
+        advancedKey2 = true;
+    }
+
+    function* blockingThread() {
+        yield bp.block({name: 'A', key: 1});
+    }
+
+    function* requestingThread() {
+        yield bp.request('A'); // request all A events
+    }
+
+
+
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+        enable(blockingThread);
+        enable(requestingThread);
+    }, ({dispatch})=> {
+        expect(advancedKey1).toEqual(false);
+        expect(advancedKey2).toEqual(true);
+    });
+});
+
+
 // test("a bid can have multiple keys", () => {
 //     function* thread1() {
 //         yield bp.wait({name: 'A', key: [1, 2]});
