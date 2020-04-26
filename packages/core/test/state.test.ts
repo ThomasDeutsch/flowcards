@@ -17,7 +17,7 @@ test("a state can be created that will listen for requests in its name", done =>
         st = state("count", 0);
         enable(thread1);
     }, (scenario) => {
-        expect(scenario.state["count"]).toEqual(2);
+        expect(scenario.state("count")).toEqual(2);
         expect(st.current).toEqual(2);
     });
 });
@@ -48,35 +48,12 @@ test("a state will return a ref. Passed to a function, it will not update on cha
         enable(thread2, [st]);
         enable(thread3, [st.current]);
     }, (scenario) => {
-        expect(scenario.state["count"]).toEqual(2);
+        expect(scenario.state("count")).toEqual(2);
         expect(threadRefInit).toEqual(1);
         expect(threadValueInit).toEqual(2);
         expect(st.current).toEqual(2);
     });
 });
-
-
-
-test("if a state is not enabled, it is deleted", () => {
-
-    function* thread1(this: BTContext) {
-        this.setState(1);
-        yield bp.request("count", 2);
-        this.setState(0);
-        yield bp.request("test");
-        this.setState(1);
-    }
-
-    scenarios((enable, state) => {
-        const bThreadState = enable(thread1);
-        if(bThreadState.value === 1) {
-            state("count", 0);
-        }
-    }, (scenario) => {
-        expect(scenario.state["count"]).toEqual(0);
-    });
-});
-
 
 test("if there are multiple state changes at the same time, the highest priority change will win.", () => {
 
@@ -92,7 +69,7 @@ test("if there are multiple state changes at the same time, the highest priority
         enable(threadLow);
         enable(threadHigh);
     }, (scenario) => {
-        expect(scenario.state["count"]).toEqual(1000);
+        expect(scenario.state("count")).toEqual(1000);
     });
 });
 
@@ -118,7 +95,7 @@ test("state changes can not be triggered by dispatch. Only threads can change st
     scenarios((enable, state) => {
         state("count", 0);
     }, (scenario) => {
-        expect(scenario.dispatch["count"]).toBeUndefined();
+        expect(scenario.dispatch('count')).toBeUndefined();
     });
 });
 

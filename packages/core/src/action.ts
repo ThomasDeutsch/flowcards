@@ -2,7 +2,7 @@
 
 import * as utils from "./utils";
 import { BidsForBidType } from "./bid";
-
+import { FCEvent } from './event';
 
 export enum ActionType {
     initial = "initial",
@@ -16,20 +16,21 @@ export enum ActionType {
 export interface Action {
     type: ActionType;
     threadId: string;
-    eventName: string;
+    event: FCEvent;
     payload?: any;
 }
 
 export function getNextActionFromRequests(requestBids: BidsForBidType): Action | null {
-    const eventNames = Object.keys(requestBids);
-    if(eventNames.length === 0) return null;
-    const selectedEventName = utils.getRandom(eventNames);
-    const bids = requestBids[selectedEventName];
-    const bid = bids[bids.length - 1];
+    if(!requestBids) return null;
+    const events = requestBids.getAllEvents();
+    if(!events) return null;
+    const selectedEvent = utils.getRandom(events);
+    const bids = requestBids.get(selectedEvent);
+    const bid = bids![bids!.length - 1]; // select the bid with the highest priority.
     return {
         type: ActionType.requested,
         threadId: bid.threadId,
-        eventName: bid.eventName,
+        event: bid.event,
         payload: bid.payload,
     };
 }

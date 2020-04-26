@@ -1,6 +1,7 @@
 import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
-import { Bid, EventName } from './bid';
+import { Bid } from './bid';
+import { EventMap, FCEvent } from './event';
 
 export interface ActionAndReactions {
     action: Action;
@@ -10,47 +11,35 @@ export type ThreadsByWait = Record<string, string[]>;
 
 
 export interface Log {
-    currentWaits: Record<EventName, Bid[]>;
-    currentPendingEvents: Set<string>;
+    currentWaits: EventMap<Bid[]>;
+    currentPendingEvents: EventMap<boolean>;
     latestAction: Action;
     latestReactionByThreadId: Record<string, Reaction>;
     actionsAndReactions: ActionAndReactions[];
-    threadsByWait: ThreadsByWait;
 }
 
 function newActionsReactions(action?: Action): ActionAndReactions {
     return {
-        action: action ? {...action} : { eventName: "", type: ActionType.initial, threadId: "" },
+        action: action ? {...action} : { event: {name: ""}, type: ActionType.initial, threadId: "" },
         reactionByThreadId: {}
     }
-}
-
-function toThreadsByWait(wbt: Record<string, Bid[]>): ThreadsByWait {
-    return Object.keys(wbt).reduce((tbw: ThreadsByWait, eventName: string): ThreadsByWait => {
-        wbt[eventName].map((bid): string => bid.threadId).forEach((threadId): void => {
-            if(!tbw[eventName]) tbw[eventName] = [threadId];
-            else tbw[eventName].push(threadId);
-        });
-        return tbw;
-    }, {});
 }
 
 export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
-    private _waitsByEventName: Record<string, Bid[]> = {};
-    private _waits: Record<EventName, Bid[]> = {};
-    private _pendingEvents: Set<string> = new Set();
+    private _waits: EventMap<Bid[]> = new EventMap();
+    private _pendingEvents: EventMap<boolean> = new EventMap();
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
     }
 
-    public logWaits(waits: Record<EventName, Bid[]>): void {
+    public logWaits(waits: EventMap<Bid[]> = new EventMap()): void {
         this._waits = waits;
     }
 
-    public logPendingEvents(pendingEvents: Set<string>): void {
+    public logPendingEvents(pendingEvents: EventMap<boolean>): void {
         this._pendingEvents = pendingEvents;
     }
 
@@ -59,7 +48,7 @@ export class Logger {
         this._latestActionAndReactions = newActionsReactions(action);
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises: string[] | null = null): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledPromises: FCEvent[] | null = null): void {
         const reaction: Reaction = {
             type: type,
             threadId: threadId,
@@ -77,8 +66,7 @@ export class Logger {
             currentPendingEvents: this._pendingEvents,
             latestAction: this._latestActionAndReactions.action,
             latestReactionByThreadId: this._latestActionAndReactions.reactionByThreadId,
-            actionsAndReactions: log,
-            threadsByWait: toThreadsByWait(this._waitsByEventName)
+            actionsAndReactions: log
         };
     }
 

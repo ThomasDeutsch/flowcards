@@ -5,8 +5,7 @@ import { Action } from './action'
 
 export { BTContext, BThreadState } from './bthread';
 export { UpdateLoopFunction, StagingFunction, createUpdateLoop, ScenariosContext, StateRef } from './update-loop';
-export { wait, intercept, block, request, Bid, EventName } from "./bid";
-export { DispatchByWait, GuardedDispatch, TriggerDispatch } from './dispatch-by-wait';
+export { wait, intercept, block, request, Bid } from "./bid";
 export { Log, ActionAndReactions, ThreadsByWait} from './logger';
 export { Action } from './action';
 export { Reaction } from './reaction';

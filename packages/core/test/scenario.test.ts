@@ -35,16 +35,16 @@ test("there will be a dispatch-function every waiting event", () => {
         enable(thread1);
         enable(thread2);
     }, (scenario) => {
-        expect(scenario.dispatch.eventOne).toBeDefined();
-        expect(scenario.dispatch.eventTwo).toBeDefined();
-        expect(scenario.dispatch.eventThree).toBeDefined();
+        expect(scenario.dispatch('eventOne')).toBeDefined();
+        expect(scenario.dispatch('eventTwo')).toBeDefined();
+        expect(scenario.dispatch('eventThree')).toBeDefined();
     });
 });
 
 
 function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): void {
     const updateLoop = createUpdateLoop(stagingFunction, (a: Action): void => {
-        if(a.payload) da.add(a.payload.eventName);
+        if(a.payload) da.add(a.payload.event.name);
         updateLoop(a);   
     });
     updateLoop(null);
@@ -56,11 +56,11 @@ test("if a request is cancelled, it will not trigger the same event-name after r
     function* thread1() {
         yield bp.request("cancel", delay(100));
     }
-    function* thread2() {
+    function* thread2(): unknown {
         let [type] = yield [bp.request('async-event', () => delay(500)), bp.wait('cancel')];
-        expect(type).toEqual('cancel');
+        expect(type.name).toEqual('cancel');
         [type] = yield [bp.wait('async-event'), bp.request("async-event-two", () => delay(1000))];
-        expect(type).toEqual('async-event-two');
+        expect(type.name).toEqual('async-event-two');
         done();
     }
     loggerScenarios((enable) => {

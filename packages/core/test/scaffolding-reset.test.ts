@@ -73,6 +73,6 @@ test("when a thread resets, the bids will be re-evaluated", () => {
     }, ({dispatch, bThreadState}) => {
         expect(bThreadState.threadB.isCompleted === false);
         expect(threadBCount).toEqual(2);
-        expect(dispatch).toHaveProperty('A');
+        expect(dispatch('A')).toBeDefined();
     });
 });

@@ -1,3 +1,5 @@
+import { FCEvent } from './event';
+
 export enum ReactionType {
     init = "init",
     delete = "delete",
@@ -11,6 +13,6 @@ export enum ReactionType {
 export interface Reaction {
     threadId: string;
     type: ReactionType;
-    cancelledPromises: string[] | null;
+    cancelledPromises: FCEvent[] | null;
     pendingEvents: string[] | null;
 }

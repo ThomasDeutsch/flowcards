@@ -21,7 +21,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
             if(action) {
                 expect(action.type).toBe(ActionType.resolved);
                 expect(action.threadId).toBe('thread1');
-                expect(action.eventName).toBe('A');
+                expect(action.event.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
             updateLoop(action);
@@ -49,7 +49,7 @@ describe('dispatched action', () => {
         updateLoop(null);
     };
 
-    test("A promise that throws an error, will continue. The error object will contain the reason and the eventName", done => {
+    test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {
         function* thread1() {
             let catched = false;
             try {
@@ -57,7 +57,7 @@ describe('dispatched action', () => {
             }
             catch (e) {
                 catched = true;
-                expect(e.eventName).toBe('A');
+                expect(e.event.name).toBe('A');
                 expect(e.error).toBe('reject reason');
             }       
             expect(catched).toBe(true);

@@ -25,6 +25,10 @@ export function notNull<T>(value: T | null): value is T {
     return value !== null;
 }
 
+export function notUndefined<T>(value?: T): value is T {
+    return value !== undefined;
+}
+
 // OBJECT -------------------
 
 export function withoutProperties(properties: string[], obj: Record<string, any>) {
@@ -44,6 +48,10 @@ export function getRandom<T>(coll: T[]): T {
 export function toArray<T>(x: T | T[]): T[] {
     if(Array.isArray(x)) return x;
     return [x];
+}
+
+export function flattenShallow<T>(arr: T[][]): T[] {
+    return arr.reduce((acc, val) => acc.concat(val), []);
 }
 
 // SET ----------------------

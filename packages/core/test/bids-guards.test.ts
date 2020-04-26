@@ -32,15 +32,15 @@ test("a wait is not advanced, if the guard returns false", () => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.event.name).toBe("A");
     });
 });
 
 
 test("an intercept is not applied, if the guard returns false.", () => {
     let requestAdvanced = false;
-    let waitBAdvanced = false;
-    let waitCAdvanced = false;
+    let waitAdvanced = false;
+    let interceptAdvanced = false;
 
 
     function* threadA() {
@@ -50,12 +50,12 @@ test("an intercept is not applied, if the guard returns false.", () => {
 
     function* threadB() {
         yield bp.wait("A", (pl: number) => pl === 1000);
-        waitBAdvanced = true;
+        waitAdvanced = true;
     }
 
     function* threadC() {
         yield bp.intercept("A", (pl: number) => pl !== 1000);
-        waitCAdvanced = true;
+        interceptAdvanced = true;
     }
 
     scenarios((enable) => {
@@ -63,10 +63,10 @@ test("an intercept is not applied, if the guard returns false.", () => {
         enable(threadB);
         enable(threadC);
     }, ({log}) => {
+        expect(interceptAdvanced).toBe(false);
+        expect(waitAdvanced).toBe(true);
         expect(requestAdvanced).toBe(true);
-        expect(waitBAdvanced).toBe(true);
-        expect(waitCAdvanced).toBe(false);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.event.name).toBe("A");
     });
 });
 

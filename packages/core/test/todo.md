@@ -2,7 +2,7 @@
 
 
 1. Reject an Resolve Bids are only possible for event-names that are pending for this thread.
-2. if a thread has a pending eventName - then it can not be requested by this or any other bid.
+2. if a thread has a pending eventId - then it can not be requested by this or any other bid.
 3. only pending events can be rejected or resolved.
 3. if a reject is the next action, an error is thrown only for the requesting bid.
 4. if an intercept happened, the event is pending!

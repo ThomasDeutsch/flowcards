@@ -23,22 +23,22 @@ test("an array of actions can be used as a replay", done => {
             dispatchReplay([
                 {
                     type: ActionType.requested,
-                    eventName: 'A',
+                    event: {name: 'A'},
                     threadId: ""
                 },
                 {
                     type: ActionType.requested,
-                    eventName: 'B',
+                    event: {name: 'B'},
                     threadId: ""
                 },
                 {
                     type: ActionType.requested,
-                    eventName: 'C',
+                    event: {name: 'C'},
                     threadId: ""
                 }
             ]);
         } else {
-            expect(log.latestAction.eventName).toBe("C");
+            expect(log.latestAction.event.name).toBe("C");
             expect(log.latestReactionByThreadId).toHaveProperty("thread1");
         }
 

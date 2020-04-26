@@ -3,6 +3,7 @@
 
 import * as bp from "../src/bid";
 import { scenarios } from "../src/index";
+import { FCEvent } from "../src/event";
 
 
 
@@ -21,7 +22,7 @@ test("a requested event that is not blocked will advance", () => {
         enable(thread1);
     }, ({log})=> {
         expect(hasAdvanced).toBe(true);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.event.name).toBe("A");
         expect(log.latestReactionByThreadId).toHaveProperty("thread1");
     });
 });
@@ -45,7 +46,7 @@ test("a request will also advance waiting threads", () => {
     }, ({log}) => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(true);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.event.name).toBe("A");
         expect(log.latestReactionByThreadId).toHaveProperty("thread1");
         expect(log.latestReactionByThreadId).toHaveProperty("thread1");
     });
@@ -68,7 +69,7 @@ test("waits will return the value that has been requested", () => {
         enable(receiveThread);
     }, ({log}) => {
         expect(receivedValue).toBe(1000);
-        expect(log.latestAction.eventName).toBe("A");
+        expect(log.latestAction.event.name).toBe("A");
         expect(log.latestAction.payload).toBe(1000);
         expect(log.latestReactionByThreadId).toHaveProperty("requestThread");
         expect(log.latestReactionByThreadId).toHaveProperty("receiveThread");
@@ -76,12 +77,12 @@ test("waits will return the value that has been requested", () => {
 });
 
 
-test("multiple requests will return an array of [eventName, value].", () => {
-    let progressedEventName, receivedValueA, receivedValueB;
+test("multiple requests will return an array of [eventId, value].", () => {
+    let progressedeventId, receivedValueA, receivedValueB;
 
-    function* requestThread() {
-        const [eventName] = yield [bp.request("A", 1000), bp.request("B", 2000)];
-        progressedEventName = eventName;
+    function* requestThread(): any {
+        const [event] = yield [bp.request("A", 1000), bp.request("B", 2000)];
+        progressedeventId = event.name;
     }
 
     function* receiveThreadA() {
@@ -98,8 +99,8 @@ test("multiple requests will return an array of [eventName, value].", () => {
         enable(receiveThreadB);
     }, null);
 
-    if (progressedEventName === "A") {
-        expect(receivedValueA).toBe(1000);
+    if (progressedeventId === "A") {
+        expect(receivedValueA).toEqual(1000);
         expect(receivedValueB).toBeUndefined();
     } else {
         expect(receivedValueB).toBe(2000);
@@ -108,15 +109,17 @@ test("multiple requests will return an array of [eventName, value].", () => {
 });
 
 
-test("multiple waits will return an array of [value, eventName].", () => {
-    let receivedValue, receivedEventName;
+test("multiple waits will return an array of [value, eventId].", () => {
+    let receivedValue, receivedeventId;
 
     function* requestThread() {
         yield bp.request("A", 1000);
     }
 
     function* receiveThread() {
-        [receivedEventName, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
+        [receivedeventId, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
+        expect(receivedValue).toBe(1000);
+        expect(receivedeventId?.name).toBe("A");
     }
 
     scenarios((enable) => {
@@ -124,20 +127,22 @@ test("multiple waits will return an array of [value, eventName].", () => {
         enable(receiveThread);
     }, null);
 
-    expect(receivedValue).toBe(1000);
-    expect(receivedEventName).toBe("A");
+
 });
 
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
-    let receivedValue, receivedEventName;
+    let receivedValue: unknown
+    let receivedEvent: FCEvent;
 
     function* requestThread() {
         yield bp.request("A", () => 1000);
     }
 
     function* receiveThread() {
-        [receivedEventName, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
+        [receivedEvent, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
+        expect(receivedValue).toBe(1000);
+        expect(receivedEvent?.name).toBe("A");
     }
 
     scenarios((enable) => {
@@ -145,8 +150,7 @@ test("A request-value can be a function. It will get called, when the event is s
         enable(receiveThread);
     }, null);
     
-    expect(receivedValue).toBe(1000);
-    expect(receivedEventName).toBe("A");
+
 });
 
 
@@ -227,6 +231,7 @@ test("events can be blocked", () => {
     }
 
     scenarios((enable) => {
+        
         enable(requestThread);
         enable(waitingThread);
         enable(blockingThread);
