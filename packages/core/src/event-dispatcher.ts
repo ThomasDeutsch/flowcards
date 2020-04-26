@@ -20,13 +20,13 @@ function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunct
     return (payload: unknown) => guards!.filter(utils.notUndefined).some(guard => guard(payload));
 }
 
-export type TriggerDispatch = (() => void) | undefined
-type CachedDispatch = (payload: unknown) => TriggerDispatch;
+export type TriggerDispatch = () => void
+type CachedDispatch = (payload: unknown) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: unknown) => TriggerDispatch | undefined;
 
 interface DispatchCache {
     payload?: unknown;
-    dispatch?: TriggerDispatch;
+    dispatch?: TriggerDispatch | undefined;
 }
 
 
@@ -34,7 +34,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
 
-    const dispatchFunction = (event: FCEvent | string, payload?: unknown): TriggerDispatch | undefined  => { 
+    const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: unknown): TriggerDispatch | undefined  => { 
         const dp = dispatchByEvent.get(toEvent(event));
         if(!dp) return undefined;
         return dp(payload);

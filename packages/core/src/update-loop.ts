@@ -217,7 +217,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return acc;
         }, {});
         return {
-            dispatch: getEventDispatcher(bids.wait),
+            dispatch: getEventDispatcher(bids.wait.difference(bids.pendingEvents)),
             dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}}), // triggers a replay
             state: getEventCache, // event caches
             bThreadState: bThreadStateById, // BThread state by id
