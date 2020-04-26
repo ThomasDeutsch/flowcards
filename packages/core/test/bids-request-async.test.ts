@@ -1,59 +1,57 @@
-// /* eslint-disable @typescript-eslint/explicit-function-return-type */
-// /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-// import * as bp from "../src/bid";
-// import { scenarios } from "../src/index";
-// import { ActionType } from '../src/action';
-
-
-// function delay(ms: number) {
-//     return new Promise(resolve => setTimeout(resolve, ms));
-// }
+import * as bp from "../src/bid";
+import { scenarios } from "../src/index";
+import { ActionType } from '../src/action';
 
 
-// test("A promise can be requested and will create a pending-event", () => {
-//     function* thread1() {
-//         yield bp.request("A", delay(100));
-//     }
-//     scenarios((enable) => {
-//         enable(thread1);
-//     }, ({log}) => {
-//         expect(log.currentPendingEvents.has('A')).toBeTruthy();
-//         expect(log.latestAction.eventId).toBe("A");
-//         expect(log.latestAction.threadId).toBe("thread1");
-//         expect(log.latestAction.type).toBe(ActionType.requested);
-//     });
-// });
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 
-// test("A promise-function can be requested and will create a pending-event", () => {
-//     function* thread1() {
-//         yield bp.request("A", () => delay(100));
-//     }
-//     scenarios((enable) => {
-//         enable(thread1);
-//     }, (({log}) => {
-//         expect(log.currentPendingEvents.has('A')).toBeTruthy();
-//         expect(log.latestAction.eventId).toBe("A");
-//         expect(log.latestAction.threadId).toBe("thread1");
-//         expect(log.latestAction.type).toBe(ActionType.requested);
-//     }));
-// });
+test("A promise can be requested and will create a pending-event", () => {
+    function* thread1() {
+        yield bp.request("A", delay(100));
+    }
+    scenarios((enable) => {
+        enable(thread1);
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has({name: 'A'})).toBeTruthy();
+        expect(log.latestAction.event).toEqual({name: 'A'});
+        expect(log.latestAction.threadId).toBe("thread1");
+        expect(log.latestAction.type).toBe(ActionType.requested);
+    });
+});
 
 
-// test("multiple promises can be requested and all will create a corresponding pending-event", () => {
-//     let threadState: any = null;
+test("A promise-function can be requested and will create a pending-event", () => {
+    function* thread1() {
+        yield bp.request("A", () => delay(100));
+    }
+    scenarios((enable) => {
+        enable(thread1);
+    }, (({log}) => {
+        expect(log.currentPendingEvents.has({name: 'A'})).toBeTruthy();
+        expect(log.latestAction.event).toEqual({name: 'A'});
+        expect(log.latestAction.threadId).toBe("thread1");
+        expect(log.latestAction.type).toBe(ActionType.requested);
+    }));
+});
+
+
+test("multiple promises can be requested and all will create a corresponding pending-event", () => {
+    let threadState: any = null;
     
-//     function* thread1() {
-//         yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
-//     }
+    function* thread1() {
+        yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
+    }
 
-//     scenarios((enable) => {
-//         threadState = enable(thread1);
-//     }, null);
-
-//     if(threadState) {
-//         expect(threadState.pendingEvents).toContain("A");
-//         expect(threadState.pendingEvents).toContain("B");
-//     }
-// });
+    scenarios((enable) => {
+        threadState = enable(thread1);
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has({name: 'A'})).toEqual(true);
+        expect(log.currentPendingEvents.has({name: 'B'})).toEqual(true);
+    });
+});

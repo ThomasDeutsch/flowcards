@@ -40,10 +40,112 @@ test("requests can be intercepted", () => {
         expect(progressedRequest).toBe(false);
         expect(log.currentPendingEvents.has({name: 'A'})).toEqual(true);
     }
- );
-    
+ );  
 });
 
+
+test("if the intercept has a payload, all threads will continue with that payload", () => {
+    let requestValue = 0,
+        interceptValue = 0,
+        waitValue = 0,
+        setupCount = 0;
+
+    function* thread1() {
+        requestValue = yield bp.request("A");
+    }
+
+    function* thread2() {
+        waitValue = yield bp.wait('A');
+    }
+
+    function* thread3() {
+        interceptValue = yield bp.intercept("A", null, 1000);
+        yield bp.wait('X');
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+        enable(thread3);
+        setupCount++;
+    }, ({log}) => {
+        expect(setupCount).toEqual(2);
+        expect(waitValue).toEqual(1000);
+        expect(requestValue).toEqual(1000);
+        expect(interceptValue).toEqual(1000);
+    }
+ );  
+});
+
+
+test("the intercept payload can be a function.", () => {
+    let requestValue = 0,
+        interceptValue = 0,
+        waitValue = 0,
+        setupCount = 0;
+
+    function* thread1() {
+        requestValue = yield bp.request("A", 100);
+    }
+
+    function* thread2() {
+        waitValue = yield bp.wait('A');
+    }
+
+    function* thread3() {
+        interceptValue = yield bp.intercept("A", null, (x:number) => x + 1000);
+        yield bp.wait('X');
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+        enable(thread3);
+        setupCount++;
+    }, ({log}) => {
+        expect(setupCount).toEqual(2);
+        expect(waitValue).toEqual(1100);
+        expect(requestValue).toEqual(1100);
+        expect(interceptValue).toEqual(1100);
+    }
+ );  
+});
+
+
+test("if the intercept payload is a promise, a pending-event is created.", done => {
+    let requestValue = 0,
+        interceptValue = 0,
+        waitValue = 0,
+        setupCount = 0;
+
+    function* thread1() {
+        requestValue = yield bp.request("A", 100);
+    }
+
+    function* thread2() {
+        waitValue = yield bp.wait('A');
+    }
+
+    function* thread3() {
+        interceptValue = yield bp.intercept("A", null, (x:number) => delay(100, x + 1000));
+        yield bp.wait('Fin')
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+        enable(thread3);
+        setupCount++;
+    }, ({dispatch}) => {
+        if(dispatch('Fin')) {
+            expect(waitValue).toEqual(1100);
+            expect(requestValue).toEqual(1100);
+            expect(interceptValue).toEqual(1100);
+            done();
+        }
+    }
+ );  
+});
 
 test("if an intercept is not applied, than the next intercept will get the event", () => {
     let requestAdvanced = false;
@@ -253,145 +355,145 @@ test("an intercept can be resolved. This will progress waits and requests", (don
 });
 
 
-// test("an intercept can be rejected. This will remove the pending event", (done) => {
-//     function* requestingThread() {
-//         const val = yield bp.request("A", delay(100, 'super'));
-//         expect(val).toBe('super');
-//     }
-//     function* interceptingThread() {
-//         const intercept = yield bp.intercept("A");
-//         expect(intercept.value).toBe('super');
-//         intercept.reject();
-//     }
-//     function* waitingThread() {
-//         const val = yield bp.wait("A");
-//         expect(val).toBe('super');
-//         yield bp.wait('fin');
-//     }
-//     scenarios((enable) => {
-//         enable(requestingThread);
-//         enable(interceptingThread);
-//         enable(waitingThread);
-//     }, ({dispatch}) => {
-//         if(dispatch.fin) {
-//             done();
-//         }  
-//     });
-// });
+test("an intercept can be rejected. This will remove the pending event", (done) => {
+    function* requestingThread() {
+        const val = yield bp.request("A", delay(100, 'super'));
+        expect(val).toBe('super');
+    }
+    function* interceptingThread() {
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('super');
+        intercept.reject();
+    }
+    function* waitingThread() {
+        const val = yield bp.wait("A");
+        expect(val).toBe('super');
+        yield bp.wait('fin');
+    }
+    scenarios((enable) => {
+        enable(requestingThread);
+        enable(interceptingThread);
+        enable(waitingThread);
+    }, ({dispatch}) => {
+        if(dispatch('fin')) {
+            done();
+        }  
+    });
+});
 
-// test("an intercept will keep the event-pending if the BThread with the intercept completes.", () => {
-//     let requestingThreadProgressed = false;
-//     function* requestingThread() {
-//         yield bp.request("A", 1);
-//         requestingThreadProgressed = true;
-//     }
-//     function* interceptingThread() {
-//         yield bp.intercept("A");
-//         // after the intercept, this BThread completes, keepting the intercept active.
-//     }
-//     scenarios((enable) => {
-//         enable(requestingThread);
-//         enable(interceptingThread);
-//     }, ({log}) => {
-//         expect(log.currentPendingEvents.has('A')).toBe(true);
-//         expect(requestingThreadProgressed).toBe(false);
-//     });
-// });
+test("an intercept will keep the event-pending if the BThread with the intercept completes.", () => {
+    let requestingThreadProgressed = false;
+    function* requestingThread() {
+        yield bp.request("A", 1);
+        requestingThreadProgressed = true;
+    }
+    function* interceptingThread() {
+        yield bp.intercept("A");
+        // after the intercept, this BThread completes, keepting the intercept active.
+    }
+    scenarios((enable) => {
+        enable(requestingThread);
+        enable(interceptingThread);
+    }, ({log}) => {
+        expect(log.currentPendingEvents.has({name: 'A'})).toBe(true);
+        expect(requestingThreadProgressed).toBe(false);
+    });
+});
 
-// test("multiple intercepts will resolve after another. After all intercepts complete, the request and wait will continue", (done) => {
-//     function* requestingThread() {
-//         const val = yield bp.request("A", delay(100, 'super'));
-//         expect(val).toBe('super duper flowcards');
-//     }
-//     function* interceptingThread() {
-//         const intercept = yield bp.intercept("A");
-//         expect(intercept.value).toBe('super duper');
-//         intercept.resolve('super duper flowcards');
-//     }
-//     function* interceptingThreadHigherPriority() {
-//         const intercept = yield bp.intercept("A");
-//         expect(intercept.value).toBe('super');
-//         intercept.resolve('super duper');
-//     }
-//     function* waitingThread() {
-//         const val = yield bp.wait("A");
-//         expect(val).toBe('super duper flowcards');
-//         yield bp.wait('fin');
-//     }
-//     scenarios((enable) => {
-//         enable(requestingThread);
-//         enable(interceptingThread);
-//         enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
-//         enable(waitingThread);
-//     }, ({dispatch}) => {
-//         if(dispatch.fin) {
-//             done();
-//         }  
-//     });
-// });
-
-
-// test("if the last intercept rejects, the event will resolve to its starting value.", (done) => {
-//     function* requestingThread() {
-//         const val = yield bp.request("A", delay(100, 'super'));
-//         expect(val).toBe('super'); // will have the initial value
-//     }
-//     function* interceptingThread() {
-//         const intercept = yield bp.intercept("A");
-//         expect(intercept.value).toBe('super duper');
-//         intercept.reject();
-//     }
-//     function* interceptingThreadHigherPriority() {
-//         const intercept = yield bp.intercept("A");
-//         expect(intercept.value).toBe('super');
-//         intercept.resolve('super duper');
-//     }
-//     function* waitingThread() {
-//         const val = yield bp.wait("A");
-//         expect(val).toBe('super');
-//         yield bp.wait('fin');
-//     }
-//     scenarios((enable) => {
-//         enable(requestingThread);
-//         enable(interceptingThread);
-//         enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
-//         enable(waitingThread);
-//     }, ({dispatch}) => {
-//         if(dispatch.fin) {
-//             done();
-//         }  
-//     });
-// });
+test("multiple intercepts will resolve after another. After all intercepts complete, the request and wait will continue", (done) => {
+    function* requestingThread() {
+        const val = yield bp.request("A", delay(100, 'super'));
+        expect(val).toBe('super duper flowcards');
+    }
+    function* interceptingThread() {
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('super duper');
+        intercept.resolve('super duper flowcards');
+    }
+    function* interceptingThreadHigherPriority() {
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('super');
+        intercept.resolve('super duper');
+    }
+    function* waitingThread() {
+        const val = yield bp.wait("A");
+        expect(val).toBe('super duper flowcards');
+        yield bp.wait('fin');
+    }
+    scenarios((enable) => {
+        enable(requestingThread);
+        enable(interceptingThread);
+        enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
+        enable(waitingThread);
+    }, ({dispatch}) => {
+        if(dispatch('fin')) {
+            done();
+        }  
+    });
+});
 
 
-// test("if the previous intercept rejects, the next intercept will get the initial value", (done) => {
-//     function* requestingThread() {
-//         const val = yield bp.request("A", delay(100, 'super'));
-//         expect(val).toBe('super duper'); // it will have the value for the last intercept
-//     }
-//     function* interceptingThread() {
-//         const intercept = yield bp.intercept("A");
-//         expect(intercept.value).toBe('super');
-//         intercept.resolve(intercept.value + ' duper');
-//     }
-//     function* interceptingThreadHigherPriority() {
-//         const intercept = yield bp.intercept("A");
-//         expect(intercept.value).toBe('super');
-//         intercept.reject();
-//     }
-//     function* waitingThread() {
-//         const val = yield bp.wait("A");
-//         expect(val).toBe('super duper');
-//         yield bp.wait('fin');
-//     }
-//     scenarios((enable) => {
-//         enable(requestingThread);
-//         enable(interceptingThread);
-//         enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
-//         enable(waitingThread);
-//     }, ({dispatch}) => {
-//         if(dispatch.fin) {
-//             done();
-//         }  
-//     });
-// });
+test("if the last intercept rejects, the event will resolve to its starting value.", (done) => {
+    function* requestingThread() {
+        const val = yield bp.request("A", delay(100, 'super'));
+        expect(val).toBe('super'); // will have the initial value
+    }
+    function* interceptingThread() {
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('super duper');
+        intercept.reject();
+    }
+    function* interceptingThreadHigherPriority() {
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('super');
+        intercept.resolve('super duper');
+    }
+    function* waitingThread() {
+        const val = yield bp.wait("A");
+        expect(val).toBe('super');
+        yield bp.wait('fin');
+    }
+    scenarios((enable) => {
+        enable(requestingThread);
+        enable(interceptingThread);
+        enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
+        enable(waitingThread);
+    }, ({dispatch}) => {
+        if(dispatch('fin')) {
+            done();
+        }  
+    });
+});
+
+
+test("if the previous intercept rejects, the next intercept will get the initial value", (done) => {
+    function* requestingThread() {
+        const val = yield bp.request("A", delay(100, 'super'));
+        expect(val).toBe('super duper'); // it will have the value for the last intercept
+    }
+    function* interceptingThread() {
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('super');
+        intercept.resolve(intercept.value + ' duper');
+    }
+    function* interceptingThreadHigherPriority() {
+        const intercept = yield bp.intercept("A");
+        expect(intercept.value).toBe('super');
+        intercept.reject();
+    }
+    function* waitingThread() {
+        const val = yield bp.wait("A");
+        expect(val).toBe('super duper');
+        yield bp.wait('fin');
+    }
+    scenarios((enable) => {
+        enable(requestingThread);
+        enable(interceptingThread);
+        enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
+        enable(waitingThread);
+    }, ({dispatch}) => {
+        if(dispatch('fin')) {
+            done();
+        }  
+    });
+});

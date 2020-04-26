@@ -33,6 +33,13 @@ interface NextBid {
     value: any;
 }
 
+export enum InterceptResultType {
+    guarded = "guarded",
+    progress = "progress",
+    interceptingThread = "interceptingThread"
+}
+
+
 export interface BThreadBids {
     pendingEvents: EventMap<boolean> | null;
     bidsByType: BidsByType | null;
@@ -121,6 +128,25 @@ export class BThread {
         return this._currentBids?.[bidType]?.get(event);
     }
 
+    private _createInterceptPromise(action: Action): InterceptResult {
+        let resolveFn = () => {};
+        let rejectFn = () => {};
+        const promise = new Promise((resolve, reject) => {
+            resolveFn = resolve;
+                rejectFn = reject;
+            }).then((data): void => {
+                if (this._pendingInterceptRecord.delete(action.event)) {
+                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: action.event, payload: data });
+                }
+            }).catch((): void => {
+                if (this._pendingInterceptRecord.delete(action.event)) {
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event });
+                }
+            });
+        this._pendingInterceptRecord.set(action.event, promise);
+        return {resolve: resolveFn, reject: rejectFn, value: action.payload};
+    }
+
     // --- public
 
     public getBids(): BThreadBids {
@@ -182,7 +208,7 @@ export class BThread {
         } // rejection of a pending promise
         else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
             if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
-            this._thread.throw({eventId: action.event, error: action.payload});
+            this._thread.throw({event: action.event, error: action.payload});
             this._progressBThread(action.event, action.payload, true);
         }
     }
@@ -199,29 +225,15 @@ export class BThread {
         this._progressBThread(action.event, action.payload);
     }
 
-    public progressIntercept(action: Action): boolean {
+    public progressIntercept(action: Action): InterceptResultType {
         const bid = this._getBid(BidType.intercept, action.event)
-        if(!bid || bid.guard && !bid.guard(action.payload)) return false;
-        const createInterceptPromise = (): InterceptResult => {
-            let resolveFn = () => {};
-            let rejectFn = () => {};
-            const promise = new Promise((resolve, reject) => {
-                resolveFn = resolve;
-                    rejectFn = reject;
-                }).then((data): void => {
-                    if (this._pendingInterceptRecord.delete(action.event)) {
-                        this._dispatch({ type: ActionType.resolved, threadId: this.id, event: action.event, payload: data });
-                    }
-                }).catch((): void => {
-                    if (this._pendingInterceptRecord.delete(action.event)) {
-                        this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event });
-                    }
-                });
-            this._pendingInterceptRecord.set(action.event, promise);
-            return {resolve: resolveFn, reject: rejectFn, value: action.payload};
+        if(!bid || bid.guard && !bid.guard(action.payload)) return InterceptResultType.guarded;
+        if(bid.payload !== undefined) {
+            this._progressBThread(action.event, action.payload);
+            return InterceptResultType.progress;
         }
-        this._progressBThread(action.event, createInterceptPromise());
-        return true; // was intercepted
+        this._progressBThread(action.event, this._createInterceptPromise(action));
+        return InterceptResultType.interceptingThread;
     }
 
     public onDelete(): void {
