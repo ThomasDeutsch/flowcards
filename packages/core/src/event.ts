@@ -13,7 +13,6 @@ export function toEvent(e: string | FCEvent): FCEvent {
 
 type EventIteratorFunction<T> = (e: FCEvent, value: T) => any;
 type EventMapFunction<T, X> = (e: FCEvent, value: T) => X;
-type EventFilterFunction<T, X> = (value: T | X) => boolean;
 
 export class EventMap<T>  {
     public noKey: Map<EventName, T>;

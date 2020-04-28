@@ -118,10 +118,6 @@ export class BThread {
         if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);
     }
 
-    private _getBid(bidType: BidType, event: FCEvent): Bid | undefined {
-        return this._currentBids?.[bidType]?.get(event);
-    }
-
     private _createInterceptPromise(action: Action): InterceptResult {
         let resolveFn = () => {};
         let rejectFn = () => {};

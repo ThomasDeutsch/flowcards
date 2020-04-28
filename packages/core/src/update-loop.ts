@@ -17,6 +17,8 @@ export type TriggerWaitDispatch = (payload: any) => void;
 export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
 type EventCache = EventMap<StateRef<any>>;
 type GetStateFunction = (event: FCEvent | string) => any;
+type ReplayDispatch = (actions: Action[]) => void;
+
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
@@ -26,8 +28,6 @@ export interface StateRef<T> {
     current: T;
     previous?: T;
 }
-
-type ReplayDispatch = (actions: Action[]) => void;
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
@@ -41,7 +41,6 @@ function createScenarioId(generator: ThreadGen, key?: string | number): string {
     const id = generator.name;
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
-
 
 function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
     let bids = getMatchingBids(allBids[BidType.intercept], action.event);
@@ -83,6 +82,7 @@ function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
 
 function advanceBThreads(bThreadDictionary: BThreadDictionary, allBids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return;
+    // requested
     if(action.type === ActionType.requested) {
         if (typeof action.payload === "function") {
             action.payload = action.payload();
@@ -97,12 +97,14 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, allBids: AllBidsB
             advanceWaits(allBids, bThreadDictionary, nextAction);
         }
     }
+    // dispatched
     else if(action.type === ActionType.dispatched) {
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
         if(nextAction) {
             advanceWaits(allBids, bThreadDictionary, nextAction);
         }
     }
+    // resolved
     else if(action.type === ActionType.resolved) {
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].resolvePending(action);
@@ -114,13 +116,13 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, allBids: AllBidsB
             advanceWaits(allBids, bThreadDictionary, nextAction);
         }
     }
+    // rejected
     else if(action.type === ActionType.rejected) {
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].rejectPending(action);
         }
     }
 }
-
 
 function updateEventCache(eventCache: EventCache, action: Action): void {
     if ((action.type === ActionType.requested) && eventCache.has(action.event)) {
@@ -132,7 +134,6 @@ function updateEventCache(eventCache: EventCache, action: Action): void {
         }
     }
 }
-
 
 function stageBThreadsAndEventCaches(
     stagingFunction: StagingFunction,
@@ -175,7 +176,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const logger = new Logger();
     const getEventDispatcher = setupEventDispatcher(dispatch);
     const getEventCache: GetStateFunction = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
-
     const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
         if (dispatchedAction !== undefined) { 
             if (dispatchedAction.type === ActionType.replay) {

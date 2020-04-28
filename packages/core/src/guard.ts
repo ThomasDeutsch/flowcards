@@ -15,7 +15,7 @@ export function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): Gua
         }
     }
     if(guards === undefined || guards.length === 0) return undefined;
-    return (payload: any) => guards!.filter(utils.notUndefined).some(guard => guard(payload));
+    return (payload: any) => guards!.filter(utils.notUndefined).some(guard => guard(payload)); // return true if some BThread will accept the payload
 }
 
 
@@ -41,6 +41,6 @@ export function combineGuards(eventMap: EventMap<Bid[]>, guardedBlocks: EventMap
             bid.guard = (payload: any) => (!oldGuard || oldGuard(payload)) && !blockGuard(payload);
             return bid;
         })
-        eventMap.set(event, newBids);
+        eventMap.set(event, newBids); // mutate the eventMap
     });
 }
