@@ -65,7 +65,6 @@ function reduceMaps(allBidsForType: (EventMap<Bid> | undefined)[], blocks?: Even
     return reduced?.difference(blocks);
 }
 
-
 export interface AllBidsByType {
     [BidType.pending]?: EventMap<Bid[]>;
     [BidType.request]?: EventMap<Bid[]>;
@@ -100,13 +99,13 @@ export function request(event: string | FCEvent, payload?: any): Bid {
 }
 
 export function wait(event: string | FCEvent, guard?: GuardFunction): Bid {
-    return { type: BidType.wait, event: toEvent(event), guard: guard, threadId: ""};
+    return { type: BidType.wait, event: toEvent(event), guard: guard, threadId: "" };
 }
 
 export function block(event: string | FCEvent): Bid {
     return { type: BidType.block, event: toEvent(event), threadId: "" };
 }
 
-export function intercept(event: string | FCEvent, guard?: GuardFunction | null, payload?: any, ): Bid {
-    return { type: BidType.intercept, event: toEvent(event), guard: guard !== null ? guard : undefined, threadId: "", payload: payload};
+export function intercept(event: string | FCEvent, guard?: GuardFunction | null, payload?: any): Bid {
+    return { type: BidType.intercept, event: toEvent(event), guard: guard !== null ? guard : undefined, threadId: "", payload: payload };
 }
