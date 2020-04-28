@@ -39,7 +39,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
         dispatchByEvent.intersection(waits);
         waits.forEach((waitEvent, bids) => {
             guardByEvent.set(waitEvent, getGuardForEvent(waits, waitEvent));
-            if(dispatchByEvent.has(waitEvent) === false) {
+            if(!dispatchByEvent.has(waitEvent)) {
                 const cache: DispatchCache = {};
                 dispatchByEvent.set(waitEvent, (payload?: any): TriggerDispatch | undefined => {
                     const guard = guardByEvent.get(waitEvent);

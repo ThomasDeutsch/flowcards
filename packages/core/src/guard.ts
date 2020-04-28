@@ -19,7 +19,7 @@ export function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): Gua
 }
 
 
-export function combineGuards(eventMap: EventMap<Bid[]> | undefined): [Set<FCEvent> | undefined, EventMap<GuardFunction> | undefined] {
+export function getGuardedUnguardedBlocks(eventMap: EventMap<Bid[]> | undefined): [Set<FCEvent> | undefined, EventMap<GuardFunction> | undefined] {
     if(eventMap === undefined) return [undefined, undefined];
     const unguarded: FCEvent[] = [];
     const guarded = new EventMap<GuardFunction>();
@@ -31,6 +31,16 @@ export function combineGuards(eventMap: EventMap<Bid[]> | undefined): [Set<FCEve
     return [unguarded.length > 0 ? new Set(unguarded): undefined, guarded.size() > 0 ? guarded: undefined];
 }
 
-// combines the block-guards
-// for every bid - combine the current Bid and the combined block-guard.
-// if the block has no guard - then remove the bid.
+
+export function combineGuards(eventMap: EventMap<Bid[]>, guardedBlocks: EventMap<GuardFunction>): void {
+    guardedBlocks.forEach((event, blockGuard) => {
+        const bids = eventMap.get(event);
+        if(!bids) return;
+        const newBids = bids.map(bid => {
+            const oldGuard = bid.guard;
+            bid.guard = (payload: any) => (!oldGuard || oldGuard(payload)) && !blockGuard(payload);
+            return bid;
+        })
+        eventMap.set(event, newBids);
+    });
+}

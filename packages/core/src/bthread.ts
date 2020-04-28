@@ -201,23 +201,19 @@ export class BThread {
         }
     }
     
-    public progressRequest(action: Action): void {
-        if(this._getBid(BidType.request, action.event)) {
-            this._progressBThread(action.event, action.payload);
-        }
+    public progressRequest(action: Action, bid?: Bid): void {
+        this._progressBThread(bid?.event || action.event, action.payload);
     }
 
-    public progressWait(action: Action): void {
-        const bid = this._getBid(BidType.wait, action.event);
+    public progressWait(action: Action, bid: Bid): void {
         if(!bid || bid.guard && !bid.guard(action.payload)) return;
-        this._progressBThread(action.event, action.payload);
+        this._progressBThread(bid.event, action.payload);
     }
 
-    public progressIntercept(action: Action): InterceptResultType {
-        const bid = this._getBid(BidType.intercept, action.event)
+    public progressIntercept(action: Action, bid: Bid): InterceptResultType {
         if(!bid || bid.guard && !bid.guard(action.payload)) return InterceptResultType.guarded;
         if(bid.payload !== undefined) {
-            this._progressBThread(action.event, action.payload);
+            this._progressBThread(bid.event, action.payload);
             return InterceptResultType.progress;
         }
         this._progressBThread(action.event, this._createInterceptPromise(action));

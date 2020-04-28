@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as utils from "./utils";
 import { EventMap, reduceEventMaps, EventKey, toEvent, EventName, FCEvent } from "./event";
-import { GuardFunction, combineGuards } from './guard';
+import { GuardFunction, getGuardedUnguardedBlocks, combineGuards } from './guard';
 
 export enum BidType {
     request = "request",
@@ -61,9 +61,7 @@ function bidsForType(type: BidType, allBidsByType: BThreadBids[]): EventMap<Bid>
 function reduceMaps(allBidsForType: (EventMap<Bid> | undefined)[], blocks?: Set<FCEvent>, guardedBlocks?: EventMap<GuardFunction>): EventMap<Bid[]> | undefined {
     const reduced = reduceEventMaps(allBidsForType, (acc: Bid[] = [], curr: Bid) => [...acc, curr]);
     if(blocks && reduced) blocks.forEach(event => reduced.delete(event));
-    if(guardedBlocks && reduced) {
-        
-    }
+    if(guardedBlocks && reduced) combineGuards(reduced, guardedBlocks);
     return reduced;
 }
 
@@ -78,7 +76,7 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {;
     const pending = reduceMaps(bidsForType(BidType.pending, allBThreadBids));
     const pendingEvents = new Set(pending?.getAllEvents());
     const blocks = reduceMaps(bidsForType(BidType.block, allBThreadBids));
-    const [unguardedBlocks, guardedBlocks] = combineGuards(blocks);
+    const [unguardedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
     const unguardedBlocksAndPending = utils.union(pendingEvents, unguardedBlocks);
     return {
         [BidType.pending]: pending,

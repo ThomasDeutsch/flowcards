@@ -70,3 +70,45 @@ test("an intercept is not applied, if the guard returns false.", () => {
     });
 });
 
+
+
+test("a block can be guarded", () => {
+
+    function* requestingThread(): any {
+        let i = 0;
+        while(i++ < 20) {
+            const [type, val] = yield [bp.request("A", 1000), bp.request("A", 2000)];
+            expect(val).toEqual(2000);
+        }
+    }
+
+    function* blockingThread() {
+        yield bp.block("A", (pl: number) => pl === 1000);
+    }
+
+    scenarios((enable) => {
+        enable(requestingThread);
+        enable(blockingThread);
+    })
+});
+
+
+test("a block-guard will be combined with a wait guard", () => {
+
+    function* blockingThread() {
+        yield bp.block("A", (pl: number) => pl < 1500);
+    }
+
+    function* waitingThread() {
+        yield bp.wait("A", (pl: number) => pl > 1000);
+    }
+
+    scenarios((enable) => {
+        enable(blockingThread);
+        enable(waitingThread);
+    }, ({dispatch}) => {
+        if(dispatch('A')) {
+            expect(dispatch('A', 1300)).toBeUndefined();
+        }
+    });
+});

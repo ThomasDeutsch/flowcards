@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ThreadGen, BThread, BThreadState, InterceptResultType } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids } from './bid';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, Bid } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
@@ -42,6 +42,7 @@ function createScenarioId(generator: ThreadGen, key?: string | number): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
 
+
 function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
     let bids = getMatchingBids(allBids[BidType.intercept], action.event);
     if(bids === undefined || bids.length === 0) return action;
@@ -50,15 +51,14 @@ function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDicti
         const nextBid = bids.pop();
         if(nextBid === undefined) continue;
         const nextAction = {...action};
-        nextAction.event.key = nextBid.event.key;
         if(nextBid.payload !== undefined && (nextAction.type === ActionType.dispatched || nextAction.type === ActionType.requested)) {
             nextAction.payload = (typeof nextBid.payload === 'function') ? nextBid.payload(nextAction.payload) : nextBid.payload;
             if(utils.isThenable(nextAction.payload) && bThreadDictionary[nextAction.threadId]) {
-                bThreadDictionary[nextAction.threadId].addPendingRequest(nextAction.event, nextAction.payload);
+                bThreadDictionary[nextAction.threadId].addPendingRequest(nextBid.event, nextAction.payload);
                 return undefined;
             }
         }
-        const interceptResult = bThreadDictionary[nextBid.threadId].progressIntercept(nextAction);
+        const interceptResult = bThreadDictionary[nextBid.threadId].progressIntercept(nextAction, nextBid);
         if(interceptResult === InterceptResultType.interceptingThread) return undefined;
         if(interceptResult === InterceptResultType.progress) action = nextAction;
     } 
@@ -68,20 +68,16 @@ function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDicti
 function advanceRequests(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): void {
     const bids = getMatchingBids(allBids[BidType.request], action.event);
     if(bids === undefined || bids.length === 0) return;
-    bids.forEach(({threadId, event}): void => {
-        const nextAction = {...action};
-        nextAction.event.key = event.key
-        bThreadDictionary[threadId].progressRequest(nextAction);
+    bids.forEach(bid => {
+        bThreadDictionary[bid.threadId].progressRequest(action, bid);
     });
 }
 
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): void {
     const bids = getMatchingBids(allBids[BidType.wait], action.event);
     if(bids === undefined || bids.length === 0) return;
-    bids.forEach(({ threadId, event }): void => {
-        const nextAction = {...action};
-        nextAction.event.key = event.key
-        bThreadDictionary[threadId].progressWait(nextAction);
+    bids.forEach(bid => {
+        bThreadDictionary[bid.threadId].progressWait(action, bid);
     });
 }
 
