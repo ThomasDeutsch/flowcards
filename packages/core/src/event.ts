@@ -13,6 +13,7 @@ export function toEvent(e: string | FCEvent): FCEvent {
 
 type EventIteratorFunction<T> = (e: FCEvent, value: T) => any;
 type EventMapFunction<T, X> = (e: FCEvent, value: T) => X;
+type EventFilterFunction<T, X> = (value: T | X) => boolean;
 
 export class EventMap<T>  {
     public noKey: Map<EventName, T>;
@@ -23,7 +24,11 @@ export class EventMap<T>  {
         this.withKey = new Map();
     }
 
-    public iterateAll(iteratorFn: EventIteratorFunction<T>) {
+    public size() {
+        return this.noKey.size + this.withKey.size;
+    }
+
+    public forEach(iteratorFn: EventIteratorFunction<T>) {
         for (let [eventName, value] of this.noKey) {
             iteratorFn({name: eventName}, value);
         }
@@ -102,7 +107,7 @@ export class EventMap<T>  {
 
     public clear(): FCEvent[] | undefined {
         let deleted: FCEvent[] = []
-        this.iterateAll((event) => {
+        this.forEach((event) => {
             deleted.push(event);
             this.delete(event);
         });
@@ -111,13 +116,13 @@ export class EventMap<T>  {
 
     public getAllEvents(): FCEvent[] | undefined {
         let elements: FCEvent[] = [];
-        this.iterateAll((event) => elements.push(event));
+        this.forEach((event) => elements.push(event));
         return elements.length > 0 ? elements : undefined;
     }
 
     public map<X>(mapFunction: EventMapFunction<T, X>):  EventMap<X> {
         const mapped = new EventMap<X>();
-        this.iterateAll((event, value) => {
+        this.forEach((event, value) => {
             mapped.set(event, mapFunction(event, value));
         })
         return mapped;
@@ -125,7 +130,7 @@ export class EventMap<T>  {
 
     public difference(a?: EventMap<any>): EventMap<T> {
         if(a === undefined) return this;
-        this.iterateAll((event) => {
+        this.forEach((event) => {
             if(a.has(event)) this.delete(event);
         });
         return this;
@@ -136,7 +141,7 @@ export class EventMap<T>  {
             this.clear();
             return this;
         }
-        this.iterateAll((event) => {
+        this.forEach((event) => {
             if(!a.has(event)) this.delete(event);
         });
         return this;
@@ -149,7 +154,7 @@ export function reduceEventMaps<T, X>(maps: (EventMap<T> | undefined)[], reducer
     const notUndefinedMaps = maps.filter(utils.notUndefined);
     if(notUndefinedMaps.length === 0) return undefined
     const result = new EventMap<X>();
-    notUndefinedMaps.map(r => r.iterateAll((event, valueCurr) => {
+    notUndefinedMaps.map(r => r.forEach((event, valueCurr) => {
         const valueAcc = result.get(event);
         const addValue = reducer(valueAcc, valueCurr, event);
         result.set(event, addValue);

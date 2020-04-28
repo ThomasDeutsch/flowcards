@@ -52,6 +52,9 @@ export function flattenShallow<T>(arr: T[][]): T[] {
 
 // SET ----------------------
 
-export function union<T>(sets: Set<T>[]): Set<T> {
-    return new Set<T>(sets.reduce((acc: T[], set: Set<T>) => [...acc, ...set], []));
+export function union<T>(...sets: (Set<T> | undefined)[]): Set<T> | undefined {
+    if(sets.length === 0) return undefined;
+    const notUndefindedSets = sets.filter(notUndefined);
+    if(notUndefindedSets.length === 0) return undefined;
+    return new Set<T>(notUndefindedSets.reduce((acc: T[], set: Set<T>) => [...acc, ...set], []));
 }

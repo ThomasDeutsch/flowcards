@@ -181,7 +181,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const getEventCache: GetStateFunction = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
 
     const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
-        if (dispatchedAction) { 
+        if (dispatchedAction !== undefined) { 
             if (dispatchedAction.type === ActionType.replay) {
                 Object.keys(bThreadDictionary).forEach((threadId): void => { 
                     bThreadDictionary[threadId].onDelete();
