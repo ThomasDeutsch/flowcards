@@ -68,13 +68,11 @@ test("The guard will always reflect the current bids", (done) => {
     }, ({dispatch}) => {
         if(dispatch("X")) {
             x = dispatch("A", 0);
-            console.log('x: ', x)
             firstDispatch = dispatch("A");
         }
         else if(dispatch("Y")) y = dispatch('A', 0);
         else {
             const isSame = Object.is(dispatch("A"), firstDispatch);
-            console.log('isSame: ', isSame)
             expect(isSame).toBeTruthy();
             expect(x).not.toEqual(y);
             done();  

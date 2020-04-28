@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ThreadGen, BThread, BThreadState, BThreadBids, InterceptResultType } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids } from './bid';
+import { ThreadGen, BThread, BThreadState, InterceptResultType } from './bthread';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
@@ -211,13 +211,13 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(undefined, restActions);
         }
         // ------ create the return value:
-        logger.logPendingEvents(bids.pendingEvents);
+        logger.logPendingEvents(bids[BidType.pending] || new EventMap());
         const bThreadStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
             acc[threadId] = bThreadDictionary[threadId].state;
             return acc;
         }, {});
         return {
-            dispatch: getEventDispatcher(bids.wait?.difference(bids.pendingEvents)),
+            dispatch: getEventDispatcher(bids.wait?.difference(bids[BidType.pending])),
             dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}}), // triggers a replay
             state: getEventCache, // event caches
             bThreadState: bThreadStateById, // BThread state by id

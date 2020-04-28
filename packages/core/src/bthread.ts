@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getBidsForBThread, BidsByType, BidType, Bid } from './bid';
+import { getBidsForBThread, BThreadBids, BidType, Bid } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
@@ -12,7 +12,7 @@ export type ThreadGen = any; // TODO: Better typing for this generator
 
 export interface BThreadState {
     isCompleted: boolean;
-    pendingEvents?: EventMap<boolean>;
+    pendingEvents?: EventMap<Bid>;
     value?: any;
 }
 
@@ -39,12 +39,6 @@ export enum InterceptResultType {
     interceptingThread = "interceptingThread"
 }
 
-
-export interface BThreadBids {
-    pendingEvents?: EventMap<boolean>;
-    bidsByType?: BidsByType;
-}
-
 type StateUpdateFunction = (previousState: any) => void;
 
 export class BThread {
@@ -55,7 +49,7 @@ export class BThread {
     private readonly _generator: ThreadGen;
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
-    private _currentBids?: BidsByType;
+    private _currentBids?: BThreadBids;
     private _nextBid: NextBid = {isFunction: false};
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
@@ -64,7 +58,7 @@ export class BThread {
     private _stateRef: BThreadState = { isCompleted: this._isCompleted};
     public get state(): BThreadState {
         this._stateRef.isCompleted = this._isCompleted;
-        this._stateRef.pendingEvents = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], () => true, true);
+        this._stateRef.pendingEvents = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
@@ -149,17 +143,12 @@ export class BThread {
 
     // --- public
 
-    public getBids(): BThreadBids {
+    public getBids(): BThreadBids  {
         const pendingEvents = this.state.pendingEvents;
-        if(this._isCompleted) return {
-            pendingEvents: pendingEvents
-        }
+        if(this._isCompleted) return {[BidType.pending]: pendingEvents}
         if(this._nextBid.isFunction) this._currentBids = getBidsForBThread(this.id, this._nextBid.value());
         if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid.value);
-        return {
-            pendingEvents: pendingEvents,
-            bidsByType: this._currentBids
-        }
+        return {...this._currentBids, [BidType.pending]: pendingEvents}
     }
 
     public resetOnArgsChange(nextArguments: any): void {

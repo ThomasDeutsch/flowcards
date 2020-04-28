@@ -12,7 +12,7 @@ export type ThreadsByWait = Record<string, string[]>;
 
 export interface Log {
     currentWaits: EventMap<Bid[]>;
-    currentPendingEvents: EventMap<boolean>;
+    currentPendingEvents: EventMap<Bid[]>;
     latestAction: Action;
     latestReactionByThreadId: Record<string, Reaction>;
     actionsAndReactions: ActionAndReactions[];
@@ -29,7 +29,7 @@ export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
     private _waits: EventMap<Bid[]> = new EventMap();
-    private _pendingEvents: EventMap<boolean> = new EventMap();
+    private _pendingEvents: EventMap<Bid[]> = new EventMap();
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
@@ -39,7 +39,7 @@ export class Logger {
         this._waits = waits;
     }
 
-    public logPendingEvents(pendingEvents: EventMap<boolean>): void {
+    public logPendingEvents(pendingEvents: EventMap<Bid[]>): void {
         this._pendingEvents = pendingEvents;
     }
 

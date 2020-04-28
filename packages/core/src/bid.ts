@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as utils from "./utils";
-import { BThreadBids } from "./bthread";
 import { EventMap, reduceEventMaps, EventKey, toEvent, EventName, FCEvent } from "./event";
 
 export enum BidType {
     request = "request",
     wait = "wait",
     block = "block",
-    intercept = "intercept"
+    intercept = "intercept", 
+    pending = "pending"
 }
 
 export type GuardFunction = (payload: any) => boolean
@@ -28,22 +28,23 @@ export type BidsForBidType = EventMap<Bid[]> | undefined;
 // Bids from current thread
 // --------------------------------------------------------------------------------------------------------------------
 
-export interface BidsByType {
-    withMultipleBids: boolean;
+export interface BThreadBids {
+    withMultipleBids?: boolean;
+    [BidType.pending]?: EventMap<Bid>;
     [BidType.request]?: EventMap<Bid>;
     [BidType.wait]?: EventMap<Bid>;
     [BidType.block]?: EventMap<Bid>;
     [BidType.intercept]?: EventMap<Bid>;
 }
 
-export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined | (Bid | undefined)[]): BidsByType | undefined {
+export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined | (Bid | undefined)[]): BThreadBids | undefined {
     if(!bidOrBids) return undefined;
     const bids = utils.toArray(bidOrBids).filter(utils.notUndefined);
     const defaultBidsByType = {
         withMultipleBids: Array.isArray(bidOrBids)
     }
     if(bids.length === 0) return defaultBidsByType;
-    return bids.reduce((acc: BidsByType, bid: Bid | undefined): BidsByType => {
+    return bids.reduce((acc: BThreadBids, bid: Bid | undefined): BThreadBids => {
         if(bid) {
             const type = bid.type;
             if(!acc[type]) acc[type] = new EventMap();
@@ -55,38 +56,32 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined |
 
 // Bids from multiple threads
 // --------------------------------------------------------------------------------------------------------------------
-function bidsForType(type: BidType, allBidsByType: BidsByType[]): EventMap<Bid>[] {
+function bidsForType(type: BidType, allBidsByType: BThreadBids[]): EventMap<Bid>[] {
     return allBidsByType.map(bidsByType => bidsByType[type]).filter(utils.notUndefined);
 }
 
-function reduceMaps(allBidsForType: EventMap<Bid>[], blocks: EventMap<boolean>): EventMap<Bid[]> {
-    const reduced = reduceEventMaps(allBidsForType, (acc: Bid[], curr: Bid) => [...acc, curr], []);
-    return reduced.difference(blocks);
-}
-
-function reduceBlocks(allBlocks: EventMap<Bid>[]): EventMap<boolean> {
-    // todo: merge bid guards when they are added
-    return reduceEventMaps(allBlocks, (acc: boolean, curr: Bid) => !!curr, true);
+function reduceMaps(allBidsForType: (EventMap<Bid> | undefined)[], blocks?: EventMap<Bid[]>): EventMap<Bid[]> | undefined {
+    const reduced = reduceEventMaps(allBidsForType, (acc: Bid[] = [], curr: Bid) => [...acc, curr]);
+    return reduced?.difference(blocks);
 }
 
 
 export interface AllBidsByType {
-    pendingEvents: EventMap<boolean>;
+    [BidType.pending]?: EventMap<Bid[]>;
     [BidType.request]?: EventMap<Bid[]>;
     [BidType.wait]?: EventMap<Bid[]>;
     [BidType.intercept]?: EventMap<Bid[]>;
 }
 
-export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
-    const bidsByTypes = allBThreadBids.map(x => x.bidsByType).filter(utils.notUndefined);
-    const allPendingEvents = reduceEventMaps(allBThreadBids.map(x => x.pendingEvents).filter(utils.notUndefined), () => true, true);
-    const blocks = reduceBlocks(bidsForType(BidType.block, bidsByTypes));
-    const pendingAndBlocks = reduceEventMaps([blocks, allPendingEvents], () => true, true);
+export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {;
+    const pending = reduceMaps(bidsForType(BidType.pending, allBThreadBids));
+    const blocks = reduceMaps(bidsForType(BidType.block, allBThreadBids));
+    const pendingAndBlocks = reduceEventMaps([blocks, pending], (acc: Bid[] = [], curr: Bid[]) => [...acc, ...curr]);
     return {
-        pendingEvents: allPendingEvents,
-        [BidType.request]: reduceMaps(bidsForType(BidType.request, bidsByTypes), pendingAndBlocks),
-        [BidType.wait]: reduceMaps(bidsForType(BidType.wait, bidsByTypes), blocks),
-        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, bidsByTypes), blocks)
+        [BidType.pending]: pending,
+        [BidType.request]: reduceMaps(bidsForType(BidType.request, allBThreadBids), pendingAndBlocks),
+        [BidType.wait]: reduceMaps(bidsForType(BidType.wait, allBThreadBids), blocks),
+        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, allBThreadBids), blocks)
     };
 }
 
@@ -96,6 +91,7 @@ export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] 
     if(result === undefined) return result;
     return utils.flattenShallow(result);
 }
+
 
 // Bid API --------------------------------------------------------------------
 
