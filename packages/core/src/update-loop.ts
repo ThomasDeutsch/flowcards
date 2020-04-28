@@ -208,6 +208,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
         // ------ create the return value:
         logger.logPendingEvents(bids[BidType.pending] || new EventMap());
+        logger.logWaits(bids.wait);
         const bThreadStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
             acc[threadId] = bThreadDictionary[threadId].state;
             return acc;

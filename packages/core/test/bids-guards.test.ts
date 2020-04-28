@@ -93,7 +93,7 @@ test("a block can be guarded", () => {
 });
 
 
-test("a block-guard will be combined with a wait guard", () => {
+test("a block-guard will be combined with a other guards", () => {
 
     function* blockingThread() {
         yield bp.block("A", (pl: number) => pl < 1500);
@@ -109,6 +109,27 @@ test("a block-guard will be combined with a wait guard", () => {
     }, ({dispatch}) => {
         if(dispatch('A')) {
             expect(dispatch('A', 1300)).toBeUndefined();
+        }
+    });
+});
+
+
+test("a block-guard can be keyed", () => {
+
+    function* blockingThread() {
+        yield bp.block({name: 'A', key: 1}, (pl: number) => pl < 1500);
+    }
+
+    function* waitingThread() {
+        yield bp.wait({name: 'A', key: 2}, (pl: number) => pl > 1000);
+    }
+
+    scenarios((enable) => {
+        enable(blockingThread);
+        enable(waitingThread);
+    }, ({dispatch}) => {
+        if(dispatch('A')) {
+            expect(dispatch('A', 1300)).toBeDefined();
         }
     });
 });
