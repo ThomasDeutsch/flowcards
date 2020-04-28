@@ -6,9 +6,6 @@ import { ActionDispatch } from './update-loop';
 import { FCEvent, EventMap, toEvent } from './event';
 import { getGuardForEvent, GuardFunction } from './guard';
 
-
-
-
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => CachedDispatch | TriggerDispatch | undefined;
@@ -18,18 +15,15 @@ interface DispatchCache {
     dispatch?: TriggerDispatch | undefined;
 }
 
-
 export function setupEventDispatcher(dispatch: ActionDispatch) {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
-
     const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): CachedDispatch | TriggerDispatch | undefined  => { 
         const dp = dispatchByEvent.get(toEvent(event));
         if(dp === undefined) return undefined;
         if(payload === undefined) return dp;
         return dp(payload);
     }
-
     return (waits: BidsForBidType) => {
         guardByEvent.clear();
         if(!waits || waits.size() === 0) { 
@@ -53,6 +47,4 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
         });
         return dispatchFunction;
     }
-}
-
-    
+}  

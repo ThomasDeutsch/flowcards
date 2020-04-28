@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ThreadGen, BThread, BThreadState, InterceptResultType } from './bthread';
+import { GeneratorFn, BThread, BThreadState, InterceptResultType } from './bthread';
 import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, Bid } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
@@ -9,7 +9,7 @@ import { EventMap, FCEvent, toEvent } from './event';
 import * as utils from './utils';
 
 
-type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | number) => BThreadState;
+type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => BThreadState;
 type EnableStateFunctionType = (event: FCEvent | string, initialValue: any) => StateRef<any>;
 export type StagingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
 export type ActionDispatch = (action: Action) => void;
@@ -37,7 +37,7 @@ export interface ScenariosContext {
     log: Log;
 }
 
-function createScenarioId(generator: ThreadGen, key?: string | number): string {
+function createScenarioId(generator: GeneratorFn, key?: string | number): string {
     const id = generator.name;
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
@@ -144,7 +144,7 @@ function stageBThreadsAndEventCaches(
 ): string[] {
     const threadIds: Set<string> = new Set();
     const orderedThreadIds: string[] = [];
-    const enableBThread: EnableThreadFunctionType = (gen: ThreadGen, args: any[] = [], key?: string | number): BThreadState => {
+    const enableBThread: EnableThreadFunctionType = (gen: GeneratorFn, args: any[] = [], key?: string | number): BThreadState => {
         const id: string = createScenarioId(gen, key);
         threadIds.add(id);
         orderedThreadIds.push(id);

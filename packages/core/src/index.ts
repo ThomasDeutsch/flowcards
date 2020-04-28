@@ -9,7 +9,6 @@ export { wait, intercept, block, request, Bid } from "./bid";
 export { Log, ActionAndReactions, ThreadsByWait} from './logger';
 export { Action } from './action';
 export { Reaction } from './reaction';
-
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial: boolean = true): ScenariosContext {
