@@ -22,7 +22,7 @@ function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunct
 
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
-export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
+export type EventDispatch = (event: FCEvent | string, payload?: any) => CachedDispatch | TriggerDispatch | undefined;
 
 interface DispatchCache {
     payload?: any;
@@ -34,9 +34,10 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
 
-    const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): TriggerDispatch | undefined  => { 
+    const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): CachedDispatch | TriggerDispatch | undefined  => { 
         const dp = dispatchByEvent.get(toEvent(event));
-        if(!dp) return undefined;
+        if(dp === undefined) return undefined;
+        if(payload === undefined) return dp;
         return dp(payload);
     }
 
@@ -54,7 +55,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
         dispatchByEvent.intersection(waits);
         allWaitEvents.forEach(waitEvent => {
             guardByEvent.set(waitEvent, getGuardForEvent(waits, waitEvent));
-            if(!dispatchByEvent.has(waitEvent)) {
+            if(dispatchByEvent.has(waitEvent) === false) {
                 const cache: DispatchCache = {};
                 dispatchByEvent.set(waitEvent, (payload?: any): TriggerDispatch | undefined => {
                     const guard = guardByEvent.get(waitEvent);
