@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { GeneratorFn, BThread, BThreadState, InterceptResultType } from './bthread';
 import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, Bid } from './bid';
 import { Logger, Log } from './logger';

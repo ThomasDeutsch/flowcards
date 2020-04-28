@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { getBidsForBThread, BThreadBids, BidType, Bid } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as utils from "./utils";
 import { EventMap, reduceEventMaps, EventKey, toEvent, EventName, FCEvent } from "./event";
 import { GuardFunction, getGuardedUnguardedBlocks, combineGuards } from './guard';

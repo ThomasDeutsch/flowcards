@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // EQUALITY / DUCK-TYPING --------------------
 
 export function areInputsEqual(nextDeps: any[], prevDeps?: any[]): boolean {

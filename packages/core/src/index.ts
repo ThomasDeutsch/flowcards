@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { StagingFunction, createUpdateLoop, ScenariosContext } from './update-loop';
 import { Action } from './action'
 

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as utils from "./utils";
 import { BidsForBidType } from "./bid";
 import { FCEvent } from './event';

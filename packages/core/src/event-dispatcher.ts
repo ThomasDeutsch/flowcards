@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { BidsForBidType } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
