@@ -18,7 +18,7 @@ test("scenarios can be used without updateCb and logger", done => {
 
     scenarios((enable) => {
         enable(thread1);
-    }, null);
+    });
 });
 
 test("there will be a dispatch-function every waiting event", () => {
@@ -47,7 +47,7 @@ function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): voi
         if(a.payload) da.add(a.payload.event.name);
         updateLoop(a);   
     });
-    updateLoop(null);
+    updateLoop();
 }
 
 test("if a request is cancelled, it will not trigger the same event-name after resolving - even if there are threads waiting for this event. ", done => {
@@ -56,7 +56,7 @@ test("if a request is cancelled, it will not trigger the same event-name after r
     function* thread1() {
         yield bp.request("cancel", delay(100));
     }
-    function* thread2(): unknown {
+    function* thread2(): any {
         let [type] = yield [bp.request('async-event', () => delay(500)), bp.wait('cancel')];
         expect(type.name).toEqual('cancel');
         [type] = yield [bp.wait('async-event'), bp.request("async-event-two", () => delay(1000))];

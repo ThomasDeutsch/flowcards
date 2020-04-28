@@ -287,7 +287,7 @@ test("the last intercept that is enabled has the highest priority", () => {
         enable(requestThread);
         enable(interceptThread1);
         enable(interceptThread2);
-    }, null);
+    });
 
     expect(advancedThread1).toBeFalsy();
     expect(advancedThread2).toBe(true);

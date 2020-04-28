@@ -26,7 +26,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
             }
             updateLoop(action);
         });
-        updateLoop(null);
+        updateLoop();
     };
 
     function* thread1() {
@@ -44,9 +44,9 @@ describe('dispatched action', () => {
 
     const testLoop = (enable: StagingFunction): void => {
         const updateLoop = createUpdateLoop(enable, (a: Action) => {
-            updateLoop(a, null);
+            updateLoop(a);
         });
-        updateLoop(null);
+        updateLoop();
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {

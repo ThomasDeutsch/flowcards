@@ -97,7 +97,7 @@ test("multiple requests will return an array of [eventId, value].", () => {
         enable(requestThread);
         enable(receiveThreadA);
         enable(receiveThreadB);
-    }, null);
+    });
 
     if (progressedeventId === "A") {
         expect(receivedValueA).toEqual(1000);
@@ -125,14 +125,14 @@ test("multiple waits will return an array of [value, eventId].", () => {
     scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
-    }, null);
+    });
 
 
 });
 
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
-    let receivedValue: unknown
+    let receivedValue: any
     let receivedEvent: FCEvent;
 
     function* requestThread() {
@@ -148,7 +148,7 @@ test("A request-value can be a function. It will get called, when the event is s
     scenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
-    }, null);
+    });
     
 
 });
@@ -178,7 +178,7 @@ test("if a request value is a function, it will only be called once.", () => {
         enable(requestThread);
         enable(receiveThread1);
         enable(receiveThread2);
-    }, null);
+    });
 
     expect(receivedValue1).toBe(1000);
     expect(receivedValue2).toBe(1000);
@@ -204,7 +204,7 @@ test("When there are multiple requests with the same event-name, the payload fro
         enable(requestThreadLower);
         enable(requestThreadHigher);
         enable(receiveThread);
-    }, null);
+    });
 
     expect(receivedValue).toBe(2);
 });
@@ -235,7 +235,7 @@ test("events can be blocked", () => {
         enable(requestThread);
         enable(waitingThread);
         enable(blockingThread);
-    }, null);
+    });
 
     expect(advancedRequest).toBeUndefined();
     expect(advancedWait).toBeUndefined();
@@ -256,6 +256,6 @@ test("if an async request gets blocked, it will not call the promise", () => {
     scenarios((enable) => {
         enable(requestingThread);
         enable(blockingThread);
-    }, null);
+    });
     expect(calledFunction).toBe(false);
 });

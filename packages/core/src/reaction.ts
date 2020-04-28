@@ -13,6 +13,6 @@ export enum ReactionType {
 export interface Reaction {
     threadId: string;
     type: ReactionType;
-    cancelledPromises: FCEvent[] | null;
-    pendingEvents: string[] | null;
+    cancelledPromises?: FCEvent[];
+    pendingEvents?: string[];
 }

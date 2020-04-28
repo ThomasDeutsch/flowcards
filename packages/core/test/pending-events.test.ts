@@ -97,7 +97,7 @@ test("After a pending event is resolved, a BThread that has requested this event
 
     scenarios((enable) => {
         enable(threadOne);
-    }, null);
+    });
 });
 
 
@@ -117,7 +117,7 @@ test("If one pending-event is resolved, other promises for this event are cancel
     scenarios((enable) => {
         enable(threadOne);
         enable(thread2);
-    }, null);
+    });
 });
 
 
@@ -143,7 +143,7 @@ test("rejected pending events will not progress waiting BThreads", done => {
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    }, null);
+    });
 });
 
 test("if a pending event is rejected, the lower thread will use its request instead", done => {
@@ -163,7 +163,7 @@ test("if a pending event is rejected, the lower thread will use its request inst
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    }, null);
+    });
 });
 
 
@@ -237,5 +237,5 @@ test("if a threads intercepts an already existing pending-event, it will trigger
     scenarios((enable) => {
         enable(thread1);
         enable(thread2);
-    }, null);
+    });
 });

@@ -2,8 +2,8 @@
 
 // EQUALITY / DUCK-TYPING --------------------
 
-export function areInputsEqual(nextDeps: any[], prevDeps: any[] | null): boolean {
-    if (prevDeps === null) {
+export function areInputsEqual(nextDeps: any[], prevDeps?: any[]): boolean {
+    if (prevDeps === undefined || prevDeps === null) {
         return false;
     }
     for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
@@ -15,15 +15,11 @@ export function areInputsEqual(nextDeps: any[], prevDeps: any[] | null): boolean
     return true;
 }
 
-export function isThenable(p: any): boolean { // promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
-    return p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
+export function isThenable(p?: any): boolean { // promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
+    return p !== undefined && p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
 
-// NULL CHECK --------------
-
-export function notNull<T>(value: T | null): value is T {
-    return value !== null;
-}
+// UNDEFINED CHECK --------------
 
 export function notUndefined<T>(value?: T): value is T {
     return value !== undefined;

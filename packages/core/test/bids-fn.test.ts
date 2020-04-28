@@ -24,7 +24,7 @@ test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {
         cycleNr++;
         enable(requestThread);
         enable(fnThread);
-    }, null);
+    });
 
     expect(count).toBe(cycleNr); 
 });
@@ -44,7 +44,7 @@ test("a bid-function can return a single bid", () => {
     scenarios((enable) => {
         enable(requestThread);
         enable(fnThread);
-    }, null);
+    });
 
     
 });
@@ -65,7 +65,7 @@ test("a bid-function can return multiple bids", () => {
     scenarios((enable) => {
         enable(requestThread);
         enable(fnThread);
-    }, null);
+    });
 
 
 });

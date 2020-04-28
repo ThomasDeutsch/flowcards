@@ -48,12 +48,11 @@ export class Logger {
         this._latestActionAndReactions = newActionsReactions(action);
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises: FCEvent[] | null = null): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[]): void {
         const reaction: Reaction = {
             type: type,
             threadId: threadId,
-            cancelledPromises: cancelledPromises,
-            pendingEvents: null
+            cancelledPromises: cancelledPromises
         };
         this._latestActionAndReactions.reactionByThreadId[reaction.threadId] = reaction;
     }

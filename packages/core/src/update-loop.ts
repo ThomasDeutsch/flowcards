@@ -13,10 +13,10 @@ type EnableThreadFunctionType = (gen: ThreadGen, args?: any[], key?: string | nu
 type EnableStateFunctionType = (event: FCEvent | string, initialValue: any) => StateRef<any>;
 export type StagingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
 export type ActionDispatch = (action: Action) => void;
-export type TriggerWaitDispatch = (payload: unknown) => void;
-export type UpdateLoopFunction = (dispatchedAction: Action | null, nextActions?: Action[] | null) => ScenariosContext;
-type EventCache = EventMap<StateRef<unknown>>;
-type GetStateFunction = (event: FCEvent | string) => unknown;
+export type TriggerWaitDispatch = (payload: any) => void;
+export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
+type EventCache = EventMap<StateRef<any>>;
+type GetStateFunction = (event: FCEvent | string) => any;
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
@@ -24,7 +24,7 @@ export interface BThreadDictionary {
 
 export interface StateRef<T> {
     current: T;
-    previous: T;
+    previous?: T;
 }
 
 type ReplayDispatch = (actions: Action[]) => void;
@@ -147,7 +147,7 @@ function stageBThreadsAndEventCaches(
 ): string[] {
     const threadIds: Set<string> = new Set();
     const orderedThreadIds: string[] = [];
-    const enableBThread: EnableThreadFunctionType = (gen: ThreadGen, args: unknown[] = [], key?: string | number): BThreadState => {
+    const enableBThread: EnableThreadFunctionType = (gen: ThreadGen, args: any[] = [], key?: string | number): BThreadState => {
         const id: string = createScenarioId(gen, key);
         threadIds.add(id);
         orderedThreadIds.push(id);
@@ -158,10 +158,10 @@ function stageBThreadsAndEventCaches(
         }
         return bThreadDictionary[id].state;
     };
-    const enableEventCache: EnableStateFunctionType = (event: FCEvent | string, initialValue: unknown): StateRef<unknown> => {
+    const enableEventCache: EnableStateFunctionType = (event: FCEvent | string, initialValue: any): StateRef<any> => {
         event = toEvent(event);
         if(!eventCache.has(event)) {
-            eventCache.set(event, {current: initialValue, previous: null});
+            eventCache.set(event, {current: initialValue});
         }
         return eventCache.get(event)!;
     }
@@ -180,7 +180,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const getEventDispatcher = setupEventDispatcher(dispatch);
     const getEventCache: GetStateFunction = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
 
-    const updateLoop: UpdateLoopFunction = (dispatchedAction: Action | null, remainingReplayActions: Action[] | null = null): ScenariosContext => {
+    const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
         if (dispatchedAction) { 
             if (dispatchedAction.type === ActionType.replay) {
                 Object.keys(bThreadDictionary).forEach((threadId): void => { 
@@ -189,15 +189,15 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
                 }); // delete all BThreads
                 eventCache.clear();
                 logger.resetLog(); // empty current log
-                return updateLoop(null, dispatchedAction.payload); // start a replay
+                return updateLoop(undefined, dispatchedAction.payload); // start a replay
             }
         } 
         orderedThreadIds = stageBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
         const bThreadBids = orderedThreadIds.map((id): BThreadBids  => bThreadDictionary[id].getBids());
         const bids = getAllBids(bThreadBids);
         // get the next action
-        let nextAction: Action | null = null, restActions: Action[] | null = null;
-        if(remainingReplayActions !== null && remainingReplayActions.length > 0) {
+        let nextAction: Action | undefined, restActions: Action[] | undefined;
+        if(remainingReplayActions !== undefined && remainingReplayActions.length > 0) {
             [nextAction, ...restActions] = remainingReplayActions;
         } else if(dispatchedAction) {
             nextAction = dispatchedAction;
@@ -208,7 +208,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             logger.logAction(nextAction);
             advanceBThreads(bThreadDictionary, bids, nextAction);
             updateEventCache(eventCache, nextAction);
-            return updateLoop(null, restActions);
+            return updateLoop(undefined, restActions);
         }
         // ------ create the return value:
         logger.logPendingEvents(bids.pendingEvents);
@@ -217,7 +217,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return acc;
         }, {});
         return {
-            dispatch: getEventDispatcher(bids.wait.difference(bids.pendingEvents)),
+            dispatch: getEventDispatcher(bids.wait?.difference(bids.pendingEvents)),
             dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}}), // triggers a replay
             state: getEventCache, // event caches
             bThreadState: bThreadStateById, // BThread state by id

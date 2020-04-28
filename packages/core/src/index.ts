@@ -12,12 +12,12 @@ export { Reaction } from './reaction';
 
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 
-export function scenarios(stagingFunction: StagingFunction, updateCb: UpdateCallback | null, updateInitial: boolean = true): ScenariosContext {
+export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial: boolean = true): ScenariosContext {
     const updateLoop = createUpdateLoop(stagingFunction, (a: Action): void => {
         const scenarioContext = updateLoop(a)
-        if(updateCb !== null) updateCb(scenarioContext);
+        if(updateCb !== undefined) updateCb(scenarioContext);
     });
-    const initialScenarioContext = updateLoop(null);
-    if(updateCb !== null && updateInitial) updateCb(initialScenarioContext); // callback with initial value
+    const initialScenarioContext = updateLoop();
+    if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
     return initialScenarioContext;
 }

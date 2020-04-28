@@ -34,12 +34,12 @@ test("a state will return a ref. Passed to a function, it will not update on cha
 
     function* thread2() { // this thread will receive the state ref
         threadRefInit++;
-        yield null;
+        yield bp.wait('forever');
     }
 
     function* thread3() { // this thread will receive the state value
         threadValueInit++;
-        yield null;
+        yield bp.wait('forever');;
     }
 
     scenarios((enable, state) => {

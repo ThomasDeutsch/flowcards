@@ -11,7 +11,7 @@ export function toEvent(e: string | FCEvent): FCEvent {
     return (typeof e === 'string') ? {name: e} : e;
 }
 
-type EventIteratorFunction<T> = (e: FCEvent, value: T) => unknown;
+type EventIteratorFunction<T> = (e: FCEvent, value: T) => any;
 type EventMapFunction<T, X> = (e: FCEvent, value: T) => X;
 
 export class EventMap<T>  {
@@ -61,7 +61,8 @@ export class EventMap<T>  {
         return undefined
     }
 
-    public getAllMatchingItems(event: FCEvent): T[] | undefined {
+    public getAllMatchingItems(event?: FCEvent): T[] | undefined {
+        if(event === undefined) return undefined;
         let result: T[] | undefined;
         if(event.key === undefined) { // there was no key, so add all items with a key.
             let noKeyItem = this.get(event);
@@ -99,19 +100,19 @@ export class EventMap<T>  {
         return hasDeletedKey;
     }
 
-    public clear(): FCEvent[] | null {
+    public clear(): FCEvent[] | undefined {
         let deleted: FCEvent[] = []
         this.iterateAll((event) => {
             deleted.push(event);
             this.delete(event);
         });
-        return deleted.length > 0 ? deleted : null;
+        return deleted.length > 0 ? deleted : undefined;
     }
 
-    public getAllEvents(): FCEvent[] | null {
+    public getAllEvents(): FCEvent[] | undefined {
         let elements: FCEvent[] = [];
         this.iterateAll((event) => elements.push(event));
-        return elements.length > 0 ? elements : null;
+        return elements.length > 0 ? elements : undefined;
     }
 
     public map<X>(mapFunction: EventMapFunction<T, X>):  EventMap<X> {
@@ -122,14 +123,19 @@ export class EventMap<T>  {
         return mapped;
     }
 
-    public difference(a: EventMap<unknown>): EventMap<T> {
+    public difference(a?: EventMap<any>): EventMap<T> {
+        if(a === undefined) return this;
         this.iterateAll((event) => {
             if(a.has(event)) this.delete(event);
         });
         return this;
     }
     
-    public intersection(a: EventMap<unknown>): EventMap<T> {
+    public intersection(a?: EventMap<any>): EventMap<T> {
+        if(a === undefined) {
+            this.clear();
+            return this;
+        }
         this.iterateAll((event) => {
             if(!a.has(event)) this.delete(event);
         });

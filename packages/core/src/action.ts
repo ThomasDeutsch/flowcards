@@ -20,10 +20,10 @@ export interface Action {
     payload?: any;
 }
 
-export function getNextActionFromRequests(requestBids: BidsForBidType): Action | null {
-    if(!requestBids) return null;
+export function getNextActionFromRequests(requestBids: BidsForBidType): Action | undefined {
+    if(!requestBids) return undefined;
     const events = requestBids.getAllEvents();
-    if(!events) return null;
+    if(!events) return undefined;
     const selectedEvent = utils.getRandom(events);
     const bids = requestBids.get(selectedEvent);
     const bid = bids![bids!.length - 1]; // select the bid with the highest priority.

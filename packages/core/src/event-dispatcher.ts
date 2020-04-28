@@ -17,15 +17,15 @@ function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunct
         }
     }
     if(guards === undefined || guards.length === 0) return undefined;
-    return (payload: unknown) => guards!.filter(utils.notUndefined).some(guard => guard(payload));
+    return (payload: any) => guards!.filter(utils.notUndefined).some(guard => guard(payload));
 }
 
 export type TriggerDispatch = () => void
-type CachedDispatch = (payload: unknown) => TriggerDispatch | undefined;
-export type EventDispatch = (event: FCEvent | string, payload?: unknown) => TriggerDispatch | undefined;
+type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
+export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
 
 interface DispatchCache {
-    payload?: unknown;
+    payload?: any;
     dispatch?: TriggerDispatch | undefined;
 }
 
@@ -34,7 +34,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
 
-    const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: unknown): TriggerDispatch | undefined  => { 
+    const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): TriggerDispatch | undefined  => { 
         const dp = dispatchByEvent.get(toEvent(event));
         if(!dp) return undefined;
         return dp(payload);
@@ -47,7 +47,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
             return dispatchFunction;
         }
         const allWaitEvents = waits.getAllEvents();
-        if(allWaitEvents === null) {
+        if(allWaitEvents === undefined) {
             dispatchByEvent.clear();
             return dispatchFunction;
         }
@@ -56,7 +56,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
             guardByEvent.set(waitEvent, getGuardForEvent(waits, waitEvent));
             if(!dispatchByEvent.has(waitEvent)) {
                 const cache: DispatchCache = {};
-                dispatchByEvent.set(waitEvent, (payload?: unknown): TriggerDispatch | undefined => {
+                dispatchByEvent.set(waitEvent, (payload?: any): TriggerDispatch | undefined => {
                     const guard = guardByEvent.get(waitEvent);
                     if(guard && guard(payload) === false) return undefined;
                     if(cache.dispatch && Object.is(payload, cache.payload)) return cache.dispatch;

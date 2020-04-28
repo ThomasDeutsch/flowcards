@@ -12,12 +12,12 @@ export type ThreadGen = any; // TODO: Better typing for this generator
 
 export interface BThreadState {
     isCompleted: boolean;
-    pendingEvents: EventMap<boolean>;
+    pendingEvents?: EventMap<boolean>;
     value?: any;
 }
 
 export interface BTContext {
-    key: string | number | null;
+    key?: string | number;
     setState: Function;
     state: BThreadState;
 }
@@ -30,7 +30,7 @@ export interface InterceptResult {
 
 interface NextBid {
     isFunction: boolean;
-    value: any;
+    value?: any;
 }
 
 export enum InterceptResultType {
@@ -41,27 +41,27 @@ export enum InterceptResultType {
 
 
 export interface BThreadBids {
-    pendingEvents: EventMap<boolean> | null;
-    bidsByType: BidsByType | null;
+    pendingEvents?: EventMap<boolean>;
+    bidsByType?: BidsByType;
 }
 
 type StateUpdateFunction = (previousState: any) => void;
 
 export class BThread {
     public readonly id: string;
-    public readonly key: string | number | null = null;
+    public readonly key?: string | number;
     private readonly _logger?: Logger;
     private readonly _dispatch: ActionDispatch;
     private readonly _generator: ThreadGen;
     private _currentArguments: any[];
     private _thread: IterableIterator<any>;
-    private _currentBids: BidsByType | null = null;
-    private _nextBid: NextBid = {isFunction: false, value: null};
+    private _currentBids?: BidsByType;
+    private _nextBid: NextBid = {isFunction: false};
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted: boolean = false;
     private _stateValue?: any;
-    private _stateRef: BThreadState = { isCompleted: this._isCompleted, pendingEvents: new EventMap() };
+    private _stateRef: BThreadState = { isCompleted: this._isCompleted};
     public get state(): BThreadState {
         this._stateRef.isCompleted = this._isCompleted;
         this._stateRef.pendingEvents = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], () => true, true);
@@ -85,7 +85,7 @@ export class BThread {
 
     public constructor(id: string, generator: ThreadGen, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger) {
         this.id = id;
-        if (key || key === 0) this.key = key;
+        this.key = key;
         this._dispatch = dispatch;
         this._generator = generator.bind(this._getBTContext());
         this._logger = logger;
@@ -107,16 +107,16 @@ export class BThread {
         const next = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;
-            this._nextBid.value = null;
+            delete this._nextBid.value;
         } else {
             this._nextBid = {value: next.value, isFunction: typeof next.value === 'function'};
         }
-        this._currentBids = null;
+        delete this._currentBids;
         return cancelledPromises;
     }
 
     private _progressBThread(event: FCEvent, payload: any, isReject: boolean = false): void {
-        let returnVal = null;
+        let returnVal;
         if(!isReject) {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [event, payload] : payload;
         }
@@ -150,13 +150,12 @@ export class BThread {
     // --- public
 
     public getBids(): BThreadBids {
-        const pendingEvents = this.state.pendingEvents.isEmpty() ? null : this.state.pendingEvents;
+        const pendingEvents = this.state.pendingEvents;
         if(this._isCompleted) return {
-            pendingEvents: pendingEvents,
-            bidsByType: null
+            pendingEvents: pendingEvents
         }
         if(this._nextBid.isFunction) this._currentBids = getBidsForBThread(this.id, this._nextBid.value());
-        if(this._currentBids === null) this._currentBids = getBidsForBThread(this.id, this._nextBid.value);
+        if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid.value);
         return {
             pendingEvents: pendingEvents,
             bidsByType: this._currentBids
@@ -186,7 +185,7 @@ export class BThread {
                     this._dispatch({ type: ActionType.rejected, threadId: this.id, event: event, payload: e });
                 }
             });
-        if (this._logger) this._logger.logReaction(this.id, ReactionType.promise, null);
+        if (this._logger) this._logger.logReaction(this.id, ReactionType.promise);
     }
 
     public resolvePending(action: Action): void {
