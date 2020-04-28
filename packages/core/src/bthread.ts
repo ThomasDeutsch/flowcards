@@ -8,7 +8,9 @@ import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
 import { EventMap, reduceEventMaps, FCEvent } from './event';
 
-export type ThreadGen = any; // TODO: Better typing for this generator
+type BidFunction = () => Bid | Bid[]
+export type BTGen = Generator<Bid | Bid[] | BidFunction, void, any>;
+export type GeneratorFn = (...args: any[]) => BTGen;
 
 export interface BThreadState {
     isCompleted: boolean;
@@ -46,9 +48,9 @@ export class BThread {
     public readonly key?: string | number;
     private readonly _logger?: Logger;
     private readonly _dispatch: ActionDispatch;
-    private readonly _generator: ThreadGen;
+    private readonly _generatorFn: GeneratorFn;
     private _currentArguments: any[];
-    private _thread: IterableIterator<any>;
+    private _thread: BTGen;
     private _currentBids?: BThreadBids;
     private _nextBid: NextBid = {isFunction: false};
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
@@ -77,14 +79,14 @@ export class BThread {
         };
     }
 
-    public constructor(id: string, generator: ThreadGen, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger) {
+    public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger) {
         this.id = id;
         this.key = key;
         this._dispatch = dispatch;
-        this._generator = generator.bind(this._getBTContext());
+        this._generatorFn = generatorFn.bind(this._getBTContext());
         this._logger = logger;
         this._currentArguments = args;
-        this._thread = this._generator(...this._currentArguments);
+        this._thread = this._generatorFn(...this._currentArguments);
         this._processNextBid();
         if (this._logger) this._logger.logReaction(this.id, ReactionType.init);
     }
@@ -151,7 +153,7 @@ export class BThread {
         if (utils.areInputsEqual(this._currentArguments, nextArguments)) return;
         this._isCompleted = false;
         this._currentArguments = nextArguments;
-        this._thread = this._generator(...this._currentArguments);
+        this._thread = this._generatorFn(...this._currentArguments);
         const cancelledPromises = this._processNextBid();
         if (this._logger) this._logger.logReaction(this.id, ReactionType.reset, cancelledPromises);
     }

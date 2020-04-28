@@ -3,7 +3,7 @@
 import { StagingFunction, createUpdateLoop, ScenariosContext } from './update-loop';
 import { Action } from './action'
 
-export { BTContext, BThreadState } from './bthread';
+export { BTContext, BThreadState, BTGen } from './bthread';
 export { UpdateLoopFunction, StagingFunction, createUpdateLoop, ScenariosContext, StateRef } from './update-loop';
 export { wait, intercept, block, request, Bid } from "./bid";
 export { Log, ActionAndReactions, ThreadsByWait} from './logger';
