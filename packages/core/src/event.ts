@@ -23,11 +23,11 @@ export class EventMap<T>  {
         this.withKey = new Map();
     }
 
-    public size() {
+    public size(): number {
         return this.noKey.size + this.withKey.size;
     }
 
-    public forEach(iteratorFn: EventIteratorFunction<T>) {
+    public forEach(iteratorFn: EventIteratorFunction<T>): void {
         for (let [eventName, value] of this.noKey) {
             iteratorFn({name: eventName}, value);
         }

@@ -187,7 +187,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             }
         } 
         orderedThreadIds = stageBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
-        const bThreadBids = orderedThreadIds.map((id): BThreadBids  => bThreadDictionary[id].getBids());
+        const bThreadBids = orderedThreadIds.map(id => bThreadDictionary[id].getBids());
         const bids = getAllBids(bThreadBids);
         // get the next action
         let nextAction: Action | undefined, restActions: Action[] | undefined;
