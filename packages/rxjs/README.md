@@ -1,2 +1,3 @@
-enable behaviors - flow by flow
-enable behaviors - flow by flow
+```
+npm install @flowcards/rxjs
+```
