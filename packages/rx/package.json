@@ -22,8 +22,7 @@
     "@flowcards/core": "^0.7.2"
   },
   "peerDependencies": {
-    "@types/react": ">=16.8.0",
-    "react": ">=16.8.0"
+    "rxjs": ">=5.0.0"
   },
   "license": "MIT",
   "gitHead": "cd2e017842cb871233bbd21bffb17b3f30e0f6b6",
