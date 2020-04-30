@@ -12,7 +12,6 @@ export type GeneratorFn = (...args: any[]) => BTGen;
 
 export interface BThreadState {
     isCompleted: boolean;
-    pendingEvents?: EventMap<Bid>;
     value?: any;
 }
 
@@ -55,13 +54,18 @@ export class BThread {
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted: boolean = false;
     private _stateValue?: any;
-    private _stateRef: BThreadState = { isCompleted: this._isCompleted};
+    private _stateRef: BThreadState = { isCompleted: this._isCompleted };
     public get state(): BThreadState {
         this._stateRef.isCompleted = this._isCompleted;
-        this._stateRef.pendingEvents = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
         this._stateRef.value = this._stateValue;
         return this._stateRef;
     }
+
+    // if(mainFlow.current === 'state1')
+    // if(mainFlow.state.current === 'state2')
+    // if(mainFlow.isCompleted)
+    // if(mainFlow.until('state 2'))
+    // if(mainFlow.after('state1'))
 
     private _getBTContext(): BTContext {
         return {
@@ -140,7 +144,7 @@ export class BThread {
     // --- public
 
     public getBids(): BThreadBids  {
-        const pendingEvents = this.state.pendingEvents;
+        const pendingEvents: EventMap<Bid> | undefined = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
         if(this._isCompleted) return {[BidType.pending]: pendingEvents}
         if(this._nextBid.isFunction) this._currentBids = getBidsForBThread(this.id, this._nextBid.value());
         if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid.value);

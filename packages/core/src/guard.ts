@@ -5,10 +5,10 @@ import * as utils from './utils';
 export type GuardFunction = (payload: any) => boolean
 
 
-export function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunction | undefined {
+export function getGuardForEventDispatch(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunction | undefined {
     let guards: GuardFunction[] | undefined = eventMap.get(event)?.map(bid => bid.guard).filter(utils.notUndefined);
     if(event.key !== undefined) {
-        let g = getGuardForEvent(eventMap, {name: event.name}); // also get the guard from the unkeyed wait
+        let g = getGuardForEventDispatch(eventMap, {name: event.name}); // also get the guard from the unkeyed wait
         if(g) {
             guards = guards || [];
             guards.push(g);
@@ -21,14 +21,14 @@ export function getGuardForEvent(eventMap: EventMap<Bid[]>, event: FCEvent): Gua
 
 export function getGuardedUnguardedBlocks(eventMap: EventMap<Bid[]> | undefined): [Set<FCEvent> | undefined, EventMap<GuardFunction> | undefined] {
     if(eventMap === undefined) return [undefined, undefined];
-    const unguarded: FCEvent[] = [];
+    const fixed: FCEvent[] = [];
     const guarded = new EventMap<GuardFunction>();
     eventMap.forEach((event, bids) => {
         const guards = bids.map(bid => bid.guard).filter(utils.notUndefined);
-        if(guards.length !== bids.length) unguarded.push(event);
+        if(guards.length !== bids.length) fixed.push(event);
         else guarded.set(event, (payload: any) => guards.some(guard => guard(payload)))
     });
-    return [unguarded.length > 0 ? new Set(unguarded): undefined, guarded.size() > 0 ? guarded: undefined];
+    return [fixed.length > 0 ? new Set(fixed): undefined, guarded.size() > 0 ? guarded: undefined];
 }
 
 

@@ -17,36 +17,8 @@ test("the enable function will return the current thread state", () => {
         const state = enable(thread);
         
         expect(state.isCompleted).toBe(false);
-        expect(state.pendingEvents?.isEmpty()).toEqual(true);
         expect(state.value).toBeUndefined();
     });
-});
-
-
-test("if promises are pending, the thread will return a set of those pending promises", () => {
-    let state: any = null;
-    let state2: any = null;
-
-    function* thread() {
-        yield bp.request("A", delay(1000));
-    }
-
-    function* thread2() {
-        yield [bp.request("C", delay(1000)), bp.request("D", delay(1100))]
-    }
-
-    scenarios((enable) => {
-        state = enable(thread);
-        state2 = enable(thread2);
-    });
-
-    if(state && state2) {
-        expect(state.isCompleted).toBe(false);
-        expect(state.pendingEvents.has({name: 'A'})).toEqual(true);
-        expect(state.value).toBeUndefined();
-        expect(state2.pendingEvents.has({name: 'C'})).toEqual(true);
-        expect(state2.pendingEvents.has({name: 'D'})).toEqual(true);
-    }
 });
 
 

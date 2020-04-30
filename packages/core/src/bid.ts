@@ -75,13 +75,13 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {;
     const pending = reduceMaps(bidsForType(BidType.pending, allBThreadBids));
     const pendingEvents = new Set(pending?.getAllEvents());
     const blocks = reduceMaps(bidsForType(BidType.block, allBThreadBids));
-    const [unguardedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
-    const unguardedBlocksAndPending = utils.union(pendingEvents, unguardedBlocks);
+    const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
+    const fixedBlocksAndPending = utils.union(pendingEvents, fixedBlocks);
     return {
         [BidType.pending]: pending,
-        [BidType.request]: reduceMaps(bidsForType(BidType.request, allBThreadBids), unguardedBlocksAndPending, guardedBlocks),
-        [BidType.wait]: reduceMaps(bidsForType(BidType.wait, allBThreadBids), unguardedBlocks, guardedBlocks),
-        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, allBThreadBids), unguardedBlocks, guardedBlocks)
+        [BidType.request]: reduceMaps(bidsForType(BidType.request, allBThreadBids), fixedBlocksAndPending, guardedBlocks),
+        [BidType.wait]: reduceMaps(bidsForType(BidType.wait, allBThreadBids), fixedBlocks, guardedBlocks),
+        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, allBThreadBids), fixedBlocks, guardedBlocks)
     };
 }
 
