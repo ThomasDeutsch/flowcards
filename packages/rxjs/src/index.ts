@@ -3,7 +3,7 @@ import * as Fc from "@flowcards/core";
 
 export * from '@flowcards/core';
 
-export function scenariosSubject(stagingFunction: Fc.StagingFunction): Rx.BehaviorSubject<Fc.ScenariosContext> {
+export function initScenarios(stagingFunction: Fc.StagingFunction): Rx.Observable<Fc.ScenariosContext> {
     const subject = new Rx.BehaviorSubject<Fc.ScenariosContext>(
       Fc.scenarios(
         stagingFunction,
@@ -13,5 +13,5 @@ export function scenariosSubject(stagingFunction: Fc.StagingFunction): Rx.Behavi
         false
       )
     );
-    return subject;
+    return subject.asObservable();;
 }
