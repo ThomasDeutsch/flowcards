@@ -7,5 +7,3 @@ export function useScenarios(stagingFunction: StagingFunction) : ScenariosContex
     const [state, setState] = useState((): ScenariosContext => scenarios(stagingFunction, (a: ScenariosContext): void => { setState(a) }, false));
     return state;
 }
-
-export { Logger } from './logger.component';
