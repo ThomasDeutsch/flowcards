@@ -1,3 +1,3 @@
 ```
-npm install @flowcards/rxjs
+npm install @flowcards/rxjs --save
 ```
