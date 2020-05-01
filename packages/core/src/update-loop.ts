@@ -174,6 +174,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const logger = new Logger();
     const getEventDispatcher = setupEventDispatcher(dispatch);
     const getEventCache: GetStateFunction = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
+    const replayDispatcher: ReplayDispatch = (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}});
     const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
         if (dispatchedAction !== undefined) { 
             if (dispatchedAction.type === ActionType.replay) {
@@ -213,7 +214,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }, {});
         return {
             dispatch: getEventDispatcher(bids.wait?.difference(bids[BidType.pending])),
-            dispatchReplay: (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}}), // triggers a replay
+            dispatchReplay: replayDispatcher,// triggers a replay
             state: getEventCache, // event caches
             bThreadState: bThreadStateById, // BThread state by id
             log: logger.getLog() // get all actions and reactions + pending event-names by thread-Id

@@ -52,7 +52,7 @@ test("dispatch[eventId] is the same Object, as long as there is a wait", (done) 
 });
 
 
-test("The guard will always reflect the current bids", (done) => {
+test("A guarded dispatch will return undefined if the value is not valid", (done) => {
     let x: any;
     let y: any;
     let firstDispatch: any;
@@ -68,13 +68,11 @@ test("The guard will always reflect the current bids", (done) => {
     }, ({dispatch}) => {
         if(dispatch("X")) {
             x = dispatch("A", 0);
-            firstDispatch = dispatch("A");
         }
         else if(dispatch("Y")) y = dispatch('A', 0);
         else {
-            const isSame = Object.is(dispatch("A"), firstDispatch);
-            expect(isSame).toBeTruthy();
             expect(x).not.toEqual(y);
+            expect(x).toBeUndefined();
             done();  
         }  
     });

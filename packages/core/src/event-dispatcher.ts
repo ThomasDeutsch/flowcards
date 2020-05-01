@@ -19,7 +19,6 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
     const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): CachedDispatch | TriggerDispatch | undefined  => { 
         const dp = dispatchByEvent.get(toEvent(event));
         if(dp === undefined) return undefined;
-        if(payload === undefined) return dp;
         return dp(payload);
     }
     return (waits: BidsForBidType) => {
