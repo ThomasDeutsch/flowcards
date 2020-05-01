@@ -54,6 +54,7 @@ test("a thread state is always the same Object.", (done) => {
     scenarios((enable) => {
         enable(thread1);
     }, ({bTState}) => {
+        
         if(bTState.thread1.value !== 1) previous = bTState.thread1;
         else {
             expect(Object.is(previous, bTState.thread1)).toBeTruthy();
