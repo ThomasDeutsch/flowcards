@@ -167,12 +167,12 @@ function stageBThreadsAndEventCaches(
 // -----------------------------------------------------------------------------------
 // UPDATE LOOP
 
-export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): UpdateLoopFunction {
+export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch] {
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     let orderedThreadIds: string[];
     const logger = disableLogging ? undefined : new Logger();
-    const getEventDispatcher = setupEventDispatcher(dispatch);
+    const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const getEventCache: GetStateFunction = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
     const replayDispatcher: ReplayDispatch = (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}});
     const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
@@ -206,6 +206,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(undefined, restActions);
         }
         // ------ create the return value:
+        updateEventDispatcher(bids.wait?.difference(bids[BidType.pending]));
         logger?.logPendingEvents(bids[BidType.pending] || new EventMap());
         logger?.logWaits(bids.wait);
         const bTStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
@@ -213,12 +214,12 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return acc;
         }, {});
         return {
-            dispatch: getEventDispatcher(bids.wait?.difference(bids[BidType.pending])),
+            dispatch: eventDispatch,
             dispatchReplay: replayDispatcher,// triggers a replay
             state: getEventCache, // event caches
             bTState: bTStateById, // BThread state by id
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
     };
-    return updateLoop;
+    return [updateLoop, eventDispatch];
 }

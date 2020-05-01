@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios } from "../src/index";
+import { scenarios } from "./testutils";
 import { ActionType } from '../src/action';
 
 
@@ -23,8 +23,8 @@ test("a pending event can not be requested", () => {
         enable(thread2);
         enable(thread1);
     }, ({log}) => {
-        expect(log.currentPendingEvents.has({name: 'A'})).toBeTruthy();
-        expect(log.latestAction.threadId).toBe("thread1");
+        expect(log?.currentPendingEvents.has({name: 'A'})).toBeTruthy();
+        expect(log?.latestAction.threadId).toBe("thread1");
     });
 });
 
@@ -42,9 +42,9 @@ test("a pending event can not be intercepted", () => {
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
-        expect(log.currentPendingEvents.has({name: 'A'})).toBeTruthy();
-        expect(log.latestAction.threadId).toBe("thread1");
-        expect(log.actionsAndReactions.length).toBe(2); // init + request("A"..)
+        expect(log?.currentPendingEvents.has({name: 'A'})).toBeTruthy();
+        expect(log?.latestAction.threadId).toBe("thread1");
+        expect(log?.actionsAndReactions.length).toBe(2); // init + request("A"..)
     });
 });
 
@@ -63,8 +63,8 @@ test("a pending event resolves can not be blocked", done => {
         enable(thread2);
     }, ({log, dispatch}) => {
         if(dispatch('fin')) {
-            expect(log.latestAction.threadId).toBe("thread1");
-            expect(log.latestAction.type).toBe(ActionType.resolved);
+            expect(log?.latestAction.threadId).toBe("thread1");
+            expect(log?.latestAction.type).toBe(ActionType.resolved);
             done();
         }
     });
@@ -212,7 +212,7 @@ test("if a threads waits for an already existing pending-event, it will also pro
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
-        if(log.latestAction.event.name === "fin") {
+        if(log?.latestAction.event.name === "fin") {
             expect(1).toBeTruthy();
             done();
         }

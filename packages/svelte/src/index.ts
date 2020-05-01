@@ -4,9 +4,10 @@ import { StagingFunction, scenarios } from '@flowcards/core';
 export * from '@flowcards/core';
 
 export function scenariosStore(stagingFunction: StagingFunction): any {
-  const { subscribe, set } = writable({});
-  scenarios(stagingFunction, set);
+  const [init, dispatch] = scenarios(stagingFunction, (a) => set(a));
+  const { subscribe, set } = writable(init);
   return {
-    subscribe
+    subscribe, 
+    dispatch: dispatch
   };
 }

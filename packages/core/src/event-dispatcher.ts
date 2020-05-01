@@ -7,13 +7,14 @@ import { getGuardForEventDispatch, GuardFunction } from './guard';
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => CachedDispatch | TriggerDispatch | undefined;
+type EventDispatchUpdater = (waits: BidsForBidType) => void;
 
 interface DispatchCache {
     payload?: any;
     dispatch?: TriggerDispatch | undefined;
 }
 
-export function setupEventDispatcher(dispatch: ActionDispatch) {
+export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
     const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): CachedDispatch | TriggerDispatch | undefined  => { 
@@ -21,11 +22,11 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
         if(dp === undefined) return undefined;
         return dp(payload);
     }
-    return (waits: BidsForBidType) => {
+    const updateEventDispatcher = (waits: BidsForBidType): void => {
         guardByEvent.clear();
         if(!waits || waits.size() === 0) { 
             dispatchByEvent.clear();
-            return dispatchFunction;
+            return;
         }
         dispatchByEvent.intersection(waits);
         waits.forEach((waitEvent, bids) => {
@@ -42,6 +43,6 @@ export function setupEventDispatcher(dispatch: ActionDispatch) {
                 });
             }
         });
-        return dispatchFunction;
     }
+    return [updateEventDispatcher, dispatchFunction];
 }  

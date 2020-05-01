@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as bp from "../src/bid";
 import { BTContext } from '../src/bthread';
-import { scenarios, BThreadState } from '../src/index';
+import { scenarios } from './testutils';
+import { BThreadState } from '../src/index';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));

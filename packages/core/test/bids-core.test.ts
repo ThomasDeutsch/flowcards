@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios } from "../src/index";
+import { scenarios } from "./testutils";
 import { FCEvent } from "../src/event";
 
 
@@ -22,8 +22,8 @@ test("a requested event that is not blocked will advance", () => {
         enable(thread1);
     }, ({log})=> {
         expect(hasAdvanced).toBe(true);
-        expect(log.latestAction.event.name).toBe("A");
-        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
+        expect(log?.latestAction.event.name).toBe("A");
+        expect(log?.latestReactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -46,9 +46,9 @@ test("a request will also advance waiting threads", () => {
     }, ({log}) => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(true);
-        expect(log.latestAction.event.name).toBe("A");
-        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
-        expect(log.latestReactionByThreadId).toHaveProperty("thread1");
+        expect(log?.latestAction.event.name).toBe("A");
+        expect(log?.latestReactionByThreadId).toHaveProperty("thread1");
+        expect(log?.latestReactionByThreadId).toHaveProperty("thread1");
     });
 });
 
@@ -69,10 +69,10 @@ test("waits will return the value that has been requested", () => {
         enable(receiveThread);
     }, ({log}) => {
         expect(receivedValue).toBe(1000);
-        expect(log.latestAction.event.name).toBe("A");
-        expect(log.latestAction.payload).toBe(1000);
-        expect(log.latestReactionByThreadId).toHaveProperty("requestThread");
-        expect(log.latestReactionByThreadId).toHaveProperty("receiveThread");
+        expect(log?.latestAction.event.name).toBe("A");
+        expect(log?.latestAction.payload).toBe(1000);
+        expect(log?.latestReactionByThreadId).toHaveProperty("requestThread");
+        expect(log?.latestReactionByThreadId).toHaveProperty("receiveThread");
     });
 });
 

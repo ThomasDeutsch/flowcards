@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios, BTContext } from '../src/index';
+import { scenarios } from "./testutils";
+
 
 
 test("a state can be created that will listen for requests in its name", done => {

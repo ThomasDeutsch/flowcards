@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import * as bp from "../src/bid";
-import { scenarios, BTGen } from '../src/index';
+import { scenarios } from "./testutils";
+import { BTGen } from '../src/index';
 
 
 test("a wait is not advanced, if the guard returns false", () => {
@@ -32,7 +33,7 @@ test("a wait is not advanced, if the guard returns false", () => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
-        expect(log.latestAction.event.name).toBe("A");
+        expect(log?.latestAction.event.name).toBe("A");
     });
 });
 
@@ -66,7 +67,7 @@ test("an intercept is not applied, if the guard returns false.", () => {
         expect(interceptAdvanced).toBe(false);
         expect(waitAdvanced).toBe(true);
         expect(requestAdvanced).toBe(true);
-        expect(log.latestAction.event.name).toBe("A");
+        expect(log?.latestAction.event.name).toBe("A");
     });
 });
 

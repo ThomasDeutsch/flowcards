@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios } from '../src/index';
+import {scenarios } from './testutils';
 
 test("the log will return an threadsByWait Object", () => {
 
@@ -18,7 +18,7 @@ test("the log will return an threadsByWait Object", () => {
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
-        expect(log.latestAction.event.name).toEqual('eventOne');
+        expect(log?.latestAction.event.name).toEqual('eventOne');
     });
 });
 

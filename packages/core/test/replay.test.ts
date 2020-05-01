@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios} from "../src/index";
+import { scenarios} from "./testutils";
 import { ActionType } from '../src/action';
 
 test("an array of actions can be used as a replay", done => {
@@ -38,8 +38,8 @@ test("an array of actions can be used as a replay", done => {
                 }
             ]);
         } else {
-            expect(log.latestAction.event.name).toBe("C");
-            expect(log.latestReactionByThreadId).toHaveProperty("thread1");
+            expect(log?.latestAction.event.name).toBe("C");
+            expect(log?.latestReactionByThreadId).toHaveProperty("thread1");
         }
 
     });

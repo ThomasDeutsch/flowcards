@@ -2,9 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios } from "../src/index";
-import { FCEvent } from "../src/event";
-
+import { scenarios } from "./testutils";
 
 test("The key can be a string or a number", () => {
     function* thread1() {

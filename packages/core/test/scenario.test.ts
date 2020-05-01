@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as bp from "../src/bid";
-import { scenarios, StagingFunction, Action, createUpdateLoop, BTContext } from '../src/index';
+import { scenarios } from './testutils';
+import { StagingFunction, Action, createUpdateLoop, BTContext } from '../src/index';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -43,7 +44,7 @@ test("there will be a dispatch-function every waiting event", () => {
 
 
 function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): void {
-    const updateLoop = createUpdateLoop(stagingFunction, (a: Action): void => {
+    const [updateLoop] = createUpdateLoop(stagingFunction, (a: Action): void => {
         if(a.payload) da.add(a.payload.event.name);
         updateLoop(a);   
     });
