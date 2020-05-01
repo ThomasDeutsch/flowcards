@@ -17,10 +17,10 @@ test("an array of actions can be used as a replay", done => {
 
     scenarios((enable) => {
         enable(thread1);
-    }, ({dispatchReplay, log}) => {
+    }, ({dispatch, log}) => {
         if(x === 0) {
             x = 1;
-            dispatchReplay([
+            dispatch('__REPLAY__', [
                 {
                     type: ActionType.requested,
                     event: {name: 'A'},

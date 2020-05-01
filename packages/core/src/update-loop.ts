@@ -15,8 +15,6 @@ export type TriggerWaitDispatch = (payload: any) => void;
 export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
 type EventCache = EventMap<StateRef<any>>;
 type GetStateFunction = (event: FCEvent | string) => any;
-type ReplayDispatch = (actions: Action[]) => void;
-
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
@@ -29,7 +27,6 @@ export interface StateRef<T> {
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
-    dispatchReplay: ReplayDispatch;
     state: GetStateFunction;
     bTState: Record<string, BThreadState>;
     log?: Log;
@@ -174,7 +171,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const logger = disableLogging ? undefined : new Logger();
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const getEventCache: GetStateFunction = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
-    const replayDispatcher: ReplayDispatch = (actions: Action[]): void => dispatch({type: ActionType.replay, payload: actions, threadId: "", event: {name: "replay"}});
     const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
         if (dispatchedAction !== undefined) { 
             if (dispatchedAction.type === ActionType.replay) {
@@ -215,7 +211,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }, {});
         return {
             dispatch: eventDispatch,
-            dispatchReplay: replayDispatcher,// triggers a replay
             state: getEventCache, // event caches
             bTState: bTStateById, // BThread state by id
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id

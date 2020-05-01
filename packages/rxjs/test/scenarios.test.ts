@@ -1,4 +1,4 @@
-import { scenarios } from '../src/index';
+import { initScenarios } from '../src/index';
 import { wait } from '@flowcards/core';
 
 function* flow1() {
@@ -6,7 +6,7 @@ function* flow1() {
 }
 
 test('scenarios function returns an initial state', () => {
-    scenarios(enable => {
+    initScenarios(enable => {
         enable(flow1);
     });
     expect(1).toEqual(1);

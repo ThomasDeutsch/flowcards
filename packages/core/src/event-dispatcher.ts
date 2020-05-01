@@ -18,6 +18,10 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
     const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): CachedDispatch | TriggerDispatch | undefined  => { 
+        if(event === '__REPLAY__') {
+            dispatch({type: ActionType.replay, payload: payload, threadId: "", event: {name: "__REPLAY__"}});
+            return undefined
+        }
         const dp = dispatchByEvent.get(toEvent(event));
         if(dp === undefined) return undefined;
         return dp(payload);
