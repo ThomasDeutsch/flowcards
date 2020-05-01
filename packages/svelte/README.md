@@ -1,1 +1,3 @@
-enable behaviors - flow by flow
+```
+npm install @flowcards/svelte --save
+```
