@@ -90,7 +90,7 @@ export class BThread {
         this._currentArguments = args;
         this._thread = this._generatorFn(...this._currentArguments);
         this._processNextBid();
-        if (this._logger) this._logger.logReaction(this.id, ReactionType.init);
+        this._logger?.logReaction(this.id, ReactionType.init);
     }
 
 
@@ -119,7 +119,7 @@ export class BThread {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [event, payload] : payload;
         }
         const cancelledPromises = this._processNextBid(returnVal);
-        if (this._logger) this._logger.logReaction(this.id, ReactionType.progress, cancelledPromises);
+        this._logger?.logReaction(this.id, ReactionType.progress, cancelledPromises);
     }
 
     private _createInterceptPromise(action: Action): InterceptResult {
@@ -157,7 +157,7 @@ export class BThread {
         this._currentArguments = nextArguments;
         this._thread = this._generatorFn(...this._currentArguments);
         const cancelledPromises = this._processNextBid();
-        if (this._logger) this._logger.logReaction(this.id, ReactionType.reset, cancelledPromises);
+        this._logger?.logReaction(this.id, ReactionType.reset, cancelledPromises);
     }
 
     public addPendingRequest(event: FCEvent, promise: Promise<any>): void {
@@ -174,17 +174,17 @@ export class BThread {
                     this._dispatch({ type: ActionType.rejected, threadId: this.id, event: event, payload: e });
                 }
             });
-        if (this._logger) this._logger.logReaction(this.id, ReactionType.promise);
+        this._logger?.logReaction(this.id, ReactionType.promise);
     }
 
     public resolvePending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.resolved) return;
         // resolve intercept
         if(this._pendingInterceptRecord.delete(action.event)) {
-            if (this._logger) this._logger.logReaction(this.id, ReactionType.resolve);
+            this._logger?.logReaction(this.id, ReactionType.resolve);
         } // resolve pending promise
         else if(this._pendingRequestRecord.delete(action.event)) {
-            if (this._logger) this._logger.logReaction(this.id, ReactionType.resolve);
+            this._logger?.logReaction(this.id, ReactionType.resolve);
         }
     }
 
@@ -192,10 +192,10 @@ export class BThread {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;
         // rejection of an intercept
         if(this._pendingInterceptRecord.delete(action.event)) { 
-            if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
+            this._logger?.logReaction(this.id, ReactionType.reject);
         } // rejection of a pending promise
         else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
-            if (this._logger) this._logger.logReaction(this.id, ReactionType.reject);
+            this._logger?.logReaction(this.id, ReactionType.reject);
             this._thread.throw({event: action.event, error: action.payload});
             this._progressBThread(action.event, action.payload, true);
         }

@@ -52,10 +52,10 @@ test("a thread state is always the same Object.", (done) => {
 
     scenarios((enable) => {
         enable(thread1);
-    }, ({bThreadState}) => {
-        if(bThreadState.thread1.value !== 1) previous = bThreadState.thread1;
+    }, ({bTState}) => {
+        if(bTState.thread1.value !== 1) previous = bTState.thread1;
         else {
-            expect(Object.is(previous, bThreadState.thread1)).toBeTruthy();
+            expect(Object.is(previous, bTState.thread1)).toBeTruthy();
             done();
         }
     });
@@ -72,8 +72,8 @@ test("a setState argument can be a function", () => {
 
     scenarios((enable) => {
         enable(thread1);
-    }, ({bThreadState}) => {
-        expect(bThreadState.thread1.value).toEqual(2);
+    }, ({bTState}) => {
+        expect(bTState.thread1.value).toEqual(2);
     });
 });
 

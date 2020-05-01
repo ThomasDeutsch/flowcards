@@ -70,8 +70,8 @@ test("when a thread resets, the bids will be re-evaluated", () => {
     scenarios((enable) => {
         const threadAState = enable(threadA);
         enable(threadB, [threadAState.value]);  // instead of state.value, we will pass state.
-    }, ({dispatch, bThreadState}) => {
-        expect(bThreadState.threadB.isCompleted === false);
+    }, ({dispatch, bTState}) => {
+        expect(bTState.threadB.isCompleted === false);
         expect(threadBCount).toEqual(2);
         expect(dispatch('A')).toBeDefined();
     });
