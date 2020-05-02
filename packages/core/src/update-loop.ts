@@ -75,12 +75,12 @@ function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
     });
 }
 
-function advanceBThreads(bThreadDictionary: BThreadDictionary, allBids: AllBidsByType, action: Action): void {
+function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return;
     // requested
     if(action.type === ActionType.requested) {
         if (typeof action.payload === "function") {
-            action.payload = action.payload();
+            action.payload = action.payload(eventCache.get(action.event)?.current);
         }
         if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
@@ -197,7 +197,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
         if (nextAction) {
             logger?.logAction(nextAction);
-            advanceBThreads(bThreadDictionary, bids, nextAction);
+            advanceBThreads(bThreadDictionary, eventCache, bids, nextAction);
             updateEventCache(eventCache, nextAction);
             return updateLoop(undefined, restActions);
         }
