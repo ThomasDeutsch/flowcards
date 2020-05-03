@@ -8,8 +8,8 @@ import * as utils from './utils';
 
 
 type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => BThreadState;
-type EnableStateFunctionType = (event: FCEvent | string, initialValue: any) => StateRef<any>;
-export type StagingFunction = (e: EnableThreadFunctionType, s: EnableStateFunctionType) => void;
+type EnableCacheFunction = (event: FCEvent | string, initialValue: any) => StateRef<any>;
+export type StagingFunction = (e: EnableThreadFunctionType, s: EnableCacheFunction) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
 export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
@@ -154,7 +154,7 @@ function stageBThreadsAndEventCaches(
         }
         return bThreadDictionary[id].state;
     };
-    const enableEventCache: EnableStateFunctionType = (event: FCEvent | string, initialValue: any): StateRef<any> => {
+    const enableEventCache: EnableCacheFunction = (event: FCEvent | string, initialValue?: any): StateRef<any> => {
         event = toEvent(event);
         if(!eventCache.has(event)) {
             eventCache.set(event, {current: initialValue});
