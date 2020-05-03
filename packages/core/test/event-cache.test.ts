@@ -13,13 +13,13 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
     let x:any;
 
     function* thread1(this: BTContext) {
-        yield bp.request('state', (previous: number) => previous + 1)
+        yield bp.request('A', 1);
+        yield bp.request('A', (current: number) => current+1);
     }
 
-    scenarios((enable, state) => {
-        state('state', 5);
+    scenarios((enable) => {
         enable(thread1);
-    }, ({state}) => {
-        expect(state('state')).toEqual(6);
+    }, ({latest}) => {
+        expect(latest('A')).toEqual(2);
     });
 });

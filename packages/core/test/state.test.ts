@@ -6,20 +6,15 @@ import { scenarios } from "./testutils";
 
 
 
-test("a state can be created that will listen for requests in its name", done => {
-    let st: any;
-
+test("a state can be created that will listen for requests in its name", () => {
     function* thread1() {
         yield bp.request("count", 2);
-        done();
     }
 
-    scenarios((enable, state) => {
-        st = state("count", 0);
+    scenarios((enable) => {
         enable(thread1);
-    }, (scenario) => {
-        expect(scenario.state("count")).toEqual(2);
-        expect(st.current).toEqual(2);
+    }, ({latest}) => {
+        expect(latest("count")).toEqual(2);
     });
 });
 
@@ -43,13 +38,13 @@ test("a state will return a ref. Passed to a function, it will not update on cha
         yield bp.wait('forever');;
     }
 
-    scenarios((enable, state) => {
-        st = state("count", 0);
+    scenarios((enable, cache) => {
+        st = cache("count");
         enable(thread1);
         enable(thread2, [st]);
         enable(thread3, [st.current]);
     }, (scenario) => {
-        expect(scenario.state("count")).toEqual(2);
+        expect(scenario.latest("count")).toEqual(2);
         expect(threadRefInit).toEqual(1);
         expect(threadValueInit).toEqual(2);
         expect(st.current).toEqual(2);
@@ -66,11 +61,11 @@ test("if there are multiple state changes at the same time, the highest priority
     }
 
     scenarios((enable, state) => {
-        state("count", 0);
+        state("count");
         enable(threadLow);
         enable(threadHigh);
-    }, (scenario) => {
-        expect(scenario.state("count")).toEqual(1000);
+    }, ({latest}) => {
+        expect(latest("count")).toEqual(1000);
     });
 });
 
@@ -84,7 +79,7 @@ test("the state function will also return the previous value", () => {
     }
 
     scenarios((enable, state) => {
-        st = state("count", 0);
+        st = state("count");
         enable(thread);
     }, () => {
         expect(st.previous).toEqual(1);
@@ -94,7 +89,7 @@ test("the state function will also return the previous value", () => {
 
 test("state changes can not be triggered by dispatch. Only threads can change states", () => {
     scenarios((enable, state) => {
-        state("count", 0);
+        state("count");
     }, (scenario) => {
         expect(scenario.dispatch('count')).toBeUndefined();
     });

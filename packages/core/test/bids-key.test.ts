@@ -144,12 +144,12 @@ test("an event cache vor an event will contain keyed values as well", () => {
     }
 
     scenarios((enable, cache) => {
-        cache('A', undefined);
+        cache('A');
         enable(thread1);
         enable(thread2);
-    }, ({state})=> {
-        expect(state({name: 'A', key: "1"})).toEqual('a value for 1');
-        expect(state({name: 'A', key: 2})).toEqual('a value for 2');
+    }, ({latest})=> {
+        expect(latest({name: 'A', key: "1"})).toEqual('a value for 1');
+        expect(latest({name: 'A', key: 2})).toEqual('a value for 2');
     });
 });
 
@@ -166,11 +166,11 @@ test("if an event cache has keyed values, they will be replaced by a request wit
     }
 
     scenarios((enable, cache) => {
-        cache('A', undefined);
+        cache('A');
         enable(thread1);
         enable(thread2);
-    }, ({state})=> {
-        expect(state({name: 'A', key: "1"})).toEqual('replacement value');
-        expect(state({name: 'A', key: 2})).toEqual('replacement value');
+    }, ({latest})=> {
+        expect(latest({name: 'A', key: "1"})).toEqual('replacement value');
+        expect(latest({name: 'A', key: 2})).toEqual('replacement value');
     });
 });

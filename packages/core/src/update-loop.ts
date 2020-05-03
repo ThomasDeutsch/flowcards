@@ -8,13 +8,14 @@ import * as utils from './utils';
 
 
 type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => BThreadState;
-type EnableCacheFunction = (event: FCEvent | string, initialValue: any) => StateRef<any>;
-export type StagingFunction = (e: EnableThreadFunctionType, s: EnableCacheFunction) => void;
+type GetEventCache = (event: FCEvent | string) => StateRef<any> | undefined;
+export type StagingFunction = (e: EnableThreadFunctionType, s: GetEventCache) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
 export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
 type EventCache = EventMap<StateRef<any>>;
-type GetStateFunction = (event: FCEvent | string) => any;
+type GetCache = (event: FCEvent | string) => any;
+type GetIsPending = (event: FCEvent | string) => boolean;
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
@@ -27,7 +28,8 @@ export interface StateRef<T> {
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
-    state: GetStateFunction;
+    latest: GetCache;
+    isPending: GetIsPending;
     bTState: Record<string, BThreadState>;
     log?: Log;
 }
@@ -121,17 +123,13 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
 
 function updateEventCache(eventCache: EventCache, action?: Action): void {
     if (!action) return;
-    if (action.type !== ActionType.requested) return;
-    const events = eventCache.getAllMatchingEvents(action.event);
-    if(events === undefined) return;
+    let events = eventCache.getAllMatchingEvents(action.event);
+    if(!events) return;
     events.forEach(event => {
-        const isCachedEvent = eventCache.has({name: event.name});
-        if(isCachedEvent) {
-            let val = eventCache.get(event) || {current: undefined};
-            val.previous =  val.current;
-            val.current = action.payload;
-            eventCache.set(event, val);
-        }
+        let val = eventCache.get(event) || {current: undefined};
+        val.previous =  val.current;
+        val.current = action.payload;
+        eventCache.set(event, val);      
     }); 
 }
 
@@ -155,14 +153,14 @@ function stageBThreadsAndEventCaches(
         }
         return bThreadDictionary[id].state;
     };
-    const enableEventCache: EnableCacheFunction = (event: FCEvent | string, initialValue?: any): StateRef<any> => {
+    const getEventCache: GetEventCache = (event: FCEvent | string): StateRef<any> | undefined => {
         event = toEvent(event);
         if(!eventCache.has(event)) {
-            eventCache.set(event, {current: initialValue});
+            eventCache.set(event, {current: undefined});
         }
-        return eventCache.get(event)!;
+        return eventCache.get(event);
     }
-    stagingFunction(enableBThread, enableEventCache); 
+    stagingFunction(enableBThread, getEventCache); 
     return orderedThreadIds;
 }
 
@@ -171,11 +169,11 @@ function stageBThreadsAndEventCaches(
 
 export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch] {
     const bThreadDictionary: BThreadDictionary = {};
-    const eventCache: EventCache = new EventMap();
     let orderedThreadIds: string[];
     const logger = disableLogging ? undefined : new Logger();
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
-    const getEventCache: GetStateFunction = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
+    const eventCache: EventCache = new EventMap();
+    const getEventCache: GetCache = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
     const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
         if (dispatchedAction !== undefined) { 
             if (dispatchedAction.type === ActionType.replay) {
@@ -208,6 +206,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
         // ------ create the return value:
         updateEventDispatcher(bids.wait?.difference(bids[BidType.pending]));
+        const pendingEventMap = bids[BidType.pending] || new EventMap();
         logger?.logPendingEvents(bids[BidType.pending] || new EventMap());
         logger?.logWaits(bids.wait);
         const bTStateById = Object.keys(bThreadDictionary).reduce((acc: Record<string, BThreadState>, threadId: string): Record<string, BThreadState> => {
@@ -215,8 +214,9 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return acc;
         }, {});
         return {
-            dispatch: eventDispatch,
-            state: getEventCache, // event caches
+            dispatch: eventDispatch, // 
+            latest: getEventCache, // latest values from event cache
+            isPending: (event: FCEvent | string) => pendingEventMap.has(toEvent(event)),
             bTState: bTStateById, // BThread state by id
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
