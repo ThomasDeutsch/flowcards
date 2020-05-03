@@ -4,7 +4,9 @@
 import * as bp from "../src/bid";
 import { scenarios } from "./testutils";
 
-
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 test("a state can be created that will listen for requests in its name", () => {
     function* thread1() {
@@ -95,3 +97,17 @@ test("state changes can not be triggered by dispatch. Only threads can change st
     });
 });
 
+
+
+test("ispending will show what events are pending", () => {
+    function* thread1() {
+        yield bp.request("count", () => delay(2000));
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+    }, ({latest, isPending}) => {
+        expect(isPending("count")).toEqual(true);
+        expect(latest("count")).toBeUndefined();
+    });
+});
