@@ -120,14 +120,18 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
 }
 
 function updateEventCache(eventCache: EventCache, action: Action): void {
-    if ((action.type === ActionType.requested) && eventCache.has(action.event)) {
-        const val = eventCache.get(action.event);
-        if(val) {
-            val.previous = val.current;
+    if (action.type !== ActionType.requested) return;
+    const events = eventCache.getAllMatchingEvents(action.event);
+    if(events === undefined) return;
+    events.forEach(event => {
+        const isCachedEvent = eventCache.has({name: event.name});
+        if(isCachedEvent) {
+            let val = eventCache.get(event) || {current: undefined};
+            val.previous =  val.current;
             val.current = action.payload;
-            eventCache.set(action.event, val);
+            eventCache.set(event, val);
         }
-    }
+    }); 
 }
 
 function stageBThreadsAndEventCaches(

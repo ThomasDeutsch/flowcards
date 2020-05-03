@@ -87,7 +87,7 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {;
 
 export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] | undefined {
     if(bids === undefined) return undefined
-    const result = bids.getAllMatchingItems(event);
+    const result = bids.getAllMatchingValues(event);
     if(result === undefined) return undefined;
     return utils.flattenShallow(result);
 }

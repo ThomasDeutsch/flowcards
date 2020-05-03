@@ -17,9 +17,9 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
     }
 
     scenarios((enable, state) => {
-        state('state', 0);
+        state('state', 5);
         enable(thread1);
     }, ({state}) => {
-        expect(state('state')).toEqual(1);
+        expect(state('state')).toEqual(6);
     });
 });

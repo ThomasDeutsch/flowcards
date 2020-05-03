@@ -4,7 +4,7 @@
 import * as bp from "../src/bid";
 import { scenarios } from "./testutils";
 
-test("The key can be a string or a number", () => {
+test("keys can be a string or a number", () => {
     function* thread1() {
         yield bp.wait({name: 'A', key: "1"});
     }
@@ -59,20 +59,6 @@ test("an event with a key can be blocked.", () => {
         expect(advancedKey2).toEqual(true);
     });
 });
-
-
-// test("a bid can have multiple keys", () => {
-//     function* thread1() {
-//         yield bp.wait({name: 'A', key: [1, 2]});
-//     }
-
-//     scenarios((enable) => {
-//         enable(thread1);
-//     }, ({dispatch})=> {
-//         expect(dispatch({name: 'A', key: 1})).toBeDefined();
-//         expect(dispatch({name: 'A', key: 2})).toBeDefined();
-//     });
-// });
 
 
 test("a request without a key will advance all waiting threads ( with key or not )", () => {
@@ -144,5 +130,47 @@ test("a request with a key, will only advance the matching wait with the same ke
         expect(advancedWait2).toEqual(false);
         expect(advancedWaitNoKey).toEqual(true);
 
+    });
+});
+
+
+test("an event cache vor an event will contain keyed values as well", () => {
+    function* thread1() {
+        yield bp.request({name: 'A', key: "1"}, 'a value for 1');
+    }
+
+    function* thread2() {
+        yield bp.request({name: 'A', key: 2}, 'a value for 2');
+    }
+
+    scenarios((enable, cache) => {
+        cache('A', undefined);
+        enable(thread1);
+        enable(thread2);
+    }, ({state})=> {
+        expect(state({name: 'A', key: "1"})).toEqual('a value for 1');
+        expect(state({name: 'A', key: 2})).toEqual('a value for 2');
+    });
+});
+
+
+test("if an event cache has keyed values, they will be replaced by a request without key", () => {
+    function* thread1() {
+        yield bp.request({name: 'A', key: "1"}, 'a value for 1');
+    }
+
+    function* thread2() {
+        yield bp.wait({name: 'A', key: "1"});
+        yield bp.request({name: 'A', key: 2}, 'a value for 2');
+        yield bp.request('A', 'replacement value')
+    }
+
+    scenarios((enable, cache) => {
+        cache('A', undefined);
+        enable(thread1);
+        enable(thread2);
+    }, ({state})=> {
+        expect(state({name: 'A', key: "1"})).toEqual('replacement value');
+        expect(state({name: 'A', key: 2})).toEqual('replacement value');
     });
 });
