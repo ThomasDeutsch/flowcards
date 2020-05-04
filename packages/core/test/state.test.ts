@@ -89,6 +89,25 @@ test("the state function will also return the previous value", () => {
 });
 
 
+test("the latest-function will respect the intercept value", () => {
+
+    function* thread() {
+        yield bp.request("count", 2);
+    }
+
+    function* thread2() {
+        yield bp.intercept("count", undefined, (val: number) => val + 2);
+    }
+
+    scenarios((enable) => {
+        enable(thread);
+        enable(thread2);
+    }, ({latest}) => {
+        expect(latest('count')).toEqual(4);
+    });
+});
+
+
 test("state changes can not be triggered by dispatch. Only threads can change states", () => {
     scenarios((enable, state) => {
         state("count");
