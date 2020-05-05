@@ -1,3 +1,3 @@
 ```
-npm install @flowcards/rxjs --save
+npm install @flowcards/mobx
 ```
