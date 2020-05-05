@@ -5,15 +5,14 @@ import { observable, decorate, computed } from "mobx";
 
 export * from '@flowcards/core';
 
-class FlowcardsStore {
+export class FlowcardsStore {
   public context: Fc.ScenariosContext;
   public dispatch: Fc.EventDispatch;
 
   constructor(stagingFunction: Fc.StagingFunction) {
-    [this.context, this.dispatch] = Fc.scenarios(stagingFunction),
-      (updatedContext: Fc.ScenariosContext) => {
-        this.context = updatedContext;
-    }
+    [this.context, this.dispatch] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
+      this.context = updatedContext;
+    });
   }
   latest = computedFn(function(this: FlowcardsStore, event: Fc.FCEvent | string) {
     return this.context.latest(event);
@@ -26,10 +25,7 @@ class FlowcardsStore {
   }
 }
 
-export const getStore = () => {
-  decorate(FlowcardsStore, {
-    context: observable,
-    bTState: computed
-  });
-  return FlowcardsStore;
-}
+decorate(FlowcardsStore, {
+  context: observable,
+  bTState: computed
+});
