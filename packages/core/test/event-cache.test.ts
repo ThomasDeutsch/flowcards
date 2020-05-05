@@ -22,4 +22,5 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
     }, ({latest}) => {
         expect(latest('A')).toEqual(2);
     });
+    
 });

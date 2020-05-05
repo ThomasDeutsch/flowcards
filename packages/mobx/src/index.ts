@@ -1,6 +1,5 @@
 
 import * as Fc from "@flowcards/core";
-import { FCEvent } from "packages/core/src/event";
 import { computedFn } from "mobx-utils";
 import { observable, decorate, computed } from "mobx";
 
@@ -16,10 +15,10 @@ export class FlowcardsStore {
         this.context = updatedContext;
     }
   }
-  latest = computedFn(function(this: FlowcardsStore, event: FCEvent | string) {
+  latest = computedFn(function(this: FlowcardsStore, event: Fc.FCEvent | string) {
     return this.context.latest(event);
   });
-  isPending = computedFn(function(this: FlowcardsStore, event: FCEvent | string) {
+  isPending = computedFn(function(this: FlowcardsStore, event: Fc.FCEvent | string) {
     return this.context.isPending(event);
   });
   get bTState() {
