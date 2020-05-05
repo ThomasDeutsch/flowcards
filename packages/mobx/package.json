@@ -1,0 +1,33 @@
+{
+  "name": "@flowcards/mobx",
+  "version": "0.8.9",
+  "description": "",
+  "author": {
+    "name": "Thomas Deutsch",
+    "email": "deutsch.thomas+flowcards@gmail.com",
+    "url": "https://thomasdeutsch.de"
+  },
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@flowcards/core": "^0.8.9"
+  },
+  "peerDependencies": {
+    "mobx-utils": ">=5.0.0",
+    "mobx": ">=5.0.0"
+  },
+  "license": "MIT",
+  "gitHead": "42eab8701d12e0e8169c462a10ffde7aa9fd2a31",
+  "publishConfig": {
+    "access": "public"
+  }
+}
