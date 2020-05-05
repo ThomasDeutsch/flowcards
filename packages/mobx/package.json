@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/mobx",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -22,8 +22,8 @@
     "@flowcards/core": "^0.8.9"
   },
   "peerDependencies": {
-    "mobx-utils": ">=5.0.0",
-    "mobx": ">=5.0.0"
+    "mobx": ">=5.0.0",
+    "mobx-utils": ">=5.0.0"
   },
   "license": "MIT",
   "gitHead": "42eab8701d12e0e8169c462a10ffde7aa9fd2a31",
