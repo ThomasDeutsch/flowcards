@@ -5,7 +5,7 @@ import { observable, decorate, computed } from "mobx";
 
 export * from '@flowcards/core';
 
-export class FlowcardsStore {
+class FlowcardsStore {
   public context: Fc.ScenariosContext;
   public dispatch: Fc.EventDispatch;
 
@@ -26,7 +26,10 @@ export class FlowcardsStore {
   }
 }
 
-decorate(FlowcardsStore, {
-  context: observable,
-  bTState: computed
-});
+export const getStore = () => {
+  decorate(FlowcardsStore, {
+    context: observable,
+    bTState: computed
+  });
+  return FlowcardsStore;
+}
