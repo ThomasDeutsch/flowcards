@@ -15,7 +15,7 @@ export type TriggerWaitDispatch = (payload: any) => void;
 export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
 type EventCache = EventMap<StateRef<any>>;
 type GetCache = (eventName: string, key?: string | number) => any;
-type GetIsPending = (event: FCEvent | string) => boolean;
+type GetIsPending =(eventName: string, eventKey?: string | number) => boolean;
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
@@ -217,7 +217,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         return {
             dispatch: eventDispatch, // 
             latest: getEventCache, // latest values from event cache
-            isPending: (event: FCEvent | string) => pendingEventMap.has(toEvent(event)),
+            isPending: (eventName: string, eventKey?: string | number) => pendingEventMap.has({name: eventName, key: eventKey}),
             bTState: bTStateById, // BThread state by id
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
         };

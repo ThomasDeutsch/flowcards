@@ -14,11 +14,11 @@ export class FlowcardsStore {
       this.context = updatedContext;
     });
   }
-  latest = computedFn(function(this: FlowcardsStore, event: Fc.FCEvent | string) {
-    return this.context.latest(event);
+  latest = computedFn(function(this: FlowcardsStore, eventName: string, eventKey?: string | number) {
+    return this.context.latest(eventName, eventKey);
   });
-  isPending = computedFn(function(this: FlowcardsStore, event: Fc.FCEvent | string) {
-    return this.context.isPending(event);
+  isPending = computedFn(function(this: FlowcardsStore, eventName: string, eventKey?: string | number) {
+    return this.context.isPending(eventName, eventKey);
   });
   get bTState() {
     return this.context.bTState;
