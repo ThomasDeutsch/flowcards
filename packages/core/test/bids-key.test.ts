@@ -143,13 +143,12 @@ test("an event cache vor an event will contain keyed values as well", () => {
         yield bp.request({name: 'A', key: 2}, 'a value for 2');
     }
 
-    scenarios((enable, cache) => {
-        cache('A');
+    scenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({latest})=> {
-        expect(latest({name: 'A', key: "1"})).toEqual('a value for 1');
-        expect(latest({name: 'A', key: 2})).toEqual('a value for 2');
+        expect(latest('A', "1")).toEqual('a value for 1');
+        expect(latest('A', 2)).toEqual('a value for 2');
     });
 });
 
@@ -170,7 +169,7 @@ test("if an event cache has keyed values, they will be replaced by a request wit
         enable(thread1);
         enable(thread2);
     }, ({latest})=> {
-        expect(latest({name: 'A', key: "1"})).toEqual('replacement value');
-        expect(latest({name: 'A', key: 2})).toEqual('replacement value');
+        expect(latest('A', "1")).toEqual('replacement value');
+        expect(latest('A', 2)).toEqual('replacement value');
     });
 });
