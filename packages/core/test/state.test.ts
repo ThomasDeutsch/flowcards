@@ -118,7 +118,7 @@ test("state changes can not be triggered by dispatch. Only threads can change st
 
 
 
-test("ispending will show what events are pending", () => {
+test("isPending will show what events are pending", () => {
     function* thread1() {
         yield bp.request("count", () => delay(2000));
     }
@@ -128,5 +128,18 @@ test("ispending will show what events are pending", () => {
     }, ({latest, isPending}) => {
         expect(isPending("count")).toEqual(true);
         expect(latest("count")).toBeUndefined();
+    });
+});
+
+test("isPending will accept a key as a second argument", () => {
+    function* thread1() {
+        yield bp.request({name: "count", key: 1}, () => delay(2000));
+    }
+
+    scenarios((enable) => {
+        enable(thread1);
+    }, ({latest, isPending}) => {
+        expect(isPending("count", 1)).toEqual(true);
+        expect(latest("count", 1)).toBeUndefined();
     });
 });
