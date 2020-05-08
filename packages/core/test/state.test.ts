@@ -72,21 +72,21 @@ test("if there are multiple state changes at the same time, the highest priority
 });
 
 
-test("the state function will also return the previous value", () => {
-    let st: any;
+// test("the state function will also return the previous value", () => {
+//     let st: any;
 
-    function* thread() {
-        yield bp.request("count", 1);
-        yield bp.request("count", 2);
-    }
+//     function* thread() {
+//         yield bp.request("count", 1);
+//         yield bp.request("count", 2);
+//     }
 
-    scenarios((enable, state) => {
-        st = state("count");
-        enable(thread);
-    }, () => {
-        expect(st.previous).toEqual(1);
-    });
-});
+//     scenarios((enable, state) => {
+//         st = state("count");
+//         enable(thread);
+//     }, () => {
+//         expect(st.previous).toEqual(1);
+//     });
+// });
 
 
 test("the latest-function will respect the intercept value", () => {

@@ -47,7 +47,7 @@ test("a thread will accept an optional key", () => {
 
 
 
-test("if no key is provided, the default key value is null", () => {
+test("if no key is provided, the default key value is undefined", () => {
     let receivedKeyA;
 
     function* thread(this: BTContext) {

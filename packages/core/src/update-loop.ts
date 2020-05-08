@@ -8,12 +8,12 @@ import * as utils from './utils';
 
 
 type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => BThreadState;
-type GetEventCache = (event: FCEvent | string) => StateRef<any> | undefined;
+type GetEventCache = (event: FCEvent | string, initial?: any) => Ref<any> | undefined;
 export type StagingFunction = (e: EnableThreadFunctionType, s: GetEventCache) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
 export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
-type EventCache = EventMap<StateRef<any>>;
+type EventCache = EventMap<Ref<any>>;
 type GetCache = (eventName: string, key?: string | number) => any;
 type GetIsPending =(eventName: string, eventKey?: string | number) => boolean;
 
@@ -21,9 +21,8 @@ export interface BThreadDictionary {
     [Key: string]: BThread;
 }
 
-export interface StateRef<T> {
+export interface Ref<T> {
     current: T;
-    previous?: T;
 }
 
 export interface ScenariosContext {
@@ -128,7 +127,6 @@ function updateEventCache(eventCache: EventCache, action?: Action): void {
     if(!events) return;
     events.forEach(event => {
         let val = eventCache.get(event) || {current: undefined};
-        val.previous =  val.current;
         val.current = action.payload;
         eventCache.set(event, val);      
     }); 
@@ -154,7 +152,7 @@ function stageBThreadsAndEventCaches(
         }
         return bThreadDictionary[id].state;
     };
-    const getEventCache: GetEventCache = (event: FCEvent | string, initial?: any): StateRef<any> | undefined => {
+    const getEventCache: GetEventCache = (event: FCEvent | string, initial?: any): Ref<any> | undefined => {
         event = toEvent(event);
         if(!eventCache.has(event)) {
             eventCache.set(event, {current: initial});

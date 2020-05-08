@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import * as bp from "../src/bid";
+import * as bp from "../src/index";
 import { scenarios } from './testutils';
 import { BTContext } from '../src/index';
 
@@ -9,7 +9,6 @@ function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }
 test("if an eventCache is present, it can be used as an argument in a request-function", () => {
-    let x:any;
 
     function* thread1(this: BTContext) {
         yield bp.request('A', 1);
@@ -34,9 +33,43 @@ test("when a promise resolved, the event cache gets updated", (done) => {
         enable(thread1);
     }, ({dispatch, latest}) => {
         if(dispatch('fin')) {
-            console.log('A: ', latest('A'))
             expect(latest('A')).toEqual("resolved value");
             done();
         }
     });
+});
+
+
+test("the event cache can have an initial value", () => {
+
+    function* thread1(this: BTContext) {
+        yield bp.request('A', (current: number) => current+1);
+    }
+
+    scenarios((enable, cache) => {
+        cache('A', 100);
+        enable(thread1);
+    }, ({latest}) => {
+        expect(latest('A')).toEqual(101);
+    });
+    
+});
+
+
+test("the event cache function returns a reference", () => {
+
+    function* thread1(this: BTContext, ref: bp.Ref<any>) {
+        yield bp.request('A', (current: number) => current+1);
+        yield bp.request('A', (current: number) => current+1);
+        yield bp.request('A', (current: number) => current+1);
+        expect(ref.current).toEqual(102); // the reference is updated, but the Thread is not reset.
+    }
+
+    scenarios((enable, cache) => {
+        const ref = cache('A', 100);
+        enable(thread1, [ref]);
+    }, ({latest}) => {
+        expect(latest('A')).toEqual(103);
+    });
+    
 });

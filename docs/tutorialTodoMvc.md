@@ -94,7 +94,7 @@ And the `enable` function.<br/>
 The enable function can take 3 arguments. The first is a generator function.<br/>
 Let's take a look at the first generator function `newTodoCanBeAdded`:
 ```ts
-function* newTodoCanBeAdded(todos: StateRef<Todo[]>) {
+function* newTodoCanBeAdded(todos: Ref<Todo[]>) {
   while (true) {
     const title = yield wait("inputOnEnter", (title: string) => title.trim().length > 0);
     yield request("s_todos", [...todos.current, newTodo(title)]);
