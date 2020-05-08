@@ -6,7 +6,7 @@ import { getGuardForEventDispatch, GuardFunction } from './guard';
 
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
-export type EventDispatch = (event: FCEvent | string, payload?: any) => CachedDispatch | TriggerDispatch | undefined;
+export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
 type EventDispatchUpdater = (waits: BidsForBidType) => void;
 
 interface DispatchCache {
