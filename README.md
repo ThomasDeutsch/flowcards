@@ -3,21 +3,17 @@
 a tool to enable behaviour - flow by flow.
 
 You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
-They both enable ways to describe & model reactive systems.<br/>
+They both enable ways to describe & model stateful reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 `App(state) => UI` becomes `App(flowcards(scenarios)) => UI`<br/>
 
-The idea comes from [user-flows](https://miro.medium.com/max/1400/1*fTafSXeAHjbELTxDHttWuQ.png). They provide an inter-object description of a reactive system.<br/>
+The naming comes from [user-flows](https://miro.medium.com/max/1400/1*fTafSXeAHjbELTxDHttWuQ.png). They provide an inter-object description of a reactive system.<br/>
 Instead of describing the full reactivity of each component object-by-object (like XState),<br/>
 we can define a system by the scenarios we want to enable flow-by-flow.<br/>
 To enable behaviour - flow by flow - is what flowcards is all about.<br/>
-
-👉 [This guide & sample application](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
-
+<br/>
 flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).<br/>
-Luca Matteis wrote about it [here](https://medium.com/@lmatteis/b-threads-programming-in-a-way-that-allows-for-easier-changes-5d95b9fb6928). I can also recommend [this talk](https://www.youtube.com/watch?v=_BLQIE-_prc).
-<br/>
-<br/>
+👉 [This guide & sample application](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
 
 ## Packages
 

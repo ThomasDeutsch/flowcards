@@ -154,10 +154,10 @@ function stageBThreadsAndEventCaches(
         }
         return bThreadDictionary[id].state;
     };
-    const getEventCache: GetEventCache = (event: FCEvent | string): StateRef<any> | undefined => {
+    const getEventCache: GetEventCache = (event: FCEvent | string, initial?: any): StateRef<any> | undefined => {
         event = toEvent(event);
         if(!eventCache.has(event)) {
-            eventCache.set(event, {current: undefined});
+            eventCache.set(event, {current: initial});
         }
         return eventCache.get(event);
     }
