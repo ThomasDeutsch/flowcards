@@ -18,7 +18,7 @@ test("the enable function will return the current thread state", () => {
         const state = enable(thread);
         
         expect(state.isCompleted).toBe(false);
-        expect(state.value).toBeUndefined();
+        expect(state.current).toBeUndefined();
     });
 });
 
@@ -36,7 +36,7 @@ test("the thread will return the state value, and a completed-flag if the thread
 
     if(state) {
         expect(state.isCompleted).toBe(true);
-        expect(state.value).toEqual('foo');
+        expect(state.current).toEqual('foo');
     }
 });
 
@@ -55,7 +55,7 @@ test("a thread state is always the same Object.", (done) => {
         enable(thread1);
     }, ({bTState}) => {
         
-        if(bTState.thread1.value !== 1) previous = bTState.thread1;
+        if(bTState.thread1.current !== 1) previous = bTState.thread1;
         else {
             expect(Object.is(previous, bTState.thread1)).toBeTruthy();
             done();
@@ -75,7 +75,7 @@ test("a setState argument can be a function", () => {
     scenarios((enable) => {
         enable(thread1);
     }, ({bTState}) => {
-        expect(bTState.thread1.value).toEqual(2);
+        expect(bTState.thread1.current).toEqual(2);
     });
 });
 
@@ -92,6 +92,6 @@ test("a state value can be accessed from the thread itself", () => {
     scenarios((enable) => {
         enable(thread1);
     }, () => {
-        expect(state.value).toEqual(1);
+        expect(state.current).toEqual(1);
     });
 });

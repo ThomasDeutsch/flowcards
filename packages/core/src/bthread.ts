@@ -12,7 +12,7 @@ export type GeneratorFn = (...args: any[]) => BTGen;
 
 export interface BThreadState {
     isCompleted: boolean;
-    value?: any;
+    current?: any;
 }
 
 export interface BTContext {
@@ -41,8 +41,7 @@ export enum InterceptResultType {
 type StateUpdateFunction = (previousState: any) => void;
 
 export class BThread {
-    public readonly id: string;
-    public readonly key?: string | number;
+    // private
     private readonly _logger?: Logger;
     private readonly _dispatch: ActionDispatch;
     private readonly _generatorFn: GeneratorFn;
@@ -54,19 +53,10 @@ export class BThread {
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted: boolean = false;
     private _stateValue?: any;
-    private _stateRef: BThreadState = { isCompleted: this._isCompleted };
-    public get state(): BThreadState {
-        this._stateRef.isCompleted = this._isCompleted;
-        this._stateRef.value = this._stateValue;
-        return this._stateRef;
-    }
-
-    // if(mainFlow.current === 'state1')
-    // if(mainFlow.state.current === 'state2')
-    // if(mainFlow.isCompleted)
-    // if(mainFlow.until('state 2'))
-    // if(mainFlow.after('state1'))
-
+    private _stateRef: BThreadState = { 
+        isCompleted: this._isCompleted,
+        current: undefined
+    };
     private _getBTContext(): BTContext {
         return {
             key: this.key,
@@ -79,6 +69,14 @@ export class BThread {
             },
             state: this.state
         };
+    }
+    // public
+    public readonly id: string;
+    public readonly key?: string | number;
+    public get state(): BThreadState {
+        this._stateRef.isCompleted = this._isCompleted;
+        this._stateRef.current = this._stateValue;
+        return this._stateRef;
     }
 
     public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger) {
@@ -93,6 +91,7 @@ export class BThread {
         this._logger?.logReaction(this.id, ReactionType.init);
     }
 
+     // --- private
 
     private _cancelPendingPromises(): FCEvent[] {
         const test = this._pendingRequestRecord.clear();
