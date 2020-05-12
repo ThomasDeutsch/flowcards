@@ -4,8 +4,10 @@ export type UpdateCallback = (scenario: ScenariosContext) => any;
 
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial: boolean = true): ScenariosContext {
+    const actionQueue: Action[] = [];
     const [updateLoop] = createUpdateLoop(stagingFunction, (a: Action): void => {
-        const scenarioContext = updateLoop(a);
+        actionQueue.push(a);
+        const scenarioContext = updateLoop(actionQueue);
         if(updateCb !== undefined) updateCb(scenarioContext);
     });
     const initialScenarioContext = updateLoop();

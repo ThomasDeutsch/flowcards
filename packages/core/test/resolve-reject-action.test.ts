@@ -17,14 +17,16 @@ function delay(ms: number) {
 test("when a promise is resolved, it will dispatch an Action.", done => {
 
     const testLoop = (enable: StagingFunction): void => {
+        const actionQueue: Action[] = [];
         const [updateLoop] = createUpdateLoop(enable, (action: Action) => {
             if(action) {
+                actionQueue.push(action)
                 expect(action.type).toBe(ActionType.resolved);
                 expect(action.threadId).toBe('thread1');
                 expect(action.event.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
-            updateLoop(action);
+            updateLoop(actionQueue);
         });
         updateLoop();
     };
@@ -43,8 +45,12 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
 describe('dispatched action', () => {
 
     const testLoop = (enable: StagingFunction): void => {
-        const [updateLoop] = createUpdateLoop(enable, (a: Action) => {
-            updateLoop(a);
+        const actionQueue: Action[] = [];
+        const [updateLoop] = createUpdateLoop(enable, (action: Action) => {
+            if(action) {
+                actionQueue.push(action);
+                updateLoop(actionQueue);
+            }
         });
         updateLoop();
     };

@@ -12,7 +12,7 @@ type GetEventCache = (event: FCEvent | string, initial?: any) => Ref<any> | unde
 export type StagingFunction = (e: EnableThreadFunctionType, s: GetEventCache) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
-export type UpdateLoopFunction = (dispatchedAction?: Action, nextActions?: Action[]) => ScenariosContext;
+export type UpdateLoopFunction = (actionQueue?: Action[]) => ScenariosContext;
 type EventCache = EventMap<Ref<any>>;
 type GetCache = (eventName: string, key?: string | number) => any;
 type GetIsPending =(eventName: string, eventKey?: string | number) => boolean;
@@ -173,35 +173,28 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const eventCache: EventCache = new EventMap();
     const getEventCache: GetCache = (eventName: string, key?: string | number) => eventCache.get({name: eventName, key: key})?.current;
-    const updateLoop: UpdateLoopFunction = (dispatchedAction?: Action, remainingReplayActions?: Action[]): ScenariosContext => {
-        if (dispatchedAction !== undefined) { 
-            if (dispatchedAction.type === ActionType.replay) {
-                Object.keys(bThreadDictionary).forEach((threadId): void => { 
-                    bThreadDictionary[threadId].onDelete();
-                    delete bThreadDictionary[threadId]
-                }); // delete all BThreads
-                eventCache.clear();
-                logger?.resetLog(); // empty current log
-                return updateLoop(undefined, dispatchedAction.payload); // start a replay
-            }
-        } 
+    const updateLoop: UpdateLoopFunction = (actionQueue?: Action[]): ScenariosContext => {
+        let action = actionQueue?.shift();
+        // start a replay?
+        if (action && action.type === ActionType.replay) {
+            Object.keys(bThreadDictionary).forEach((threadId): void => { 
+                bThreadDictionary[threadId].onDelete();
+                delete bThreadDictionary[threadId]
+            }); // delete all BThreads
+            eventCache.clear();
+            logger?.resetLog(); // empty current log
+            return updateLoop(action.payload); // start a replay
+        }
+        // not a replay
         orderedThreadIds = stageBThreadsAndEventCaches(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
         const bThreadBids = orderedThreadIds.map(id => bThreadDictionary[id].getBids());
         const bids = getAllBids(bThreadBids);
-        // get the next action
-        let nextAction: Action | undefined, restActions: Action[] | undefined;
-        if(remainingReplayActions !== undefined && remainingReplayActions.length > 0) {
-            [nextAction, ...restActions] = remainingReplayActions;
-        } else if(dispatchedAction) {
-            nextAction = dispatchedAction;
-        } else {
-            nextAction = getNextActionFromRequests(bids.request);
-        }
-        if (nextAction) {
-            logger?.logAction(nextAction);
-            const a = advanceBThreads(bThreadDictionary, eventCache, bids, nextAction);
+        action = action || getNextActionFromRequests(bids.request);
+        if (action) {
+            logger?.logAction(action);
+            const a = advanceBThreads(bThreadDictionary, eventCache, bids, action);
             updateEventCache(eventCache, a);
-            return updateLoop(undefined, restActions);
+            return updateLoop(actionQueue);
         }
         // ------ create the return value:
         updateEventDispatcher(bids.wait?.difference(bids[BidType.pending]));
