@@ -127,8 +127,3 @@ test("the evaluated dispatch function is the same Object, for every key/payload 
         }  
     });
 });
-
-/** 
-* waits können mit einem oder mehreren keys dispatched werden.
-* waits können allgemein dispatched werden ( alle keys )
-*/
