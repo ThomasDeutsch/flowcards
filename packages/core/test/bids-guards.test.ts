@@ -71,8 +71,6 @@ test("an intercept is not applied, if the guard returns false.", () => {
     });
 });
 
-
-
 test("a block can be guarded", () => {
 
     function* requestingThread(): BTGen {

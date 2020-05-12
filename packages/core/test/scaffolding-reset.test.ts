@@ -12,6 +12,7 @@ test("a thread gets reset, when the arguments change", () => {
         yield bp.request('A');
         this.setState('foo');
     }
+    
 
     function* threadB(value: string) {
         initCount++;

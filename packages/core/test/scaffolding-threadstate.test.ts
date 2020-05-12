@@ -42,7 +42,7 @@ test("the thread will return the state value, and a completed-flag if the thread
 
 
 test("a thread state is always the same Object.", (done) => {
-    let previous:any;
+    let previous: any;
 
     function* thread1(this: BTContext) {
         this.setState(0);
