@@ -82,6 +82,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     if(action.type === ActionType.requested) {
         if (typeof action.payload === "function") {
             action.payload = action.payload(eventCache.get(action.event)?.current);
+        } else if(action.payload === undefined) {
+            action.payload = eventCache.get(action.event)?.current;
         }
         if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
@@ -122,7 +124,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
 }
 
 function updateEventCache(eventCache: EventCache, action?: Action): void {
-    if (!action) return;
+    if (!action || action.payload === undefined) return;
     const events = eventCache.getAllMatchingEvents(action.event);
     if(!events) return;
     events.forEach(event => {

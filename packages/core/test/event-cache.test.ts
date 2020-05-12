@@ -68,5 +68,34 @@ test("the event cache function returns a reference", () => {
     }, ({latest}) => {
         expect(latest('A')).toEqual(103);
     });
-    
+});
+
+
+
+test("if a request has no value, it will return the last cached value", () => {
+    let val: number;
+    function* thread1(this: BTContext) {
+        val = yield bp.request('A');
+    }
+    scenarios((enable, cache) => {
+        cache('A', 100);
+        enable(thread1);
+    }, () => {
+        expect(val).toEqual(100);
+    });
+});
+
+
+test("a cache is only updated, if the request value is not undefined", () => {
+    let val: number;
+    let cachedVal: any;
+    function* thread1(this: BTContext) {
+        val = yield bp.request('A', undefined);
+    }
+    scenarios((enable, cache) => {
+        cachedVal = cache('A', 100);
+        enable(thread1);
+    }, () => {
+        expect(cachedVal.current).toEqual(100);
+    });
 });
