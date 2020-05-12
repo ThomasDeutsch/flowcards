@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-
 import * as bp from "../src/bid";
 import { scenarios } from "./testutils";
 import { BTContext, BThreadState } from '../src/bthread';

@@ -1,5 +1,5 @@
 import { GeneratorFn, BThread, BThreadState, InterceptResultType } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, Bid } from './bid';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
@@ -123,10 +123,10 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
 
 function updateEventCache(eventCache: EventCache, action?: Action): void {
     if (!action) return;
-    let events = eventCache.getAllMatchingEvents(action.event);
+    const events = eventCache.getAllMatchingEvents(action.event);
     if(!events) return;
     events.forEach(event => {
-        let val = eventCache.get(event) || {current: undefined};
+        const val = eventCache.get(event) || {current: undefined};
         val.current = action.payload;
         eventCache.set(event, val);      
     }); 

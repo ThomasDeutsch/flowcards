@@ -1,7 +1,3 @@
-
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as bp from "../src/bid";
 import { Action, ActionType } from '../src/action';
 import { createUpdateLoop, StagingFunction } from '../src/update-loop';

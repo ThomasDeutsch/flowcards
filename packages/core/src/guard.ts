@@ -8,7 +8,7 @@ export type GuardFunction = (payload: any) => boolean
 export function getGuardForEventDispatch(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunction | undefined {
     let guards: GuardFunction[] | undefined = eventMap.get(event)?.map(bid => bid.guard).filter(utils.notUndefined);
     if(event.key !== undefined) {
-        let g = getGuardForEventDispatch(eventMap, {name: event.name}); // also get the guard from the unkeyed wait
+        const g = getGuardForEventDispatch(eventMap, {name: event.name}); // also get the guard from the no-key wait
         if(g) {
             guards = guards || [];
             guards.push(g);

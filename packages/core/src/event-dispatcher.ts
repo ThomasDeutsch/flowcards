@@ -33,7 +33,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
             return;
         }
         dispatchByEvent.intersection(waits);
-        waits.forEach((waitEvent, bids) => {
+        waits.forEach((waitEvent) => {
             guardByEvent.set(waitEvent, getGuardForEventDispatch(waits, waitEvent));
             if(!dispatchByEvent.has(waitEvent)) {
                 const cache: DispatchCache = {};

@@ -43,9 +43,10 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined |
     if(bids.length === 0) return defaultBidsByType;
     return bids.reduce((acc: BThreadBids, bid: Bid | undefined): BThreadBids => {
         if(bid) {
-            const type = bid.type;
-            if(!acc[type]) acc[type] = new EventMap();
-            acc[type]!.set(bid.event, {...bid, threadId: threadId});
+            if(!acc[bid.type]) {
+                acc[bid.type] = new EventMap();
+            }
+            acc[bid.type]!.set(bid.event, {...bid, threadId: threadId});
         }
         return acc;
     }, defaultBidsByType);
@@ -71,7 +72,7 @@ export interface AllBidsByType {
     [BidType.intercept]?: EventMap<Bid[]>;
 }
 
-export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {;
+export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
     const pending = reduceMaps(bidsForType(BidType.pending, allBThreadBids));
     const pendingEvents = new Set(pending?.getAllEvents());
     const blocks = reduceMaps(bidsForType(BidType.block, allBThreadBids));

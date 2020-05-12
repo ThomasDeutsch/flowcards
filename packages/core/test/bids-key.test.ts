@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as bp from "../src/bid";
 import { scenarios } from "./testutils";
 
@@ -54,7 +51,7 @@ test("an event with a key can be blocked.", () => {
         enable(thread2);
         enable(blockingThread);
         enable(requestingThread);
-    }, ({dispatch})=> {
+    }, ()=> {
         expect(advancedKey1).toEqual(false);
         expect(advancedKey2).toEqual(true);
     });

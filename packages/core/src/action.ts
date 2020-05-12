@@ -24,7 +24,8 @@ export function getNextActionFromRequests(requestBids: BidsForBidType): Action |
     if(!events) return undefined;
     const selectedEvent = utils.getRandom(events);
     const bids = requestBids.get(selectedEvent);
-    const bid = bids![bids!.length - 1]; // select the bid with the highest priority.
+    if(!bids) return undefined;
+    const bid = bids[bids.length - 1]; // select the bid with the highest priority.
     return {
         type: ActionType.requested,
         threadId: bid.threadId,

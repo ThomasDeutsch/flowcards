@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as bp from "../src/bid";
 import { scenarios } from "./testutils";
 
@@ -37,7 +34,7 @@ test("a state will return a ref. Passed to a function, it will not update on cha
 
     function* thread3() { // this thread will receive the state value
         threadValueInit++;
-        yield bp.wait('forever');;
+        yield bp.wait('forever');
     }
 
     scenarios((enable, cache) => {

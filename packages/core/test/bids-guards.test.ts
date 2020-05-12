@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-
+  
 import * as bp from "../src/bid";
 import { scenarios } from "./testutils";
 import { BTGen } from '../src/index';
@@ -76,7 +75,7 @@ test("a block can be guarded", () => {
     function* requestingThread(): BTGen {
         let i = 0;
         while(i++ < 20) {
-            const [type, val] = yield [bp.request("A", 1000), bp.request("A", 2000)];
+            const [_, val] = yield [bp.request("A", 1000), bp.request("A", 2000)];
             expect(val).toEqual(2000);
         }
     }

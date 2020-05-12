@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as bp from "../src/index";
 import { scenarios } from './testutils';
 import { BTContext } from '../src/index';

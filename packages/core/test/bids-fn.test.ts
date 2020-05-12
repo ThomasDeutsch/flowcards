@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-
-import * as bp from "../src/bid";
+  import * as bp from "../src/bid";
 import {scenarios } from './testutils'
 
 test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {

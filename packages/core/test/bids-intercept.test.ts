@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as bp from "../src/bid";
 import { scenarios } from "./testutils";
 import { InterceptResult } from "../src/bthread";
@@ -93,7 +90,7 @@ test("the intercept payload can be a function.", () => {
     }
 
     function* thread3() {
-        interceptValue = yield bp.intercept("A", null, (x:number) => x + 1000);
+        interceptValue = yield bp.intercept("A", null, (x: number) => x + 1000);
         yield bp.wait('X');
     }
 
@@ -127,7 +124,7 @@ test("if the intercept payload is a promise, a pending-event is created.", done 
     }
 
     function* thread3() {
-        interceptValue = yield bp.intercept("A", null, (x:number) => delay(100, x + 1000));
+        interceptValue = yield bp.intercept("A", null, (x: number) => delay(100, x + 1000));
         yield bp.wait('Fin')
     }
 

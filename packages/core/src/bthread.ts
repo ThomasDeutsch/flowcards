@@ -51,7 +51,7 @@ export class BThread {
     private _nextBid: NextBid = {isFunction: false};
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
-    private _isCompleted: boolean = false;
+    private _isCompleted = false;
     private _stateValue?: any;
     private _stateRef: BThreadState = { 
         isCompleted: this._isCompleted,
@@ -112,7 +112,7 @@ export class BThread {
         return cancelledPromises;
     }
 
-    private _progressBThread(event: FCEvent, payload: any, isReject: boolean = false): void {
+    private _progressBThread(event: FCEvent, payload: any, isReject = false): void {
         let returnVal;
         if(!isReject) {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [event, payload] : payload;
@@ -122,8 +122,8 @@ export class BThread {
     }
 
     private _createInterceptPromise(action: Action): InterceptResult {
-        let resolveFn = () => {};
-        let rejectFn = () => {};
+        let resolveFn = () => {true};
+        let rejectFn = () => {true};
         const promise = new Promise((resolve, reject) => {
             resolveFn = resolve;
                 rejectFn = reject;

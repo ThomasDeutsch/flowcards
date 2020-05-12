@@ -28,13 +28,13 @@ export class EventMap<T>  {
     }
 
     public forEach(iteratorFn: EventIteratorFunction<T>): void {
-        for (let [eventName, value] of this.noKey) {
+        for (const [eventName, value] of this.noKey) {
             iteratorFn({name: eventName}, value);
         }
-        for (let [eventName] of this.withKey) {
+        for (const [eventName] of this.withKey) {
             const map = this.withKey.get(eventName);
             if(map) {
-                for (let [key, value] of map) {
+                for (const [key, value] of map) {
                     iteratorFn({name: eventName, key: key}, value);
                 }
             }
@@ -63,7 +63,7 @@ export class EventMap<T>  {
         if(event === undefined) return undefined;
         let result: FCEvent[];
         if(event.key === undefined) { // there was no key, so add all items with a key.
-            let keys = this.withKey.get(event.name)?.keys();
+            const keys = this.withKey.get(event.name)?.keys();
             result = [...([...keys || []]).map(key => ({name: event.name, key: key})), event].filter(utils.notUndefined);
         } else { // there was a key, so only add the items without a key.
             result = [event, {name: event.name}].filter(utils.notUndefined);
@@ -103,7 +103,7 @@ export class EventMap<T>  {
     }
 
     public clear(): FCEvent[] | undefined {
-        let deleted: FCEvent[] = []
+        const deleted: FCEvent[] = []
         this.forEach((event) => {
             deleted.push(event);
             this.delete(event);
@@ -112,7 +112,7 @@ export class EventMap<T>  {
     }
 
     public getAllEvents(): FCEvent[] | undefined {
-        let elements: FCEvent[] = [];
+        const elements: FCEvent[] = [];
         this.forEach((event) => elements.push(event));
         return elements.length > 0 ? elements : undefined;
     }

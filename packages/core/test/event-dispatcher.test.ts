@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import * as bp from "../src/bid";
 import { scenarios } from './testutils';
 import { BTContext } from '../src/index';
@@ -10,7 +7,7 @@ function delay(ms: number) {
 }
 
 test("dispatch is always the same Object.", (done) => {
-    let x:any;
+    let x: any;
 
     function* thread1(this: BTContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("A")];
@@ -59,8 +56,8 @@ test("A guarded dispatch will return undefined if the value is not valid", (done
     let firstDispatch: any;
 
     function* thread1(this: BTContext) {
-        yield [bp.request("asyncRequest1", () => delay(100)), bp.wait("X"), bp.wait("A", (x:any) => x > 1)];
-        yield [bp.request("asyncRequest2", () => delay(100)), bp.wait("Y"), bp.wait("A", (x:any) => x < 1)];
+        yield [bp.request("asyncRequest1", () => delay(100)), bp.wait("X"), bp.wait("A", (x: any) => x > 1)];
+        yield [bp.request("asyncRequest2", () => delay(100)), bp.wait("Y"), bp.wait("A", (x: any) => x < 1)];
         yield [bp.wait("FIN"), bp.wait("A")];
     }
 
