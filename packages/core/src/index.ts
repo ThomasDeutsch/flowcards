@@ -6,7 +6,7 @@ export { EventDispatch } from './event-dispatcher';
 export { BTContext, BThreadState, BTGen } from './bthread';
 export { UpdateLoopFunction, StagingFunction, createUpdateLoop, ScenariosContext, Ref } from './update-loop';
 export { wait, intercept, block, request, Bid } from "./bid";
-export { FCEvent } from './event';
+export { FCEvent, toEvent } from './event';
 export { Log, ActionAndReactions, ThreadsByWait} from './logger';
 export { Action } from './action';
 export { Reaction } from './reaction';
