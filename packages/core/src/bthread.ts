@@ -128,11 +128,11 @@ export class BThread {
             resolveFn = resolve;
                 rejectFn = reject;
             }).then((data): void => {
-                if (this._pendingInterceptRecord.delete(action.event)) {
+                if (this._pendingInterceptRecord.has(action.event)) {
                     this._dispatch({ type: ActionType.resolved, threadId: this.id, event: action.event, payload: data });
                 }
             }).catch((): void => {
-                if (this._pendingInterceptRecord.delete(action.event)) {
+                if (this._pendingInterceptRecord.has(action.event)) {
                     this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event });
                 }
             });
@@ -176,15 +176,18 @@ export class BThread {
         this._logger?.logReaction(this.id, ReactionType.promise);
     }
 
-    public resolvePending(action: Action): void {
-        if(action.threadId !== this.id || action.type !== ActionType.resolved) return;
+    public resolvePending(action: Action): boolean {
+        if(action.threadId !== this.id || action.type !== ActionType.resolved) return false;
         // resolve intercept
         if(this._pendingInterceptRecord.delete(action.event)) {
             this._logger?.logReaction(this.id, ReactionType.resolve);
+            return true;
         } // resolve pending promise
         else if(this._pendingRequestRecord.delete(action.event)) {
             this._logger?.logReaction(this.id, ReactionType.resolve);
+            return true;
         }
+        return false;
     }
 
     public rejectPending(action: Action): void {

@@ -107,7 +107,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     // resolved
     if(action.type === ActionType.resolved) {
         if(bThreadDictionary[action.threadId]) {
-            bThreadDictionary[action.threadId].resolvePending(action);
+            const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
+            if(isResolved === false) return undefined;
         }
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
         if(!nextAction) return undefined;

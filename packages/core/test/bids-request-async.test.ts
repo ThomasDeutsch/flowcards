@@ -38,7 +38,7 @@ test("A promise-function can be requested and will create a pending-event", () =
 });
 
 
-test("multiple promises can be requested and all will create a corresponding pending-event", (done) => {
+test("if multiple promises resolve at the same time, only one is selected", (done) => {
     let threadState: any = null;
     let progressed2 = false;
     let progressed3 = false;
@@ -49,12 +49,12 @@ test("multiple promises can be requested and all will create a corresponding pen
     }
 
     function* thread2() {
-        yield bp.wait('A');
+        yield bp.wait('HeyA');
         progressed2 = true;
     }
 
     function* thread3() {
-        yield bp.wait('A');
+        yield bp.wait('HeyB');
         progressed3 = true;
     }
 
@@ -62,12 +62,10 @@ test("multiple promises can be requested and all will create a corresponding pen
         threadState = enable(thread1);
         enable(thread2);
         enable(thread3);
-    }, ({dispatch, isPending}) => {
-        if(!dispatch('fin')) {
-            expect(isPending('HeyA')).toBeTruthy();
-            expect(isPending('HeyB')).toBeTruthy();
-        } else {
-            expect(progressed2).not.toEqual(progressed3);
+    }, ({dispatch}) => {
+        if(dispatch('fin')) {
+            expect(progressed2).not.toBe(progressed3);
+            done();
         }
     });
 });
