@@ -8,15 +8,15 @@ export * from '@flowcards/core';
 
 export class FlowcardsStore {
   public context: Fc.ScenariosContext;
-  private _dispatch: Fc.EventDispatch;
+  public rawDispatch: Fc.EventDispatch;
 
   constructor(stagingFunction: Fc.StagingFunction) {
-    [this.context, this._dispatch] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
+    [this.context, this.rawDispatch] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
       this.context = updatedContext;
     });
   }
   dispatch = computedFn(function(this: FlowcardsStore, eventName: string, eventKey?: string | number, payload?: any) {
-    return this._dispatch({name: eventName, key: eventKey}, payload);
+    return this.rawDispatch({name: eventName, key: eventKey}, payload);
   })
   latest = computedFn(function(this: FlowcardsStore, eventName: string, eventKey?: string | number) {
     return this.context.latest(eventName, eventKey);
