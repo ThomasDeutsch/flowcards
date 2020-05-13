@@ -12,7 +12,7 @@ export class FlowcardsStore {
   constructor(stagingFunction: Fc.StagingFunction) {
     [this.context, this.rawDispatch] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
       this.context = updatedContext;
-    });
+    }, true);
   }
   dispatch = computedFn(function(this: FlowcardsStore, eventName: string, eventKey?: string | number, payload?: any) {
     return this.context.dispatch({name: eventName, key: eventKey}, payload);
