@@ -1,5 +1,5 @@
   import * as bp from "../src/bid";
-import {scenarios } from './testutils'
+import {testScenarios } from './testutils'
 
 test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {
     let count = 0;
@@ -17,7 +17,7 @@ test("a bid-function: 'yield () => ...' will be evaluated every cycle", () => {
         }
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         cycleNr++;
         enable(requestThread);
         enable(fnThread);
@@ -38,7 +38,7 @@ test("a bid-function can return a single bid", () => {
         expect(receivedValue).toBe(1000);
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(fnThread);
     });
@@ -59,7 +59,7 @@ test("a bid-function can return multiple bids", () => {
         expect(receivedEvent.name).toBe("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(fnThread);
     });

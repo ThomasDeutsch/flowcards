@@ -68,12 +68,13 @@ function advanceRequests(allBids: AllBidsByType, bThreadDictionary: BThreadDicti
     });
 }
 
-function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): void {
+function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
     const bids = getMatchingBids(allBids[BidType.wait], action.event);
-    if(bids === undefined || bids.length === 0) return;
+    if(bids === undefined || bids.length === 0) return false;
     bids.forEach(bid => {
         bThreadDictionary[bid.threadId].progressWait(action, bid);
     });
+    return true;
 }
 
 function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): Action | undefined {
@@ -99,7 +100,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     if(action.type === ActionType.dispatched) {
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
         if(!nextAction) return undefined
-        advanceWaits(allBids, bThreadDictionary, nextAction);
+        const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
+        if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name)
         return nextAction;
     }
     // resolved

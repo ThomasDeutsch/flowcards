@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 import { BTContext, BThreadState } from '../src/bthread';
 
 
@@ -18,7 +18,7 @@ test("a thread gets reset, when the arguments change", () => {
         yield bp.wait('A');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         const state = enable(threadA);
         enable(threadB, [state.current]);
     });
@@ -43,7 +43,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
         receivedValue = stateFromThreadA.current;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         const state = enable(threadA);
         enable(threadB, [state]);  // instead of state.current, we will pass state.
     });
@@ -66,7 +66,7 @@ test("when a thread resets, the bids will be re-evaluated", () => {
         yield bp.wait('A');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         const threadAState = enable(threadA);
         enable(threadB, [threadAState.current]);  // instead of state.current, we will pass state.
     }, ({dispatch, bTState}) => {

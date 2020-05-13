@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 import { ActionType } from '../src/action';
 
 
@@ -12,7 +12,7 @@ test("A promise can be requested and will create a pending-event", () => {
     function* thread1() {
         yield bp.request("A", delay(100));
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({log}) => {
         expect(log?.currentPendingEvents.has({name: 'A'})).toBeTruthy();
@@ -27,7 +27,7 @@ test("A promise-function can be requested and will create a pending-event", () =
     function* thread1() {
         yield bp.request("A", () => delay(100));
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, (({log}) => {
         expect(log?.currentPendingEvents.has({name: 'A'})).toBeTruthy();
@@ -42,13 +42,13 @@ test("multiple promises can be requested and all will create a corresponding pen
     let threadState: any = null;
     
     function* thread1() {
-        yield [bp.request("A", () => delay(1000)), bp.request("B", () => delay(1000))];
+        yield [bp.request("HeyA", () => delay(1000)), bp.request("HeyB", () => delay(1000))];
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         threadState = enable(thread1);
     }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toEqual(true);
-        expect(log?.currentPendingEvents.has({name: 'B'})).toEqual(true);
+        expect(log?.currentPendingEvents.has({name: 'HeyA'})).toEqual(true);
+        expect(log?.currentPendingEvents.has({name: 'HeyB'})).toEqual(true);
     });
 });

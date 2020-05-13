@@ -1,6 +1,6 @@
   
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 import { BTGen } from '../src/index';
 
 
@@ -24,7 +24,7 @@ test("a wait is not advanced, if the guard returns false", () => {
         yield bp.wait("A", (pl: number) => pl === 1000);
         waitCAdvanced = true;
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -58,7 +58,7 @@ test("an intercept is not applied, if the guard returns false.", () => {
         interceptAdvanced = true;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(threadA);
         enable(threadB);
         enable(threadC);
@@ -84,7 +84,7 @@ test("a block can be guarded", () => {
         yield bp.block("A", (pl: number) => pl === 1000);
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(blockingThread);
     })
@@ -101,7 +101,7 @@ test("a block-guard will be combined with a other guards", () => {
         yield bp.wait("A", (pl: number) => pl > 1000);
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(blockingThread);
         enable(waitingThread);
     }, ({dispatch}) => {
@@ -122,7 +122,7 @@ test("a block-guard can be keyed", () => {
         yield bp.wait({name: 'A', key: 2}, (pl: number) => pl > 1000);
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(blockingThread);
         enable(waitingThread);
     }, ({dispatch}) => {

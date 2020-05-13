@@ -1,5 +1,5 @@
 import * as bp from "../src/index";
-import { scenarios } from './testutils';
+import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
 
 function delay(ms: number, value?: any) {
@@ -12,7 +12,7 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
         yield bp.request('A', (current: number) => current+1);
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({latest}) => {
         expect(latest('A')).toEqual(2);
@@ -26,7 +26,7 @@ test("when a promise resolved, the event cache gets updated", (done) => {
         yield bp.request("A", delay(100, 'resolved value'));
         yield bp.wait('fin');
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({dispatch, latest}) => {
         if(dispatch('fin')) {
@@ -43,7 +43,7 @@ test("the event cache can have an initial value", () => {
         yield bp.request('A', (current: number) => current+1);
     }
 
-    scenarios((enable, cache) => {
+    testScenarios((enable, cache) => {
         cache('A', 100);
         enable(thread1);
     }, ({latest}) => {
@@ -62,7 +62,7 @@ test("the event cache function returns a reference", () => {
         expect(ref.current).toEqual(102); // the reference is updated, but the Thread is not reset.
     }
 
-    scenarios((enable, cache) => {
+    testScenarios((enable, cache) => {
         const ref = cache('A', 100);
         enable(thread1, [ref]);
     }, ({latest}) => {
@@ -77,7 +77,7 @@ test("if a request has no value, it will return the last cached value", () => {
     function* thread1(this: BTContext) {
         val = yield bp.request('A');
     }
-    scenarios((enable, cache) => {
+    testScenarios((enable, cache) => {
         cache('A', 100);
         enable(thread1);
     }, () => {
@@ -92,7 +92,7 @@ test("a cache is only updated, if the request value is not undefined", () => {
     function* thread1(this: BTContext) {
         val = yield bp.request('A', undefined);
     }
-    scenarios((enable, cache) => {
+    testScenarios((enable, cache) => {
         cachedVal = cache('A', 100);
         enable(thread1);
     }, () => {

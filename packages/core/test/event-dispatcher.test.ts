@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from './testutils';
+import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
 
 function delay(ms: number) {
@@ -14,7 +14,7 @@ test("dispatch is always the same Object.", (done) => {
         yield bp.wait("B");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({dispatch}) => {
         if(dispatch('A')) x = dispatch;
@@ -36,7 +36,7 @@ test("dispatch[eventId] is the same Object, as long as there is a wait", (done) 
         yield [bp.wait("FIN"), bp.wait("A")];
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({dispatch}) => {
         if(dispatch('X')) x = dispatch('A');
@@ -61,7 +61,7 @@ test("A guarded dispatch will return undefined if the value is not valid", (done
         yield [bp.wait("FIN"), bp.wait("A")];
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({dispatch}) => {
         if(dispatch("X")) {
@@ -87,7 +87,7 @@ test("the evaluated dispatch function is a different Object, when the guard Func
         yield [bp.wait("FIN"), bp.wait("A")];
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({dispatch}) => {
         if(dispatch("X")) x = dispatch("A", 1);
@@ -112,7 +112,7 @@ test("the evaluated dispatch function is the same Object, for every key/payload 
         yield [bp.wait("FIN"), bp.wait("A")];
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({dispatch}) => {
         if(dispatch("X")) x = dispatch({name: 'A', key: 'key1'}, 1);
@@ -123,4 +123,25 @@ test("the evaluated dispatch function is the same Object, for every key/payload 
             done();  
         }  
     });
+});
+
+
+test("multiple dispatches are batched", (done) => {
+    let x: any;
+    let y: any;
+
+    function* thread1(this: BTContext) {
+        yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
+        yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
+    }
+
+    const [context, dispatch] = testScenarios((enable) => {
+        enable(thread1);
+    });
+    expect(dispatch('X')).toBeDefined();
+    dispatch('X')?.();
+    expect(dispatch('X')).toBeDefined();
+    dispatch('X')?.();
+    expect(true).toBe(true);
+    done();
 });

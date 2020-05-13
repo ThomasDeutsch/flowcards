@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import {scenarios } from './testutils';
+import {testScenarios } from './testutils';
 
 test("the log will return an threadsByWait Object", () => {
 
@@ -11,7 +11,7 @@ test("the log will return an threadsByWait Object", () => {
         yield bp.wait("eventTwo");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({log}) => {

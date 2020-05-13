@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { BTContext } from '../src/bthread';
-import { scenarios } from './testutils';
+import { testScenarios } from './testutils';
 import { BThreadState } from '../src/index';
 
 function delay(ms: number) {
@@ -12,7 +12,7 @@ test("the enable function will return the current thread state", () => {
         yield bp.wait('event');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         const state = enable(thread);
         
         expect(state.isCompleted).toBe(false);
@@ -28,7 +28,7 @@ test("the thread will return the state value, and a completed-flag if the thread
         yield bp.request("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         state = enable(thread);
     });
 
@@ -49,7 +49,7 @@ test("a thread state is always the same Object.", (done) => {
         yield bp.wait("B");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({bTState}) => {
         
@@ -70,7 +70,7 @@ test("a setState argument can be a function", () => {
         yield bp.wait("B");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({bTState}) => {
         expect(bTState.thread1.current).toEqual(2);
@@ -87,7 +87,7 @@ test("a state value can be accessed from the thread itself", () => {
         state = this.state;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, () => {
         expect(state.current).toEqual(1);

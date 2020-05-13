@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 import { BTContext } from "../src/bthread";
 
 
@@ -11,7 +11,7 @@ test("a thread will accept an optional array of arguments", () => {
         yield bp.wait('event');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread, ["A", "B", "C"]);
     });
 
@@ -34,7 +34,7 @@ test("a thread will accept an optional key", () => {
         yield bp.wait('A');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread, [], 0);
         enable(threadB, [], "foo");
     });
@@ -53,7 +53,7 @@ test("if no key is provided, the default key value is undefined", () => {
         yield bp.wait('A');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread);
     });
 

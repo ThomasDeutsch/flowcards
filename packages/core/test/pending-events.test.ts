@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 import { ActionType } from '../src/action';
 
 
@@ -16,7 +16,7 @@ test("a pending event can not be requested", () => {
     function* thread2() {
         yield bp.request("A", "hey");
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread2);
         enable(thread1);
     }, ({log}) => {
@@ -35,7 +35,7 @@ test("a pending event can not be intercepted", () => {
     function* thread2() {
         yield bp.intercept("A");
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
@@ -55,7 +55,7 @@ test("a pending event resolves can not be blocked", done => {
         yield bp.request("B", () => delay(200));
         yield bp.block("A");
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({log, dispatch}) => {
@@ -76,7 +76,7 @@ test("pending events can not be dispatched", done => {
     function* thread2() {
         yield bp.wait("A");
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({dispatch}) => {
@@ -92,7 +92,7 @@ test("After a pending event is resolved, a BThread that has requested this event
         done();
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(threadOne);
     });
 });
@@ -101,7 +101,7 @@ test("After a pending event is resolved, a BThread that has requested this event
 test("If one pending-event is resolved, other promises for this event are cancelled", done => {
     function* threadOne(): any {
         const [event] = yield [bp.request("A", () => delay(300)), bp.request("B", () => delay(1))];
-        expect(event).toBe("B");
+        expect(event.name).toBe("B");
         done();
     }
 
@@ -111,7 +111,7 @@ test("If one pending-event is resolved, other promises for this event are cancel
         done();
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(threadOne);
         enable(thread2);
     });
@@ -137,7 +137,7 @@ test("rejected pending events will not progress waiting BThreads", done => {
             //no op
         }
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     });
@@ -157,7 +157,7 @@ test("if a pending event is rejected, the lower thread will use its request inst
             //no op
         }
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     });
@@ -177,7 +177,7 @@ test("a pending event can not be requested - second example", (done) => {
         yield bp.request('A', () => delay(200));
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
         count++;
@@ -205,7 +205,7 @@ test("if a threads waits for an already existing pending-event, it will also pro
         yield bp.wait("A");
         yield bp.request('fin');
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
@@ -231,7 +231,7 @@ test("if a threads intercepts an already existing pending-event, it will trigger
         expect(thread1Progressed).toBe(false);
         done();
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     });

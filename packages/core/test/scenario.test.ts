@@ -1,12 +1,12 @@
 import * as bp from "../src/bid";
-import { scenarios } from './testutils';
+import { testScenarios } from './testutils';
 import { StagingFunction, Action, createUpdateLoop, BTContext } from '../src/index';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-test("scenarios can be used without updateCb and logger", done => {
+test("testScenarios can be used without updateCb and logger", done => {
     function* thread1(this: BTContext) {
         yield bp.request("A", delay(1000));
         this.setState(1)
@@ -14,7 +14,7 @@ test("scenarios can be used without updateCb and logger", done => {
         done();
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     });
 });
@@ -29,7 +29,7 @@ test("there will be a dispatch-function every waiting event", () => {
         yield bp.wait("eventThree");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, (scenario) => {

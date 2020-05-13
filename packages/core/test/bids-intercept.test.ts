@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 import { InterceptResult } from "../src/bthread";
 
 
@@ -27,7 +27,7 @@ test("requests can be intercepted", () => {
         yield bp.wait('X');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread3);
         setupCount++;
@@ -60,7 +60,7 @@ test("if the intercept has a payload, all threads will continue with that payloa
         yield bp.wait('X');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
@@ -94,7 +94,7 @@ test("the intercept payload can be a function.", () => {
         yield bp.wait('X');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
@@ -128,7 +128,7 @@ test("if the intercept payload is a promise, a pending-event is created.", done 
         yield bp.wait('Fin')
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
@@ -170,7 +170,7 @@ test("if an intercept is not applied, than the next intercept will get the event
         waitDAdvanced = true;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(waitThread);
         enable(interceptPriorityLowThread);
@@ -200,7 +200,7 @@ test("if an intercepted thread completed, without resolving or rejecting the eve
         progressedIntercept = true;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread3);
         setupCount++;
@@ -231,7 +231,7 @@ test("intercepts will receive a value (like waits)", () => {
         interceptedValue = yield bp.intercept("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
         enable(thread3);
@@ -254,7 +254,7 @@ test("intercepts will intercept requests", () => {
         intercepted = yield bp.intercept("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, () => {
@@ -280,7 +280,7 @@ test("the last intercept that is enabled has the highest priority", () => {
         advancedThread2 = true;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(interceptThread1);
         enable(interceptThread2);
@@ -298,7 +298,7 @@ test("an intercept will create a pending event", () => {
     function* interceptingThread() {
         yield bp.intercept("A");
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
     }, ({log}) => {
@@ -307,7 +307,7 @@ test("an intercept will create a pending event", () => {
 });
 
 
-test("an intercept will wait for the pending-event to finish before it intercpets.", (done) => {
+test("an intercept will wait for the pending-event to finish before it intercepts.", (done) => {
     function* requestingThread() {
         yield bp.request("A", delay(100, 'resolvedValue'));
     }
@@ -316,7 +316,7 @@ test("an intercept will wait for the pending-event to finish before it intercpet
         expect(value).toBe('resolvedValue');
         done();
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
     }, ({log}) => {
@@ -340,7 +340,7 @@ test("an intercept can be resolved. This will progress waits and requests", (don
         expect(val).toBe('super duper');
         yield bp.wait('fin');
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
         enable(waitingThread);
@@ -367,7 +367,7 @@ test("an intercept can be rejected. This will remove the pending event", (done) 
         expect(val).toBe('super');
         yield bp.wait('fin');
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
         enable(waitingThread);
@@ -386,9 +386,9 @@ test("an intercept will keep the event-pending if the BThread with the intercept
     }
     function* interceptingThread() {
         yield bp.intercept("A");
-        // after the intercept, this BThread completes, keepting the intercept active.
+        // after the intercept, this BThread completes, keeping the intercept active.
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
     }, ({log}) => {
@@ -417,7 +417,7 @@ test("multiple intercepts will resolve after another. After all intercepts compl
         expect(val).toBe('super duper flowcards');
         yield bp.wait('fin');
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
         enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
@@ -450,7 +450,7 @@ test("if the last intercept rejects, the event will resolve to its starting valu
         expect(val).toBe('super');
         yield bp.wait('fin');
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
         enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority
@@ -483,7 +483,7 @@ test("if the previous intercept rejects, the next intercept will get the initial
         expect(val).toBe('super duper');
         yield bp.wait('fin');
     }
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(interceptingThread);
         enable(interceptingThreadHigherPriority); // this BThread is enabled after the first interceptingThread, giving it a higher priority

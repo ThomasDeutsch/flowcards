@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios} from "./testutils";
+import { testScenarios} from "./testutils";
 import { ActionType } from '../src/action';
 
 test("an array of actions can be used as a replay", done => {
@@ -11,7 +11,7 @@ test("an array of actions can be used as a replay", done => {
         done();
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({dispatch, log}) => {
         if(x === 0) {

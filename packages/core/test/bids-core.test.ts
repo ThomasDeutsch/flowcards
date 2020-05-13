@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 import { FCEvent } from "../src/event";
 
 
@@ -15,7 +15,7 @@ test("a requested event that is not blocked will advance", () => {
         hasAdvanced = true;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
     }, ({log})=> {
         expect(hasAdvanced).toBe(true);
@@ -37,7 +37,7 @@ test("a request will also advance waiting threads", () => {
         waitProgressed = true;
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({log}) => {
@@ -61,7 +61,7 @@ test("waits will return the value that has been requested", () => {
         receivedValue = yield bp.wait("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
     }, ({log}) => {
@@ -90,7 +90,7 @@ test("multiple requests will return an array of [eventId, value].", () => {
         receivedValueB = yield bp.wait("B");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(receiveThreadA);
         enable(receiveThreadB);
@@ -119,7 +119,7 @@ test("multiple waits will return an array of [value, eventId].", () => {
         expect(receivedeventId?.name).toBe("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
     });
@@ -142,7 +142,7 @@ test("A request-value can be a function. It will get called, when the event is s
         expect(receivedEvent?.name).toBe("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(receiveThread);
     });
@@ -171,7 +171,7 @@ test("if a request value is a function, it will only be called once.", () => {
         receivedValue2 = yield bp.wait("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThread);
         enable(receiveThread1);
         enable(receiveThread2);
@@ -197,7 +197,7 @@ test("When there are multiple requests with the same event-name, the payload fro
         receivedValue = yield bp.wait("A");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestThreadLower);
         enable(requestThreadHigher);
         enable(receiveThread);
@@ -227,7 +227,7 @@ test("events can be blocked", () => {
         yield bp.block("AX");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         
         enable(requestThread);
         enable(waitingThread);
@@ -250,7 +250,7 @@ test("if an async request gets blocked, it will not call the promise", () => {
         yield bp.block("AX");
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(requestingThread);
         enable(blockingThread);
     });

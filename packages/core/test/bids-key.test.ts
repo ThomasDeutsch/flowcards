@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { scenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 
 test("keys can be a string or a number", () => {
     function* thread1() {
@@ -10,7 +10,7 @@ test("keys can be a string or a number", () => {
         yield bp.wait({name: 'A', key: 2});
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({dispatch})=> {
@@ -46,7 +46,7 @@ test("an event with a key can be blocked.", () => {
 
 
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
         enable(blockingThread);
@@ -81,7 +81,7 @@ test("a request without a key will advance all waiting threads ( with key or not
         yield bp.request('A');
     } 
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(waitThreadWithKey1);
         enable(waitThreadWithKey2);
         enable(waitThreadWithoutKey);
@@ -117,7 +117,7 @@ test("a request with a key, will only advance the matching wait with the same ke
         yield bp.request({name: 'A', key: 1});
     } 
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(waitThreadWithKey1);
         enable(waitThreadWithKey2);
         enable(waitThreadWithoutKey);
@@ -140,7 +140,7 @@ test("an event cache vor an event will contain keyed values as well", () => {
         yield bp.request({name: 'A', key: 2}, 'a value for 2');
     }
 
-    scenarios((enable) => {
+    testScenarios((enable) => {
         enable(thread1);
         enable(thread2);
     }, ({latest})=> {
@@ -161,7 +161,7 @@ test("if an event cache has keyed values, they will be replaced by a request wit
         yield bp.request('A', 'replacement value')
     }
 
-    scenarios((enable, cache) => {
+    testScenarios((enable, cache) => {
         cache('A');
         enable(thread1);
         enable(thread2);
