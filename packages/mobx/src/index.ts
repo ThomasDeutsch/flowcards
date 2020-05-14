@@ -15,15 +15,17 @@ export class Store {
       this.context = updatedContext;
     });
   }
-  dispatch = computedFn(function(this: Store, event: string | FCEvent, payload: any) {
-    event = toEvent(event);
+  dispatch = computedFn(function(this: Store, event: FCEvent | string, payload: any) {
+    event = Fc.toEvent(event);
     return this.context.dispatch(event, payload);
   });
-  latest = computedFn(function(this: Store, eventName: string, eventKey: string | number) {
-    return this.context.latest(eventName, eventKey);
+  latest = computedFn(function(this: Store, event: FCEvent | string) {
+    event = Fc.toEvent(event);
+    return this.context.latest(event.name, event.key);
   });
-  isPending = computedFn(function(this: Store, eventName: string, eventKey?: string | number) {
-    return this.context.isPending(eventName, eventKey);
+  isPending = computedFn(function(this: Store, event: FCEvent | string) {
+    event = Fc.toEvent(event);
+    return this.context.isPending(event.name, event.key);
   });
   get bTState() {
     return this.context.bTState;
