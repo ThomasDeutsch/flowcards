@@ -61,14 +61,15 @@ export class EventMap<T>  {
 
     public getAllMatchingEvents(event?: FCEvent): FCEvent[] | undefined {
         if(event === undefined) return undefined;
-        let result: FCEvent[];
         if(event.key === undefined) { // there was no key, so add all items with a key.
             const keys = this.withKey.get(event.name)?.keys();
-            result = [...([...keys || []]).map(key => ({name: event.name, key: key})), event].filter(utils.notUndefined);
+            if(keys === undefined) return [event];
+            const keysColl = [...keys];
+            if(keysColl.length === 0) return [event];
+            return [...keysColl.map(key => ({name: event.name, key: key})), event];
         } else { // there was a key, so only add the items without a key.
-            result = [event, {name: event.name}].filter(utils.notUndefined);
+            return [event, {name: event.name}];
         }
-        return (result.length === 0) ? undefined : result;
     }
 
     public getAllMatchingValues(event?: FCEvent): T[] | undefined {
