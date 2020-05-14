@@ -2,6 +2,8 @@
 import * as Fc from "@flowcards/core";
 import { computedFn } from "mobx-utils";
 import { observable, decorate, computed } from "mobx";
+import { FCEvent } from '../../core/build/event';
+import { toEvent } from '../../core/src/event';
 
 export * from '@flowcards/core';
 
@@ -13,8 +15,9 @@ export class Store {
       this.context = updatedContext;
     });
   }
-  dispatch = computedFn(function(this: Store, eventName: string, eventKey: string | number, payload: any) {
-    return this.context.dispatch({name: eventName, key: eventKey}, payload);
+  dispatch = computedFn(function(this: Store, event: string | FCEvent, payload: any) {
+    event = toEvent(event);
+    return this.context.dispatch(event, payload);
   });
   latest = computedFn(function(this: Store, eventName: string, eventKey: string | number) {
     return this.context.latest(eventName, eventKey);
