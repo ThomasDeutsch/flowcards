@@ -16,16 +16,13 @@ export class Store {
     });
   }
   dispatch = computedFn(function(this: Store, event: FCEvent | string, payload: any) {
-    event = Fc.toEvent(event);
-    return this.context.dispatch(event, payload);
+    return this.context.dispatch(Fc.toEvent(event), payload);
   });
   latest = computedFn(function(this: Store, event: FCEvent | string) {
-    event = Fc.toEvent(event);
-    return this.context.latest(event.name, event.key);
+    return this.context.latest(Fc.toEvent(event));
   });
   isPending = computedFn(function(this: Store, event: FCEvent | string) {
-    event = Fc.toEvent(event);
-    return this.context.isPending(event.name, event.key);
+    return this.context.isPending(Fc.toEvent(event));
   });
 }
 
