@@ -102,3 +102,52 @@ test("a cache is only updated, if the request value is not undefined", () => {
         expect(cachedVal.current).toEqual(100);
     });
 });
+
+
+
+test("a cache can be updated by the provided set function", () => {
+    let val: number;
+    let cachedVal: any;
+    function* thread1(this: BTContext, cachedVal: any) {
+        expect(cachedVal.current).toBe(10);
+        val = yield bp.wait('fin');
+    }
+    testScenarios((enable, cache) => {
+        cachedVal = cache('A', 100);
+        cachedVal.set(10);
+        enable(thread1, [cachedVal]);
+    }, () => {
+        expect(cachedVal.current).toEqual(10);
+    });
+});
+
+test("the cache can be reinitialized", () => {
+    let cachedVal: any;
+    function* thread1(this: BTContext, cachedVal: any) {
+        cachedVal.set(10);
+        cachedVal.reset();
+        yield bp.request('fin');
+    }
+    testScenarios((enable, cache) => {
+        cachedVal = cache('A', 100);
+        enable(thread1, [cachedVal]);
+    }, () => {
+        expect(cachedVal.current).toEqual(100);
+    });
+});
+
+
+test("the cache will hold the initial value", () => {
+    let cachedVal: any;
+    function* thread1(this: BTContext, cachedVal: any) {
+        cachedVal.set(10);
+        yield bp.request('fin');
+    }
+    testScenarios((enable, cache) => {
+        cachedVal = cache('A', 100);
+        enable(thread1, [cachedVal]);
+    }, () => {
+        expect(cachedVal.current).toEqual(10);
+        expect(cachedVal.initial).toEqual(100);
+    });
+});

@@ -11,7 +11,8 @@ type DangerouslySetCache = (payload: any) => void
 export interface CachedItem<T> {
     current: T;
     set: DangerouslySetCache;
-    clear: Function;
+    initial: any;
+    reset: Function;
 }
 
 type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
@@ -134,15 +135,17 @@ function setEventCache(canUpdate: boolean, eventCache: EventCache, event: FCEven
     if(!events) return;
     events.forEach(event => {
         const val = eventCache.get(event);
-        if(val !== undefined && canUpdate) {
-            val.current = payload;
-            eventCache.set(event, val);  
-        } else if(val === undefined) {
+        if(val === undefined) {
+            const initialPayload = payload;
             eventCache.set(event, {
+                initial: initialPayload,
                 current: payload, 
-                set: (payload: any) => eventCache.set(event, payload), 
-                clear: () => eventCache.delete(event)
+                set: (payload: any) => setEventCache(true, eventCache, event, payload),
+                reset: () => setEventCache(true, eventCache, event, initialPayload)
             });
+        } else if(canUpdate) { // the value is present
+            val.current = payload;
+            //eventCache.set(event, val);
         }
     }); 
 }
@@ -167,7 +170,7 @@ function setupScaffolding(
     const enableEventCache: EnableEventCache = (event: FCEvent | string, initial?: any): CachedItem<any> => {
         event = toEvent(event);
         setEventCache(false, eventCache, event, initial);
-        return eventCache.get(event) || {current: undefined, set: () => {null}, clear: () => {null}};
+        return eventCache.get(event)!;
     }
     return (): string[] => {
         orderedIds.length = 0;

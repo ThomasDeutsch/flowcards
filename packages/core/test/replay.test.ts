@@ -16,7 +16,7 @@ test("an array of actions can be used as a replay", done => {
     }, ({dispatch, log}) => {
         if(x === 0) {
             x = 1;
-            dispatch('__REPLAY__', [
+            dispatch('___REPLAY___', [
                 {
                     type: ActionType.requested,
                     event: {name: 'A'},
