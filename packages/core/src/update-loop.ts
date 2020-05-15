@@ -10,7 +10,8 @@ type DangerouslySetCache = (payload: any) => void
 
 export interface CachedItem<T> {
     current: T;
-    set?: DangerouslySetCache;
+    set: DangerouslySetCache;
+    clear: Function;
 }
 
 type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
@@ -132,9 +133,11 @@ function updateEventCache(eventCache: EventCache, event: FCEvent | undefined, pa
     const events = eventCache.getAllMatchingEvents(event);
     if(!events) return;
     events.forEach(event => {
-        const val = eventCache.get(event) || {current: undefined};
-        val.current = payload;
-        eventCache.set(event, val);      
+        const val = eventCache.get(event);
+        if(val !== undefined) {
+            val.current = payload;
+            eventCache.set(event, val);  
+        }
     }); 
 }
 
@@ -156,16 +159,13 @@ function setupScaffolding(
         }
     };
     const setCache = (event: FCEvent | string) => (payload: any) => updateEventCache(eventCache, toEvent(event), payload);
+    const clearCache = (event: FCEvent | string) => () => eventCache.delete(toEvent(event));
     const enableEventCache: EnableEventCache = (event: FCEvent | string, initial?: any): CachedItem<any> | undefined => {
         event = toEvent(event);
         if(!eventCache.has(event)) {
-            eventCache.set(event, {current: initial});
+            eventCache.set(event, {current: initial, set: setCache(event), clear: clearCache(event)});
         }
-        const cache = eventCache.get(event);
-        if(cache !== undefined) {
-            cache.set = setCache(event);
-        }
-        return cache;
+        return eventCache.get(event);
     }
     return (): string[] => {
         orderedIds.length = 0;
