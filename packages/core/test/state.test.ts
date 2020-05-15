@@ -1,4 +1,4 @@
-import * as bp from "../src/bid";
+import * as bp from "../src/index";
 import { testScenarios } from "./testutils";
 
 function delay(ms: number) {
@@ -10,7 +10,8 @@ test("a state can be created that will listen for requests in its name", () => {
         yield bp.request("count", 2);
     }
 
-    testScenarios((enable) => {
+    testScenarios((enable, cache) => {
+        cache('count');
         enable(thread1);
     }, ({latest}) => {
         expect(latest("count")).toEqual(2);
@@ -19,7 +20,6 @@ test("a state can be created that will listen for requests in its name", () => {
 
 
 test("a state will return a ref. Passed to a function, it will not update on change", () => {
-    let st: any;
     let threadRefInit = 0;
     let threadValueInit = 0;
 
@@ -38,7 +38,7 @@ test("a state will return a ref. Passed to a function, it will not update on cha
     }
 
     testScenarios((enable, cache) => {
-        st = cache("count");
+        const st = cache("count");
         enable(thread1);
         enable(thread2, [st]);
         enable(thread3, [st.current]);
@@ -46,7 +46,6 @@ test("a state will return a ref. Passed to a function, it will not update on cha
         expect(scenario.latest("count")).toEqual(2);
         expect(threadRefInit).toEqual(1);
         expect(threadValueInit).toEqual(2);
-        expect(st.current).toEqual(2);
     });
 });
 
@@ -68,24 +67,6 @@ test("if there are multiple state changes at the same time, the highest priority
     });
 });
 
-
-// test("the state function will also return the previous value", () => {
-//     let st: any;
-
-//     function* thread() {
-//         yield bp.request("count", 1);
-//         yield bp.request("count", 2);
-//     }
-
-//     testScenarios((enable, state) => {
-//         st = state("count");
-//         enable(thread);
-//     }, () => {
-//         expect(st.previous).toEqual(1);
-//     });
-// });
-
-
 test("the latest-function will respect the intercept value", () => {
 
     function* thread() {
@@ -96,7 +77,8 @@ test("the latest-function will respect the intercept value", () => {
         yield bp.intercept("count", undefined, (val: number) => val + 2);
     }
 
-    testScenarios((enable) => {
+    testScenarios((enable, cache) => {
+        cache('count');
         enable(thread);
         enable(thread2);
     }, ({latest}) => {
@@ -120,7 +102,8 @@ test("isPending will show what events are pending", () => {
         yield bp.request("count", () => delay(2000));
     }
 
-    testScenarios((enable) => {
+    testScenarios((enable, cache) => {
+        cache('count');
         enable(thread1);
     }, ({latest, isPending}) => {
         expect(isPending("count")).toEqual(true);
@@ -133,10 +116,11 @@ test("isPending will accept a key as a second argument", () => {
         yield bp.request({name: "count", key: 1}, () => delay(2000));
     }
 
-    testScenarios((enable) => {
+    testScenarios((enable, cache) => {
+        cache('count');
         enable(thread1);
     }, ({latest, isPending}) => {
-        expect(isPending("count", 1)).toEqual(true);
-        expect(latest("count", 1)).toBeUndefined();
+        expect(isPending({name: "count", key: 1})).toEqual(true);
+        expect(latest({name: "count", key: 1})).toBeUndefined();
     });
 });

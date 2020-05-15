@@ -15,14 +15,14 @@ export interface CachedItem<T> {
 }
 
 type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
-type EnableEventCache = (event: FCEvent | string, initial?: any) => CachedItem<any> | undefined;
+type EnableEventCache = (event: FCEvent | string, initial?: any) => CachedItem<any>;
 export type StagingFunction = (e: EnableThreadFunctionType, s: EnableEventCache) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
 export type UpdateLoopFunction = (actionQueue?: Action[]) => ScenariosContext;
 type EventCache = EventMap<CachedItem<any>>;
-type GetCache = (eventName: string, key?: string | number) => any;
-type GetIsPending =(eventName: string, eventKey?: string | number) => boolean;
+type GetCache = (event: FCEvent | string) => any;
+type GetIsPending =  (event: FCEvent | string) => boolean;
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
@@ -128,15 +128,21 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     }
 }
 
-function updateEventCache(eventCache: EventCache, event: FCEvent | undefined, payload: any): void {
-    if (!event || payload === undefined) return;
+function setEventCache(canUpdate: boolean, eventCache: EventCache, event: FCEvent | undefined, payload: any): void {
+    if (!event) return;
     const events = eventCache.getAllMatchingEvents(event);
     if(!events) return;
     events.forEach(event => {
         const val = eventCache.get(event);
-        if(val !== undefined) {
+        if(val !== undefined && canUpdate) {
             val.current = payload;
             eventCache.set(event, val);  
+        } else if(val === undefined) {
+            eventCache.set(event, {
+                current: payload, 
+                set: (payload: any) => eventCache.set(event, payload), 
+                clear: () => eventCache.delete(event)
+            });
         }
     }); 
 }
@@ -158,14 +164,10 @@ function setupScaffolding(
             bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger);
         }
     };
-    const setCache = (event: FCEvent | string) => (payload: any) => updateEventCache(eventCache, toEvent(event), payload);
-    const clearCache = (event: FCEvent | string) => () => eventCache.delete(toEvent(event));
-    const enableEventCache: EnableEventCache = (event: FCEvent | string, initial?: any): CachedItem<any> | undefined => {
+    const enableEventCache: EnableEventCache = (event: FCEvent | string, initial?: any): CachedItem<any> => {
         event = toEvent(event);
-        if(!eventCache.has(event)) {
-            eventCache.set(event, {current: initial, set: setCache(event), clear: clearCache(event)});
-        }
-        return eventCache.get(event);
+        setEventCache(false, eventCache, event, initial);
+        return eventCache.get(event)!;
     }
     return (): string[] => {
         orderedIds.length = 0;
@@ -205,7 +207,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         if (action) {
             logger?.logAction(action);
             const a = advanceBThreads(bThreadDictionary, eventCache, bids, action);
-            updateEventCache(eventCache, a?.event, a?.payload);
+            setEventCache(true, eventCache, a?.event, a?.payload);
             return updateLoop(actionQueue);
         }
         // ------ create the return value:

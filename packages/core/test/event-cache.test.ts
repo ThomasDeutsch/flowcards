@@ -13,7 +13,8 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
         yield bp.request('A', (current: number) => current+1);
     }
 
-    testScenarios((enable) => {
+    testScenarios((enable, cache) => {
+        cache('A');
         enable(thread1);
     }, ({latest}) => {
         expect(latest('A')).toEqual(2);
@@ -27,7 +28,8 @@ test("when a promise resolved, the event cache gets updated", (done) => {
         yield bp.request("A", delay(100, 'resolved value'));
         yield bp.wait('fin');
     }
-    testScenarios((enable) => {
+    testScenarios((enable, cache) => {
+        cache('A');
         enable(thread1);
     }, ({dispatch, latest}) => {
         if(dispatch('fin')) {
