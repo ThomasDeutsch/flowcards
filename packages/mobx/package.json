@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/mobx",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -19,7 +19,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@flowcards/core": "^0.9.1"
+    "@flowcards/core": "^0.9.2"
   },
   "peerDependencies": {
     "mobx": ">=5.0.0",
