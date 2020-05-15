@@ -9,7 +9,6 @@ function delay(ms: number) {
 test("testScenarios can be used without updateCb and logger", done => {
     function* thread1(this: BTContext) {
         yield bp.request("A", delay(1000));
-        this.setState(1)
         expect(1).toEqual(1); // simple test if this point is reached.
         done();
     }

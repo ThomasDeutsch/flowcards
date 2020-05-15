@@ -3,8 +3,8 @@ import { Action } from './action'
 import { EventDispatch } from './event-dispatcher';
 
 export { EventDispatch } from './event-dispatcher';
-export { BTContext, BThreadState, BTGen } from './bthread';
-export { UpdateLoopFunction, StagingFunction, createUpdateLoop, ScenariosContext, Ref } from './update-loop';
+export { BTContext, BTGen } from './bthread';
+export { UpdateLoopFunction, StagingFunction, createUpdateLoop, ScenariosContext, CachedItem } from './update-loop';
 export { wait, intercept, block, request, Bid } from "./bid";
 export { FCEvent, toEvent } from './event';
 export { Log, ActionAndReactions, ThreadsByWait} from './logger';

@@ -27,12 +27,8 @@ export class Store {
     event = Fc.toEvent(event);
     return this.context.isPending(event.name, event.key);
   });
-  get bTState() {
-    return this.context.bTState;
-  }
 }
 
 decorate(Store, {
-  context: observable,
-  bTState: computed
+  context: observable
 });

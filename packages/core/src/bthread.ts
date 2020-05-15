@@ -10,15 +10,8 @@ type BidFunction = () => Bid | Bid[]
 export type BTGen = Generator<Bid | Bid[] | BidFunction, void, any>;
 export type GeneratorFn = (...args: any[]) => BTGen;
 
-export interface BThreadState {
-    isCompleted: boolean;
-    current?: any;
-}
-
 export interface BTContext {
     key?: string | number;
-    setState: Function;
-    state: BThreadState;
 }
 
 export interface InterceptResult {
@@ -38,8 +31,6 @@ export enum InterceptResultType {
     interceptingThread = "interceptingThread"
 }
 
-type StateUpdateFunction = (previousState: any) => void;
-
 export class BThread {
     // private
     private readonly _logger?: Logger;
@@ -52,32 +43,14 @@ export class BThread {
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted = false;
-    private _stateValue?: any;
-    private _stateRef: BThreadState = { 
-        isCompleted: this._isCompleted,
-        current: undefined
-    };
     private _getBTContext(): BTContext {
         return {
             key: this.key,
-            setState: (newState: any | StateUpdateFunction): void => {
-                if(typeof newState === `function`) {
-                    this._stateValue = newState(this._stateValue);
-                } else {
-                    this._stateValue = newState;
-                }
-            },
-            state: this.state
         };
     }
     // public
     public readonly id: string;
     public readonly key?: string | number;
-    public get state(): BThreadState {
-        this._stateRef.isCompleted = this._isCompleted;
-        this._stateRef.current = this._stateValue;
-        return this._stateRef;
-    }
 
     public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger) {
         this.id = id;
