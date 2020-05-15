@@ -183,7 +183,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const logger = disableLogging ? undefined : new Logger();
     const scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
-    const getEventCache: GetCache = (eventName: string, key?: string | number) => eventCache.get({name: eventName, key: key})?.current;
+    const getEventCache: GetCache = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
     // main loop-function:
     const updateLoop: UpdateLoopFunction = (actionQueue?: Action[]): ScenariosContext => {
         let action = actionQueue?.shift();
@@ -216,7 +216,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         return {
             dispatch: eventDispatch,
             latest: getEventCache, // latest values from event cache
-            isPending: (eventName: string, eventKey?: string | number) => pendingEventMap.has({name: eventName, key: eventKey}),
+            isPending: (event: FCEvent | string) => pendingEventMap.has(toEvent(event)),
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
     };
