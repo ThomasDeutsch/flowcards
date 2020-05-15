@@ -1,9 +1,7 @@
 
 import * as Fc from "@flowcards/core";
 import { computedFn } from "mobx-utils";
-import { observable, decorate, computed } from "mobx";
-import { FCEvent } from '../../core/build/event';
-import { toEvent } from '../../core/src/event';
+import { observable, decorate } from "mobx";
 
 export * from '@flowcards/core';
 
@@ -15,13 +13,13 @@ export class Store {
       this.context = updatedContext;
     });
   }
-  dispatch = computedFn(function(this: Store, event: FCEvent | string, payload: any) {
+  dispatch = computedFn(function(this: Store, event:  Fc.FCEvent | string, payload: any) {
     return this.context.dispatch(Fc.toEvent(event), payload);
   });
-  latest = computedFn(function(this: Store, event: FCEvent | string) {
+  latest = computedFn(function(this: Store, event: Fc.FCEvent | string) {
     return this.context.latest(Fc.toEvent(event));
   });
-  isPending = computedFn(function(this: Store, event: FCEvent | string) {
+  isPending = computedFn(function(this: Store, event: Fc.FCEvent | string) {
     return this.context.isPending(Fc.toEvent(event));
   });
 }
