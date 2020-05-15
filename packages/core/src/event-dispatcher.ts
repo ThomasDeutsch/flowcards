@@ -17,9 +17,10 @@ interface DispatchCache {
 export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
-    const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): TriggerDispatch | undefined  => { 
-        if(event === '__REPLAY__') {
-            dispatch({type: ActionType.replay, payload: payload, threadId: "", event: {name: "__REPLAY__"}});
+    const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): TriggerDispatch | undefined  => {
+        const REPLAY_EVENT_NAME = '___REPLAY___';
+        if(event === REPLAY_EVENT_NAME) {
+            dispatch({type: ActionType.replay, payload: payload, threadId: "", event: {name: REPLAY_EVENT_NAME}});
             return undefined
         }
         const dp = dispatchByEvent.get(toEvent(event));
