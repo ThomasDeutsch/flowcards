@@ -167,7 +167,7 @@ function setupScaffolding(
     const enableEventCache: EnableEventCache = (event: FCEvent | string, initial?: any): CachedItem<any> => {
         event = toEvent(event);
         setEventCache(false, eventCache, event, initial);
-        return eventCache.get(event)!;
+        return eventCache.get(event) || {current: undefined, set: () => {null}, clear: () => {null}};
     }
     return (): string[] => {
         orderedIds.length = 0;
