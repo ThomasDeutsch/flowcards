@@ -1,6 +1,7 @@
 import * as bp from "../src/index";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
+import { CachedItem } from '../build/update-loop';
 
 function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
@@ -55,7 +56,7 @@ test("the event cache can have an initial value", () => {
 
 test("the event cache function returns a reference", () => {
 
-    function* thread1(this: BTContext, ref: bp.Ref<any>) {
+    function* thread1(this: BTContext, ref: bp.CachedItem<any>) {
         yield bp.request('A', (current: number) => current+1);
         yield bp.request('A', (current: number) => current+1);
         yield bp.request('A', (current: number) => current+1);

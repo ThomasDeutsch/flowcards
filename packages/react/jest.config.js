@@ -1,4 +1,6 @@
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
+  // [...]
+  // Replace `ts-jest` with the preset you want to use
+  // from the above list
+  preset: 'ts-jest'
 };

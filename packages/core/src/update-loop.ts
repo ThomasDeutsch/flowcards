@@ -6,11 +6,11 @@ import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
 import { EventMap, FCEvent, toEvent } from './event';
 import * as utils from './utils';
 
-type DangerouslySetCache = (event: FCEvent | string, payload: any) => void
+type DangerouslySetCache = (payload: any) => void
 
 export interface CachedItem<T> {
     current: T;
-    _set?: DangerouslySetCache;
+    set?: DangerouslySetCache;
 }
 
 type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
@@ -155,7 +155,7 @@ function setupScaffolding(
             bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger);
         }
     };
-    const setCache = (event: FCEvent | string, payload: any) => updateEventCache(eventCache, toEvent(event), payload);
+    const setCache = (event: FCEvent | string) => (payload: any) => updateEventCache(eventCache, toEvent(event), payload);
     const enableEventCache: EnableEventCache = (event: FCEvent | string, initial?: any): CachedItem<any> | undefined => {
         event = toEvent(event);
         if(!eventCache.has(event)) {
@@ -163,7 +163,7 @@ function setupScaffolding(
         }
         const cache = eventCache.get(event);
         if(cache !== undefined) {
-            cache._set = setCache;
+            cache.set = setCache(event);
         }
         return cache;
     }
@@ -214,7 +214,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         logger?.logPendingEvents(bids[BidType.pending] || new EventMap());
         logger?.logWaits(bids.wait);
         return {
-            dispatch: eventDispatch, // 
+            dispatch: eventDispatch,
             latest: getEventCache, // latest values from event cache
             isPending: (eventName: string, eventKey?: string | number) => pendingEventMap.has({name: eventName, key: eventKey}),
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id

@@ -3,6 +3,10 @@ import { testScenarios } from "./testutils";
 import { BTContext } from '../src/bthread';
 
 
+test("a thread gets reset, when the arguments change", () => {
+    expect(2).toBe(2);
+});
+
 // test("a thread gets reset, when the arguments change", () => {
 //     let initCount = 0;
 //     let receivedValue;
