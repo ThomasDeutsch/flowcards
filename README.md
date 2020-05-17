@@ -7,10 +7,9 @@ They both enable ways to describe & model stateful reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 `App(state) => UI` becomes `App(flowcards(scenarios)) => UI`<br/>
 
-## Why? ( guiding principle )
-A tool for better software development should be aimed to benefit the whole team.<br/>
+## Why?
 It is not enough to build tools for developers and hope for the benefits to "trickle-down"<br/>
-to other parts of the team. In the long term, this will make things worse.<br/>
+to other parts of the team.<br/>
 flowcards is aimed at developers, but its goal is to enable better interactions for the whole team.<br/>
 
 ## How?
