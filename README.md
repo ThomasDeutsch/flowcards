@@ -7,13 +7,17 @@ They both enable ways to describe & model stateful reactive systems.<br/>
 Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
 `App(state) => UI` becomes `App(flowcards(scenarios)) => UI`<br/>
 
-The naming comes from [user-flows](https://miro.medium.com/max/1400/1*fTafSXeAHjbELTxDHttWuQ.png). They provide an inter-object description of a reactive system.<br/>
-Instead of describing the full reactivity of each component object-by-object (like XState),<br/>
-we can define a system by the scenarios we want to enable flow-by-flow.<br/>
-To enable behaviour - flow by flow - is what flowcards is all about.<br/>
-<br/>
-flowcards is based on [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html).<br/>
-👉 [This guide & sample application](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) will introduce you to the idea.<br/>
+## Why? ( guiding principle )
+A tool for better software development should be aimed to benefit the whole team.<br/>
+It is not enough to build tools for developers and hope for the benefits to "trickle-down"<br/>
+to other parts of the team. In the long term, this will make things worse.<br/>
+flowcards is aimed at developers, but its goal is to enable better interactions for the whole team.<br/>
+
+## How?
+By enabling developers to model & describe systems that is more aligned to UX, RE and Testing.<br/>
+For Example: A transition from user-flow to code.
+
+
 
 ## Packages
 
@@ -23,6 +27,7 @@ flowcards is based on [behavioral programming principles](http://www.wisdom.weiz
 - [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-mobx.png) `@flowcards/mobx`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/mobx) - MobX store
 - [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-rxjs.png) `@flowcards/rxjs`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/rxjs) - Observable from BehaviorSubject
 <br/>
+
 
 ## Quick Start 
 - [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl?file=/src/index.ts)
