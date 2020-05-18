@@ -141,6 +141,7 @@ test("the cache will hold the initial value", () => {
     let cachedVal: any;
     function* thread1(this: BTContext, cachedVal: any) {
         cachedVal.set(10);
+        expect(cachedVal.current).toBe(10);
         yield bp.request('fin');
     }
     testScenarios((enable, cache) => {
