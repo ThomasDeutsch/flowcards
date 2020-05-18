@@ -20,11 +20,6 @@ export interface InterceptResult {
     value: any;
 }
 
-interface NextBid {
-    isFunction: boolean;
-    value?: any;
-}
-
 export enum InterceptResultType {
     guarded = "guarded",
     progress = "progress",
@@ -39,7 +34,7 @@ export class BThread {
     private _currentArguments: any[];
     private _thread: BTGen;
     private _currentBids?: BThreadBids;
-    private _nextBid: NextBid = {isFunction: false};
+    private _nextBid?: any;
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted = false;
@@ -77,9 +72,9 @@ export class BThread {
         const next = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;
-            delete this._nextBid.value;
+            delete this._nextBid;
         } else {
-            this._nextBid = {value: next.value, isFunction: typeof next.value === 'function'};
+            this._nextBid = next.value;
         }
         delete this._currentBids;
         return cancelledPromises;
@@ -117,10 +112,9 @@ export class BThread {
 
     public getBids(): BThreadBids  {
         const pendingEvents: EventMap<Bid> | undefined = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
-        if(this._isCompleted) return {[BidType.pending]: pendingEvents}
-        if(this._nextBid.isFunction) this._currentBids = getBidsForBThread(this.id, this._nextBid.value());
-        if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid.value);
-        return {...this._currentBids, [BidType.pending]: pendingEvents}
+        if(this._isCompleted) return {[BidType.pending]: pendingEvents};
+        if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid);
+        return {...this._currentBids, [BidType.pending]: pendingEvents};
     }
 
     public resetOnArgsChange(nextArguments: any): void {
