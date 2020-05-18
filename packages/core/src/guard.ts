@@ -14,6 +14,7 @@ export function getGuardForEventDispatch(eventMap: EventMap<Bid[]>, event: FCEve
         }
     }
     if(guards === undefined || guards.length === 0) return undefined;
+    if(guards.length === 1) return guards[0];
     return (payload: any) => guards!.filter(utils.notUndefined).some(guard => guard(payload)); // return true if some BThread will accept the payload
 }
 

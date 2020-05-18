@@ -115,6 +115,7 @@ test("a cache can be updated by the provided set function", () => {
     testScenarios((enable, cache) => {
         cachedVal = cache('A', 100);
         cachedVal.set(10);
+        expect(cachedVal.current).toEqual(10);
         enable(thread1, [cachedVal]);
     }, () => {
         expect(cachedVal.current).toEqual(10);
