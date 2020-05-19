@@ -215,9 +215,9 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
         // ------ create the return value:
         updateEventDispatcher(bids.wait?.difference(bids[BidType.pending]));
-        const pendingEventMap = bids[BidType.pending] || new EventMap();
-        logger?.logPendingEvents(bids[BidType.pending] || new EventMap());
         logger?.logWaits(bids.wait);
+        const pendingEventMap = bids[BidType.pending] || new EventMap();
+        logger?.logPendingEvents(pendingEventMap);
         return {
             dispatch: eventDispatch,
             latest: getEventCache, // latest values from event cache
