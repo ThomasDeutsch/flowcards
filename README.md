@@ -14,11 +14,16 @@ flowcards gives JavaScript developers the option to use the power of Scenario-Ba
 Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
 scenarios, flow-by-flow. The power lies in the interconnection of different disciplines - for example: DEV and UX<br/>
 
+## Use It For
+flowcards is a replacment for traditional state-management solutions like redux.<br/>
+```App(state) => UI``` becomes ```App(flowcards(scenarios)) => UI```<br/>
+Use flowcards for well defined state transitions based on scenarios you want to enable.<br/>
+
 ## Example
 To demonstrate this, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
 Lets say, we want to build an e-commerce app, we might start with this flow:<br/>
-
+<br/>
 ![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
 this can be translated to a JavaScript generator function
@@ -27,14 +32,17 @@ function* userIsAbleToPurchaseProduct() {
   yield wait('selectProduct');
   yield wait('toPurchase');
   yield wait('confirmAndPurchase');
+  yield wait('toProductList');
 }
 ```
 This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
-We can now use this 1-to-1 translation to keep talking about the software we want to build<br/>
-and we can keep this common-ground that now connects our UX-team with our DEV-team.<br/>
+We can use this as a common-ground, to reason about the software we want to build - as a team.<br/>
 
-How is this different? and how would this look like for a bigger application?
-This tutorial will get you started.
+ 
+
+
+## Getting Started
+
 
 ## Packages
 
