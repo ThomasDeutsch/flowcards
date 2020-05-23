@@ -15,12 +15,12 @@ Instead of describing a reactive system object-by-object, the developer is now a
 scenarios, flow-by-flow. The power lies in the interconnection of different disciplines - for example: DEV and UX<br/>
 
 ## Use It For
-flowcards is a replacment for traditional state-management solutions like redux.<br/>
+flowcards is a replacement for traditional state-management solutions like redux.<br/>
 ```App(state) => UI``` becomes ```App(flowcards(scenarios)) => UI```<br/>
-Use flowcards for well defined state transitions based on scenarios you want to enable.<br/>
+Use flowcards for well defined state transitions, based on scenarios you want to enable.<br/>
 
 ## Example
-To demonstrate this, we take a look at user-flows.<br/>
+To demonstrate the scenario approach, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
 Lets say, we want to build an e-commerce app, we might start with this flow:<br/>
 <br/>
