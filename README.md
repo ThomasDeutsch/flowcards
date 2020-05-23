@@ -14,7 +14,7 @@ flowcards gives JavaScript developers the option to use the power of Scenario-Ba
 Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
 scenarios flow-by-flow. The power lies in the interconnection to other disciplines - for example: UX<br/>
 
-## Interconnection
+## Example
 To demonstrate this, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
 
