@@ -1,6 +1,6 @@
 ![flowcards](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/banner-flowcards-2.png)
 
-Scenario-Based Programming for JavaScript & TypeScript 
+Scenario-Based Programming (SBP) for JavaScript & TypeScript 
 
 ## Why
 flowcards primary goal, is to enable teams to build better software.<br/>
