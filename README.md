@@ -2,6 +2,11 @@
 
 Scenario-Based Programming (SBP) for JavaScript & TypeScript 
 
+## Use It For
+flowcards is a replacement for traditional state-management solutions like redux.<br/>
+```App(state) => UI``` becomes ```App(flowcards(scenarios)) => UI```<br/>
+Use flowcards for well defined state transitions, based on scenarios you want to enable.<br/>
+
 ## Why
 flowcards primary goal, is to enable teams to build better software.<br/>
 One way, would be to provide a tool for developers and hope for the benefits to "trickle-down".<br/>
@@ -13,11 +18,6 @@ Opening up new possibilites to create effective teams.<br/>
 flowcards gives JavaScript developers the option to use the power of Scenario-Based Programming.<br/>
 Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
 scenarios, flow-by-flow. The power lies in the interconnection of different disciplines - for example: DEV and UX<br/>
-
-## Use It For
-flowcards is a replacement for traditional state-management solutions like redux.<br/>
-```App(state) => UI``` becomes ```App(flowcards(scenarios)) => UI```<br/>
-Use flowcards for well defined state transitions, based on scenarios you want to enable.<br/>
 
 ## Example
 To demonstrate the scenario approach, we take a look at user-flows.<br/>
@@ -36,13 +36,13 @@ function* userIsAbleToPurchaseProduct() {
 }
 ```
 This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
-We can use this as a common-ground, to reason about the software we want to build - as a team.<br/>
-
- 
-
+We can use this as a common-ground, to talk about the software we want to build.<br/>
+A developer might give the feedback, that the 'confirmAndPurchase' event is an async event<br/>
+and that the UX-Team needs to think about some kind of loading-spinner after the button is clicked.<br/>
+Even after weeks and months into the project, a developer can always refer to this scenario as the source of truth.<br/>
 
 ## Getting Started
-
+todo: LINK
 
 ## Packages
 
