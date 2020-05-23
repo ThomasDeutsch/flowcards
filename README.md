@@ -20,6 +20,28 @@ A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
 
 ![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
+this can be translated into a JavaScript generator function
+```js
+function* userIsAbleToPurchaseProduct() {
+  yield wait('selectProduct');
+  yield wait('toPurchase');
+  yield wait('confirmAndPurchase');
+}
+```
+This a 1-to-1 translation from a scenario as a user-flow to a scenario in code.<br/>
+We can now use this 1-to-1 translation to keep talking about this scenario.<br/>
+A developer might mention that the 'confirmAndPurchase' will trigger a server-call (async), and that there should be some kind of loading-spinner to show that the client is waiting for a response.<br/>
+What if the user has not entered valid payment details? he should not be able to proceed.<br/>
+```js
+function* userIsAbleToPurchaseProduct() {
+  const productId = yield wait('selectProduct');
+  const paymentInformation = yield wait('toPurchase', (data) => checkPaymentInformation(data));
+  yield wait('confirmAndPurchase', apiPurchase(productId, paymentInformation));
+}
+```
+
+
+
 
 ## Packages
 
