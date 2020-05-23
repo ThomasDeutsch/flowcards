@@ -6,8 +6,7 @@ import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
 import { EventMap, reduceEventMaps, FCEvent } from './event';
 
-type BidFunction = () => Bid | Bid[]
-export type BTGen = Generator<Bid | Bid[] | BidFunction, void, any>;
+export type BTGen = Generator<Bid | Bid[], void, any>;
 export type GeneratorFn = (...args: any[]) => BTGen;
 
 export interface BTContext {
@@ -27,7 +26,6 @@ export enum InterceptResultType {
 }
 
 export class BThread {
-    // private
     private readonly _logger?: Logger;
     private readonly _dispatch: ActionDispatch;
     private readonly _generatorFn: GeneratorFn;
@@ -43,7 +41,6 @@ export class BThread {
             key: this.key,
         };
     }
-    // public
     public readonly id: string;
     public readonly key?: string | number;
 
