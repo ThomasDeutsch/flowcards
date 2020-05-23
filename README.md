@@ -4,8 +4,8 @@ Scenario-Based Programming (SBP) for JavaScript & TypeScript
 
 ## Why
 flowcards primary goal, is to enable teams to build better software.<br/>
-This is not done by providing a great new tool for developers and hope for the benefits to "trickle-down".<br/>
-In order to make software development better, we need tools that bring teams together.<br/>
+One way, would be to provide a tool for developers and hope for the benefits to "trickle-down".<br/>
+This is usally not the case. In order to make software development better, we need tools that bring teams together.<br/>
 flowcards enables developers to write code, that is aligned to the work done by UX, RE and Testing.<br/>
 Opening up new possibilites to create effective teams.<br/>
 
