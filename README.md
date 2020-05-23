@@ -18,10 +18,7 @@ scenarios flow-by-flow. The power lies in the interconnection to other disciplin
 To demonstrate this, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
 
-
-
-
-
+![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
 
 ## Packages
