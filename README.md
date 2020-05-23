@@ -3,13 +3,12 @@
 Scenario-Based Programming in JavaScript & TypeScript 
 
 ## Why?
-It is not enough to build tools for developers and hope for the benefits to "trickle-down"<br/>
-to other parts of the team.<br/>
-flowcards is aimed at developers, but its goal is to enable better interactions for the whole team.<br/>
+flowcards primary goal, is to enable teams to build better software.<br/>
+This is not done by simply providing a great new tool for developers and hope for the benefits to "trickle-down".<br/>
+In order to make software development better, we need tools that bring teams together.<br/>
 
 ## How?
 By enabling developers to model & describe systems that is more aligned to UX, RE and Testing.<br/>
-For Example: A transition from user-flow to code.
 
 
 
