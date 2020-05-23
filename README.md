@@ -4,18 +4,18 @@ Scenario-Based Programming for JavaScript & TypeScript
 
 ## Why
 flowcards primary goal, is to enable teams to build better software.<br/>
-This is not done by simply providing a great new tool for developers and hope for the benefits to "trickle-down".<br/>
+This is not done by providing a great new tool for developers and hope for the benefits to "trickle-down".<br/>
 In order to make software development better, we need tools that bring teams together.<br/>
 flowcards enables developers to write code, that is aligned to the work done by UX, RE and Testing.<br/>
-Opening up new possibilites for better communication.<br/>
+Opening up new possibilites to create effective teams.<br/>
 
 ## How
 flowcards gives JavaScript developers the option to use the power of Scenario-Based Programming.<br/>
 Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
-scenarios flow-by-flow. The power lies in the interconnection to other disciplines, like UX.<br/>
+scenarios flow-by-flow. The power lies in the interconnection to other disciplines - for example: UX<br/>
 
 ## Interconnection
-A great way to demonstrate this interconnection are user-flows.<br/>
+To demonstrate this, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
 
 
