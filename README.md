@@ -5,19 +5,19 @@ Scenario-Based Programming (SBP) for JavaScript & TypeScript
 ## Why
 flowcards primary goal, is to enable teams to build better software.<br/>
 One way, would be to provide a tool for developers and hope for the benefits to "trickle-down".<br/>
-This is usally not the case. In order to make software development better, we need tools that bring teams together.<br/>
+Another aproach is to use a tool that can bring different disciplines together.<br/>
 flowcards enables developers to write code, that is aligned to the work done by UX, RE and Testing.<br/>
 Opening up new possibilites to create effective teams.<br/>
 
 ## How
 flowcards gives JavaScript developers the option to use the power of Scenario-Based Programming.<br/>
 Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
-scenarios flow-by-flow. The power lies in the interconnection to other disciplines - for example: UX<br/>
+scenarios, flow-by-flow. The power lies in the interconnection of different disciplines - for example: DEV and UX<br/>
 
 ## Example
 To demonstrate this, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
-Lets say, we want to build an e-comerce app, we might start with this flow:<br/>
+Lets say, we want to build an e-commerce app, we might start with this flow:<br/>
 
 ![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
