@@ -1,4 +1,4 @@
-![flowcards](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-flowcards.png)
+![flowcards](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/banner-flowcards.png)
 
 a tool to enable behaviour - flow by flow.
 
