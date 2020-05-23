@@ -20,7 +20,6 @@ type EnableEventCache = (event: FCEvent | string, initial?: any) => CachedItem<a
 export type StagingFunction = (e: EnableThreadFunctionType, s: EnableEventCache) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
-export type UpdateLoopFunction = (actionQueue?: Action[]) => ScenariosContext;
 type EventCache = EventMap<CachedItem<any>>;
 type GetCache = (event: FCEvent | string) => any;
 type GetIsPending =  (event: FCEvent | string) => boolean;
@@ -190,7 +189,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const getEventCache: GetCache = (event: FCEvent | string) => eventCache.get(toEvent(event))?.current;
     // main loop-function:
-    const updateLoop: UpdateLoopFunction = (actionQueue?: Action[]): ScenariosContext => {
+    function updateLoop(actionQueue?: Action[]): ScenariosContext {
         let action = actionQueue?.shift();
         // start a replay?
         if (action && action.type === ActionType.replay) {
