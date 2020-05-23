@@ -4,25 +4,37 @@ Scenario-Based Programming (SBP) for JavaScript & TypeScript
 
 ## Why
 flowcards primary goal, is to enable teams to build better software.<br/>
-This is not done by providing a great new tool for developers and hope for the benefits to "trickle-down".<br/>
-In order to make software development better, we need tools that bring teams together.<br/>
+One way, would be to provide a tool for developers and hope for the benefits to "trickle-down".<br/>
+Another aproach is to use a tool that can bring different disciplines together.<br/>
 flowcards enables developers to write code, that is aligned to the work done by UX, RE and Testing.<br/>
 Opening up new possibilites to create effective teams.<br/>
 
 ## How
 flowcards gives JavaScript developers the option to use the power of Scenario-Based Programming.<br/>
 Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
-scenarios flow-by-flow. The power lies in the interconnection to other disciplines - for example: UX<br/>
+scenarios, flow-by-flow. The power lies in the interconnection of different disciplines - for example: DEV and UX<br/>
 
 ## Example
 To demonstrate this, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
+Lets say, we want to build an e-commerce app, we might start with this flow:<br/>
 
+![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
+this can be translated to a JavaScript generator function
+```js
+function* userIsAbleToPurchaseProduct() {
+  yield wait('selectProduct');
+  yield wait('toPurchase');
+  yield wait('confirmAndPurchase');
+}
+```
+This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
+We can now use this 1-to-1 translation to keep talking about the software we want to build<br/>
+and we can keep this common-ground that now connects our UX-team with our DEV-team.<br/>
 
-
-
-
+How is this different? and how would this look like for a bigger application?
+This tutorial will get you started.
 
 ## Packages
 
