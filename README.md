@@ -1,11 +1,6 @@
 ![flowcards](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/banner-flowcards-2.png)
 
-a tool to enable behaviour - flow by flow.
-
-You can compare flowcards to [XState](https://github.com/davidkpiano/xstate).<br/>
-They both enable ways to describe & model stateful reactive systems.<br/>
-Use them for well defined state-transitions, and free yourself from switch-case reducers.<br/>
-`App(state) => UI` becomes `App(flowcards(scenarios)) => UI`<br/>
+Scenario-Based Programming in JavaScript & TypeScript 
 
 ## Why?
 It is not enough to build tools for developers and hope for the benefits to "trickle-down"<br/>
