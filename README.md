@@ -1,6 +1,6 @@
 ![flowcards](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/banner-flowcards-2.png)
 
-Scenario-Based Programming (SBP) for JavaScript/TypeScript applications
+Scenario-Based Programming (SBP) for JavaScript / TypeScript applications
 
 ## Use It For
 flowcards is a replacement for traditional state-management solutions.<br/>
