@@ -40,7 +40,6 @@ function* userCanPurchaseSelectedProduct() {
 This a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
 A reactive system is usually described by multiple user-flows.<br/>
 flowcards will provide a modular system to write frontend apps flow-by-flow.<br/>
-This is what flowcards is all about.<br/>
 
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
