@@ -35,7 +35,7 @@ function* userIsAbleToPurchaseProduct() {
 }
 ```
 This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
-A requirement ( the user flow ), now has a place in your code.<br/>
+A requirement (user-flow), now has a single place in your code.<br/>
 
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
