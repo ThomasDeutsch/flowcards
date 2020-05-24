@@ -38,8 +38,9 @@ function* userCanPurchaseSelectedProduct() {
 }
 ```
 This a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
-Usually, you will have more than one flow or requirement for your app.<br/>
-flowcards provides a modular system to write frontend apps flow-by-flow.<br/>
+flowcards provides a modular system for your scenarios, so that developers are able to model<br/>
+frontend applications flow-by-flow. It is no longer about modular components, now we can create
+modular behaviour.<br/>
 
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
@@ -68,6 +69,9 @@ flowcards can be easily integrated into modern frontend applications.
 If this hits a spot, send me a message and tell me about it.<br/>
 You can be a developer, a designer or someone new to software development, i will appreciate your help.<br/>
 
+## Scenario Based Programming (SBP) 
+flowcards is an opinionated flavour of SBP<br/>
+Based on [behavioural programmin principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html), flowcards adds pending-events, intercepts, event-chaches and a scaffolding-function, to enable a better integration to frontend app development.
 
 ## Quick Start 
 - [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl?file=/src/index.ts)
