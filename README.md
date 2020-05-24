@@ -66,7 +66,8 @@ flowcards can be easily integrated into modern frontend applications.
 <br/>
 
 ## Contribute
-If this hits a spot for you, then send me a message. Tell me about the problems you want to solve.<br/>
+If this hits a spot for you, then send me a message and tell me about it.<br/>
+You can be a developer, a Designer or someone new to software development, i will appreciate your help.<br/>
 
 
 ## Quick Start 
