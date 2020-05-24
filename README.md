@@ -45,6 +45,10 @@ UX, Testing and DEV will always be able to refer to the same scenario - a shared
 possibilites for effective teams.
 
 ## Real World
+If you are interested how this would look in real-world applications, there are two ways to get started.<br/>
+1. UX <-> DEV tutorial that makes use of user-flows and demonstrates UX - DEV interactions.<br/>
+2. Requirements -> DEV tutorial that demonstrates how a list of requirements can be translated into code.<br/>
+
 
 
 ## Packages
@@ -55,6 +59,9 @@ possibilites for effective teams.
 - [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-mobx.png) `@flowcards/mobx`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/mobx) - MobX store
 - [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-rxjs.png) `@flowcards/rxjs`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/rxjs) - Observable from BehaviorSubject
 <br/>
+
+## Contribute
+If this hits a spot for you, and you want to get involved? Write me a message.<br/>
 
 
 ## Quick Start 
