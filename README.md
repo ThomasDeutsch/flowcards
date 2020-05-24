@@ -9,20 +9,19 @@ Use flowcards for well defined state transitions, based on scenarios you want to
 
 ## Why
 flowcards primary goal, is to enable teams to build better software.<br/>
-One way, would be to provide a tool for developers and hope for the benefits to "trickle-down".<br/>
-Another aproach is to use a tool that can bring different disciplines together.<br/>
+It is more than providing a new tool for developers and hope for the benefits to "trickle-down".<br/>
 flowcards enables developers to write code, that is aligned to the work done by UX, RE and Testing.<br/>
-Opening up new possibilites to create effective teams.<br/>
+Opening up new possibilites for effective teams.<br/>
 
 ## How
-flowcards gives JavaScript developers the option to use the power of Scenario-Based Programming.<br/>
+flowcards gives JavaScript developers the option to use Scenario-Based Programming.<br/>
 Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
 scenarios, flow-by-flow. The power lies in the interconnection of different disciplines - for example: DEV and UX<br/>
 
 ## Example
 To demonstrate the scenario approach, we take a look at user-flows.<br/>
 A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
-Lets say, we want to build an e-commerce app, we might start with this flow:<br/>
+If we want to build an e-commerce app, we might start with:<br/>
 <br/>
 ![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
@@ -36,10 +35,14 @@ function* userIsAbleToPurchaseProduct() {
 }
 ```
 This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
-We can use this as a common-ground, to talk about the software we want to build.<br/>
-A developer might give the feedback, that the 'confirmAndPurchase' event is an async event<br/>
-and that the UX-Team needs to think about some kind of loading-spinner after the button is clicked.<br/>
-Even after weeks and months into the project, a developer can always refer to this scenario as the source of truth.<br/>
+A requirement ( the user flow ), now has a place in your code.<br/>
+
+## The Result
+The code-structure is based on the requirements you want to fulfill.<br/>
+They are execuatable specifications and will help developers to make confident changes, even after<br/>
+months into a big frontend application project.<br/> 
+UX, Testing and DEV will always be able to refer to the same scenario - a shared artifact that will enable new<br/>
+possibilites for effective teams.
 
 ## Getting Started
 todo: LINK
