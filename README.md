@@ -44,7 +44,7 @@ The code-structure can be based on the requirements you want to fulfill.<br/>
 They are execuatable specifications and will help developers to make confident changes, even after<br/>
 months into a project.<br/> 
 UX, Testing and DEV will always be able to refer to the same scenario - a shared artifact that will enable<br/>
-new possibilites for effective teams.
+new possibilites for team interactions.
 
 ## Real World Use
 If you are interested how this can be used in real-world applications, there are two ways to get started.<br/>
