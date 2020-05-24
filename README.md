@@ -3,7 +3,7 @@
 Scenario-Based Programming (SBP) for JavaScript & TypeScript 
 
 ## Use It For
-flowcards is a replacement for traditional state-management solutions like redux.<br/>
+flowcards is a replacement for traditional state-management solutions.<br/>
 ```App(state) => UI``` becomes ```App(flowcards(scenarios)) => UI```<br/>
 Use flowcards for well defined state transitions, based on scenarios you want to enable.<br/>
 
