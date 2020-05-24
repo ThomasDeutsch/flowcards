@@ -29,7 +29,7 @@ this can be translated to a JavaScript generator function
 ```js
 function* userCanPurchaseSelectedProduct() {
   const productId = yield wait('selectProduct');
-  yield request('nextPage', `/product-details`);
+  yield request('nextPage', `/product-details/${productId}`);
   const paymentDetails = yield wait('confirmPaymentDetails');
   yield request('nextPage', `/payment-details`);
   yield wait('confirmAndPurchase');
