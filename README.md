@@ -35,7 +35,6 @@ function* userIsAbleToPurchaseProduct() {
   yield wait('confirmAndPurchase');
   yield request('apiCall', () => apiPurchase(productId, paymentDetails))
   yield request('nextPage', `/purchase-confirmation`);
-  yield wait('toProductList');
 }
 ```
 This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
