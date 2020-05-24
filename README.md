@@ -37,10 +37,10 @@ function* userCanPurchaseSelectedProduct() {
   yield request('nextPage', `/purchase-confirmation`);
 }
 ```
-This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
-A requirement (user-flow), now has a single place in your code.<br/>
-It gets interesting when there is more then one flow.<br/>
-flowcards will provide a modular system to enable developers to write a frontend apps flow-by-flow.<br/>
+This a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
+A requirement (user-flow), now has a place in our code.<br/>
+A whole app can be defined as a combination of multiple flows.<br/>
+flowcards will provide a modular system to write frontend apps flow-by-flow.<br/>
 
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
