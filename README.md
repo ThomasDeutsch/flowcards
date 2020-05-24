@@ -38,7 +38,8 @@ function* userCanPurchaseSelectedProduct() {
 }
 ```
 This a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
-flowcards will provide a modular system to write frontend apps flow-by-flow.<br/>
+Usually, you will have more than one flow or requirement for your app.<br/>
+flowcards provides a modular system to write frontend apps flow-by-flow.<br/>
 
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
