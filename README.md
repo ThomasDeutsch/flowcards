@@ -51,7 +51,7 @@ new possibilites for team interactions.
 ## Real World Use
 If you are interested how this can be used in real-world applications, there are two ways to get started.<br/>
 1. UX <-> DEV tutorial that makes use of user-flows and demonstrates UX - DEV interactions.<br/>
-2. RE  -> DEV tutorial that demonstrates how a list of requirements can be translated into code.<br/>
+2. [RE  -> DEV tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) that demonstrates how a list of requirements can be translated into code.<br/>
 
 
 ## Packages
