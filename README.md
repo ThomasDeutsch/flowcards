@@ -25,7 +25,7 @@ If we want to build an e-commerce app, we might start with:<br/>
 <br/>
 ![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
-this can be translated to a JavaScript generator function
+this can be translated to a JavaScript generator function (very basic first step)
 ```js
 function* userIsAbleToPurchaseProduct() {
   yield wait('selectProduct');
