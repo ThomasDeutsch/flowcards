@@ -37,9 +37,9 @@ function* userCanPurchaseSelectedProduct() {
   yield request('nextPage', `/purchase-confirmation`);
 }
 ```
-This a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
+This is a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
 flowcards provides a modular system for your scenarios, so that developers are able to model<br/>
-frontend applications flow-by-flow.<br/>
+frontend applications flow-by-flow, the same way as a UX-Designer.<br/>
 
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
