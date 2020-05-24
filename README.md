@@ -37,15 +37,15 @@ function* userIsAbleToPurchaseProduct() {
 This a 1-to-1 translation: from a scenario as a user-flow to a scenario in code.<br/>
 A requirement ( the user flow ), now has a place in your code.<br/>
 
-## The Result
-The code-structure is based on the requirements you want to fulfill.<br/>
+## Benefits
+The code-structure can be based on the requirements you want to fulfill.<br/>
 They are execuatable specifications and will help developers to make confident changes, even after<br/>
 months into a big frontend application project.<br/> 
 UX, Testing and DEV will always be able to refer to the same scenario - a shared artifact that will enable new<br/>
 possibilites for effective teams.
 
-## Getting Started
-todo: LINK
+## Real World
+
 
 ## Packages
 
