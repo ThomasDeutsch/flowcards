@@ -40,18 +40,18 @@ A requirement ( the user flow ), now has a place in your code.<br/>
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
 They are execuatable specifications and will help developers to make confident changes, even after<br/>
-months into a big frontend application project.<br/> 
-UX, Testing and DEV will always be able to refer to the same scenario - a shared artifact that will enable new<br/>
-possibilites for effective teams.
+months into a project.<br/> 
+UX, Testing and DEV will always be able to refer to the same scenario - a shared artifact that will enable<br/>
+new possibilites for effective teams.
 
-## Real World
-If you are interested how this would look in real-world applications, there are two ways to get started.<br/>
+## Real World Use
+If you are interested how this can be used in real-world applications, there are two ways to get started.<br/>
 1. UX <-> DEV tutorial that makes use of user-flows and demonstrates UX - DEV interactions.<br/>
 2. Requirements -> DEV tutorial that demonstrates how a list of requirements can be translated into code.<br/>
 
 
-
 ## Packages
+flowcards can be easily integrated into modern frontend applications.
 
 - [🌀 `@flowcards/core (documentation)`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
 - [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-react.png) `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hook
