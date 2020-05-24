@@ -28,8 +28,10 @@ If we want to build an e-commerce app, we might start with:<br/>
 this can be translated to a JavaScript generator function (very basic first step)
 ```js
 function* userIsAbleToPurchaseProduct() {
-  yield wait('selectProduct');
+  const productId = yield wait('selectProduct');
+  yield Fc.request('nextPage', `/productDetails`);
   yield wait('toPurchase');
+  yield Fc.request('nextPage', `/productDetails`);
   yield wait('confirmAndPurchase');
   yield wait('toProductList');
 }
