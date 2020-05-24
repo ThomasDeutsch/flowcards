@@ -25,14 +25,16 @@ If we want to build an e-commerce app, we might start with:<br/>
 <br/>
 ![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
 
-this can be translated to a JavaScript generator function (very basic first step)
+this can be translated to a JavaScript generator function
 ```js
 function* userIsAbleToPurchaseProduct() {
   const productId = yield wait('selectProduct');
-  yield Fc.request('nextPage', `/productDetails`);
-  yield wait('toPurchase');
-  yield Fc.request('nextPage', `/productDetails`);
+  yield request('nextPage', `/product-details`);
+  const paymentDetails = yield wait('confirmPaymentDetails');
+  yield request('nextPage', `/payment-details`);
   yield wait('confirmAndPurchase');
+  yield request('apiCall', () => apiPurchase(productId, paymentDetails))
+  yield request('nextPage', `/purchase-confirmation`);
   yield wait('toProductList');
 }
 ```
