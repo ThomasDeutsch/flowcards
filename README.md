@@ -39,8 +39,7 @@ function* userCanPurchaseSelectedProduct() {
 ```
 This a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
 flowcards provides a modular system for your scenarios, so that developers are able to model<br/>
-frontend applications flow-by-flow. It is no longer about modular components, now we can create
-modular behaviour.<br/>
+frontend applications flow-by-flow.<br/>
 
 ## Benefits
 The code-structure can be based on the requirements you want to fulfill.<br/>
