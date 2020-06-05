@@ -23,6 +23,7 @@ export type TriggerWaitDispatch = (payload: any) => void;
 type EventCache = EventMap<CachedItem<any>>;
 type GetCache = (event: FCEvent | string) => any;
 type GetIsPending =  (event: FCEvent | string) => boolean;
+export type UpdateLoopFunction = (actionQueue?: Action[] | undefined) => ScenariosContext;
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
