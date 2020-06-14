@@ -5,22 +5,14 @@ import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
 import { EventMap, FCEvent, toEvent } from './event';
 import * as utils from './utils';
+import { EnableEventCache, EventCache, setEventCache, CachedItem } from './event-cache'
 
-type DangerouslySetCache = (payload: any) => void
 
-export interface CachedItem<T> {
-    current: T;
-    set: DangerouslySetCache;
-    initial: any;
-    reset: Function;
-}
-
-type EnableThreadFunctionType = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
-type EnableEventCache = (event: FCEvent | string, initial?: any) => CachedItem<any>;
-export type StagingFunction = (e: EnableThreadFunctionType, s: EnableEventCache) => void;
+type EnableThread = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
+export type StagingFunction = (e: EnableThread, s: EnableEventCache<unknown>) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
-type EventCache = EventMap<CachedItem<any>>;
+
 type GetCache = (event: FCEvent | string) => any;
 type GetIsPending =  (event: FCEvent | string) => boolean;
 export type UpdateLoopFunction = (actionQueue?: Action[] | undefined) => ScenariosContext;
@@ -129,26 +121,6 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     }
 }
 
-function setEventCache(canUpdate: boolean, eventCache: EventCache, event: FCEvent | undefined, payload: any): void {
-    if (!event) return;
-    const events = eventCache.getAllMatchingEvents(event);
-    if(!events) return;
-    events.forEach(event => {
-        const val = eventCache.get(event);
-        if(val === undefined) {
-            const initialPayload = payload;
-            eventCache.set(event, {
-                initial: initialPayload,
-                current: payload, 
-                set: (payload: any) => setEventCache(true, eventCache, event, payload),
-                reset: () => setEventCache(true, eventCache, event, initialPayload)
-            });
-        } else if(canUpdate) { // the value is present
-            val.current = payload;
-            //eventCache.set(event, val);
-        }
-    }); 
-}
 
 function setupScaffolding(
     stagingFunction: StagingFunction,
@@ -158,7 +130,7 @@ function setupScaffolding(
     logger?: Logger
 ) {
     const orderedIds: string[] = [];
-    const enableBThread: EnableThreadFunctionType = (gen: GeneratorFn, args: any[] = [], key?: string | number): void => {
+    function enableBThread(gen: GeneratorFn, args: any[] = [], key?: string | number) {
         const id: string = createScenarioId(gen, key);
         orderedIds.push(id);
         if (bThreadDictionary[id]) {
@@ -167,9 +139,9 @@ function setupScaffolding(
             bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger);
         }
     };
-    const enableEventCache: EnableEventCache = (event: FCEvent | string, initial?: any): CachedItem<any> => {
+    function enableEventCache<T>(event: FCEvent | string, initial?: T): CachedItem<T> {
         event = toEvent(event);
-        setEventCache(false, eventCache, event, initial);
+        setEventCache<T>(false, eventCache, event, initial);
         return eventCache.get(event)!;
     }
     return (): string[] => {
