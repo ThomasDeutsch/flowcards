@@ -165,7 +165,7 @@ test("event cache will have record of past events (history)", () => {
         yield bp.request('fin');
     }
     testScenarios((enable, cache) => {
-        cachedVal = cache<number>('A', 100);
+        cachedVal = cache('A', 100);
         enable(thread1, [cachedVal]);
     }, () => {
         expect(cachedVal.current).toEqual(30);
