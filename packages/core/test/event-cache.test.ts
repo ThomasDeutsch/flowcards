@@ -1,8 +1,6 @@
 import * as bp from "../src/index";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
-import { CachedItem } from '../build/update-loop';
-import { toEvent } from '../src/event';
 
 function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
@@ -165,7 +163,7 @@ test("event cache will have record of past events (history)", () => {
         yield bp.request('fin');
     }
     testScenarios((enable, cache) => {
-        cachedVal = cache<number>('A', 100);
+        cachedVal = cache('A', 100);
         enable(thread1, [cachedVal]);
     }, () => {
         expect(cachedVal.current).toEqual(30);
