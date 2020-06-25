@@ -4,13 +4,15 @@ import { Logger } from "./logger";
 import { ActionType, Action } from './action';
 import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
-import { EventMap, reduceEventMaps, FCEvent } from './event';
+import { EventMap, reduceEventMaps, FCEvent, toEvent } from './event';
 
 export type BTGen = Generator<Bid | Bid[], void, any>;
 export type GeneratorFn = (...args: any[]) => BTGen;
+type SetState = (newValue: any) => void;
 
 export interface BTContext {
     key?: string | number;
+    setState: SetState;
 }
 
 export interface InterceptResult {
@@ -25,6 +27,13 @@ export enum InterceptResultType {
     interceptingThread = "interceptingThread"
 }
 
+type IsWaitingFunction = (event: string | FCEvent) => boolean
+export interface BThreadState {
+    waits?: FCEvent[],
+    current?: any
+    isWaitingFor: IsWaitingFunction
+}
+
 export class BThread {
     private readonly _logger?: Logger;
     private readonly _dispatch: ActionDispatch;
@@ -36,9 +45,24 @@ export class BThread {
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
     private _pendingInterceptRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted = false;
+    private _state: BThreadState = {
+        waits: undefined,
+        isWaitingFor: function(event: string | FCEvent): boolean {
+            const fcevent = toEvent(event);
+            return !!this.waits?.some(e => (e.name === fcevent.name) && (e.key === fcevent.key) );
+        },
+        current: undefined
+    };
+    public get state() {
+        return this._state;
+    }
     private _getBTContext(): BTContext {
+        const setState = (value: any) => {
+            this._state.current = value;
+        }
         return {
             key: this.key,
+            setState: setState
         };
     }
     public readonly id: string;
@@ -111,6 +135,7 @@ export class BThread {
         const pendingEvents: EventMap<Bid> | undefined = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
         if(this._isCompleted) return {[BidType.pending]: pendingEvents};
         if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid);
+        this._state.waits = this._currentBids?.[BidType.wait]?.getAllEvents();
         return {...this._currentBids, [BidType.pending]: pendingEvents};
     }
 

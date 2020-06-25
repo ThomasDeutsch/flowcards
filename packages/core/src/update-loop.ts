@@ -1,5 +1,5 @@
-import { GeneratorFn, BThread, InterceptResultType } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids } from './bid';
+import { GeneratorFn, BThread, InterceptResultType, BThreadState } from './bthread';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
@@ -8,7 +8,7 @@ import * as utils from './utils';
 import { EnableEventCache, EventCache, setEventCache, CachedItem } from './event-cache'
 
 
-type EnableThread = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
+type EnableThread = (gen: GeneratorFn, args?: any[], key?: string | number) => BThreadState;
 export type StagingFunction = (e: EnableThread, s: EnableEventCache<unknown>) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
@@ -129,26 +129,29 @@ function setupScaffolding(
     dispatch: ActionDispatch,
     logger?: Logger
 ) {
-    const orderedIds: string[] = [];
-    function enableBThread(gen: GeneratorFn, args: any[] = [], key?: string | number) {
+    const bids: BThreadBids[] = [];
+    function enableBThread(gen: GeneratorFn, args: any[] = [], key?: string | number) : BThreadState {
         const id: string = createScenarioId(gen, key);
-        orderedIds.push(id);
         if (bThreadDictionary[id]) {
             bThreadDictionary[id].resetOnArgsChange(args);
         } else {
             bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger);
         }
+        const threadBids = bThreadDictionary[id].getBids();
+        bids.push(threadBids);
+        return bThreadDictionary[id].state;
     }
     function enableEventCache<T>(event: FCEvent | string, initial?: T): CachedItem<T> {
         event = toEvent(event);
         setEventCache<T>(false, eventCache, event, initial);
         return eventCache.get(event)!;
     }
-    return (): string[] => {
-        orderedIds.length = 0;
+    function run(): BThreadBids[] {
+        bids.length = 0;
         stagingFunction(enableBThread, enableEventCache); 
-        return [...orderedIds];
+        return [...bids];
     }
+    return run;
 }
 
 // -----------------------------------------------------------------------------------
@@ -175,9 +178,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(action.payload); // start a replay
         }
         // not a replay
-        const orderedThreadIds = scaffold();
-        const bThreadBids = orderedThreadIds.map(id => bThreadDictionary[id].getBids());
-        const bids = getAllBids(bThreadBids);
+        const bids = getAllBids(scaffold());
         action = action || getNextActionFromRequests(bids.request);
         if (action) {
             logger?.logAction(action);

@@ -6,7 +6,7 @@ function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-test("wait-bids can be dispatched, except they are marked as dispatchEnabled = false", () => {
+test("wait-bids can be dispatched, except when dispatchEnabled is set to false", () => {
 
     function* thread1() {
         yield bp.wait({name: "A", dispatchEnabled: false});

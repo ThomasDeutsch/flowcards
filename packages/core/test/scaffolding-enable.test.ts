@@ -1,6 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { BTContext } from "../src/bthread";
+import { BTContext, BThreadState } from '../src/bthread';
+import { toEvent } from '../src/event';
 
 
 test("a thread will accept an optional array of arguments", () => {
@@ -58,4 +59,33 @@ test("if no key is provided, the default key value is undefined", () => {
     });
 
     expect(receivedKeyA).toBeUndefined(); 
+});
+
+
+test("enable will return the current thread-state (check waits)", () => {
+    let threadState: BThreadState;
+
+    function* thread(this: BTContext) {
+        yield bp.wait('A');
+    }
+
+    testScenarios((enable) => {
+        threadState = enable(thread);
+        expect(threadState?.isWaitingFor('A')).toBe(true);
+    });
+});
+
+
+test("enable will return the current thread-state (state value)", () => {
+    let threadState: BThreadState;
+
+    function* thread(this: BTContext) {
+        this.setState('my state value');
+        yield bp.wait('A');
+    }
+
+    testScenarios((enable) => {
+        threadState = enable(thread);
+        expect(threadState?.current).toEqual('my state value');
+    });
 });
