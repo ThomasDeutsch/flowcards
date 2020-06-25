@@ -8,6 +8,7 @@ type EventMapFunction<T, X> = (e: FCEvent, value: T) => X;
 export interface FCEvent {
     name: EventName;
     key?: EventKey;
+    dispatchEnabled?: boolean;
 }
 
 export function toEvent(e: string | FCEvent): FCEvent {
@@ -121,7 +122,8 @@ export class EventMap<T>  {
     public map<X>(mapFunction: EventMapFunction<T, X>):  EventMap<X> {
         const mapped = new EventMap<X>();
         this.forEach((event, value) => {
-            mapped.set(event, mapFunction(event, value));
+            const newValue = mapFunction(event, value);
+            mapped.set(event, newValue);
         })
         return mapped;
     }
