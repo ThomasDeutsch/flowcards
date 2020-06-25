@@ -1,8 +1,6 @@
 import * as bp from "../src/index";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
-import { CachedItem } from '../build/update-loop';
-import { toEvent } from '../src/event';
 
 function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
