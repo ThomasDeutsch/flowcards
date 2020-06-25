@@ -1,6 +1,7 @@
 import { StagingFunction, createUpdateLoop, ScenariosContext } from './update-loop';
 import { Action } from './action'
 import { EventDispatch } from './event-dispatcher';
+import { CachedItem } from '../build/update-loop';
 
 
 export { EventDispatch } from './event-dispatcher';
