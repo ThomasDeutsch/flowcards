@@ -63,9 +63,11 @@ function advanceRequests(allBids: AllBidsByType, bThreadDictionary: BThreadDicti
     });
 }
 
-function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
-    const bids = getMatchingBids(allBids[BidType.wait], action.event);
-    if(bids === undefined || bids.length === 0) return false;
+function advanceWaitsAndOns(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
+    const waitingBids = getMatchingBids(allBids[BidType.wait], action.event) || [];
+    const onBids = getMatchingBids(allBids[BidType.on], action.event) || [];
+    const bids = [...waitingBids, ...onBids];
+    if(bids.length === 0) return false;
     bids.forEach(bid => {
         bThreadDictionary[bid.threadId].progressWait(action, bid);
     });
@@ -88,14 +90,14 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
         if(!nextAction) return undefined
         advanceRequests(allBids, bThreadDictionary, nextAction);
-        advanceWaits(allBids, bThreadDictionary, nextAction);
+        advanceWaitsAndOns(allBids, bThreadDictionary, nextAction);
         return nextAction;
     }
     // dispatched
     if(action.type === ActionType.dispatched) {
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
         if(!nextAction) return undefined
-        const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
+        const isValidDispatch = advanceWaitsAndOns(allBids, bThreadDictionary, nextAction);
         if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name)
         return nextAction;
     }
@@ -109,7 +111,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         if(!nextAction) return undefined;
         bThreadDictionary[action.threadId].progressRequest(nextAction); // request got resolved
         advanceRequests(allBids, bThreadDictionary, nextAction);
-        advanceWaits(allBids, bThreadDictionary, nextAction); 
+        advanceWaitsAndOns(allBids, bThreadDictionary, nextAction); 
         return nextAction;
     }
     // rejected
@@ -138,7 +140,7 @@ function setupScaffolding(
         } else {
             bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger);
         }
-    };
+    }
     function enableEventCache<T>(event: FCEvent | string, initial?: T): CachedItem<T> {
         event = toEvent(event);
         setEventCache<T>(false, eventCache, event, initial);
@@ -196,6 +198,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             isPending: (event: FCEvent | string) => pendingEventMap.has(toEvent(event)),
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
-    };
+    }
     return [updateLoop, eventDispatch];
 }

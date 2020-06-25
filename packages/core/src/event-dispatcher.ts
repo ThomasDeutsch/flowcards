@@ -14,6 +14,7 @@ interface DispatchCache {
     dispatch?: TriggerDispatch | undefined;
 }
 
+
 export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();

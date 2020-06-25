@@ -7,7 +7,8 @@ export enum BidType {
     wait = "wait",
     block = "block",
     intercept = "intercept", 
-    pending = "pending"
+    pending = "pending",
+    on = "on"
 }
 
 export interface Bid {
@@ -32,6 +33,7 @@ export interface BThreadBids {
     [BidType.wait]?: EventMap<Bid>;
     [BidType.block]?: EventMap<Bid>;
     [BidType.intercept]?: EventMap<Bid>;
+    [BidType.on]?: EventMap<Bid>;
 }
 
 export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined | (Bid | undefined)[]): BThreadBids | undefined {
@@ -70,6 +72,7 @@ export interface AllBidsByType {
     [BidType.request]?: EventMap<Bid[]>;
     [BidType.wait]?: EventMap<Bid[]>;
     [BidType.intercept]?: EventMap<Bid[]>;
+    [BidType.on]?: EventMap<Bid[]>;
 }
 
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
@@ -82,7 +85,8 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
         [BidType.pending]: pending,
         [BidType.request]: reduceMaps(bidsForType(BidType.request, allBThreadBids), fixedBlocksAndPending, guardedBlocks),
         [BidType.wait]: reduceMaps(bidsForType(BidType.wait, allBThreadBids), fixedBlocks, guardedBlocks),
-        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, allBThreadBids), fixedBlocks, guardedBlocks)
+        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, allBThreadBids), fixedBlocks, guardedBlocks),
+        [BidType.on]: reduceMaps(bidsForType(BidType.on, allBThreadBids))
     };
 }
 
@@ -110,4 +114,8 @@ export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
 
 export function intercept(event: string | FCEvent, guard?: GuardFunction | null, payload?: any): Bid {
     return { type: BidType.intercept, event: toEvent(event), guard: guard !== null ? guard : undefined, threadId: "", payload: payload };
+}
+
+export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
+    return { type: BidType.on, event: toEvent(event), guard: guard, threadId: "" };
 }
