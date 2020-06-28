@@ -23,7 +23,7 @@ test("requests can be intercepted", () => {
     });
 
     const thread3 = flow(null, function* () {
-        yield bp.intercept("A");
+        yield bp.extend("A");
         progressedIntercept = true;
         yield bp.wait('X');
     })
@@ -57,7 +57,7 @@ test("if the intercept has a payload, all threads will continue with that payloa
     })
 
     const thread3 = flow(null, function* () {
-        interceptValue = yield bp.intercept("A", null, 1000);
+        interceptValue = yield bp.extend("A", null, 1000);
         yield bp.wait('X');
     });
 
@@ -91,7 +91,7 @@ test("the intercept payload can be a function.", () => {
     });
 
     const thread3 = flow(null, function* () {
-        interceptValue = yield bp.intercept("A", null, (x: number) => x + 1000);
+        interceptValue = yield bp.extend("A", null, (x: number) => x + 1000);
         yield bp.wait('X');
     });
 
@@ -125,7 +125,7 @@ test("if the intercept payload is a promise, a pending-event is created.", done 
     });
 
     const thread3 = flow(null, function* () {
-        interceptValue = yield bp.intercept("A", null, (x: number) => delay(100, x + 1000));
+        interceptValue = yield bp.extend("A", null, (x: number) => delay(100, x + 1000));
         yield bp.wait('Fin')
     });
 
@@ -162,12 +162,12 @@ test("if an intercept is not applied, than the next intercept will get the event
     });
 
     const interceptPriorityLowThread = flow(null, function* () {
-        yield bp.intercept("A", (pl: number) => pl === 1000);
+        yield bp.extend("A", (pl: number) => pl === 1000);
         waitCAdvanced = true;
     });
 
     const interceptPriorityHighThread = flow(null, function* () {
-        yield bp.intercept("A", (pl: number) => pl !== 1000);
+        yield bp.extend("A", (pl: number) => pl !== 1000);
         waitDAdvanced = true;
     });
 
@@ -197,7 +197,7 @@ test("if an intercepted thread completed, without resolving or rejecting the eve
     });
 
     const thread3 = flow(null, function* () {
-        yield bp.intercept("A");
+        yield bp.extend("A");
         progressedIntercept = true;
     });
 
@@ -229,7 +229,7 @@ test("intercepts will receive a value (like waits)", () => {
     });
 
     const thread3 = flow(null, function* () {
-        interceptedValue = yield bp.intercept("A");
+        interceptedValue = yield bp.extend("A");
     });
 
     testScenarios((enable) => {
@@ -252,7 +252,7 @@ test("intercepts will intercept requests", () => {
     });
 
     const thread2 = flow(null, function* () {
-        intercepted = yield bp.intercept("A");
+        intercepted = yield bp.extend("A");
     }); 
 
     testScenarios((enable) => {
@@ -272,12 +272,12 @@ test("the last intercept that is enabled has the highest priority", () => {
     });
 
     const interceptThread1 = flow(null, function* () {
-        yield bp.intercept("A");
+        yield bp.extend("A");
         advancedThread1 = true;
     });
     
     const interceptThread2 = flow(null, function* () {
-        yield bp.intercept("A");
+        yield bp.extend("A");
         advancedThread2 = true;
     });
 
@@ -298,7 +298,7 @@ test("an intercept will create a pending event", () => {
     });
 
     const interceptingThread = flow(null, function* () {
-        yield bp.intercept("A");
+        yield bp.extend("A");
     });
 
     testScenarios((enable) => {
@@ -316,7 +316,7 @@ test("an intercept will wait for the pending-event to finish before it intercept
     });
 
     const interceptingThread = flow(null, function* () {
-        const {value} = yield bp.intercept("A");
+        const {value} = yield bp.extend("A");
         expect(value).toBe('resolvedValue');
         done();
     });
@@ -337,7 +337,7 @@ test("an intercept can be resolved. This will progress waits and requests", (don
     });
 
     const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super');
         intercept.resolve('super duper');
     });
@@ -367,7 +367,7 @@ test("an intercept can be rejected. This will remove the pending event", (done) 
     });
 
     const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super');
         intercept.reject();
     });
@@ -397,7 +397,7 @@ test("an intercept will keep the event-pending if the BThread with the intercept
     });
 
     const interceptingThread = flow(null, function* () {
-        yield bp.intercept("A");
+        yield bp.extend("A");
         // after the intercept, this BThread completes, keeping the intercept active.
     });
 
@@ -417,13 +417,13 @@ test("multiple intercepts will resolve after another. After all intercepts compl
     });
 
     const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super duper');
         intercept.resolve('super duper flowcards');
     });
 
     const interceptingThreadHigherPriority = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super');
         intercept.resolve('super duper');
     });
@@ -454,13 +454,13 @@ test("if the last intercept rejects, the event will resolve to its starting valu
     });
 
     const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super duper');
         intercept.reject();
     });
 
     const interceptingThreadHigherPriority = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super');
         intercept.resolve('super duper');
     });
@@ -491,13 +491,13 @@ test("if the previous intercept rejects, the next intercept will get the initial
     });
 
     const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super');
         intercept.resolve(intercept.value + ' duper');
     });
 
     const interceptingThreadHigherPriority = flow(null, function* () {
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('super');
         intercept.reject();
     });

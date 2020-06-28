@@ -81,7 +81,7 @@ test("the cache-update can hold the intercepted value", () => {
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.intercept("count", undefined, (val: number) => val + 2);
+        yield bp.extend("count", undefined, (val: number) => val + 2);
     });
 
     testScenarios((enable, cache) => {

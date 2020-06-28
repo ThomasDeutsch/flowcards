@@ -34,8 +34,8 @@ function createScenarioId(id: string, key?: string | number): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
 
-function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
-    let bids = getMatchingBids(allBids[BidType.intercept], action.event);
+function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
+    let bids = getMatchingBids(allBids[BidType.extend], action.event);
     if(bids === undefined || bids.length === 0) return action;
     bids = [...bids];
     while(bids.length > 0) {
@@ -78,7 +78,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
             return;
         }
-        const nextAction = interceptAction(allBids, bThreadDictionary, action);
+        const nextAction = extendAction(allBids, bThreadDictionary, action);
         if(!nextAction) return;
         setEventCache(true, eventCache, nextAction.event, nextAction.payload);
         bThreadDictionary[nextAction.threadId].progressRequest(nextAction); // request got resolved
@@ -87,7 +87,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     }
     // dispatched
     if(action.type === ActionType.dispatched) {
-        const nextAction = interceptAction(allBids, bThreadDictionary, action);
+        const nextAction = extendAction(allBids, bThreadDictionary, action);
         if(!nextAction) return;
         const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
         if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name)
@@ -99,7 +99,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
             if(isResolved === false) return;
         }
-        const nextAction = interceptAction(allBids, bThreadDictionary, action);
+        const nextAction = extendAction(allBids, bThreadDictionary, action);
         if(!nextAction) return;
         setEventCache(true, eventCache, nextAction.event, nextAction.payload);
         bThreadDictionary[action.threadId].progressRequest(nextAction); // request got resolved

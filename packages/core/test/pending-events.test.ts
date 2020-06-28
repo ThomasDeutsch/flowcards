@@ -38,7 +38,7 @@ test("a pending event can not be intercepted", () => {
     });
 
     const thread2 = flow({id: 'thread2'}, function* () {
-        yield bp.intercept("A");
+        yield bp.extend("A");
     });
 
     testScenarios((enable) => {
@@ -239,7 +239,7 @@ test("if a threads intercepts an already existing pending-event, it will trigger
 
     const thread2 = flow(null, function* () {
         yield bp.request("Y", () => delay(100));
-        const intercept = yield bp.intercept("A");
+        const intercept = yield bp.extend("A");
         expect(intercept.value).toBe('requestedValue');
         
         expect(thread1Progressed).toBe(false);

@@ -53,7 +53,7 @@ test("an intercept is not applied, if the guard returns false.", () => {
     });
 
     const threadC = flow(null, function* () {
-        yield bp.intercept("A", (pl: number) => pl !== 1000);
+        yield bp.extend("A", (pl: number) => pl !== 1000);
         interceptAdvanced = true;
     });
 

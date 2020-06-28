@@ -50,29 +50,5 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
 });
 
 
-
-// test("when a thread resets, the bids will be re-evaluated", () => {
-//     let threadBCount = 0;
-//     function* threadA(this: BTContext) {
-//         yield bp.request('A');
-//         this.setState(1);
-//     }
-
-//     function* threadB() {
-//         threadBCount++;
-//         yield bp.wait('A');
-//     }
-
-//     testScenarios((enable) => {
-//         const threadAState = enable(threadA);
-//         enable(threadB, [threadAState.current]);  // instead of state.current, we will pass state.
-//     }, ({dispatch, bTState}) => {
-//         expect(bTState.threadB.isCompleted === false);
-//         expect(threadBCount).toEqual(2);
-//         expect(dispatch('A')).toBeDefined();
-//     });
-// });
-
-
 // todo: when a thread resets, its state will be reset as well.
 // todo: get BThreadState
