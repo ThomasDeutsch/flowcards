@@ -50,7 +50,7 @@ test("a state will return a ref. Passed to a function, it will not update on cha
     });
 });
 
-test("if there are multiple state changes at the same time, the highest priority change will win.", () => {
+test("if there are multiple state changes at the same time, one will be requested first (the higher priority one).", () => {
 
     const threadLow = flow(null, function* () {
         yield bp.request("count", 2);
@@ -60,16 +60,21 @@ test("if there are multiple state changes at the same time, the highest priority
         yield bp.request("count", 1000);
     });
 
-    testScenarios((enable, state) => {
-        state("count");
+    let cacheHistory: any[] = [];
+
+    testScenarios((enable, cache) => {
+        const countCache = cache("count");
+        cacheHistory = countCache.history;
         enable(threadLow([]));
         enable(threadHigh([]));
     }, ({latest}) => {
-        expect(latest("count")).toEqual(1000);
+        expect(latest("count")).toEqual(2);
+        expect(cacheHistory.length).toEqual(3); // initial, 1000, 2
+        expect(cacheHistory[1]).toEqual(1000);
     });
 });
 
-test("the latest-function will respect the intercept value", () => {
+test("the cache-update can hold the intercepted value", () => {
 
     const thread = flow(null, function* () {
         yield bp.request("count", 2);

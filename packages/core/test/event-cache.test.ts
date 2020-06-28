@@ -2,6 +2,7 @@ import * as bp from "../src/index";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
 import { flow } from '../src/flow';
+import { CachedItem } from '../src/event-cache';
 
 function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
@@ -28,19 +29,18 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
 
 
 test("when a promise resolved, the event cache gets updated", (done) => {
-    const thread1 = flow(null, function* () {
-        const val = yield bp.request("A", delay(100, 'resolved value'));
-        console.log('A-resolved to be:', val)
+    const thread1 = flow(null, function* (cacheRef: CachedItem<any>) {
+        const val = yield bp.request("testevent", delay(100, 'resolved value'));
+        expect(val).toEqual(cacheRef.current);
         yield bp.wait('fin');
     });
 
     testScenarios((enable, cache) => {
-        cache('A', null);
-        enable(thread1([]));
+        const cacheRef = cache('testevent');
+        enable(thread1([cacheRef]));
     }, ({dispatch, latest}) => {
         if(dispatch('fin')) {
-            console.log('FIN!!!!!!!!!!!!!!!!!!!!!!!', latest('A'))
-            expect(latest('A')).toEqual("resolved value");
+            expect(latest('testevent')).toEqual("resolved value");
             done();
         }
     });

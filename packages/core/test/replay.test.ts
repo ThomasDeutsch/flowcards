@@ -5,7 +5,7 @@ import { flow } from '../src/flow';
 
 test("an array of actions can be used as a replay", done => {
     let x = 0;
-    const thread1 = flow(null, function* () {
+    const thread1 = flow({id: 'thread1'}, function* () {
         yield bp.wait("A");
         yield bp.wait("B");
         yield bp.wait("C");
@@ -21,17 +21,17 @@ test("an array of actions can be used as a replay", done => {
                 {
                     type: ActionType.requested,
                     event: {name: 'A'},
-                    threadId: ""
+                    threadId: 'thread1'
                 },
                 {
                     type: ActionType.requested,
                     event: {name: 'B'},
-                    threadId: ""
+                    threadId: 'thread1'
                 },
                 {
                     type: ActionType.requested,
                     event: {name: 'C'},
-                    threadId: ""
+                    threadId: 'thread1'
                 }
             ]);
         } else {

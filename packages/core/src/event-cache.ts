@@ -14,6 +14,7 @@ export type EnableEventCache<T> = (event: FCEvent | string, initial?: T) => Cach
 
 export function setEventCache<T>(isUpdate: boolean, eventCache: EventCache, event: FCEvent | undefined, payload?: T): void {
     if (!event) return;
+    if (!isUpdate && eventCache.has(event)) return;
     const events = eventCache.getAllMatchingEvents(event);
     if(!events) return;
     events.forEach(event => {

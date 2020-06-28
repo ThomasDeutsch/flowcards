@@ -56,15 +56,6 @@ function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDicti
     return action;
 }
 
-function advanceRequests(eventCache: EventCache, allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): void {
-    const bids = getMatchingBids(allBids[BidType.request], action.event);
-    if(bids === undefined || bids.length === 0) return;
-    if(eventCache.has(action.event)) setEventCache(true, eventCache, action.event, action.payload);
-    bids.forEach(bid => {
-        bThreadDictionary[bid.threadId].progressRequest(action, bid);
-    });
-}
-
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
     const bids = getMatchingBids(allBids[BidType.wait], action.event) || [];
     if(bids.length === 0) return false;
@@ -89,7 +80,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         }
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
         if(!nextAction) return;
-        advanceRequests(eventCache, allBids, bThreadDictionary, nextAction);
+        setEventCache(true, eventCache, nextAction.event, nextAction.payload);
+        bThreadDictionary[nextAction.threadId].progressRequest(nextAction); // request got resolved
         advanceWaits(allBids, bThreadDictionary, nextAction);
         return;
     }
@@ -109,8 +101,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         }
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
         if(!nextAction) return;
+        setEventCache(true, eventCache, nextAction.event, nextAction.payload);
         bThreadDictionary[action.threadId].progressRequest(nextAction); // request got resolved
-        advanceRequests(eventCache, allBids, bThreadDictionary, nextAction);
         advanceWaits(allBids, bThreadDictionary, nextAction); 
         return;
     }
