@@ -1,6 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { ActionType } from '../src/action';
+import { flow } from '../src/flow';
 
 
 
@@ -9,17 +10,19 @@ function delay(ms: number, value?: any) {
 }
 
 test("a pending event can not be requested", () => {
-    function* thread1() {
+    const thread1 = flow({id: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
         }
-    }
-    function* thread2() {
+    });
+
+    const thread2 = flow({id: 'thread2'}, function* () {
         yield bp.request("A", "hey");
-    }
+    });
+
     testScenarios((enable) => {
-        enable(thread2);
-        enable(thread1);
+        enable(thread2([]));
+        enable(thread1([]));
     }, ({log}) => {
         expect(log?.currentPendingEvents.has({name: 'A'})).toBeTruthy();
         expect(log?.latestAction.threadId).toBe("thread1");
@@ -28,17 +31,19 @@ test("a pending event can not be requested", () => {
 
 
 test("a pending event can not be intercepted", () => {
-    function* thread1() {
+    const thread1 = flow({id: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
         }
-    }
-    function* thread2() {
+    });
+
+    const thread2 = flow({id: 'thread2'}, function* () {
         yield bp.intercept("A");
-    }
+    });
+
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     }, ({log}) => {
         expect(log?.currentPendingEvents.has({name: 'A'})).toBeTruthy();
         expect(log?.latestAction.threadId).toBe("thread1");
@@ -48,17 +53,19 @@ test("a pending event can not be intercepted", () => {
 
 
 test("a pending event resolves can not be blocked", done => {
-    function* thread1() {
+    const thread1 = flow({id: 'thread1'}, function* () {
         yield bp.request("A", () => delay(500));
         yield bp.wait("fin");
-    }
-    function* thread2() {
+    });
+
+    const thread2 = flow(null, function* () {
         yield bp.request("B", () => delay(200));
         yield bp.block("A");
-    }
+    });
+
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     }, ({log, dispatch}) => {
         if(dispatch('fin')) {
             expect(log?.latestAction.threadId).toBe("thread1");
@@ -71,15 +78,17 @@ test("a pending event resolves can not be blocked", done => {
 
 
 test("pending events can not be dispatched", done => {
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         yield bp.request("A", () => delay(500));
-    }
-    function* thread2() {
+    });
+
+    const thread2 = flow(null, function* () {
         yield bp.wait("A");
-    }
+    });
+
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     }, ({dispatch}) => {
             expect(dispatch("A")).toBeUndefined();
             done();
@@ -87,34 +96,34 @@ test("pending events can not be dispatched", done => {
 });
 
 test("After a pending event is resolved, a BThread that has requested this event is progressed", done => {
-    function* threadOne() {
+    const threadOne = flow(null, function* () {
         yield bp.request("B", () => delay(100));
         expect(1).toBe(1);
         done();
-    }
+    });
 
     testScenarios((enable) => {
-        enable(threadOne);
+        enable(threadOne([]));
     });
 });
 
 
 test("If one pending-event is resolved, other promises for this event are cancelled", done => {
-    function* threadOne(): any {
+    const threadOne = flow(null, function* (): any {
         const [event] = yield [bp.request("A", () => delay(300)), bp.request("B", () => delay(1))];
         expect(event.name).toBe("B");
         done();
-    }
+    });
 
-    function* thread2(): any  {
+    const thread2 = flow(null, function* (): any  {
         const [event] = yield [bp.wait('A'), bp.request("C", () => delay(400))];
         expect(event.name).toBe("C");
         done();
-    }
+    })
 
     testScenarios((enable) => {
-        enable(threadOne);
-        enable(thread2);
+        enable(threadOne([]));
+        enable(thread2([]));
     });
 });
 
@@ -125,42 +134,44 @@ function rejectedPromise(ms: number) {
 }
 
 test("rejected pending events will not progress waiting BThreads", done => {
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         const val = yield bp.request("A", 1);
         expect(val).toBe(1);
-        done();
-        
-    }
-    function* thread2() {
+        done();  
+    });
+
+    const thread2 = flow(null, function* () {
         try{
             yield bp.request("A", () => rejectedPromise(1));
         } catch(e) {
             //no op
         }
-    }
+    });
+
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     });
 });
 
 test("if a pending event is rejected, the lower thread will use its request instead", done => {
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         const val = yield bp.request("A", 1);
         expect(val).toBe(1);
-        done();
-        
-    }
-    function* thread2() {
+        done(); 
+    });
+
+    const thread2 = flow(null, function* () {
         try{
             yield bp.request("A", () => rejectedPromise(1));
         } catch(e) {
             //no op
         }
-    }
+    });
+
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     });
 });
 
@@ -168,19 +179,19 @@ test("if a pending event is rejected, the lower thread will use its request inst
 test("a pending event can not be requested - second example", (done) => {
     let count = 0;
 
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         yield bp.request('X', () => delay(100));
         yield bp.request('A', 1);
         yield bp.wait('FIN');
-    }
+    })
 
-    function* thread2() {
+    const thread2 = flow(null, function* () {
         yield bp.request('A', () => delay(200));
-    }
+    });
 
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
         count++;
     }, ({dispatch}) => {
         if(dispatch('FIN')) {
@@ -198,17 +209,19 @@ test("a pending event can not be requested - second example", (done) => {
 });
 
 test("if a threads waits for an already existing pending-event, it will also progress when the event is resolved", done => {
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         yield bp.request("A", () => delay(500));
-    }
-    function* thread2() {
+    });
+
+    const thread2 = flow(null, function* () {
         yield bp.request("Y", () => delay(100));
         yield bp.wait("A");
         yield bp.request('fin');
-    }
+    });
+
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     }, ({log}) => {
         if(log?.latestAction.event.name === "fin") {
             expect(1).toBeTruthy();
@@ -219,21 +232,22 @@ test("if a threads waits for an already existing pending-event, it will also pro
 
 test("if a threads intercepts an already existing pending-event, it will trigger that intercept when the event resolve", done => {
     let thread1Progressed = false;
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         yield bp.request("A", () => delay(500, 'requestedValue'));
-        thread1Progressed = true;
-        
-    }
-    function* thread2() {
+        thread1Progressed = true;  
+    });
+
+    const thread2 = flow(null, function* () {
         yield bp.request("Y", () => delay(100));
         const intercept = yield bp.intercept("A");
         expect(intercept.value).toBe('requestedValue');
         
         expect(thread1Progressed).toBe(false);
         done();
-    }
+    });
+    
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     });
 });

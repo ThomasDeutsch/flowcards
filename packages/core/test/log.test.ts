@@ -1,19 +1,20 @@
 import * as bp from "../src/bid";
-import {testScenarios } from './testutils';
+import { testScenarios } from './testutils';
+import { flow } from '../src/flow';
 
 test("the log will return an threadsByWait Object", () => {
 
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         yield [bp.request("eventOne"), bp.wait("eventTwo")];
-    }
+    });
 
-    function* thread2() {
+    const thread2 = flow(null, function* () {
         yield bp.wait("eventTwo");
-    }
+    })
 
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     }, ({log}) => {
         expect(log?.latestAction.event.name).toEqual('eventOne');
     });

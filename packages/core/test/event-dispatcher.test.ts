@@ -1,19 +1,20 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
+import { flow } from '../src/flow';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-test("wait-bids can be dispatched, except when dispatchEnabled is set to false", () => {
+test("on-bids can not be dispatched", () => {
 
-    function* thread1() {
-        yield bp.wait({name: "A", dispatchEnabled: false});
-    }
+    const thread1 = flow(null, function* () {
+        yield bp.on('A');
+    });
 
     testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     }, ({dispatch}) => {
         expect(dispatch('A')).toBeUndefined();
     });
@@ -22,13 +23,13 @@ test("wait-bids can be dispatched, except when dispatchEnabled is set to false",
 test("dispatch is always the same Object.", (done) => {
     let x: any;
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("A")];
         yield bp.wait("B");
-    }
+    });
 
     testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     }, ({dispatch}) => {
         if(dispatch('A')) x = dispatch;
         else {
@@ -42,15 +43,15 @@ test("dispatch[eventId] is the same Object, as long as there is a wait", (done) 
     let x: any;
     let y: any;
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Z")];
         yield [bp.wait("FIN"), bp.wait("A")];
-    }
+    });
 
     testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     }, ({dispatch}) => {
         if(dispatch('X')) x = dispatch('A');
         if(dispatch('Y')) y = dispatch('A');
@@ -68,14 +69,14 @@ test("A guarded dispatch will return undefined if the value is not valid", (done
     let y: any;
     let firstDispatch: any;
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield [bp.request("asyncRequest1", () => delay(100)), bp.wait("X"), bp.wait("A", (x: any) => x > 1)];
         yield [bp.request("asyncRequest2", () => delay(100)), bp.wait("Y"), bp.wait("A", (x: any) => x < 1)];
         yield [bp.wait("FIN"), bp.wait("A")];
-    }
+    });
 
     testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     }, ({dispatch}) => {
         if(dispatch("X")) {
             x = dispatch("A", 0);
@@ -94,14 +95,14 @@ test("the evaluated dispatch function is a different Object, when the guard Func
     let x: any;
     let y: any;
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield [bp.request("asyncRequest1", () => delay(100)), bp.wait("X"), bp.wait("A")];
         yield [bp.request("asyncRequest2", () => delay(100)), bp.wait("Y"), bp.wait("A")];
         yield [bp.wait("FIN"), bp.wait("A")];
-    }
+    });
 
     testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     }, ({dispatch}) => {
         if(dispatch("X")) x = dispatch("A", 1);
         if(dispatch("Y")) y = dispatch("A", 2);
@@ -119,14 +120,14 @@ test("the evaluated dispatch function is the same Object, for every key/payload 
     let x: any;
     let y: any;
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
         yield [bp.wait("FIN"), bp.wait("A")];
-    }
+    });
 
     testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     }, ({dispatch}) => {
         if(dispatch("X")) x = dispatch({name: 'A', key: 'key1'}, 1);
         if(dispatch("Y")) y = dispatch({name: 'A', key: 'key2'}, 2);
@@ -143,13 +144,13 @@ test("multiple dispatches are batched", (done) => {
     let x: any;
     let y: any;
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
-    }
+    });
 
     const [context, dispatch] = testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     });
     expect(dispatch('X')).toBeDefined();
     dispatch('X')?.();

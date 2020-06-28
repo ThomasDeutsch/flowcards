@@ -1,6 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { BTContext } from '../src/bthread';
+import { flow } from '../src/flow';
 
 
 test("a thread gets reset, when the arguments change", () => {

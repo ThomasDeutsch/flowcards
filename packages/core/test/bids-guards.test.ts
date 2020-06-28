@@ -1,7 +1,7 @@
   
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { BTGen } from '../src/index';
+import { flow } from '../src/flow';
 
 
 test("a wait is not advanced, if the guard returns false", () => {
@@ -9,25 +9,25 @@ test("a wait is not advanced, if the guard returns false", () => {
     let waitBAdvanced = false;
     let waitCAdvanced = false;
 
-
-    function* threadA() {
+    const threadA = flow(null, function* () {
         yield bp.request("A", 1000);
         requestAdvanced = true;
-    }
+    });
 
-    function* threadB() {
+    const threadB = flow(null, function* () {
         yield bp.wait("A", (pl: number) => pl !== 1000);
         waitBAdvanced = true;
-    }
+    })
 
-    function* threadC() {
+    const threadC = flow(null, function* () {
         yield bp.wait("A", (pl: number) => pl === 1000);
         waitCAdvanced = true;
-    }
+    });
+
     testScenarios((enable) => {
-        enable(threadA);
-        enable(threadB);
-        enable(threadC);
+        enable(threadA([]));
+        enable(threadB([]));
+        enable(threadC([]));
     }, ({log}) => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(false);
@@ -42,26 +42,25 @@ test("an intercept is not applied, if the guard returns false.", () => {
     let waitAdvanced = false;
     let interceptAdvanced = false;
 
-
-    function* threadA() {
+    const threadA = flow(null, function* () {
         yield bp.request("A", 1000);
         requestAdvanced = true;
-    }
+    });
 
-    function* threadB() {
+    const threadB = flow(null, function* () {
         yield bp.wait("A", (pl: number) => pl === 1000);
         waitAdvanced = true;
-    }
+    });
 
-    function* threadC() {
+    const threadC = flow(null, function* () {
         yield bp.intercept("A", (pl: number) => pl !== 1000);
         interceptAdvanced = true;
-    }
+    });
 
     testScenarios((enable) => {
-        enable(threadA);
-        enable(threadB);
-        enable(threadC);
+        enable(threadA([]));
+        enable(threadB([]));
+        enable(threadC([]));
     }, ({log}) => {
         expect(interceptAdvanced).toBe(false);
         expect(waitAdvanced).toBe(true);
@@ -70,40 +69,41 @@ test("an intercept is not applied, if the guard returns false.", () => {
     });
 });
 
+
 test("a block can be guarded", () => {
 
-    function* requestingThread(): BTGen {
+    const requestingThread = flow(null, function* () {
         let i = 0;
         while(i++ < 20) {
             const [_, val] = yield [bp.request("A", 1000), bp.request("A", 2000)];
             expect(val).toEqual(2000);
         }
-    }
+    });
 
-    function* blockingThread() {
+    const blockingThread = flow(null, function* () {
         yield bp.block("A", (pl: number) => pl === 1000);
-    }
+    })
 
     testScenarios((enable) => {
-        enable(requestingThread);
-        enable(blockingThread);
+        enable(requestingThread([]));
+        enable(blockingThread([]));
     })
 });
 
 
 test("a block-guard will be combined with a other guards", () => {
 
-    function* blockingThread() {
+    const blockingThread = flow(null, function* () {
         yield bp.block("A", (pl: number) => pl < 1500);
-    }
+    });
 
-    function* waitingThread() {
+    const waitingThread = flow(null, function* () {
         yield bp.wait("A", (pl: number) => pl > 1000);
-    }
+    });
 
     testScenarios((enable) => {
-        enable(blockingThread);
-        enable(waitingThread);
+        enable(blockingThread([]));
+        enable(waitingThread([]));
     }, ({dispatch}) => {
         if(dispatch('A')) {
             expect(dispatch('A', 1300)).toBeUndefined();
@@ -114,17 +114,17 @@ test("a block-guard will be combined with a other guards", () => {
 
 test("a block-guard can be keyed", () => {
 
-    function* blockingThread() {
+    const blockingThread = flow(null, function* () {
         yield bp.block({name: 'A', key: 1}, (pl: number) => pl < 1500);
-    }
+    })
 
-    function* waitingThread() {
+    const waitingThread = flow(null, function* () {
         yield bp.wait({name: 'A', key: 2}, (pl: number) => pl > 1000);
-    }
+    })
 
     testScenarios((enable) => {
-        enable(blockingThread);
-        enable(waitingThread);
+        enable(blockingThread([]));
+        enable(waitingThread([]));
     }, ({dispatch}) => {
         if(dispatch('A')) {
             expect(dispatch('A', 1300)).toBeDefined();
