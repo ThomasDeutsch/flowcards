@@ -11,7 +11,7 @@ import { flow } from '../src/flow';
 test("a requested event that is not blocked will advance", () => {
     let hasAdvanced = false;
 
-    const requestingThread = flow(null, function*() {
+    const requestingThread = flow({id: 'thread1'}, function*() {
         yield bp.request("A");
         hasAdvanced = true;
     });
@@ -29,7 +29,7 @@ test("a requested event that is not blocked will advance", () => {
 test("a request will also advance waiting threads", () => {
     let requestProgressed: any, waitProgressed: any;
 
-    const requestingThread = flow(null, function*() {
+    const requestingThread = flow({id: 'thread1'}, function*() {
         yield bp.request("A");
         requestProgressed = true;
     });
@@ -53,13 +53,13 @@ test("a request will also advance waiting threads", () => {
 
 
 test("waits will return the value that has been requested", () => {
-    const requestThread = flow(null, function* () {
+    const requestThread = flow({id: 'requestThread'}, function* () {
         yield bp.request("A", 1000);
     });
 
     let receivedValue: any = null;
 
-    const receiveThread = flow(null, function* () {
+    const receiveThread = flow({id: 'receiveThread'}, function* () {
         receivedValue = yield bp.wait("A");
     });
 
@@ -109,7 +109,7 @@ test("multiple requests will return an array of [eventId, value].", () => {
 
 
 test("multiple waits will return an array of [value, eventId].", () => {
-    let receivedValue, receivedeventId;
+    let receivedValue: any, receivedeventId: any;
 
     const requestThread = flow(null, function* () {
         yield bp.request("A", 1000);

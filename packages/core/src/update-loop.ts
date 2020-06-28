@@ -59,9 +59,9 @@ function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDicti
 function advanceRequests(eventCache: EventCache, allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): void {
     const bids = getMatchingBids(allBids[BidType.request], action.event);
     if(bids === undefined || bids.length === 0) return;
+    if(eventCache.has(action.event)) setEventCache(true, eventCache, action.event, action.payload);
     bids.forEach(bid => {
         bThreadDictionary[bid.threadId].progressRequest(action, bid);
-        if(eventCache.has(action.event)) setEventCache(true, eventCache, action.event, action.payload);
     });
 }
 
@@ -74,7 +74,7 @@ function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
     return true;
 }
 
-function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): Action | undefined {
+function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return undefined;
     // requested
     if(action.type === ActionType.requested) {
@@ -85,41 +85,41 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         }
         if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
-            return undefined;
+            return;
         }
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return undefined
+        if(!nextAction) return;
         advanceRequests(eventCache, allBids, bThreadDictionary, nextAction);
         advanceWaits(allBids, bThreadDictionary, nextAction);
-        return nextAction;
+        return;
     }
     // dispatched
     if(action.type === ActionType.dispatched) {
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return undefined
+        if(!nextAction) return;
         const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
         if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name)
-        return nextAction;
+        return;
     }
     // resolved
     if(action.type === ActionType.resolved) {
         if(bThreadDictionary[action.threadId]) {
             const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
-            if(isResolved === false) return undefined;
+            if(isResolved === false) return;
         }
         const nextAction = interceptAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return undefined;
+        if(!nextAction) return;
         bThreadDictionary[action.threadId].progressRequest(nextAction); // request got resolved
         advanceRequests(eventCache, allBids, bThreadDictionary, nextAction);
         advanceWaits(allBids, bThreadDictionary, nextAction); 
-        return nextAction;
+        return;
     }
     // rejected
     if(action.type === ActionType.rejected) {
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].rejectPending(action);
         }
-        return undefined;
+        return;
     }
 }
 
@@ -187,7 +187,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         action = action || getNextActionFromRequests(bids.request);
         if (action) {
             logger?.logAction(action);
-            const a = advanceBThreads(bThreadDictionary, eventCache, bids, action);
+            advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop(actionQueue);
         }
         // ------ create the return value:

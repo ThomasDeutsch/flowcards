@@ -29,15 +29,17 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
 
 test("when a promise resolved, the event cache gets updated", (done) => {
     const thread1 = flow(null, function* () {
-        yield bp.request("A", delay(100, 'resolved value'));
+        const val = yield bp.request("A", delay(100, 'resolved value'));
+        console.log('A-resolved to be:', val)
         yield bp.wait('fin');
     });
 
     testScenarios((enable, cache) => {
-        cache('A');
+        cache('A', null);
         enable(thread1([]));
     }, ({dispatch, latest}) => {
         if(dispatch('fin')) {
+            console.log('FIN!!!!!!!!!!!!!!!!!!!!!!!', latest('A'))
             expect(latest('A')).toEqual("resolved value");
             done();
         }
@@ -67,7 +69,7 @@ test("the event cache function returns a reference", () => {
         yield bp.request('A', (current: number) => current+1);
         yield bp.request('A', (current: number) => current+1);
         yield bp.request('A', (current: number) => current+1);
-        expect(ref.current).toEqual(102); // the reference is updated, but the Thread is not reset.
+        expect(ref.current).toEqual(103); // the reference is updated, but the Thread is not reset.
     });
 
     testScenarios((enable, cache) => {
