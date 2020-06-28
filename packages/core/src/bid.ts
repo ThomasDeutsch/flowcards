@@ -16,6 +16,7 @@ export interface Bid {
     event: FCEvent;
     payload?: any;
     guard?: GuardFunction;
+    canBeDispatched?: boolean;
 }
 
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
@@ -97,17 +98,48 @@ export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] 
 // Bids User-API --------------------------------------------------------------------
 
 export function request(event: string | FCEvent, payload?: any): Bid {
-    return { type: BidType.request, event: toEvent(event), payload: payload, threadId: "" };
+    return {
+        type: BidType.request, 
+        event: toEvent(event), 
+        payload: payload, 
+        threadId: ""
+    };
 }
 
 export function wait(event: string | FCEvent, guard?: GuardFunction): Bid {
-    return { type: BidType.wait, event: { dispatchEnabled: true, ...toEvent(event)}, guard: guard, threadId: "" };
+    return { 
+        type: BidType.wait, 
+        event: toEvent(event), 
+        guard: guard,
+        canBeDispatched: true,
+        threadId: "" 
+    };
 }
 
 export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
-    return { type: BidType.block, event: toEvent(event), guard: guard, threadId: "" };
+    return { 
+        type: BidType.block, 
+        event: toEvent(event), 
+        guard: guard, 
+        threadId: ""
+    };
 }
 
 export function intercept(event: string | FCEvent, guard?: GuardFunction | null, payload?: any): Bid {
-    return { type: BidType.intercept, event: toEvent(event), guard: guard !== null ? guard : undefined, threadId: "", payload: payload };
+    return { 
+        type: BidType.intercept, 
+        event: toEvent(event), 
+        guard: guard !== null ? guard : undefined, 
+        threadId: "", payload: payload
+    };
+}
+
+export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
+    return { 
+        type: BidType.wait, 
+        event: toEvent(event), 
+        guard: guard,
+        canBeDispatched: false,
+        threadId: "" 
+    };
 }

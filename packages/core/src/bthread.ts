@@ -66,10 +66,13 @@ export class BThread {
         };
     }
     public readonly id: string;
+    public readonly title?: string;
     public readonly key?: string | number;
 
-    public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger) {
+
+    public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger, title?: string) {
         this.id = id;
+        this.title = title;
         this.key = key;
         this._dispatch = dispatch;
         this._generatorFn = generatorFn.bind(this._getBTContext());
@@ -143,6 +146,7 @@ export class BThread {
         if (utils.areInputsEqual(this._currentArguments, nextArguments)) return;
         this._isCompleted = false;
         this._currentArguments = nextArguments;
+        delete this._state.current;
         this._thread = this._generatorFn(...this._currentArguments);
         const cancelledPromises = this._processNextBid();
         this._logger?.logReaction(this.id, ReactionType.reset, cancelledPromises);

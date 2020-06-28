@@ -8,7 +8,6 @@ type EventMapFunction<T, X> = (e: FCEvent, value: T) => X;
 export interface FCEvent {
     name: EventName;
     key?: EventKey;
-    dispatchEnabled?: boolean;
 }
 
 export function toEvent(e: string | FCEvent): FCEvent {

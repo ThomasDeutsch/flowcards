@@ -32,7 +32,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         guardByEvent.clear();
         const dpWaits = new EventMap<Bid[]>();
         waits?.forEach((event, bids) => {
-            const newBids = bids.filter(bid => bid.event.dispatchEnabled !== false);
+            const newBids = bids.filter(bid => bid.canBeDispatched === true);
             if(newBids.length > 0) dpWaits.set(event, newBids);
         })
         if(!dpWaits || dpWaits.size() === 0) { 
@@ -56,4 +56,4 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         });
     }
     return [updateEventDispatcher, dispatchFunction];
-}  
+}

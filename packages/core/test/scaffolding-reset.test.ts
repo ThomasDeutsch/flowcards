@@ -78,3 +78,7 @@ test("a thread gets reset, when the arguments change", () => {
 //         expect(dispatch('A')).toBeDefined();
 //     });
 // });
+
+
+// todo: when a thread resets, its state will be reset as well.
+// todo: get BThreadState

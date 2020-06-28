@@ -1,9 +1,8 @@
 import { StagingFunction, createUpdateLoop, ScenariosContext } from './update-loop';
 import { Action } from './action'
 import { EventDispatch } from './event-dispatcher';
-import { CachedItem } from '../build/update-loop';
 
-
+export { FlowContext, flow } from './flow';
 export { EventDispatch } from './event-dispatcher';
 export { BTContext, BTGen } from './bthread';
 export { UpdateLoopFunction, StagingFunction, createUpdateLoop, ScenariosContext } from './update-loop';
@@ -14,6 +13,7 @@ export { Log, ActionAndReactions, ThreadsByWait} from './logger';
 export { Action } from './action';
 export { Reaction } from './reaction';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
+
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch] {
     let actionQueue: Action[] = [];
