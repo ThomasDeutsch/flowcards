@@ -1,36 +1,37 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
 import { StagingFunction, Action, createUpdateLoop, BTContext } from '../src/index';
+import { flow } from '../src/flow';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 test("testScenarios can be used without updateCb and logger", done => {
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield bp.request("A", delay(1000));
         expect(1).toEqual(1); // simple test if this point is reached.
         done();
-    }
+    })
 
     testScenarios((enable) => {
-        enable(thread1);
+        enable(thread1([]));
     });
 });
 
 test("there will be a dispatch-function every waiting event", () => {
 
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         yield [bp.wait("eventOne"), bp.wait("eventTwo")];
-    }
+    })
 
-    function* thread2() {
+    const thread2 = flow(null, function* () {
         yield bp.wait("eventThree");
-    }
+    })
 
     testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     }, (scenario) => {
         expect(scenario.dispatch('eventOne')).toBeDefined();
         expect(scenario.dispatch('eventTwo')).toBeDefined();
@@ -55,18 +56,20 @@ function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): voi
 test("if a request is cancelled, it will not trigger the same event-name after resolving - even if there are threads waiting for this event. ", done => {
     const dispatchedActions = new Set<string>();
     
-    function* thread1() {
+    const thread1 = flow(null, function* () {
         yield bp.request("cancel", delay(100));
-    }
-    function* thread2(): any {
+    });
+
+    const thread2 = flow(null, function* (): any {
         let [type] = yield [bp.request('async-event', () => delay(500)), bp.wait('cancel')];
         expect(type.name).toEqual('cancel');
         [type] = yield [bp.wait('async-event'), bp.request("async-event-two", () => delay(1000))];
         expect(type.name).toEqual('async-event-two');
         done();
-    }
+    });
+    
     loggerScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
+        enable(thread1([]));
+        enable(thread2([]));
     }, dispatchedActions);
 });

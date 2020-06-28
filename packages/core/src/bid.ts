@@ -6,7 +6,7 @@ export enum BidType {
     request = "request",
     wait = "wait",
     block = "block",
-    intercept = "intercept", 
+    extend = "extend", 
     pending = "pending"
 }
 
@@ -16,6 +16,7 @@ export interface Bid {
     event: FCEvent;
     payload?: any;
     guard?: GuardFunction;
+    canBeDispatched?: boolean;
 }
 
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
@@ -31,7 +32,7 @@ export interface BThreadBids {
     [BidType.request]?: EventMap<Bid>;
     [BidType.wait]?: EventMap<Bid>;
     [BidType.block]?: EventMap<Bid>;
-    [BidType.intercept]?: EventMap<Bid>;
+    [BidType.extend]?: EventMap<Bid>;
 }
 
 export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined | (Bid | undefined)[]): BThreadBids | undefined {
@@ -69,7 +70,7 @@ export interface AllBidsByType {
     [BidType.pending]?: EventMap<Bid[]>;
     [BidType.request]?: EventMap<Bid[]>;
     [BidType.wait]?: EventMap<Bid[]>;
-    [BidType.intercept]?: EventMap<Bid[]>;
+    [BidType.extend]?: EventMap<Bid[]>;
 }
 
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
@@ -82,7 +83,7 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
         [BidType.pending]: pending,
         [BidType.request]: reduceMaps(bidsForType(BidType.request, allBThreadBids), fixedBlocksAndPending, guardedBlocks),
         [BidType.wait]: reduceMaps(bidsForType(BidType.wait, allBThreadBids), fixedBlocks, guardedBlocks),
-        [BidType.intercept]: reduceMaps(bidsForType(BidType.intercept, allBThreadBids), fixedBlocks, guardedBlocks)
+        [BidType.extend]: reduceMaps(bidsForType(BidType.extend, allBThreadBids), fixedBlocks, guardedBlocks)
     };
 }
 
@@ -97,17 +98,48 @@ export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] 
 // Bids User-API --------------------------------------------------------------------
 
 export function request(event: string | FCEvent, payload?: any): Bid {
-    return { type: BidType.request, event: toEvent(event), payload: payload, threadId: "" };
+    return {
+        type: BidType.request, 
+        event: toEvent(event), 
+        payload: payload, 
+        threadId: ""
+    };
 }
 
 export function wait(event: string | FCEvent, guard?: GuardFunction): Bid {
-    return { type: BidType.wait, event: toEvent(event), guard: guard, threadId: "" };
+    return { 
+        type: BidType.wait, 
+        event: toEvent(event), 
+        guard: guard,
+        canBeDispatched: true,
+        threadId: "" 
+    };
 }
 
 export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
-    return { type: BidType.block, event: toEvent(event), guard: guard, threadId: "" };
+    return { 
+        type: BidType.block, 
+        event: toEvent(event), 
+        guard: guard, 
+        threadId: ""
+    };
 }
 
-export function intercept(event: string | FCEvent, guard?: GuardFunction | null, payload?: any): Bid {
-    return { type: BidType.intercept, event: toEvent(event), guard: guard !== null ? guard : undefined, threadId: "", payload: payload };
+export function extend(event: string | FCEvent, guard?: GuardFunction | null, payload?: any): Bid {
+    return { 
+        type: BidType.extend, 
+        event: toEvent(event), 
+        guard: guard !== null ? guard : undefined, 
+        threadId: "", payload: payload
+    };
+}
+
+export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
+    return { 
+        type: BidType.wait, 
+        event: toEvent(event), 
+        guard: guard,
+        canBeDispatched: false,
+        threadId: "" 
+    };
 }

@@ -12,8 +12,9 @@ export interface CachedItem<T> {
 
 export type EnableEventCache<T> = (event: FCEvent | string, initial?: T) => CachedItem<T>;
 
-export function setEventCache<T>(canUpdate: boolean, eventCache: EventCache, event: FCEvent | undefined, payload?: T): void {
+export function setEventCache<T>(isUpdate: boolean, eventCache: EventCache, event: FCEvent | undefined, payload?: T): void {
     if (!event) return;
+    if (!isUpdate && eventCache.has(event)) return;
     const events = eventCache.getAllMatchingEvents(event);
     if(!events) return;
     events.forEach(event => {
@@ -26,7 +27,7 @@ export function setEventCache<T>(canUpdate: boolean, eventCache: EventCache, eve
                 reset: function() { setEventCache(true, eventCache, event, this.history[0]) },
                 initial: function() { return this.history[0] },
             });
-        } else if(canUpdate) { // the value is present
+        } else if(isUpdate) {
             val.current = payload;
             val.history.push(payload);
         }

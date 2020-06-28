@@ -1,4 +1,4 @@
-import { BidsForBidType } from './bid';
+import { BidsForBidType, Bid } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 import { FCEvent, EventMap, toEvent } from './event';
@@ -13,6 +13,7 @@ interface DispatchCache {
     payload?: any;
     dispatch?: TriggerDispatch | undefined;
 }
+
 
 export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
@@ -29,13 +30,18 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
     }
     const updateEventDispatcher = (waits: BidsForBidType): void => {
         guardByEvent.clear();
-        if(!waits || waits.size() === 0) { 
+        const dpWaits = new EventMap<Bid[]>();
+        waits?.forEach((event, bids) => {
+            const newBids = bids.filter(bid => bid.canBeDispatched === true);
+            if(newBids.length > 0) dpWaits.set(event, newBids);
+        })
+        if(!dpWaits || dpWaits.size() === 0) { 
             dispatchByEvent.clear();
             return;
         }
-        dispatchByEvent.intersection(waits);
-        waits.forEach((waitEvent) => {
-            guardByEvent.set(waitEvent, getGuardForEventDispatch(waits, waitEvent));
+        dispatchByEvent.intersection(dpWaits);
+        dpWaits.forEach((waitEvent) => {
+            guardByEvent.set(waitEvent, getGuardForEventDispatch(dpWaits, waitEvent));
             if(!dispatchByEvent.has(waitEvent)) {
                 const cache: DispatchCache = {};
                 dispatchByEvent.set(waitEvent, (payload?: any): TriggerDispatch | undefined => {
@@ -50,4 +56,4 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         });
     }
     return [updateEventDispatcher, dispatchFunction];
-}  
+}

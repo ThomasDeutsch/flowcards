@@ -121,7 +121,8 @@ export class EventMap<T>  {
     public map<X>(mapFunction: EventMapFunction<T, X>):  EventMap<X> {
         const mapped = new EventMap<X>();
         this.forEach((event, value) => {
-            mapped.set(event, mapFunction(event, value));
+            const newValue = mapFunction(event, value);
+            mapped.set(event, newValue);
         })
         return mapped;
     }

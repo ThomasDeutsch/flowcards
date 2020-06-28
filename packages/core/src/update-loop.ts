@@ -1,15 +1,17 @@
-import { GeneratorFn, BThread, InterceptResultType } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids } from './bid';
+import { GeneratorFn, BThread, InterceptResultType, BThreadState } from './bthread';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
 import { EventMap, FCEvent, toEvent } from './event';
 import * as utils from './utils';
 import { EnableEventCache, EventCache, setEventCache, CachedItem } from './event-cache'
+import { FlowContext } from './flow';
 
 
-type EnableThread = (gen: GeneratorFn, args?: any[], key?: string | number) => void;
-export type StagingFunction = (e: EnableThread, s: EnableEventCache<unknown>) => void;
+type EnableThread = ({id, title, gen, args, key}: FlowContext) => BThreadState;
+type GetBThreadState = (id: string) => BThreadState;
+export type StagingFunction = (e: EnableThread, s: EnableEventCache<unknown>, g: GetBThreadState) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
 
@@ -28,13 +30,12 @@ export interface ScenariosContext {
     log?: Log;
 }
 
-function createScenarioId(generator: GeneratorFn, key?: string | number): string {
-    const id = generator.name;
+function createScenarioId(id: string, key?: string | number): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
 
-function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
-    let bids = getMatchingBids(allBids[BidType.intercept], action.event);
+function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
+    let bids = getMatchingBids(allBids[BidType.extend], action.event);
     if(bids === undefined || bids.length === 0) return action;
     bids = [...bids];
     while(bids.length > 0) {
@@ -55,24 +56,16 @@ function interceptAction(allBids: AllBidsByType, bThreadDictionary: BThreadDicti
     return action;
 }
 
-function advanceRequests(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): void {
-    const bids = getMatchingBids(allBids[BidType.request], action.event);
-    if(bids === undefined || bids.length === 0) return;
-    bids.forEach(bid => {
-        bThreadDictionary[bid.threadId].progressRequest(action, bid);
-    });
-}
-
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
-    const bids = getMatchingBids(allBids[BidType.wait], action.event);
-    if(bids === undefined || bids.length === 0) return false;
+    const bids = getMatchingBids(allBids[BidType.wait], action.event) || [];
+    if(bids.length === 0) return false;
     bids.forEach(bid => {
         bThreadDictionary[bid.threadId].progressWait(action, bid);
     });
     return true;
 }
 
-function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): Action | undefined {
+function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return undefined;
     // requested
     if(action.type === ActionType.requested) {
@@ -83,41 +76,42 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         }
         if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
-            return undefined;
+            return;
         }
-        const nextAction = interceptAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return undefined
-        advanceRequests(allBids, bThreadDictionary, nextAction);
+        const nextAction = extendAction(allBids, bThreadDictionary, action);
+        if(!nextAction) return;
+        setEventCache(true, eventCache, nextAction.event, nextAction.payload);
+        bThreadDictionary[nextAction.threadId].progressRequest(nextAction); // request got resolved
         advanceWaits(allBids, bThreadDictionary, nextAction);
-        return nextAction;
+        return;
     }
     // dispatched
     if(action.type === ActionType.dispatched) {
-        const nextAction = interceptAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return undefined
+        const nextAction = extendAction(allBids, bThreadDictionary, action);
+        if(!nextAction) return;
         const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
         if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name)
-        return nextAction;
+        return;
     }
     // resolved
     if(action.type === ActionType.resolved) {
         if(bThreadDictionary[action.threadId]) {
             const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
-            if(isResolved === false) return undefined;
+            if(isResolved === false) return;
         }
-        const nextAction = interceptAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return undefined;
+        const nextAction = extendAction(allBids, bThreadDictionary, action);
+        if(!nextAction) return;
+        setEventCache(true, eventCache, nextAction.event, nextAction.payload);
         bThreadDictionary[action.threadId].progressRequest(nextAction); // request got resolved
-        advanceRequests(allBids, bThreadDictionary, nextAction);
         advanceWaits(allBids, bThreadDictionary, nextAction); 
-        return nextAction;
+        return;
     }
     // rejected
     if(action.type === ActionType.rejected) {
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].rejectPending(action);
         }
-        return undefined;
+        return;
     }
 }
 
@@ -129,26 +123,32 @@ function setupScaffolding(
     dispatch: ActionDispatch,
     logger?: Logger
 ) {
-    const orderedIds: string[] = [];
-    function enableBThread(gen: GeneratorFn, args: any[] = [], key?: string | number) {
-        const id: string = createScenarioId(gen, key);
-        orderedIds.push(id);
+    const bids: BThreadBids[] = [];
+    function enableBThread({id, title, gen, args, key}: FlowContext) : BThreadState {
+        id = createScenarioId(id, key);
         if (bThreadDictionary[id]) {
             bThreadDictionary[id].resetOnArgsChange(args);
         } else {
-            bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger);
+            bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger, title);
         }
-    };
+        const threadBids = bThreadDictionary[id].getBids();
+        bids.push(threadBids);
+        return bThreadDictionary[id].state;
+    }
     function enableEventCache<T>(event: FCEvent | string, initial?: T): CachedItem<T> {
         event = toEvent(event);
         setEventCache<T>(false, eventCache, event, initial);
         return eventCache.get(event)!;
     }
-    return (): string[] => {
-        orderedIds.length = 0;
-        stagingFunction(enableBThread, enableEventCache); 
-        return [...orderedIds];
+    function getBThreadState(id: string): any {
+        return bThreadDictionary[id].state;
     }
+    function run(): BThreadBids[] {
+        bids.length = 0;
+        stagingFunction(enableBThread, enableEventCache, getBThreadState); 
+        return [...bids];
+    }
+    return run;
 }
 
 // -----------------------------------------------------------------------------------
@@ -175,14 +175,11 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(action.payload); // start a replay
         }
         // not a replay
-        const orderedThreadIds = scaffold();
-        const bThreadBids = orderedThreadIds.map(id => bThreadDictionary[id].getBids());
-        const bids = getAllBids(bThreadBids);
+        const bids = getAllBids(scaffold());
         action = action || getNextActionFromRequests(bids.request);
         if (action) {
             logger?.logAction(action);
-            const a = advanceBThreads(bThreadDictionary, eventCache, bids, action);
-            setEventCache(true, eventCache, a?.event, a?.payload);
+            advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop(actionQueue);
         }
         // ------ create the return value:
@@ -193,9 +190,9 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         return {
             dispatch: eventDispatch,
             latest: getEventCache, // latest values from event cache
-            isPending: (event: FCEvent | string) => pendingEventMap.has(toEvent(event)),
+            isPending: (event: FCEvent | string) => pendingEventMap.has(toEvent(event)), // pending Events
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
-    };
+    }
     return [updateLoop, eventDispatch];
 }

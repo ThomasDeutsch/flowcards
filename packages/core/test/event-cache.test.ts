@@ -1,20 +1,26 @@
 import * as bp from "../src/index";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
+import { flow } from '../src/flow';
+import { CachedItem } from '../src/event-cache';
 
 function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }
+
+// todo: a cache is ony enabled when a cacheEnable on that event is called.
+// todo: a cache is only updated with a request ( not a dispatch )
+
 test("if an eventCache is present, it can be used as an argument in a request-function", () => {
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* () {
         yield bp.request('A', 1);
         yield bp.request('A', (current: number) => current+1);
-    }
+    })
 
     testScenarios((enable, cache) => {
         cache('A');
-        enable(thread1);
+        enable(thread1([]));
     }, ({latest}) => {
         expect(latest('A')).toEqual(2);
     });
@@ -23,16 +29,18 @@ test("if an eventCache is present, it can be used as an argument in a request-fu
 
 
 test("when a promise resolved, the event cache gets updated", (done) => {
-    function* thread1() {
-        yield bp.request("A", delay(100, 'resolved value'));
+    const thread1 = flow(null, function* (cacheRef: CachedItem<any>) {
+        const val = yield bp.request("testevent", delay(100, 'resolved value'));
+        expect(val).toEqual(cacheRef.current);
         yield bp.wait('fin');
-    }
+    });
+
     testScenarios((enable, cache) => {
-        cache('A');
-        enable(thread1);
+        const cacheRef = cache('testevent');
+        enable(thread1([cacheRef]));
     }, ({dispatch, latest}) => {
         if(dispatch('fin')) {
-            expect(latest('A')).toEqual("resolved value");
+            expect(latest('testevent')).toEqual("resolved value");
             done();
         }
     });
@@ -41,13 +49,13 @@ test("when a promise resolved, the event cache gets updated", (done) => {
 
 test("the event cache can have an initial value", () => {
 
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         yield bp.request('A', (current: number) => current+1);
-    }
+    })
 
     testScenarios((enable, cache) => {
         cache('A', 100);
-        enable(thread1);
+        enable(thread1([]));
     }, ({latest}) => {
         expect(latest('A')).toEqual(101);
     });
@@ -57,31 +65,31 @@ test("the event cache can have an initial value", () => {
 
 test("the event cache function returns a reference", () => {
 
-    function* thread1(this: BTContext, ref: bp.CachedItem<any>) {
+    const thread1 = flow(null, function* (this: BTContext, ref: bp.CachedItem<any>) {
         yield bp.request('A', (current: number) => current+1);
         yield bp.request('A', (current: number) => current+1);
         yield bp.request('A', (current: number) => current+1);
-        expect(ref.current).toEqual(102); // the reference is updated, but the Thread is not reset.
-    }
+        expect(ref.current).toEqual(103); // the reference is updated, but the Thread is not reset.
+    });
 
     testScenarios((enable, cache) => {
         const ref = cache('A', 100);
-        enable(thread1, [ref]);
+        enable(thread1([ref]));
     }, ({latest}) => {
         expect(latest('A')).toEqual(103);
     });
 });
 
 
-
 test("if a request has no value, it will return the last cached value", () => {
     let val: number;
-    function* thread1(this: BTContext) {
+    const thread1 = flow(null, function* (this: BTContext) {
         val = yield bp.request('A');
-    }
+    });
+
     testScenarios((enable, cache) => {
         cache('A', 100);
-        enable(thread1);
+        enable(thread1([]));
     }, () => {
         expect(val).toEqual(100);
     });
@@ -91,12 +99,14 @@ test("if a request has no value, it will return the last cached value", () => {
 test("a cache is only updated, if the request value is not undefined", () => {
     let val: number;
     let cachedVal: any;
-    function* thread1(this: BTContext) {
+    
+    const thread1 = flow(null, function* (this: BTContext) {
         val = yield bp.request('A', undefined);
-    }
+    });
+
     testScenarios((enable, cache) => {
         cachedVal = cache('A', 100);
-        enable(thread1);
+        enable(thread1([]));
     }, () => {
         expect(cachedVal.current).toEqual(100);
     });
@@ -107,30 +117,35 @@ test("a cache is only updated, if the request value is not undefined", () => {
 test("a cache can be updated by the provided set function", () => {
     let val: number;
     let cachedVal: any;
-    function* thread1(this: BTContext, cachedVal: any) {
+
+    const thread1 = flow(null, function* (this: BTContext, cachedVal: any) {
         expect(cachedVal.current).toBe(10);
         val = yield bp.wait('fin');
-    }
+    });
+
     testScenarios((enable, cache) => {
         cachedVal = cache('A', 100);
         cachedVal.set(10);
         expect(cachedVal.current).toEqual(10);
-        enable(thread1, [cachedVal]);
+        enable(thread1([cachedVal]));
     }, () => {
         expect(cachedVal.current).toEqual(10);
     });
 });
 
+
 test("the cache can be reinitialized", () => {
     let cachedVal: any;
-    function* thread1(this: BTContext, cachedVal: any) {
+    
+    const thread1 = flow(null, function* (this: BTContext, cachedVal: any) {
         cachedVal.set(10);
         cachedVal.reset();
         yield bp.request('fin');
-    }
+    });
+
     testScenarios((enable, cache) => {
         cachedVal = cache('A', 100);
-        enable(thread1, [cachedVal]);
+        enable(thread1([cachedVal]));
     }, () => {
         expect(cachedVal.current).toEqual(100);
     });
@@ -139,14 +154,16 @@ test("the cache can be reinitialized", () => {
 
 test("the cache will hold the initial value", () => {
     let cachedVal: any;
-    function* thread1(this: BTContext, cachedVal: any) {
+
+    const thread1 = flow(null, function* (this: BTContext, cachedVal: any) {
         cachedVal.set(10);
         expect(cachedVal.current).toBe(10);
         yield bp.request('fin');
-    }
+    });
+
     testScenarios((enable, cache) => {
         cachedVal = cache('A', 100);
-        enable(thread1, [cachedVal]);
+        enable(thread1([cachedVal]));
     }, () => {
         expect(cachedVal.current).toEqual(10);
         expect(cachedVal.initial()).toEqual(100);
@@ -156,15 +173,17 @@ test("the cache will hold the initial value", () => {
 
 test("event cache will have record of past events (history)", () => {
     let cachedVal: any;
-    function* thread1(this: BTContext, cachedVal: any) {
+
+    const thread1 = flow(null, function* (this: BTContext, cachedVal: any) {
         cachedVal.set(10);
         cachedVal.set(20);
         cachedVal.set(30);
         yield bp.request('fin');
-    }
+    });
+
     testScenarios((enable, cache) => {
         cachedVal = cache('A', 100);
-        enable(thread1, [cachedVal]);
+        enable(thread1([cachedVal]));
     }, () => {
         expect(cachedVal.current).toEqual(30);
         expect(cachedVal.initial()).toEqual(100);
