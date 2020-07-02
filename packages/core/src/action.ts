@@ -21,7 +21,7 @@ export interface Action {
 
 export function getNextActionFromRequests(requestBids: BidsForBidType): Action | undefined {
     if(!requestBids) return undefined;
-    const events = requestBids.getAllEvents();
+    const events = requestBids.allEvents;
     if(!events) return undefined;
     const selectedEvent = utils.getRandom(events);
     const bids = requestBids.get(selectedEvent);

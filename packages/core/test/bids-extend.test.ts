@@ -28,11 +28,11 @@ test("requests can be extended", () => {
         enable(thread1([]));
         enable(thread3([]));
         setupCount++;
-    }, ({log}) => {
+    }, ({isPending}) => {
         expect(setupCount).toEqual(2);
         expect(progressedExtend).toBe(true);
         expect(progressedRequest).toBe(false);
-        expect(log?.currentPendingEvents.has({name: 'A'})).toEqual(true);
+        expect(isPending('A')).toBeTruthy();
     }
  );  
 });
@@ -172,12 +172,12 @@ test("if an extend is not applied, than the next extend will get the event", () 
         enable(waitThread([]));
         enable(extendPriorityLowThread([]));
         enable(extendPriorityHighThread([]));
-    }, ({log}) => {
+    }, ({log, isPending}) => {
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
         expect(waitDAdvanced).toBe(false);
         expect(requestAdvanced).toBe(false);
-        expect(log?.currentPendingEvents.has({name: "A"})).toBe(true);
+        expect(isPending('A')).toBeTruthy();
         expect(log?.latestAction.event.name).toBe("A");
     });
 });
@@ -201,8 +201,8 @@ test("if an extended thread completed, without resolving or rejecting the event,
         enable(thread1([]));
         enable(thread3([]));
         setupCount++;
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toEqual(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
     }
  );
     expect(setupCount).toEqual(2);
@@ -300,8 +300,8 @@ test("an extend will create a pending event", () => {
     testScenarios((enable) => {
         enable(requestingThread([]));
         enable(extendingThread([]));
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toBe(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
     });
 });
 
@@ -320,8 +320,8 @@ test("an extend will wait for the pending-event to finish before it extends.", (
     testScenarios((enable) => {
         enable(requestingThread([]));
         enable(extendingThread([]));
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toBe(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
     });
 });
 
@@ -400,8 +400,8 @@ test("an extend will keep the event-pending if the BThread with the extend compl
     testScenarios((enable) => {
         enable(requestingThread([]));
         enable(extendingThread([]));
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toBe(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
         expect(requestingThreadProgressed).toBe(false);
     });
 });

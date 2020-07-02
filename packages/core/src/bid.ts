@@ -76,7 +76,7 @@ export interface AllBidsByType {
 
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
     const pending = reduceMaps(bidsForType(BidType.pending, allBThreadBids));
-    const pendingEvents = new Set(pending?.getAllEvents());
+    const pendingEvents = new Set(pending?.allEvents);
     const blocks = reduceMaps(bidsForType(BidType.block, allBThreadBids));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
     const fixedBlocksAndPending = utils.union(pendingEvents, fixedBlocks);
