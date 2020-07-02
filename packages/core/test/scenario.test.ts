@@ -19,7 +19,7 @@ test("testScenarios can be used without updateCb and logger", done => {
     });
 });
 
-test("there will be a dispatch-function every waiting event", () => {
+test("there is be a dispatch-function for every waiting event", () => {
 
     const thread1 = flow(null, function* () {
         yield [bp.wait("eventOne"), bp.wait("eventTwo")];
@@ -72,4 +72,32 @@ test("if a request is cancelled, it will not trigger the same event-name after r
         enable(thread1([]));
         enable(thread2([]));
     }, dispatchedActions);
+});
+
+
+test("isPending will show what events are pending", () => {
+    const thread1 = flow(null, function* () {
+        yield bp.request("count", () => delay(2000));
+    });
+
+    testScenarios((enable, cache) => {
+        cache('count');
+        enable(thread1([]));
+    }, ({event, isPending}) => {
+        expect(isPending("count")).toEqual(true);
+        expect(event("count")).toBeUndefined();
+    });
+});
+
+test("isPending will accept a key as a second argument", () => {
+    const thread1 = flow(null, function* () {
+        yield bp.request({name: "count", key: 1}, () => delay(2000));
+    });
+
+    testScenarios((enable) => {
+        enable(thread1([]));
+    }, ({event, isPending}) => {
+        expect(isPending({name: "count", key: 1})).toEqual(true);
+        expect(event({name: "count", key: 1})).toBeUndefined();
+    });
 });

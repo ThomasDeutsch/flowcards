@@ -134,41 +134,39 @@ test("a request with a key, will only advance the matching wait with the same ke
 
 test("an event cache vor an event will contain keyed values as well", () => {
     const thread1 = flow(null, function* () {
-        yield bp.request({name: 'A', key: "1"}, 'a value for 1');
+        yield bp.set({name: 'A', key: "1"}, 'a value for 1');
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.request({name: 'A', key: 2}, 'a value for 2');
+        yield bp.set({name: 'A', key: 2}, 'a value for 2');
     })
 
-    testScenarios((enable, cache) => {
-        cache('A');
+    testScenarios((enable) => {
         enable(thread1([]));
         enable(thread2([]));
-    }, ({latest})=> {
-        expect(latest({name: 'A', key: "1"})).toEqual('a value for 1');
-        expect(latest({name: 'A', key: 2})).toEqual('a value for 2');
+    }, ({event})=> {
+        expect(event({name: 'A', key: "1"})?.value).toEqual('a value for 1');
+        expect(event({name: 'A', key: 2})?.value).toEqual('a value for 2');
     });
 });
 
 
 test("if an event cache has keyed values, they will be replaced by a request without key", () => {
     const thread1 = flow(null, function* () {
-        yield bp.request({name: 'A', key: "1"}, 'a value for 1');
+        yield bp.set({name: 'A', key: "1"}, 'a value for 1');
     });
 
     const thread2 = flow(null, function* () {
         yield bp.wait({name: 'A', key: "1"});
-        yield bp.request({name: 'A', key: 2}, 'a value for 2');
-        yield bp.request('A', 'replacement value')
+        yield bp.set({name: 'A', key: 2}, 'a value for 2');
+        yield bp.set('A', 'replacement value')
     })
 
-    testScenarios((enable, cache) => {
-        cache('A');
+    testScenarios((enable) => {
         enable(thread1([]));
         enable(thread2([]));
-    }, ({latest})=> {
-        expect(latest({name: 'A', key: "1"})).toEqual('replacement value');
-        expect(latest({name: 'A', key: 2})).toEqual('replacement value');
+    }, ({event})=> {
+        expect(event({name: 'A', key: "1"})?.value).toEqual('replacement value');
+        expect(event({name: 'A', key: 2})?.value).toEqual('replacement value');
     });
 });

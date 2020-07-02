@@ -1,20 +1,16 @@
 import * as bp from "../src/bid";
-import { testScenarios } from "./testutils";
-import { InterceptResult } from "../src/bthread";
+import { testScenarios, delay } from "./testutils";
+import { ExtendResult } from "../src/bthread";
 import { flow } from '../src/flow';
 
-
-function delay(ms: number, value?: any) {
-    return new Promise(resolve => setTimeout(() => resolve(value), ms));
-}
 
 
 // INTERCEPTS
 //-------------------------------------------------------------------------
 
-test("requests can be intercepted", () => {
+test("requests can be extended", () => {
     let progressedRequest = false,
-        progressedIntercept = false,
+        progressedExtend = false,
         setupCount = 0;
 
     const thread1 = flow(null, function* () {
@@ -24,7 +20,7 @@ test("requests can be intercepted", () => {
 
     const thread3 = flow(null, function* () {
         yield bp.extend("A");
-        progressedIntercept = true;
+        progressedExtend = true;
         yield bp.wait('X');
     })
 
@@ -34,7 +30,7 @@ test("requests can be intercepted", () => {
         setupCount++;
     }, ({isPending}) => {
         expect(setupCount).toEqual(2);
-        expect(progressedIntercept).toBe(true);
+        expect(progressedExtend).toBe(true);
         expect(progressedRequest).toBe(false);
         expect(isPending('A')).toBeTruthy();
     }
@@ -42,9 +38,9 @@ test("requests can be intercepted", () => {
 });
 
 
-test("if the intercept has a payload, all threads will continue with that payload", () => {
+test("if the extend has a payload, all threads will continue with that payload", () => {
     let requestValue = 0,
-        interceptValue = 0,
+        extendValue = 0,
         waitValue = 0,
         setupCount = 0;
 
@@ -57,7 +53,7 @@ test("if the intercept has a payload, all threads will continue with that payloa
     })
 
     const thread3 = flow(null, function* () {
-        interceptValue = yield bp.extend("A", null, 1000);
+        extendValue = yield bp.extend("A", null, 1000);
         yield bp.wait('X');
     });
 
@@ -70,15 +66,15 @@ test("if the intercept has a payload, all threads will continue with that payloa
         expect(setupCount).toEqual(2);
         expect(waitValue).toEqual(1000);
         expect(requestValue).toEqual(1000);
-        expect(interceptValue).toEqual(1000);
+        expect(extendValue).toEqual(1000);
     }
  );  
 });
 
 
-test("the intercept payload can be a function.", () => {
+test("the extend payload can be a function.", () => {
     let requestValue = 0,
-        interceptValue = 0,
+        extendValue = 0,
         waitValue = 0,
         setupCount = 0;
 
@@ -91,7 +87,7 @@ test("the intercept payload can be a function.", () => {
     });
 
     const thread3 = flow(null, function* () {
-        interceptValue = yield bp.extend("A", null, (x: number) => x + 1000);
+        extendValue = yield bp.extend("A", null, (x: number) => x + 1000);
         yield bp.wait('X');
     });
 
@@ -104,15 +100,15 @@ test("the intercept payload can be a function.", () => {
         expect(setupCount).toEqual(2);
         expect(waitValue).toEqual(1100);
         expect(requestValue).toEqual(1100);
-        expect(interceptValue).toEqual(1100);
+        expect(extendValue).toEqual(1100);
     }
  );  
 });
 
 
-test("if the intercept payload is a promise, a pending-event is created.", done => {
+test("if the extend payload is a promise, a pending-event is created.", done => {
     let requestValue = 0,
-        interceptValue = 0,
+        extendValue = 0,
         waitValue = 0,
         setupCount = 0;
 
@@ -125,7 +121,7 @@ test("if the intercept payload is a promise, a pending-event is created.", done 
     });
 
     const thread3 = flow(null, function* () {
-        interceptValue = yield bp.extend("A", null, (x: number) => delay(100, x + 1000));
+        extendValue = yield bp.extend("A", null, (x: number) => delay(100, x + 1000));
         yield bp.wait('Fin')
     });
 
@@ -138,14 +134,14 @@ test("if the intercept payload is a promise, a pending-event is created.", done 
         if(dispatch('Fin')) {
             expect(waitValue).toEqual(1100);
             expect(requestValue).toEqual(1100);
-            expect(interceptValue).toEqual(1100);
+            expect(extendValue).toEqual(1100);
             done();
         }
     }
  );  
 });
 
-test("if an intercept is not applied, than the next intercept will get the event", () => {
+test("if an extend is not applied, than the next extend will get the event", () => {
     let requestAdvanced = false;
     let waitBAdvanced = false;
     let waitCAdvanced = false;
@@ -161,12 +157,12 @@ test("if an intercept is not applied, than the next intercept will get the event
         waitBAdvanced = true;
     });
 
-    const interceptPriorityLowThread = flow(null, function* () {
+    const extendPriorityLowThread = flow(null, function* () {
         yield bp.extend("A", (pl: number) => pl === 1000);
         waitCAdvanced = true;
     });
 
-    const interceptPriorityHighThread = flow(null, function* () {
+    const extendPriorityHighThread = flow(null, function* () {
         yield bp.extend("A", (pl: number) => pl !== 1000);
         waitDAdvanced = true;
     });
@@ -174,8 +170,8 @@ test("if an intercept is not applied, than the next intercept will get the event
     testScenarios((enable) => {
         enable(requestThread([]));
         enable(waitThread([]));
-        enable(interceptPriorityLowThread([]));
-        enable(interceptPriorityHighThread([]));
+        enable(extendPriorityLowThread([]));
+        enable(extendPriorityHighThread([]));
     }, ({log, isPending}) => {
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
@@ -186,9 +182,9 @@ test("if an intercept is not applied, than the next intercept will get the event
     });
 });
 
-test("if an intercepted thread completed, without resolving or rejecting the event, it will keep the event pending", () => {
+test("if an extended thread completed, without resolving or rejecting the event, it will keep the event pending", () => {
     let progressedRequest = false,
-        progressedIntercept = false,
+        progressedExtend = false,
         setupCount = 0;
 
     const thread1 = flow(null, function* () {
@@ -198,7 +194,7 @@ test("if an intercepted thread completed, without resolving or rejecting the eve
 
     const thread3 = flow(null, function* () {
         yield bp.extend("A");
-        progressedIntercept = true;
+        progressedExtend = true;
     });
 
     testScenarios((enable) => {
@@ -211,12 +207,12 @@ test("if an intercepted thread completed, without resolving or rejecting the eve
  );
     expect(setupCount).toEqual(2);
     expect(progressedRequest).toBe(false);
-    expect(progressedIntercept).toBe(true);
+    expect(progressedExtend).toBe(true);
 });
 
 
-test("intercepts will receive a value (like waits)", () => {
-    let interceptedValue: InterceptResult;
+test("extends will receive a value (like waits)", () => {
+    let extendedValue: ExtendResult;
     let thread1Advanced = false;
 
     const thread1 = flow(null, function* () {
@@ -229,7 +225,7 @@ test("intercepts will receive a value (like waits)", () => {
     });
 
     const thread3 = flow(null, function* () {
-        interceptedValue = yield bp.extend("A");
+        extendedValue = yield bp.extend("A");
     });
 
     testScenarios((enable) => {
@@ -238,53 +234,53 @@ test("intercepts will receive a value (like waits)", () => {
         enable(thread3([]));
     }, ({log}) => {
         expect(thread1Advanced).toBe(false);
-        expect(interceptedValue.value).toBe(1000);
+        expect(extendedValue.value).toBe(1000);
         expect(log?.currentPendingEvents.has({name: 'A'}));
     });
 });
 
 
-test("intercepts will intercept requests", () => {
-    let intercepted: InterceptResult
+test("extends will extend requests", () => {
+    let extended: ExtendResult
 
     const thread1 = flow(null, function* () {
         yield bp.request("A", 1000);
     });
 
     const thread2 = flow(null, function* () {
-        intercepted = yield bp.extend("A");
+        extended = yield bp.extend("A");
     }); 
 
     testScenarios((enable) => {
         enable(thread1([]));
         enable(thread2([]));
     }, () => {
-        expect(intercepted.value).toEqual(1000);
+        expect(extended.value).toEqual(1000);
     });
 });
 
 
-test("the last intercept that is enabled has the highest priority", () => {
+test("the last extend that is enabled has the highest priority", () => {
     let advancedThread1, advancedThread2;
 
     const requestThread = flow(null, function* () {
         yield bp.request("A");
     });
 
-    const interceptThread1 = flow(null, function* () {
+    const extendThread1 = flow(null, function* () {
         yield bp.extend("A");
         advancedThread1 = true;
     });
     
-    const interceptThread2 = flow(null, function* () {
+    const extendThread2 = flow(null, function* () {
         yield bp.extend("A");
         advancedThread2 = true;
     });
 
     testScenarios((enable) => {
         enable(requestThread([]));
-        enable(interceptThread1([]));
-        enable(interceptThread2([]));
+        enable(extendThread1([]));
+        enable(extendThread2([]));
     });
 
     expect(advancedThread1).toBeFalsy();
@@ -292,30 +288,30 @@ test("the last intercept that is enabled has the highest priority", () => {
 });
 
 
-test("an intercept will create a pending event", () => {
+test("an extend will create a pending event", () => {
     const requestingThread = flow(null, function* () {
         yield bp.request("A", delay(100));
     });
 
-    const interceptingThread = flow(null, function* () {
+    const extendingThread = flow(null, function* () {
         yield bp.extend("A");
     });
 
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
+        enable(extendingThread([]));
     }, ({isPending}) => {
         expect(isPending('A')).toBeTruthy();
     });
 });
 
 
-test("an intercept will wait for the pending-event to finish before it intercepts.", (done) => {
+test("an extend will wait for the pending-event to finish before it extends.", (done) => {
     const requestingThread = flow(null, function* () {
         yield bp.request("A", delay(100, 'resolvedValue'));
     });
 
-    const interceptingThread = flow(null, function* () {
+    const extendingThread = flow(null, function* () {
         const {value} = yield bp.extend("A");
         expect(value).toBe('resolvedValue');
         done();
@@ -323,23 +319,23 @@ test("an intercept will wait for the pending-event to finish before it intercept
 
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
+        enable(extendingThread([]));
     }, ({isPending}) => {
         expect(isPending('A')).toBeTruthy();
     });
 });
 
 
-test("an intercept can be resolved. This will progress waits and requests", (done) => {
+test("an extend can be resolved. This will progress waits and requests", (done) => {
     const requestingThread = flow(null, function* () {
         const val = yield bp.request("A", delay(100, 'super'));
         expect(val).toBe('super duper');
     });
 
-    const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super');
-        intercept.resolve('super duper');
+    const extendingThread = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super');
+        extend.resolve('super duper');
     });
 
     const waitingThread = flow(null, function* () {
@@ -350,7 +346,7 @@ test("an intercept can be resolved. This will progress waits and requests", (don
 
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
+        enable(extendingThread([]));
         enable(waitingThread([]));
     }, ({dispatch}) => {
         if(dispatch('fin')) {
@@ -360,16 +356,16 @@ test("an intercept can be resolved. This will progress waits and requests", (don
 });
 
 
-test("an intercept can be rejected. This will remove the pending event", (done) => {
+test("an extend can be rejected. This will remove the pending event", (done) => {
     const requestingThread = flow(null, function* () {
         const val = yield bp.request("A", delay(100, 'super'));
         expect(val).toBe('super');
     });
 
-    const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super');
-        intercept.reject();
+    const extendingThread = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super');
+        extend.reject();
     });
 
     const waitingThread = flow(null, function* () {
@@ -380,7 +376,7 @@ test("an intercept can be rejected. This will remove the pending event", (done) 
 
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
+        enable(extendingThread([]));
         enable(waitingThread([]));
     }, ({dispatch}) => {
         if(dispatch('fin')) {
@@ -389,43 +385,43 @@ test("an intercept can be rejected. This will remove the pending event", (done) 
     });
 });
 
-test("an intercept will keep the event-pending if the BThread with the intercept completes.", () => {
+test("an extend will keep the event-pending if the BThread with the extend completes.", () => {
     let requestingThreadProgressed = false;
     const requestingThread = flow(null, function* () {
         yield bp.request("A", 1);
         requestingThreadProgressed = true;
     });
 
-    const interceptingThread = flow(null, function* () {
+    const extendingThread = flow(null, function* () {
         yield bp.extend("A");
-        // after the intercept, this BThread completes, keeping the intercept active.
+        // after the extend, this BThread completes, keeping the extend active.
     });
 
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
+        enable(extendingThread([]));
     }, ({isPending}) => {
         expect(isPending('A')).toBeTruthy();
         expect(requestingThreadProgressed).toBe(false);
     });
 });
 
-test("multiple intercepts will resolve after another. After all intercepts complete, the request and wait will continue", (done) => {
+test("multiple extends will resolve after another. After all extends complete, the request and wait will continue", (done) => {
     const requestingThread = flow(null, function* () {
         const val = yield bp.request("A", delay(100, 'super'));
         expect(val).toBe('super duper flowcards');
     });
 
-    const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super duper');
-        intercept.resolve('super duper flowcards');
+    const extendingThread = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super duper');
+        extend.resolve('super duper flowcards');
     });
 
-    const interceptingThreadHigherPriority = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super');
-        intercept.resolve('super duper');
+    const extendingThreadHigherPriority = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super');
+        extend.resolve('super duper');
     });
 
     const waitingThread = flow(null, function* () {
@@ -436,8 +432,8 @@ test("multiple intercepts will resolve after another. After all intercepts compl
     
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
-        enable(interceptingThreadHigherPriority([])); // this BThread is enabled after the first interceptingThread, giving it a higher priority
+        enable(extendingThread([]));
+        enable(extendingThreadHigherPriority([])); // this BThread is enabled after the first extendingThread, giving it a higher priority
         enable(waitingThread([]));
     }, ({dispatch}) => {
         if(dispatch('fin')) {
@@ -447,22 +443,22 @@ test("multiple intercepts will resolve after another. After all intercepts compl
 });
 
 
-test("if the last intercept rejects, the event will resolve to its starting value.", (done) => {
+test("if the last extend rejects, the event will resolve to its starting value.", (done) => {
     const requestingThread = flow(null, function* () {
         const val = yield bp.request("A", delay(100, 'super'));
         expect(val).toBe('super'); // will have the initial value
     });
 
-    const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super duper');
-        intercept.reject();
+    const extendingThread = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super duper');
+        extend.reject();
     });
 
-    const interceptingThreadHigherPriority = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super');
-        intercept.resolve('super duper');
+    const extendingThreadHigherPriority = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super');
+        extend.resolve('super duper');
     });
 
     const waitingThread = flow(null, function* () {
@@ -473,8 +469,8 @@ test("if the last intercept rejects, the event will resolve to its starting valu
 
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
-        enable(interceptingThreadHigherPriority([])); // this BThread is enabled after the first interceptingThread, giving it a higher priority
+        enable(extendingThread([]));
+        enable(extendingThreadHigherPriority([])); // this BThread is enabled after the first extendingThread, giving it a higher priority
         enable(waitingThread([]));
     }, ({dispatch}) => {
         if(dispatch('fin')) {
@@ -484,22 +480,22 @@ test("if the last intercept rejects, the event will resolve to its starting valu
 });
 
 
-test("if the previous intercept rejects, the next intercept will get the initial value", (done) => {
+test("if the previous extend rejects, the next extend will get the initial value", (done) => {
     const requestingThread = flow(null, function* () {
         const val = yield bp.request("A", delay(100, 'super'));
-        expect(val).toBe('super duper'); // it will have the value for the last intercept
+        expect(val).toBe('super duper'); // it will have the value for the last extend
     });
 
-    const interceptingThread = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super');
-        intercept.resolve(intercept.value + ' duper');
+    const extendingThread = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super');
+        extend.resolve(extend.value + ' duper');
     });
 
-    const interceptingThreadHigherPriority = flow(null, function* () {
-        const intercept = yield bp.extend("A");
-        expect(intercept.value).toBe('super');
-        intercept.reject();
+    const extendingThreadHigherPriority = flow(null, function* () {
+        const extend = yield bp.extend("A");
+        expect(extend.value).toBe('super');
+        extend.reject();
     });
 
     const waitingThread = flow(null, function* () {
@@ -510,8 +506,8 @@ test("if the previous intercept rejects, the next intercept will get the initial
 
     testScenarios((enable) => {
         enable(requestingThread([]));
-        enable(interceptingThread([]));
-        enable(interceptingThreadHigherPriority([])); // this BThread is enabled after the first interceptingThread, giving it a higher priority
+        enable(extendingThread([]));
+        enable(extendingThreadHigherPriority([])); // this BThread is enabled after the first extendingThread, giving it a higher priority
         enable(waitingThread([]));
     }, ({dispatch}) => {
         if(dispatch('fin')) {
