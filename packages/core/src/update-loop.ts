@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { BThread, ExtendResultType, BThreadState } from './bthread';
-=======
-import { GeneratorFn, BThread, InterceptResultType, BThreadState, BThreadKey } from './bthread';
->>>>>>> master
+import { BThread, ExtendResultType, BThreadState, BThreadKey } from './bthread';
 import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
