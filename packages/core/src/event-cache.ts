@@ -3,32 +3,28 @@ import { EventMap, FCEvent } from './event';
 export type EventCache = EventMap<CachedItem<any>>;
 
 export interface CachedItem<T> {
-    current: T;
+    value: T;
     history: T[];
-    initial: () => T;
-    reset: () => void;
-    set: (payload: T) => void;
+    // initial: () => T;
+    // reset: () => void;
+    // set: (payload: T) => void;
 }
 
-export type EnableEventCache<T> = (event: FCEvent | string, initial?: T) => CachedItem<T>;
-
-export function setEventCache<T>(isUpdate: boolean, eventCache: EventCache, event: FCEvent | undefined, payload?: T): void {
-    if (!event) return;
-    if (!isUpdate && eventCache.has(event)) return;
+export function setEventCache<T>(eventCache: EventCache, event: FCEvent, payload?: T): void {
     const events = eventCache.getAllMatchingEvents(event);
     if(!events) return;
     events.forEach(event => {
         const val = eventCache.get(event);
         if(val === undefined) {
             eventCache.set(event, {
-                current: payload, 
+                value: payload, 
                 history: [payload],
-                set: (payload: any) => setEventCache(true, eventCache, event, payload),
-                reset: function() { setEventCache(true, eventCache, event, this.history[0]) },
-                initial: function() { return this.history[0] },
+                // set: (payload: any) => setEventCache(eventCache, event, payload),
+                // reset: function() { setEventCache(eventCache, event, this.history[0]) },
+                // initial: function() { return this.history[0] },
             });
-        } else if(isUpdate) {
-            val.current = payload;
+        } else {
+            val.value = payload;
             val.history.push(payload);
         }
     }); 

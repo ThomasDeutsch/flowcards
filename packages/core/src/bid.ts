@@ -17,6 +17,7 @@ export interface Bid {
     payload?: any;
     guard?: GuardFunction;
     canBeDispatched?: boolean;
+    cacheEnabled?: boolean;
 }
 
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
@@ -141,5 +142,15 @@ export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
         guard: guard,
         canBeDispatched: false,
         threadId: "" 
+    };
+}
+
+export function set(event: string | FCEvent, payload?: any): Bid {
+    return {
+        type: BidType.request, 
+        event: toEvent(event), 
+        payload: payload, 
+        threadId: "",
+        cacheEnabled: true
     };
 }
