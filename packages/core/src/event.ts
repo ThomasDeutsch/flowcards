@@ -112,7 +112,7 @@ export class EventMap<T>  {
         return deleted.length > 0 ? deleted : undefined;
     }
 
-    public getAllEvents(): FCEvent[] | undefined {
+    public get allEvents(): FCEvent[] | undefined {
         const elements: FCEvent[] = [];
         this.forEach((event) => elements.push(event));
         return elements.length > 0 ? elements : undefined;

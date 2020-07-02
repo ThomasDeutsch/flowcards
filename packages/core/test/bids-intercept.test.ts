@@ -32,11 +32,11 @@ test("requests can be intercepted", () => {
         enable(thread1([]));
         enable(thread3([]));
         setupCount++;
-    }, ({log}) => {
+    }, ({isPending}) => {
         expect(setupCount).toEqual(2);
         expect(progressedIntercept).toBe(true);
         expect(progressedRequest).toBe(false);
-        expect(log?.currentPendingEvents.has({name: 'A'})).toEqual(true);
+        expect(isPending('A')).toBeTruthy();
     }
  );  
 });
@@ -176,12 +176,12 @@ test("if an intercept is not applied, than the next intercept will get the event
         enable(waitThread([]));
         enable(interceptPriorityLowThread([]));
         enable(interceptPriorityHighThread([]));
-    }, ({log}) => {
+    }, ({log, isPending}) => {
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
         expect(waitDAdvanced).toBe(false);
         expect(requestAdvanced).toBe(false);
-        expect(log?.currentPendingEvents.has({name: "A"})).toBe(true);
+        expect(isPending('A')).toBeTruthy();
         expect(log?.latestAction.event.name).toBe("A");
     });
 });
@@ -205,8 +205,8 @@ test("if an intercepted thread completed, without resolving or rejecting the eve
         enable(thread1([]));
         enable(thread3([]));
         setupCount++;
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toEqual(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
     }
  );
     expect(setupCount).toEqual(2);
@@ -304,8 +304,8 @@ test("an intercept will create a pending event", () => {
     testScenarios((enable) => {
         enable(requestingThread([]));
         enable(interceptingThread([]));
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toBe(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
     });
 });
 
@@ -324,8 +324,8 @@ test("an intercept will wait for the pending-event to finish before it intercept
     testScenarios((enable) => {
         enable(requestingThread([]));
         enable(interceptingThread([]));
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toBe(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
     });
 });
 
@@ -404,8 +404,8 @@ test("an intercept will keep the event-pending if the BThread with the intercept
     testScenarios((enable) => {
         enable(requestingThread([]));
         enable(interceptingThread([]));
-    }, ({log}) => {
-        expect(log?.currentPendingEvents.has({name: 'A'})).toBe(true);
+    }, ({isPending}) => {
+        expect(isPending('A')).toBeTruthy();
         expect(requestingThreadProgressed).toBe(false);
     });
 });

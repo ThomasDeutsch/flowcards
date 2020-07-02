@@ -9,9 +9,10 @@ import { EventMap, reduceEventMaps, FCEvent, toEvent } from './event';
 export type BTGen = Generator<Bid | Bid[], void, any>;
 export type GeneratorFn = (...args: any[]) => BTGen;
 type SetState = (newValue: any) => void;
+export type BThreadKey = string | number;
 
 export interface BTContext {
-    key?: string | number;
+    key?: BThreadKey;
     setState: SetState;
 }
 
@@ -29,9 +30,9 @@ export enum InterceptResultType {
 
 type IsWaitingFunction = (event: string | FCEvent) => boolean
 export interface BThreadState {
-    waits?: FCEvent[],
-    current?: any
-    isWaitingFor: IsWaitingFunction
+    waits?: FCEvent[];
+    current?: any;
+    isWaitingFor: IsWaitingFunction;
 }
 
 export class BThread {
@@ -67,10 +68,10 @@ export class BThread {
     }
     public readonly id: string;
     public readonly title?: string;
-    public readonly key?: string | number;
+    public readonly key?: BThreadKey;
 
 
-    public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: string | number, logger?: Logger, title?: string) {
+    public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: BThreadKey, logger?: Logger, title?: string) {
         this.id = id;
         this.title = title;
         this.key = key;
@@ -138,7 +139,7 @@ export class BThread {
         const pendingEvents: EventMap<Bid> | undefined = reduceEventMaps([this._pendingInterceptRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
         if(this._isCompleted) return {[BidType.pending]: pendingEvents};
         if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid);
-        this._state.waits = this._currentBids?.[BidType.wait]?.getAllEvents();
+        this._state.waits = this._currentBids?.[BidType.wait]?.allEvents;
         return {...this._currentBids, [BidType.pending]: pendingEvents};
     }
 

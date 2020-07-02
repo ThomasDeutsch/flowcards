@@ -1,4 +1,4 @@
-import { GeneratorFn, BThread, InterceptResultType, BThreadState } from './bthread';
+import { GeneratorFn, BThread, InterceptResultType, BThreadState, BThreadKey } from './bthread';
 import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
@@ -30,7 +30,7 @@ export interface ScenariosContext {
     log?: Log;
 }
 
-function createScenarioId(id: string, key?: string | number): string {
+function createBThreadId(id: string, key?: BThreadKey): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
 
@@ -124,12 +124,13 @@ function setupScaffolding(
     logger?: Logger
 ) {
     const bids: BThreadBids[] = [];
-    function enableBThread({id, title, gen, args, key}: FlowContext) : BThreadState {
-        id = createScenarioId(id, key);
+    function enableBThread({id, title, gen, args, key}: FlowContext): BThreadState {
+        id = createBThreadId(id, key);
         if (bThreadDictionary[id]) {
             bThreadDictionary[id].resetOnArgsChange(args);
         } else {
             bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger, title);
+            logger?.addThreadInfo(id, {title: title, key: key});
         }
         const threadBids = bThreadDictionary[id].getBids();
         bids.push(threadBids);

@@ -2,6 +2,7 @@ import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
 import { Bid } from './bid';
 import { EventMap, FCEvent } from './event';
+import { BThreadKey } from './bthread';
 
 export interface ActionAndReactions {
     action: Action;
@@ -9,13 +10,18 @@ export interface ActionAndReactions {
 }
 export type ThreadsByWait = Record<string, string[]>;
 
+interface ThreadInfo {
+    key?: BThreadKey;
+    title?: string;
+}
 
 export interface Log {
     currentWaits: EventMap<Bid[]>;
-    currentPendingEvents: EventMap<Bid[]>;
+    currentPendingEvents: EventMap<string[]>;
     latestAction: Action;
     latestReactionByThreadId: Record<string, Reaction>;
     actionsAndReactions: ActionAndReactions[];
+    threadInfoById: Record<string, ThreadInfo>;
 }
 
 function newActionsReactions(action?: Action): ActionAndReactions {
@@ -29,10 +35,15 @@ export class Logger {
     private _log: ActionAndReactions[] = [];
     private _latestActionAndReactions: ActionAndReactions;
     private _waits: EventMap<Bid[]> = new EventMap();
-    private _pendingEvents: EventMap<Bid[]> = new EventMap();
+    private _pendingEvents: EventMap<string[]> = new EventMap();
+    private _threadInfoById: Record<string, ThreadInfo> = {};
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
+    }
+
+    public addThreadInfo(id: string, info: ThreadInfo) {
+        this._threadInfoById[id] = {...info};
     }
 
     public logWaits(waits: EventMap<Bid[]> = new EventMap()): void {
@@ -40,7 +51,7 @@ export class Logger {
     }
 
     public logPendingEvents(pendingEvents: EventMap<Bid[]>): void {
-        this._pendingEvents = pendingEvents;
+        this._pendingEvents = pendingEvents.map((event, bids) => bids.map(bid => bid.threadId));
     }
 
     public logAction(action: Action): void {
@@ -61,6 +72,7 @@ export class Logger {
         const log = [...this._log];
         log.push({...this._latestActionAndReactions});
         return {
+            threadInfoById: this._threadInfoById,
             currentWaits: this._waits,
             currentPendingEvents: this._pendingEvents,
             latestAction: this._latestActionAndReactions.action,
