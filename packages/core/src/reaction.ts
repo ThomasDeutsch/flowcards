@@ -12,6 +12,7 @@ export enum ReactionType {
 
 export interface Reaction {
     threadId: string;
+    msToResolve?: number;
     type: ReactionType;
     cancelledPromises?: FCEvent[];
     pendingEvents?: string[];

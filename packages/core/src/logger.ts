@@ -4,8 +4,12 @@ import { Bid } from './bid';
 import { EventMap, FCEvent } from './event';
 import { BThreadKey } from './bthread';
 
+interface LogAction extends Action {
+    pendingDuration?: number;
+    usePromise?: boolean;
+}
 export interface ActionAndReactions {
-    action: Action;
+    action: LogAction;
     reactionByThreadId: Record<string, Reaction>;
 }
 export type ThreadsByWait = Record<string, string[]>;
@@ -18,7 +22,7 @@ interface ThreadInfo {
 export interface Log {
     currentWaits: EventMap<Bid[]>;
     currentPendingEvents: EventMap<string[]>;
-    latestAction: Action;
+    latestAction: LogAction;
     latestReactionByThreadId: Record<string, Reaction>;
     actionsAndReactions: ActionAndReactions[];
     threadInfoById: Record<string, ThreadInfo>;
@@ -26,7 +30,7 @@ export interface Log {
 
 function newActionsReactions(action?: Action): ActionAndReactions {
     return {
-        action: action ? {...action} : { event: {name: ""}, type: ActionType.initial, threadId: "" },
+        action: action ? {...action} : { event: {name: ""}, type: ActionType.initial, threadId: ""},
         reactionByThreadId: {}
     }
 }
@@ -37,6 +41,7 @@ export class Logger {
     private _waits: EventMap<Bid[]> = new EventMap();
     private _pendingEvents: EventMap<string[]> = new EventMap();
     private _threadInfoById: Record<string, ThreadInfo> = {};
+    private _timeOfPromise: EventMap<number> = new EventMap();
 
     public constructor() {
         this._latestActionAndReactions = newActionsReactions();
@@ -59,13 +64,21 @@ export class Logger {
         this._latestActionAndReactions = newActionsReactions(action);
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[]): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[] | null, event?: FCEvent): void {
+        if(event && type === ReactionType.promise) {
+            this._timeOfPromise.set(event, new Date().getTime());
+        }
+        else if(event && (type === ReactionType.resolve || type === ReactionType.reject)) {
+            const resolveTime = new Date().getTime();
+            const duration = resolveTime - (this._timeOfPromise.get(event) || resolveTime);
+            this._latestActionAndReactions.action.pendingDuration = duration;
+        }
         const reaction: Reaction = {
             type: type,
             threadId: threadId,
-            cancelledPromises: cancelledPromises
+            cancelledPromises: cancelledPromises ? cancelledPromises : undefined
         };
-        this._latestActionAndReactions.reactionByThreadId[reaction.threadId] = reaction;
+        this._latestActionAndReactions.reactionByThreadId[threadId] = reaction;
     }
 
     public getLog(): Log {
@@ -84,5 +97,9 @@ export class Logger {
     public resetLog(): void {
         this._log = [];
         this._latestActionAndReactions = newActionsReactions();
+        this._waits = new EventMap();
+        this._pendingEvents = new EventMap();
+        this._threadInfoById = {};
+        this._timeOfPromise = new EventMap();
     }
 }

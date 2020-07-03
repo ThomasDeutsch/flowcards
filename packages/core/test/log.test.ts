@@ -1,6 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
 import { flow } from '../src/flow';
+import { ReactionType } from "../src";
 
 test("the log will return an latestAction Object", () => {
 
@@ -57,4 +58,53 @@ test("the log will have an EventMap of all pending events", () => {
     });
 });
 
-// // test: the log will return the last action
+
+test("the log will have an EventMap of all current waits", () => {
+
+    const requestingThread = flow({id: 'thread1', title: 'myThread1'}, function* () {
+        yield [bp.wait("waitEvent1"), bp.wait('waitEvent2')];
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread([]));
+    }, ({log}) => {
+        expect(log?.currentWaits.has({name: 'waitEvent1'}));
+        expect(log?.currentWaits.has({name: 'waitEvent2'}));
+    });
+});
+
+
+test("the log will return the latest reaction-type of a thread", () => {
+
+    const requestingThread = flow({id: 'thread1', title: 'myThread1'}, function* () {
+        yield bp.request("event1");
+        yield bp.wait('event2')
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread([]));
+    }, ({log}) => {
+        expect(log?.latestReactionByThreadId['thread1'].type === ReactionType.progress);
+        expect(log?.currentWaits.has({name: 'waitEvent2'}));
+    });
+});
+
+
+test("the resolve action will contain a duration of the pending request", (done) => {
+    const requestingThread = flow({id: 'thread1', title: 'myThread1'}, function* () {
+        yield bp.request("event1", () => delay(1200, "hello"));
+        yield bp.wait('event2')
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread([]));
+    }, ({log, dispatch}) => {
+        if(dispatch('event2')) {
+            expect(log?.latestAction.pendingDuration).toBeGreaterThan(1200);
+            done();
+        }
+
+    });
+});
+
+

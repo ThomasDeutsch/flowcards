@@ -154,6 +154,7 @@ export class BThread {
     }
 
     public addPendingRequest(event: FCEvent, promise: Promise<any>): void {
+        this._logger?.logReaction(this.id, ReactionType.promise, null, event);        
         this._pendingRequestRecord.set(event, promise);
         promise.then((data): void => {
                 const recordedPromise = this._pendingRequestRecord.get(event);
@@ -167,18 +168,17 @@ export class BThread {
                     this._dispatch({ type: ActionType.rejected, threadId: this.id, event: event, payload: e });
                 }
             });
-        this._logger?.logReaction(this.id, ReactionType.promise);
     }
 
     public resolvePending(action: Action): boolean {
         if(action.threadId !== this.id || action.type !== ActionType.resolved) return false;
         // resolve intercept
         if(this._pendingInterceptRecord.delete(action.event)) {
-            this._logger?.logReaction(this.id, ReactionType.resolve);
+            this._logger?.logReaction(this.id, ReactionType.resolve, null, action.event);
             return true;
         } // resolve pending promise
         else if(this._pendingRequestRecord.delete(action.event)) {
-            this._logger?.logReaction(this.id, ReactionType.resolve);
+            this._logger?.logReaction(this.id, ReactionType.resolve, null, action.event);
             return true;
         }
         return false;
@@ -188,10 +188,10 @@ export class BThread {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;
         // rejection of an intercept
         if(this._pendingInterceptRecord.delete(action.event)) { 
-            this._logger?.logReaction(this.id, ReactionType.reject);
+            this._logger?.logReaction(this.id, ReactionType.reject, null, action.event);
         } // rejection of a pending promise
         else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
-            this._logger?.logReaction(this.id, ReactionType.reject);
+            this._logger?.logReaction(this.id, ReactionType.reject, null, action.event);
             this._thread.throw({event: action.event, error: action.payload});
             this._progressBThread(action.event, action.payload, true);
         }

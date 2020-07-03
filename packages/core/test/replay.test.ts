@@ -3,6 +3,11 @@ import { testScenarios} from "./testutils";
 import { ActionType } from '../src/action';
 import { flow } from '../src/flow';
 
+// welche events sind disabled
+// welche async-events werden erneut ausgeführt
+// welche async-events bekommen eine andere resolve-zeit?
+
+
 test("an array of actions can be used as a replay", done => {
     let x = 0;
     const thread1 = flow({id: 'thread1'}, function* () {
