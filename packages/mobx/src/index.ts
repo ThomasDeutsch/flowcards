@@ -16,8 +16,8 @@ export class Store {
   dispatch = computedFn(function(this: Store, event:  Fc.FCEvent | string, payload: any) {
     return this.context.dispatch(Fc.toEvent(event), payload);
   });
-  latest = computedFn(function(this: Store, event: Fc.FCEvent | string) {
-    return this.context.latest(Fc.toEvent(event));
+  event = computedFn(function(this: Store, event: Fc.FCEvent | string) {
+    return this.context.event(Fc.toEvent(event));
   });
   isPending = computedFn(function(this: Store, event: Fc.FCEvent | string) {
     return this.context.isPending(Fc.toEvent(event));
