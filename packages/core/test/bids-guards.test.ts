@@ -37,10 +37,10 @@ test("a wait is not advanced, if the guard returns false", () => {
 });
 
 
-test("an intercept is not applied, if the guard returns false.", () => {
+test("an extend is not applied, if the guard returns false.", () => {
     let requestAdvanced = false;
     let waitAdvanced = false;
-    let interceptAdvanced = false;
+    let extendAdvanced = false;
 
     const threadA = flow(null, function* () {
         yield bp.request("A", 1000);
@@ -54,7 +54,7 @@ test("an intercept is not applied, if the guard returns false.", () => {
 
     const threadC = flow(null, function* () {
         yield bp.extend("A", (pl: number) => pl !== 1000);
-        interceptAdvanced = true;
+        extendAdvanced = true;
     });
 
     testScenarios((enable) => {
@@ -62,7 +62,7 @@ test("an intercept is not applied, if the guard returns false.", () => {
         enable(threadB([]));
         enable(threadC([]));
     }, ({log}) => {
-        expect(interceptAdvanced).toBe(false);
+        expect(extendAdvanced).toBe(false);
         expect(waitAdvanced).toBe(true);
         expect(requestAdvanced).toBe(true);
         expect(log?.latestAction.event.name).toBe("A");

@@ -16,6 +16,7 @@ export interface Action {
     threadId: string;
     event: FCEvent;
     payload?: any;
+    cacheEnabled?: boolean;
 }
 
 export function getNextActionFromRequests(requestBids: BidsForBidType): Action | undefined {
@@ -31,5 +32,6 @@ export function getNextActionFromRequests(requestBids: BidsForBidType): Action |
         threadId: bid.threadId,
         event: bid.event,
         payload: bid.payload,
+        cacheEnabled: bid.cacheEnabled
     };
 }
