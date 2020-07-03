@@ -34,6 +34,7 @@ function createBThreadId(id: string, key?: BThreadKey): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
 }
 
+
 function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
     let bids = getMatchingBids(allBids[BidType.extend], action.event);
     if(bids === undefined || bids.length === 0) return action;

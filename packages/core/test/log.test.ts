@@ -93,17 +93,16 @@ test("the log will return the latest reaction-type of a thread", () => {
 test("the resolve action will contain a duration of the pending request", (done) => {
     const requestingThread = flow({id: 'thread1', title: 'myThread1'}, function* () {
         yield bp.request("event1", () => delay(1200, "hello"));
-        yield bp.wait('event2')
+        yield bp.wait('event2');
     });
 
     testScenarios((enable) => {
         enable(requestingThread([]));
     }, ({log, dispatch}) => {
         if(dispatch('event2')) {
-            expect(log?.latestAction.pendingDuration).toBeGreaterThan(1200);
+            expect(log?.latestAction.pendingDuration).toBeGreaterThan(1199);
             done();
         }
-
     });
 });
 

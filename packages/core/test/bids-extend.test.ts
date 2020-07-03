@@ -5,7 +5,7 @@ import { flow } from '../src/flow';
 
 
 
-// INTERCEPTS
+// Extends
 //-------------------------------------------------------------------------
 
 test("requests can be extended", () => {
