@@ -2,12 +2,14 @@ import { BidsForBidType, Bid } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 import { FCEvent, EventMap, toEvent } from './event';
-import { getGuardForEventDispatch, GuardFunction } from './guard';
+import { getGuardForWaits, GuardFunction } from './guard';
+
 
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
 type EventDispatchUpdater = (waits: BidsForBidType) => void;
+
 
 interface DispatchCache {
     payload?: any;
@@ -41,7 +43,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         }
         dispatchByEvent.intersection(dpWaits);
         dpWaits.forEach((waitEvent) => {
-            guardByEvent.set(waitEvent, getGuardForEventDispatch(dpWaits, waitEvent));
+            guardByEvent.set(waitEvent, getGuardForWaits(dpWaits, waitEvent));
             if(!dispatchByEvent.has(waitEvent)) {
                 const cache: DispatchCache = {};
                 dispatchByEvent.set(waitEvent, (payload?: any): TriggerDispatch | undefined => {

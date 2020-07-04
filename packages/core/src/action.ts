@@ -1,6 +1,7 @@
-import * as utils from "./utils";
-import { BidsForBidType } from "./bid";
-import { FCEvent } from './event';
+import { BidsForBidType, Bid } from "./bid";
+import { FCEvent, EventMap } from './event';
+import { getGuardForWaits } from './guard';
+
 
 export enum ActionType {
     initial = "initial",
@@ -10,6 +11,7 @@ export enum ActionType {
     rejected = "rejected",
     replay = "replay"
 }
+
 
 export interface Action {
     type: ActionType;
@@ -27,26 +29,39 @@ function getRandom<T>(coll: T[]): [T, T[] | undefined] {
     return [value, coll];
 }
 
-export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids: BidsForBidType): Action | undefined {
+
+function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
+    if(!bids) return undefined;
+    const reversedBids = bids.reverse(); // last bid has the highest priority.
+    for (const bid of reversedBids) {
+        if(bid.onlyRequestWhenWaitedFor) {
+            if(waitBids && getGuardForWaits(waitBids, bid.event)?.(bid.payload)) {
+                return bid;
+            }
+        } else {
+            return bid;
+        }
+    }
+    return undefined;
+}
+
+
+export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
     if(!requestBids) return undefined;
     const events = requestBids.allEvents;
     if(!events) return undefined;
-    let action;
     let [selectedEvent, rest] = getRandom(events);
-    while(selectedEvent && !action) {
+    while(selectedEvent) {
         const bids = requestBids.get(selectedEvent);
-        if(!rest && !bids) return undefined;
-        const bid = bids[bids.length - 1]; // select the bid with the highest priority.
-        action = {
+        const bid = getBid(bids, waitBids);
+        if(bid) return {
             type: ActionType.requested,
             threadId: bid.threadId,
             event: bid.event,
             payload: bid.payload,
             cacheEnabled: bid.cacheEnabled
         };
-        
         [selectedEvent, rest] = getRandom(events);
     }
-    return action;
-    
+    return undefined; 
 }

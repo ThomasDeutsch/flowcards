@@ -19,9 +19,11 @@ export type TriggerWaitDispatch = (payload: any) => void;
 type GetIsPending =  (event: FCEvent | string) => boolean;
 export type UpdateLoopFunction = (actionQueue?: Action[] | undefined) => ScenariosContext;
 
+
 export interface BThreadDictionary {
     [Key: string]: BThread;
 }
+
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
@@ -29,6 +31,7 @@ export interface ScenariosContext {
     isPending: GetIsPending;
     log?: Log;
 }
+
 
 function createBThreadId(id: string, key?: BThreadKey): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
@@ -57,6 +60,7 @@ function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
     return action;
 }
 
+
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
     const bids = getMatchingBids(allBids[BidType.wait], action.event) || [];
     if(bids.length === 0) return false;
@@ -65,6 +69,7 @@ function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
     });
     return true;
 }
+
 
 function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
     if(action.type === ActionType.initial) return undefined;
@@ -164,11 +169,12 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         let action = actionQueue?.shift();
         // start a replay?
         if (action && action.type === ActionType.replay) {
+            // delete all BThreads
             Object.keys(bThreadDictionary).forEach((threadId): void => { 
                 bThreadDictionary[threadId].onDelete();
                 delete bThreadDictionary[threadId]
-            }); // delete all BThreads
-            eventCache.clear();
+            }); 
+            eventCache.clear(); // clear cache
             logger?.resetLog(); // empty current log
             return updateLoop(action.payload); // start a replay
         }
@@ -180,7 +186,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop(actionQueue);
         }
-        // ------ create the return value:
+        // create the return value:
         updateEventDispatcher(bids.wait?.difference(bids[BidType.pending]));
         logger?.logWaits(bids.wait);
         const pendingEventMap = bids[BidType.pending] || new EventMap();
