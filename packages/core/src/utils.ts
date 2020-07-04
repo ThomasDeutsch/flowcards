@@ -25,12 +25,6 @@ export function notUndefined<T>(value?: T): value is T {
 
 // ARRAY --------------------
 
-export function getRandom<T>(coll: T[]): T {
-    if (coll.length === 1) return coll[0];
-    const randomItemIndex = Math.floor(Math.random() * coll.length);
-    return coll[randomItemIndex];
-}
-
 export function toArray<T>(x: T | T[]): T[] {
     if(Array.isArray(x)) return x;
     return [x];

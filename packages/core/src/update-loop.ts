@@ -174,7 +174,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
         // not a replay
         const bids = getAllBids(scaffold());
-        action = action || getNextActionFromRequests(bids.request);
+        action = action || getNextActionFromRequests(bids.request, bids.wait);
         if (action) {
             logger?.logAction(action);
             advanceBThreads(bThreadDictionary, eventCache, bids, action);

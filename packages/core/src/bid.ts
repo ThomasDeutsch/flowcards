@@ -18,6 +18,7 @@ export interface Bid {
     guard?: GuardFunction;
     canBeDispatched?: boolean;
     cacheEnabled?: boolean;
+    onlyRequestWhenWaitedFor?: boolean;
 }
 
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
@@ -126,6 +127,16 @@ export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
     };
 }
 
+export function set(event: string | FCEvent, payload?: any): Bid {
+    return {
+        type: BidType.request, 
+        event: toEvent(event), 
+        payload: payload, 
+        threadId: "",
+        cacheEnabled: true
+    };
+}
+
 export function extend(event: string | FCEvent, guard?: GuardFunction | null, payload?: any): Bid {
     return { 
         type: BidType.extend, 
@@ -145,12 +156,12 @@ export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
     };
 }
 
-export function set(event: string | FCEvent, payload?: any): Bid {
+export function trigger(event: string | FCEvent, payload?: any): Bid {
     return {
         type: BidType.request, 
         event: toEvent(event), 
         payload: payload, 
         threadId: "",
-        cacheEnabled: true
+        onlyRequestWhenWaitedFor: true
     };
 }
