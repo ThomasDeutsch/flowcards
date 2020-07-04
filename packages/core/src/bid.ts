@@ -25,7 +25,7 @@ export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
 export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
 export type BidsForBidType = EventMap<Bid[]> | undefined;
 
-// Bids from BThreads
+// bids from BThreads
 // --------------------------------------------------------------------------------------------------------------------
 
 export interface BThreadBids {
@@ -55,7 +55,7 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined |
     }, defaultBidsByType);
 }
 
-// Bids from multiple BThreads
+// bids from multiple BThreads
 // --------------------------------------------------------------------------------------------------------------------
 function bidsForType(type: BidType, allBidsByType: BThreadBids[]): EventMap<Bid>[] {
     return allBidsByType.map(bidsByType => bidsByType[type]).filter(utils.notUndefined);
@@ -97,7 +97,7 @@ export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] 
 }
 
 
-// Bids User-API --------------------------------------------------------------------
+// bids User-API --------------------------------------------------------------------
 
 export function request(event: string | FCEvent, payload?: any): Bid {
     return {
