@@ -4,10 +4,11 @@ import * as utils from './utils';
 
 export type GuardFunction = (payload: any) => boolean
 
-export function getGuardForWaits(eventMap: EventMap<Bid[]>, event: FCEvent): GuardFunction | undefined {
-    let guards: GuardFunction[] | undefined = eventMap.get(event)?.map(bid => bid.guard).filter(utils.notUndefined);
+export function getGuardForWaits(bids: Bid[] | undefined, event: FCEvent): GuardFunction | undefined {
+    if(!bids) return undefined;
+    let guards: GuardFunction[] | undefined = bids.map(bid => bid.guard).filter(utils.notUndefined);
     if(event.key !== undefined) {
-        const g = getGuardForWaits(eventMap, {name: event.name}); // also get the guard from the no-key wait
+        const g = getGuardForWaits(bids, {name: event.name}); // also get the guard from the no-key wait
         if(g) {
             guards = guards || [];
             guards.push(g);

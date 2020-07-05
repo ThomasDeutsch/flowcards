@@ -36,8 +36,10 @@ function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
     const reversedBids = [...bids].reverse(); // last bid has the highest priority.
     for (const bid of reversedBids) {
         if(bid.onlyRequestWhenWaitedFor) {
-            if(waitBids && getGuardForWaits(waitBids, bid.event)?.(bid.payload)) {
-                return bid;
+            const waitsForEvent = waitBids?.get(bid.event);
+            if(waitsForEvent) {
+                const guard = getGuardForWaits(waitsForEvent, bid.event);
+                if(!guard || guard(bid.payload)) return bid;
             }
         } else {
             return bid;
@@ -62,7 +64,7 @@ export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?
             payload: bid.payload,
             cacheEnabled: bid.cacheEnabled
         };
-        [selectedEvent, rest] = getRandom(events);
+        [selectedEvent, rest] = getRandom(rest || []);
     }
     return undefined; 
 }

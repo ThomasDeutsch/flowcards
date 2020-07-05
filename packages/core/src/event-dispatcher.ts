@@ -43,7 +43,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         }
         dispatchByEvent.intersection(dpWaits);
         dpWaits.forEach((waitEvent) => {
-            guardByEvent.set(waitEvent, getGuardForWaits(dpWaits, waitEvent));
+            guardByEvent.set(waitEvent, getGuardForWaits(dpWaits.get(waitEvent), waitEvent));
             if(!dispatchByEvent.has(waitEvent)) {
                 const cache: DispatchCache = {};
                 dispatchByEvent.set(waitEvent, (payload?: any): TriggerDispatch | undefined => {

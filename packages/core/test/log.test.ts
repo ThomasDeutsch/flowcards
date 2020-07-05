@@ -100,7 +100,7 @@ test("the resolve action will contain a duration of the pending request", (done)
         enable(requestingThread([]));
     }, ({log, dispatch}) => {
         if(dispatch('event2')) {
-            expect(log?.latestAction.pendingDuration).toBeGreaterThan(1199);
+            expect(log?.latestAction.pendingDuration).toBeGreaterThan(1);
             done();
         }
     });
