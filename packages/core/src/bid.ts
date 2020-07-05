@@ -97,7 +97,7 @@ export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] 
 }
 
 
-// bids User-API --------------------------------------------------------------------
+// bids user-API --------------------------------------------------------------------
 
 export function request(event: string | FCEvent, payload?: any): Bid {
     return {
@@ -132,8 +132,8 @@ export function set(event: string | FCEvent, payload?: any): Bid {
         type: BidType.request, 
         event: toEvent(event), 
         payload: payload, 
-        threadId: "",
-        cacheEnabled: true
+        cacheEnabled: true,
+        threadId: ""
     };
 }
 
@@ -142,7 +142,8 @@ export function extend(event: string | FCEvent, guard?: GuardFunction | null, pa
         type: BidType.extend, 
         event: toEvent(event), 
         guard: guard !== null ? guard : undefined, 
-        threadId: "", payload: payload
+        threadId: "", 
+        payload: payload
     };
 }
 
@@ -160,8 +161,8 @@ export function trigger(event: string | FCEvent, payload?: any): Bid {
     return {
         type: BidType.request, 
         event: toEvent(event), 
-        payload: payload, 
-        threadId: "",
-        onlyRequestWhenWaitedFor: true
+        payload: payload,
+        onlyRequestWhenWaitedFor: true,
+        threadId: ""
     };
 }
