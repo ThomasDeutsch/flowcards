@@ -22,7 +22,8 @@ export interface Action {
 }
 
 
-function getRandom<T>(coll: T[]): [T, T[] | undefined] {
+function getRandom<T>(coll: T[]): [T | undefined, T[] | undefined] {
+    if (coll.length === 0) return [undefined, undefined]
     if (coll.length === 1) return [coll[0], undefined];
     const randomIndex = Math.floor(Math.random() * coll.length);
     const value = coll.splice(randomIndex, 1)[0];
@@ -32,7 +33,7 @@ function getRandom<T>(coll: T[]): [T, T[] | undefined] {
 
 function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
     if(!bids) return undefined;
-    const reversedBids = bids.reverse(); // last bid has the highest priority.
+    const reversedBids = [...bids].reverse(); // last bid has the highest priority.
     for (const bid of reversedBids) {
         if(bid.onlyRequestWhenWaitedFor) {
             if(waitBids && getGuardForWaits(waitBids, bid.event)?.(bid.payload)) {

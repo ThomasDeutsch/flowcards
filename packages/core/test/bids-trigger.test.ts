@@ -54,3 +54,33 @@ test("a trigger is a request, that can be blocked.", () => {
         expect(hasAdvancedTrigger).toBe(false);
     });
 });
+
+test("a trigger needs to fulfill the wait-guard validation.", () => {
+    let hasAdvancedTrigger1 = false;
+    let hasAdvancedTrigger2 = false;
+
+    const waitingThread = flow({id: 'waitingThread'}, function*() {
+        while(true) {
+            yield bp.wait("eventA", (pl) => pl > 100);
+        }
+    });
+
+    const requestingThread1 = flow({id: 'requestingThread1'}, function*() {
+        yield bp.trigger("eventA", 101);
+        hasAdvancedTrigger1 = true;
+    });
+
+    const requestingThread2 = flow({id: 'requestingThread2'}, function*() {
+        yield bp.trigger("eventA", 0);
+        hasAdvancedTrigger2 = true;
+    });
+
+    testScenarios((enable) => {
+        enable(waitingThread([]));
+        enable(requestingThread1([]));
+        enable(requestingThread2([]));
+    }, ()=> {
+        expect(hasAdvancedTrigger1).toBe(true);
+        expect(hasAdvancedTrigger2).toBe(false);
+    });
+});
