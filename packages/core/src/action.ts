@@ -22,8 +22,8 @@ export interface Action {
 }
 
 
-function getRandom<T>(coll: T[]): [T | undefined, T[] | undefined] {
-    if (coll.length === 0) return [undefined, undefined]
+function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
+    if (!coll || coll.length === 0) return [undefined, undefined]
     if (coll.length === 1) return [coll[0], undefined];
     const randomIndex = Math.floor(Math.random() * coll.length);
     const value = coll.splice(randomIndex, 1)[0];
@@ -64,7 +64,7 @@ export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?
             payload: bid.payload,
             cacheEnabled: bid.cacheEnabled
         };
-        [selectedEvent, rest] = getRandom(rest || []);
+        [selectedEvent, rest] = getRandom(rest);
     }
     return undefined; 
 }
