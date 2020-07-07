@@ -9,7 +9,7 @@ export enum ReactionType {
 }
 
 export interface Reaction {
-    stepNr: number;
+    actionIndex: number;
     type: ReactionType;
     cancelledPromises?: FCEvent[];
     pendingEvents?: string[];

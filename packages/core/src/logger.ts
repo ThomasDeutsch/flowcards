@@ -4,7 +4,7 @@ import { EventMap, FCEvent } from './event';
 import { BThreadKey } from './bthread';
 
 interface LoggedAction extends Action {
-    stepNr: number;
+    actionIndex: number;
     pendingDuration?: number;
     reactingBThreads: Set<string>;
 }
@@ -30,24 +30,24 @@ export class Logger {
 
     public constructor() {}
 
-    private _getStepNr(): number {
-        return this._actions.length > 0 ? this._actions[this._actions.length-1].stepNr + 1 : 0;
+    private _getActionIndex(): number {
+        return this._actions.length || 0;
     }
 
     public addThreadInfo(id: string, title?: string) {
-        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, Reaction>(), enabledInStep: this._getStepNr()};
+        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, Reaction>(), enabledInStep: this._getActionIndex()};
     }
 
     public logAction(action: Action): void {
-        this._actions.push({...action, reactingBThreads: new Set(), stepNr: this._getStepNr()});
+        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()});
     }
 
     public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[] | null, event?: FCEvent): void {
-        const stepNr = this._getStepNr();
+        const actionIndex = this._getActionIndex();
         this._actions[this._actions.length-1].reactingBThreads.add(threadId);
         const reaction: Reaction = {
             type: type,
-            stepNr: stepNr,
+            actionIndex: actionIndex,
             cancelledPromises: cancelledPromises ? cancelledPromises : undefined
         };
         if(type === ReactionType.promise && event) {
@@ -60,7 +60,7 @@ export class Logger {
             this._actions[this._actions.length-1].pendingDuration = duration;
         }
         if(type !== ReactionType.promise) {
-            this._bThreadInfoById[threadId].reactions.set(stepNr, reaction);
+            this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
         }
     }
 
