@@ -1,105 +1,79 @@
 import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
-import { Bid } from './bid';
 import { EventMap, FCEvent } from './event';
 import { BThreadKey } from './bthread';
 
-interface LogAction extends Action {
+interface LoggedAction extends Action {
+    stepNr: number;
     pendingDuration?: number;
-    usePromise?: boolean;
+    reactingBThreads: Record<string, string>;
 }
-export interface ActionAndReactions {
-    action: LogAction;
-    reactionByThreadId: Record<string, Reaction>;
-}
-export type ThreadsByWait = Record<string, string[]>;
 
-interface ThreadInfo {
+export interface BThreadInfo {
+    id: string;
+    enabledInStep: number;
     key?: BThreadKey;
     title?: string;
+    reactions: Map<number, Reaction>;
 }
 
 export interface Log {
-    currentWaits: EventMap<Bid[]>;
-    currentPendingEvents: EventMap<string[]>;
-    latestAction: LogAction;
-    latestReactionByThreadId: Record<string, Reaction>;
-    actionsAndReactions: ActionAndReactions[];
-    threadInfoById: Record<string, ThreadInfo>;
-}
-
-function newActionsReactions(action?: Action): ActionAndReactions {
-    return {
-        action: action ? {...action} : { event: {name: ""}, type: ActionType.initial, threadId: ""},
-        reactionByThreadId: {}
-    }
+    actions: LoggedAction[];
+    bThreadInfoById: Record<string, BThreadInfo>;
+    latestAction: Action;
 }
 
 export class Logger {
-    private _log: ActionAndReactions[] = [];
-    private _latestActionAndReactions: ActionAndReactions;
-    private _waits: EventMap<Bid[]> = new EventMap();
-    private _pendingEvents: EventMap<string[]> = new EventMap();
-    private _threadInfoById: Record<string, ThreadInfo> = {};
-    private _timeOfPromise: EventMap<number> = new EventMap();
+    private _actions: LoggedAction[] = [];
+    private _bThreadInfoById: Record<string, BThreadInfo> = {};
+    private _pendingDurationByEvent: EventMap<number> = new EventMap();
 
-    public constructor() {
-        this._latestActionAndReactions = newActionsReactions();
+    public constructor() {}
+
+    private _getStepNr(): number {
+        return this._actions.length > 0 ? this._actions[this._actions.length-1].stepNr + 1 : 0;
     }
 
-    public addThreadInfo(id: string, info: ThreadInfo) {
-        this._threadInfoById[id] = {...info};
-    }
-
-    public logWaits(waits: EventMap<Bid[]> = new EventMap()): void {
-        this._waits = waits;
-    }
-
-    public logPendingEvents(pendingEvents: EventMap<Bid[]>): void {
-        this._pendingEvents = pendingEvents.map((event, bids) => bids.map(bid => bid.threadId));
+    public addThreadInfo(id: string, title?: string) {
+        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, Reaction>(), enabledInStep: this._getStepNr()};
     }
 
     public logAction(action: Action): void {
-        this._log.push(this._latestActionAndReactions);
-        this._latestActionAndReactions = newActionsReactions(action);
+        this._actions.push({...action, reactingBThreads: {}, stepNr: this._getStepNr()});
     }
 
     public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[] | null, event?: FCEvent): void {
-        if(event && type === ReactionType.promise) {
-            this._timeOfPromise.set(event, new Date().getTime());
+        const stepNr = this._getStepNr();
+        const reaction: Reaction = {
+            type: type,
+            stepNr: stepNr,
+            cancelledPromises: cancelledPromises ? cancelledPromises : undefined
+        };
+        if(type === ReactionType.promise && event) {
+            this._pendingDurationByEvent.set(event, new Date().getTime());
         }
         else if(event && (type === ReactionType.resolve || type === ReactionType.reject)) {
             const resolveTime = new Date().getTime();
-            const duration = resolveTime - (this._timeOfPromise.get(event) || resolveTime);
-            this._latestActionAndReactions.action.pendingDuration = duration;
+            const duration = resolveTime - (this._pendingDurationByEvent.get(event) || resolveTime);
+            this._pendingDurationByEvent.delete(event);
+            this._actions[this._actions.length-1].pendingDuration = duration;
         }
-        const reaction: Reaction = {
-            type: type,
-            threadId: threadId,
-            cancelledPromises: cancelledPromises ? cancelledPromises : undefined
-        };
-        this._latestActionAndReactions.reactionByThreadId[threadId] = reaction;
+        if(type !== ReactionType.promise) {
+            this._bThreadInfoById[threadId].reactions.set(stepNr, reaction);
+        }
     }
 
     public getLog(): Log {
-        const log = [...this._log];
-        log.push({...this._latestActionAndReactions});
         return {
-            threadInfoById: this._threadInfoById,
-            currentWaits: this._waits,
-            currentPendingEvents: this._pendingEvents,
-            latestAction: this._latestActionAndReactions.action,
-            latestReactionByThreadId: this._latestActionAndReactions.reactionByThreadId,
-            actionsAndReactions: log
+            actions: this._actions,
+            latestAction: this._actions[this._actions.length-1],
+            bThreadInfoById: this._bThreadInfoById
         };
     }
 
     public resetLog(): void {
-        this._log = [];
-        this._latestActionAndReactions = newActionsReactions();
-        this._waits = new EventMap();
-        this._pendingEvents = new EventMap();
-        this._threadInfoById = {};
-        this._timeOfPromise = new EventMap();
+        this._actions = [];
+        this._bThreadInfoById = {};
+        this._pendingDurationByEvent = new EventMap();   
     }
 }

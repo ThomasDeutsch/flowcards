@@ -55,6 +55,7 @@ test("a trigger is a request, that can be blocked.", () => {
     });
 });
 
+
 test("a trigger needs to fulfill the wait-guard validation.", () => {
     let hasAdvancedTrigger1 = false;
     let hasAdvancedTrigger2 = false;

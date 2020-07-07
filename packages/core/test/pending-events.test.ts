@@ -47,7 +47,6 @@ test("a pending event can not be extended", () => {
     }, ({log, isPending}) => {
         expect(isPending('A')).toBeTruthy();
         expect(log?.latestAction.threadId).toBe("thread1");
-        expect(log?.actionsAndReactions.length).toBe(2); // init + request("A"..)
     });
 });
 

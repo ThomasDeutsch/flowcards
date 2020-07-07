@@ -135,8 +135,8 @@ function setupScaffolding(
         if (bThreadDictionary[id]) {
             bThreadDictionary[id].resetOnArgsChange(args);
         } else {
+            logger?.addThreadInfo(id, title);
             bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger, title);
-            logger?.addThreadInfo(id, {title: title, key: key});
         }
         const threadBids = bThreadDictionary[id].getBids();
         bids.push(threadBids);
@@ -188,9 +188,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
         // create the return value:
         updateEventDispatcher(bids.wait?.difference(bids[BidType.pending]));
-        logger?.logWaits(bids.wait);
         const pendingEventMap = bids[BidType.pending] || new EventMap();
-        logger?.logPendingEvents(pendingEventMap);
         return {
             dispatch: eventDispatch,
             event: getEventCache, // latest values from event cache

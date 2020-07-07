@@ -232,10 +232,10 @@ test("extends will receive a value (like waits)", () => {
         enable(thread1([]));
         enable(thread2([]));
         enable(thread3([]));
-    }, ({log}) => {
+    }, ({isPending}) => {
         expect(thread1Advanced).toBe(false);
         expect(extendedValue.value).toBe(1000);
-        expect(log?.currentPendingEvents.has({name: 'A'}));
+        expect(isPending({name: 'A'})).toBe(true);
     });
 });
 

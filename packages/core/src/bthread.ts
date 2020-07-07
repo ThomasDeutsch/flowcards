@@ -93,7 +93,7 @@ export class BThread {
 
     private _processNextBid(returnValue?: any): FCEvent[] {
         if(this._isCompleted) return [];
-        const cancelledPromises = this._cancelPendingPromises();
+        const cancelledPending = this._cancelPendingPromises();
         const next = this._thread.next(returnValue);
         if (next.done) {
             this._isCompleted = true;
@@ -102,7 +102,7 @@ export class BThread {
             this._nextBid = next.value;
         }
         delete this._currentBids;
-        return cancelledPromises;
+        return cancelledPending;
     }
 
     private _progressBThread(event: FCEvent, payload: any, isReject = false): void {
@@ -110,8 +110,8 @@ export class BThread {
         if(!isReject) {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [event, payload] : payload;
         }
-        const cancelledPromises = this._processNextBid(returnVal);
-        this._logger?.logReaction(this.id, ReactionType.progress, cancelledPromises);
+        const cancelledPending = this._processNextBid(returnVal);
+        this._logger?.logReaction(this.id, ReactionType.progress, cancelledPending);
     }
 
     private _createExtendPromise(action: Action): ExtendResult {
@@ -151,8 +151,8 @@ export class BThread {
         this._isCompleted = false;
         delete this._state.current;
         this._thread = this._generatorFn(...this._currentArguments);
-        const cancelledPromises = this._processNextBid();
-        this._logger?.logReaction(this.id, ReactionType.reset, cancelledPromises);
+        const cancelledPending = this._processNextBid();
+        this._logger?.logReaction(this.id, ReactionType.reset, cancelledPending);
     }
 
     public addPendingRequest(event: FCEvent, promise: Promise<any>): void {

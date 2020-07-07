@@ -2,7 +2,6 @@ import { FCEvent } from './event';
 
 export enum ReactionType {
     init = "init",
-    delete = "delete",
     reset = "reset",
     promise = "promise",
     progress = "progress",
@@ -11,8 +10,7 @@ export enum ReactionType {
 }
 
 export interface Reaction {
-    threadId: string;
-    msToResolve?: number;
+    stepNr: number;
     type: ReactionType;
     cancelledPromises?: FCEvent[];
     pendingEvents?: string[];

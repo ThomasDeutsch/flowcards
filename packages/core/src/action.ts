@@ -19,6 +19,7 @@ export interface Action {
     event: FCEvent;
     payload?: any;
     cacheEnabled?: boolean;
+    onlyRequestWhenWaitedFor?: boolean;
 }
 
 
@@ -62,7 +63,8 @@ export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?
             threadId: bid.threadId,
             event: bid.event,
             payload: bid.payload,
-            cacheEnabled: bid.cacheEnabled
+            cacheEnabled: bid.cacheEnabled,
+            onlyRequestWhenWaitedFor: bid.onlyRequestWhenWaitedFor
         };
         [selectedEvent, rest] = getRandom(rest);
     }
