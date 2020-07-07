@@ -154,19 +154,21 @@ export class BThread {
         this._logger?.logReaction(this.id, ReactionType.reset, cancelledPending);
     }
 
-    public addPendingRequest(event: FCEvent, promise: Promise<any>): void {
-        this._logger?.logReaction(this.id, ReactionType.promise, null, event);        
+    public addPendingRequest(event: FCEvent, promise: Promise<any>): void {       
         this._pendingRequestRecord.set(event, promise);
+        const startTime = new Date().getTime();
         promise.then((data): void => {
+                const pendingDuration = new Date().getTime() - startTime;
                 const recordedPromise = this._pendingRequestRecord.get(event);
                 if (recordedPromise  && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: event, payload: data });
+                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: event, payload: data, pendingDuration: pendingDuration });
                 }
             })
             .catch((e): void => {
+                const pendingDuration = new Date().getTime() - startTime;
                 const recordedPromise = this._pendingRequestRecord.get(event);
                 if (recordedPromise && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: event, payload: e });
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: event, payload: e, pendingDuration: pendingDuration });
                 }
             });
     }
@@ -175,12 +177,10 @@ export class BThread {
         if(action.threadId !== this.id || action.type !== ActionType.resolved) return false;
         // resolve extend
         if(this._pendingExtendRecord.delete(action.event)) {
-            this._logger?.logReaction(this.id, ReactionType.resolve);
             return true;
         } 
         // resolve pending promise
         else if(this._pendingRequestRecord.delete(action.event)) {
-            this._logger?.logReaction(this.id, ReactionType.resolve, null, action.event);
             return true;
         }
         return false;
@@ -190,11 +190,9 @@ export class BThread {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;
         // rejection of an extend
         if(this._pendingExtendRecord.delete(action.event)) { 
-            this._logger?.logReaction(this.id, ReactionType.reject);
         } 
         // rejection of a pending promise
         else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
-            this._logger?.logReaction(this.id, ReactionType.reject, null, action.event);
             this._thread.throw({event: action.event, error: action.payload});
             this._progressBThread(action.event, action.payload, true);
         }

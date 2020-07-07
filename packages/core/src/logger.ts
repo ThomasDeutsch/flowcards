@@ -1,12 +1,12 @@
 import { Action, ActionType } from './action';
 import { Reaction, ReactionType } from './reaction';
-import { EventMap, FCEvent } from './event';
+import { FCEvent } from './event';
 import { BThreadKey } from './bthread';
 
 interface LoggedAction extends Action {
     actionIndex: number;
-    pendingDuration?: number;
     reactingBThreads: Set<string>;
+    cancelledPromises: FCEvent[];
 }
 
 export interface BThreadInfo {
@@ -26,12 +26,11 @@ export interface Log {
 export class Logger {
     private _actions: LoggedAction[] = [];
     private _bThreadInfoById: Record<string, BThreadInfo> = {};
-    private _pendingDurationByEvent: EventMap<number> = new EventMap();
 
     public constructor() {}
 
     private _getActionIndex(): number {
-        return this._actions.length || 0;
+        return this._actions.length-1;
     }
 
     public addThreadInfo(id: string, title?: string) {
@@ -39,29 +38,21 @@ export class Logger {
     }
 
     public logAction(action: Action): void {
-        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()});
+        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex(), cancelledPromises: []});
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[] | null, event?: FCEvent): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[]): void {
         const actionIndex = this._getActionIndex();
-        this._actions[this._actions.length-1].reactingBThreads.add(threadId);
+        this._actions[actionIndex].reactingBThreads.add(threadId);
         const reaction: Reaction = {
             type: type,
             actionIndex: actionIndex,
-            cancelledPromises: cancelledPromises ? cancelledPromises : undefined
+            cancelledPromises: cancelledPromises
         };
-        if(type === ReactionType.promise && event) {
-            this._pendingDurationByEvent.set(event, new Date().getTime());
+        if(cancelledPromises && cancelledPromises.length > 0) {
+            this._actions[actionIndex].cancelledPromises = [...this._actions[actionIndex].cancelledPromises, ...cancelledPromises];
         }
-        else if(event && (type === ReactionType.resolve || type === ReactionType.reject)) {
-            const resolveTime = new Date().getTime();
-            const duration = resolveTime - (this._pendingDurationByEvent.get(event) || resolveTime);
-            this._pendingDurationByEvent.delete(event);
-            this._actions[this._actions.length-1].pendingDuration = duration;
-        }
-        if(type !== ReactionType.promise) {
-            this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
-        }
+        this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
     public getLog(): Log {
@@ -74,7 +65,6 @@ export class Logger {
 
     public resetLog(): void {
         this._actions = [];
-        this._bThreadInfoById = {};
-        this._pendingDurationByEvent = new EventMap();   
+        this._bThreadInfoById = {};  
     }
 }

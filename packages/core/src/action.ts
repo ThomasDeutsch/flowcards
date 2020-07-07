@@ -20,6 +20,7 @@ export interface Action {
     payload?: any;
     cacheEnabled?: boolean;
     onlyRequestWhenWaitedFor?: boolean;
+    pendingDuration?: number;
 }
 
 
