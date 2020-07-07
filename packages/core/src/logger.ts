@@ -6,7 +6,7 @@ import { BThreadKey } from './bthread';
 interface LoggedAction extends Action {
     stepNr: number;
     pendingDuration?: number;
-    reactingBThreads: Record<string, string>;
+    reactingBThreads: Set<string>;
 }
 
 export interface BThreadInfo {
@@ -39,11 +39,12 @@ export class Logger {
     }
 
     public logAction(action: Action): void {
-        this._actions.push({...action, reactingBThreads: {}, stepNr: this._getStepNr()});
+        this._actions.push({...action, reactingBThreads: new Set(), stepNr: this._getStepNr()});
     }
 
     public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[] | null, event?: FCEvent): void {
         const stepNr = this._getStepNr();
+        this._actions[this._actions.length-1].reactingBThreads.add(threadId);
         const reaction: Reaction = {
             type: type,
             stepNr: stepNr,

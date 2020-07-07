@@ -81,7 +81,6 @@ export class BThread {
         this._currentArguments = args;
         this._thread = this._generatorFn(...this._currentArguments);
         this._processNextBid();
-        this._logger?.logReaction(this.id, ReactionType.init);
     }
 
      // --- private
