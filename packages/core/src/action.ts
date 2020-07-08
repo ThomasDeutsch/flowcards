@@ -1,11 +1,16 @@
 import { BidsForBidType, Bid } from "./bid";
 import { FCEvent, EventMap } from './event';
 import { getGuardForWaits } from './guard';
+import * as utils from './utils';
+import { BThreadDictionary } from './update-loop';
+import { EventCache } from "./event-cache";
+
 
 
 export enum ActionType {
     initial = "initial",
     requested = "requested",
+    promise = "promise",
     dispatched = "dispatched",
     resolved = "resolved",
     rejected = "rejected",
@@ -51,7 +56,7 @@ function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
 }
 
 
-export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
+export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, eventCache: EventCache, requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
     if(!requestBids) return undefined;
     const events = requestBids.allEvents;
     if(!events) return undefined;
@@ -59,14 +64,26 @@ export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?
     while(selectedEvent) {
         const bids = requestBids.get(selectedEvent);
         const bid = getBid(bids, waitBids);
-        if(bid) return {
-            type: ActionType.requested,
-            threadId: bid.threadId,
-            event: bid.event,
-            payload: bid.payload,
-            cacheEnabled: bid.cacheEnabled,
-            onlyRequestWhenWaitedFor: bid.onlyRequestWhenWaitedFor
-        };
+        if(bid) {
+            let isPromise = false;
+            if (typeof bid.payload === "function") {
+                bid.payload = bid.payload(eventCache.get(bid.event)?.value);
+            } else if(bid.payload === undefined) {
+                bid.payload = eventCache.get(bid.event)?.value;
+            }
+            if(utils.isThenable(bid.payload) && bThreadDictionary[bid.threadId]) {
+                bThreadDictionary[bid.threadId].addPendingRequest(bid.event, bid.payload);
+                isPromise = true;
+            }
+            return {
+                type: isPromise ? ActionType.promise : ActionType.requested,
+                threadId: bid.threadId,
+                event: bid.event,
+                payload: bid.payload,
+                cacheEnabled: bid.cacheEnabled,
+                onlyRequestWhenWaitedFor: bid.onlyRequestWhenWaitedFor
+            };
+        } 
         [selectedEvent, rest] = getRandom(rest);
     }
     return undefined; 

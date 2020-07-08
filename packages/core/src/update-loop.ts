@@ -72,35 +72,23 @@ function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
 
 
 function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
-    if(action.type === ActionType.initial) return undefined;
     // requested
     if(action.type === ActionType.requested) {
-        if (typeof action.payload === "function") {
-            action.payload = action.payload(eventCache.get(action.event)?.value);
-        } else if(action.payload === undefined) {
-            action.payload = eventCache.get(action.event)?.value;
-        }
-        if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
-            bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
-            return;
-        }
         const nextAction = extendAction(allBids, bThreadDictionary, action);
         if(!nextAction) return; // was extended
         if(nextAction.cacheEnabled === true) setEventCache(eventCache, nextAction.event, nextAction.payload);
         bThreadDictionary[nextAction.threadId].progressRequest(nextAction); // request got resolved
         advanceWaits(allBids, bThreadDictionary, nextAction);
-        return;
     }
     // dispatched
-    if(action.type === ActionType.dispatched) {
+    else if(action.type === ActionType.dispatched) {
         const nextAction = extendAction(allBids, bThreadDictionary, action);
         if(!nextAction) return; // was extended
         const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
-        if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name)
-        return;
+        if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
     }
     // resolved
-    if(action.type === ActionType.resolved) {
+    else if(action.type === ActionType.resolved) {
         if(bThreadDictionary[action.threadId]) {
             const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
             if(isResolved === false) return;
@@ -110,14 +98,12 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         if(nextAction.cacheEnabled === true) setEventCache(eventCache, nextAction.event, nextAction.payload);
         bThreadDictionary[action.threadId].progressRequest(nextAction); // request got resolved
         advanceWaits(allBids, bThreadDictionary, nextAction); 
-        return;
     }
     // rejected
-    if(action.type === ActionType.rejected) {
+    else if(action.type === ActionType.rejected) {
         if(bThreadDictionary[action.threadId]) {
             bThreadDictionary[action.threadId].rejectPending(action);
         }
-        return;
     }
 }
 
@@ -180,7 +166,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
         // not a replay
         const bids = getAllBids(scaffold());
-        action = action || getNextActionFromRequests(bids.request, bids.wait);
+        action = action || getNextActionFromRequests(bThreadDictionary, eventCache, bids.request, bids.wait);
         if (action) {
             logger?.logAction(action);
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
