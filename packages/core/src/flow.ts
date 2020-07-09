@@ -7,7 +7,7 @@ export type FlowContext = {
     description?: string;
     key?: BThreadKey;
     gen: GeneratorFn;
-    args: any;
+    props: any;
 };
 
 interface FlowInfo {
@@ -15,16 +15,16 @@ interface FlowInfo {
     title?: string;
 }
 
-export function flow<T extends GeneratorFn>(info: FlowInfo | null, gen: T): (generatorArguments: Parameters<T>, flowKey?: BThreadKey) => FlowContext {
+export function flow<T extends GeneratorFn>(info: FlowInfo | null, gen: T): (generatorProps?: Parameters<T>[0], flowKey?: BThreadKey) => FlowContext {
     const context: FlowContext = {
         id: info?.id || uuidv4(),
         title: info?.title,
         key: undefined,
         gen: gen,
-        args: undefined
+        props: undefined
     };
-    return (args: Parameters<T>, key?: BThreadKey): FlowContext => {
-        context.args = args;
+    return (generatorProps?: Parameters<T>[0], key?: BThreadKey): FlowContext => {
+        context.props = generatorProps;
         context.key = key;
         return context;
     }

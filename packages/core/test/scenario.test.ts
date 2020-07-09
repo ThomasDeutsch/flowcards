@@ -15,7 +15,7 @@ test("testScenarios can be used without updateCb and logger", done => {
     })
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     });
 });
 
@@ -30,8 +30,8 @@ test("there is be a dispatch-function for every waiting event", () => {
     })
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, (scenario) => {
         expect(scenario.dispatch('eventOne')).toBeDefined();
         expect(scenario.dispatch('eventTwo')).toBeDefined();
@@ -69,8 +69,8 @@ test("if a request is cancelled, it will not trigger the same event-name after r
     });
     
     loggerScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, dispatchedActions);
 });
 
@@ -82,7 +82,7 @@ test("isPending will show what events are pending", () => {
 
     testScenarios((enable, cache) => {
         cache('count');
-        enable(thread1([]));
+        enable(thread1());
     }, ({event, isPending}) => {
         expect(isPending("count")).toEqual(true);
         expect(event("count")).toBeUndefined();
@@ -95,7 +95,7 @@ test("isPending will accept a key as a second argument", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({event, isPending}) => {
         expect(isPending({name: "count", key: 1})).toEqual(true);
         expect(event({name: "count", key: 1})).toBeUndefined();

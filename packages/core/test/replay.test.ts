@@ -18,7 +18,7 @@ test("an array of actions can be used as a replay", done => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch, log}) => {
         if(x === 0) {
             x = 1;
@@ -41,7 +41,6 @@ test("an array of actions can be used as a replay", done => {
             ]);
         } else {
             expect(log?.latestAction.event.name).toBe("C");
-            expect(log?.latestReactionByThreadId).toHaveProperty("thread1");
         }
 
     });

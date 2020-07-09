@@ -7,13 +7,12 @@ import { ActionDispatch} from './update-loop';
 import { EventMap, reduceEventMaps, FCEvent, toEvent } from './event';
 
 export type BTGen = Generator<Bid | Bid[], void, any>;
-export type GeneratorFn = (...args: any[]) => BTGen;
-type SetState = (newValue: any) => void;
+export type GeneratorFn = (props: Record<string, any>) => BTGen;
 export type BThreadKey = string | number;
 
 export interface BTContext {
     key?: BThreadKey;
-    setState: SetState;
+    setSection: (newValue: string) => void;
 }
 
 export interface ExtendResult {
@@ -31,7 +30,7 @@ export enum ExtendResultType {
 type IsWaitingFunction = (event: string | FCEvent) => boolean
 export interface BThreadState {
     waits?: FCEvent[];
-    current?: any;
+    section?: string;
     isWaitingFor: IsWaitingFunction;
 }
 
@@ -39,7 +38,7 @@ export class BThread {
     private readonly _logger?: Logger;
     private readonly _dispatch: ActionDispatch;
     private readonly _generatorFn: GeneratorFn;
-    private _currentArguments: any[];
+    private _currentProps: Record<string, any>;
     private _thread: BTGen;
     private _currentBids?: BThreadBids;
     private _nextBid?: any;
@@ -52,18 +51,18 @@ export class BThread {
             const fcevent = toEvent(event);
             return !!this.waits?.some(e => (e.name === fcevent.name) && (e.key === fcevent.key) );
         },
-        current: undefined
+        section: undefined
     };
     public get state() {
         return this._state;
     }
     private _getBTContext(): BTContext {
-        const setState = (value: any) => {
-            this._state.current = value;
+        const setSection = (value: string) => {
+            this._state.section = value;
         }
         return {
             key: this.key,
-            setState: setState
+            setSection: setSection
         };
     }
     public readonly id: string;
@@ -71,15 +70,15 @@ export class BThread {
     public readonly key?: BThreadKey;
 
 
-    public constructor(id: string, generatorFn: GeneratorFn, args: any[], dispatch: ActionDispatch, key?: BThreadKey, logger?: Logger, title?: string) {
+    public constructor(id: string, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, key?: BThreadKey, logger?: Logger, title?: string) {
         this.id = id;
         this.title = title;
         this.key = key;
         this._dispatch = dispatch;
         this._generatorFn = generatorFn.bind(this._getBTContext());
         this._logger = logger;
-        this._currentArguments = args;
-        this._thread = this._generatorFn(...this._currentArguments);
+        this._currentProps = props;
+        this._thread = this._generatorFn(this._currentProps);
         this._processNextBid();
     }
 
@@ -142,16 +141,17 @@ export class BThread {
         return {...this._currentBids, [BidType.pending]: pendingEvents};
     }
 
-    public resetOnArgsChange(nextArguments: any): void {
-        if (utils.areInputsEqual(this._currentArguments, nextArguments)) return;
+    public resetOnPropsChange(nextProps: any): void {
+        const changedProps = utils.getChangedProps(this._currentProps, nextProps);
+        if (changedProps === undefined) return;
         // reset
         this._pendingExtendRecord = new EventMap();
-        this._currentArguments = nextArguments;
+        this._currentProps = nextProps;
         this._isCompleted = false;
-        delete this._state.current;
-        this._thread = this._generatorFn(...this._currentArguments);
+        delete this._state.section;
+        this._thread = this._generatorFn(this._currentProps);
         const cancelledPending = this._processNextBid();
-        this._logger?.logReaction(this.id, ReactionType.reset, cancelledPending);
+        this._logger?.logReaction(this.id, ReactionType.reset, cancelledPending, changedProps);
     }
 
     public addPendingRequest(event: FCEvent, promise: Promise<any>): void {       
@@ -189,10 +189,9 @@ export class BThread {
     public rejectPending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;
         // rejection of an extend
-        if(this._pendingExtendRecord.delete(action.event)) { 
-        } 
+        const isExtendDeleted = this._pendingExtendRecord.delete(action.event);
         // rejection of a pending promise
-        else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
+        if (!isExtendDeleted && this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
             this._thread.throw({event: action.event, error: action.payload});
             this._progressBThread(action.event, action.payload, true);
         }

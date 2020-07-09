@@ -20,8 +20,8 @@ test("a trigger is a request, that is only selected if another thread is waiting
     });
 
     testScenarios((enable) => {
-        enable(waitingThread([]));
-        enable(requestingThread([]));
+        enable(waitingThread());
+        enable(requestingThread());
     }, ({log})=> {
         expect(hasAdvancedFirstTrigger).toBe(true);
         expect(hasAdvancedSecondTrigger).toBe(false);
@@ -47,9 +47,9 @@ test("a trigger is a request, that can be blocked.", () => {
     });
 
     testScenarios((enable) => {
-        enable(waitingThread([]));
-        enable(requestingThread([]));
-        enable(blockingThread([]));
+        enable(waitingThread());
+        enable(requestingThread());
+        enable(blockingThread());
     }, ()=> {
         expect(hasAdvancedTrigger).toBe(false);
     });
@@ -77,9 +77,9 @@ test("a trigger needs to fulfill the wait-guard validation.", () => {
     });
 
     testScenarios((enable) => {
-        enable(waitingThread([]));
-        enable(requestingThread1([]));
-        enable(requestingThread2([]));
+        enable(waitingThread());
+        enable(requestingThread1());
+        enable(requestingThread2());
     }, ()=> {
         expect(hasAdvancedTrigger1).toBe(true);
         expect(hasAdvancedTrigger2).toBe(false);

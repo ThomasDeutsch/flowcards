@@ -5,9 +5,6 @@ export type EventCache = EventMap<CachedItem<any>>;
 export interface CachedItem<T> {
     value: T;
     history: T[];
-    // initial: () => T;
-    // reset: () => void;
-    // set: (payload: T) => void;
 }
 
 export function setEventCache<T>(eventCache: EventCache, event: FCEvent, payload?: T): void {
@@ -18,10 +15,7 @@ export function setEventCache<T>(eventCache: EventCache, event: FCEvent, payload
         if(val === undefined) {
             eventCache.set(event, {
                 value: payload, 
-                history: [payload],
-                // set: (payload: any) => setEventCache(eventCache, event, payload),
-                // reset: function() { setEventCache(eventCache, event, this.history[0]) },
-                // initial: function() { return this.history[0] },
+                history: [payload]
             });
         } else {
             val.value = payload;

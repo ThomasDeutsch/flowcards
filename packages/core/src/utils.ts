@@ -1,16 +1,18 @@
 // EQUALITY / DUCK-TYPING --------------------
 
-export function areInputsEqual(nextDeps: any[], prevDeps?: any[]): boolean {
-    if (prevDeps === undefined || prevDeps === null) {
-        return false;
-    }
-    for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
-        if (Object.is(nextDeps[i], prevDeps[i])) {
-            continue;
+export function getChangedProps(nextDeps: Record<string, any>, prevDeps?: Record<string, any>): string[] | undefined {
+    if ((prevDeps === undefined || prevDeps === null)) {
+        if(prevDeps === nextDeps) return undefined;
+        return Object.keys(nextDeps);
+    } 
+    const result = {...prevDeps};
+    for (const key in nextDeps) {
+        if((key in prevDeps) && Object.is(nextDeps[key], prevDeps[key])) {
+            result.delete(key);
         }
-        return false;
     }
-    return true;
+    const keys = Object.keys(result);
+    return keys.length > 0 ? keys : undefined;
 }
 
 export function isThenable(p?: any): boolean { // promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md

@@ -12,8 +12,8 @@ test("keys can be a string or a number", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({dispatch})=> {
         expect(dispatch({name: 'A', key: "1"})).toBeDefined();
         expect(dispatch({name: 'A', key: 1})).toBeUndefined();
@@ -46,10 +46,10 @@ test("an event with a key can be blocked.", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
-        enable(blockingThread([]));
-        enable(requestingThread([]));
+        enable(thread1());
+        enable(thread2());
+        enable(blockingThread());
+        enable(requestingThread());
     }, ()=> {
         expect(advancedKey1).toEqual(false);
         expect(advancedKey2).toEqual(true);
@@ -82,10 +82,10 @@ test("a request without a key will advance all waiting threads ( with key or not
     });
 
     testScenarios((enable) => {
-        enable(waitThreadWithKey1([]));
-        enable(waitThreadWithKey2([]));
-        enable(waitThreadWithoutKey([]));
-        enable(requestThread([]));
+        enable(waitThreadWithKey1());
+        enable(waitThreadWithKey2());
+        enable(waitThreadWithoutKey());
+        enable(requestThread());
     }, ()=> {
         expect(advancedWaitNoKey).toEqual(true);
         expect(advancedWait1).toEqual(true);
@@ -119,10 +119,10 @@ test("a request with a key, will only advance the matching wait with the same ke
     });
 
     testScenarios((enable) => {
-        enable(waitThreadWithKey1([]));
-        enable(waitThreadWithKey2([]));
-        enable(waitThreadWithoutKey([]));
-        enable(requestThread([]));
+        enable(waitThreadWithKey1());
+        enable(waitThreadWithKey2());
+        enable(waitThreadWithoutKey());
+        enable(requestThread());
     }, ()=> {
         expect(advancedWait1).toEqual(true);
         expect(advancedWait2).toEqual(false);
@@ -142,8 +142,8 @@ test("an event cache vor an event will contain keyed values as well", () => {
     })
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({event})=> {
         expect(event({name: 'A', key: "1"})?.value).toEqual('a value for 1');
         expect(event({name: 'A', key: 2})?.value).toEqual('a value for 2');
@@ -163,8 +163,8 @@ test("if an event cache has keyed values, they will be replaced by a request wit
     })
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({event})=> {
         expect(event({name: 'A', key: "1"})?.value).toEqual('replacement value');
         expect(event({name: 'A', key: 2})?.value).toEqual('replacement value');

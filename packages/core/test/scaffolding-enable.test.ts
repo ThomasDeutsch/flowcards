@@ -56,7 +56,7 @@ test("if no key is provided, the default key value is undefined", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread([]));
+        enable(thread());
     });
 
     expect(receivedKeyA).toBeUndefined(); 
@@ -71,7 +71,7 @@ test("enable will return the current thread-state (check waits)", () => {
     });
 
     testScenarios((enable) => {
-        threadState = enable(thread([]));
+        threadState = enable(thread());
         expect(threadState?.isWaitingFor('A')).toBe(true);
     });
 });
@@ -81,12 +81,12 @@ test("enable will return the current thread-state (state value)", () => {
     let threadState: BThreadState;
 
     const thread = flow(null, function* (this: BTContext) {
-        this.setState('my state value');
+        this.setSection('my state value');
         yield bp.wait('A');
     });
 
     testScenarios((enable) => {
-        threadState = enable(thread([]));
-        expect(threadState?.current).toEqual('my state value');
+        threadState = enable(thread());
+        expect(threadState?.section).toEqual('my state value');
     });
 });

@@ -17,7 +17,7 @@ test("a thread gets reset, when the arguments change", () => {
     }); 
 
     testScenarios((enable) => {
-        const state = enable(threadA([]));
+        const state = enable(threadA());
         enable(threadB([state.isWaitingFor('B')]));
     });
 
@@ -30,18 +30,18 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
     let receivedValue;
     
     const threadA = flow(null, function* (this: BTContext) {
-        this.setState('foo');
+        this.setSection('foo');
         yield bp.request('A');
     });
 
     const threadB = flow(null, function* (stateFromThreadA: BThreadState) {
         initCount++;
         yield bp.wait('A');
-        receivedValue = stateFromThreadA.current;
+        receivedValue = stateFromThreadA.section;
     })
 
     testScenarios((enable) => {
-        const state = enable(threadA([]));
+        const state = enable(threadA());
         enable(threadB([state]));  // instead of state.current, we will pass state.
     });
 

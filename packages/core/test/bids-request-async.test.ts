@@ -15,7 +15,7 @@ test("A promise can be requested and will create a pending-event", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({log, isPending}) => {
         expect(isPending('A')).toBeTruthy();
         expect(log?.latestAction.event).toEqual({name: 'A'});
@@ -31,7 +31,7 @@ test("A promise-function can be requested and will create a pending-event", () =
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, (({log, isPending}) => {
         expect(isPending('A')).toBeTruthy();
         expect(log?.latestAction.event).toEqual({name: 'A'});
@@ -62,9 +62,9 @@ test("if multiple promises resolve at the same time, only one is selected", (don
     });
 
     testScenarios((enable) => {
-        threadState = enable(thread1([]));
-        enable(thread2([]));
-        enable(thread3([]));
+        threadState = enable(thread1());
+        enable(thread2());
+        enable(thread3());
     }, ({dispatch}) => {
         if(dispatch('fin')) {
             expect(progressed2).not.toBe(progressed3);

@@ -25,9 +25,9 @@ test("a wait is not advanced, if the guard returns false", () => {
     });
 
     testScenarios((enable) => {
-        enable(threadA([]));
-        enable(threadB([]));
-        enable(threadC([]));
+        enable(threadA());
+        enable(threadB());
+        enable(threadC());
     }, ({log}) => {
         expect(requestAdvanced).toBe(true);
         expect(waitBAdvanced).toBe(false);
@@ -58,9 +58,9 @@ test("an extend is not applied, if the guard returns false.", () => {
     });
 
     testScenarios((enable) => {
-        enable(threadA([]));
-        enable(threadB([]));
-        enable(threadC([]));
+        enable(threadA());
+        enable(threadB());
+        enable(threadC());
     }, ({log}) => {
         expect(extendAdvanced).toBe(false);
         expect(waitAdvanced).toBe(true);
@@ -85,8 +85,8 @@ test("a block can be guarded", () => {
     })
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(blockingThread([]));
+        enable(requestingThread());
+        enable(blockingThread());
     })
 });
 
@@ -102,8 +102,8 @@ test("a block-guard will be combined with a other guards", () => {
     });
 
     testScenarios((enable) => {
-        enable(blockingThread([]));
-        enable(waitingThread([]));
+        enable(blockingThread());
+        enable(waitingThread());
     }, ({dispatch}) => {
         if(dispatch('A')) {
             expect(dispatch('A', 1300)).toBeUndefined();
@@ -123,8 +123,8 @@ test("a block-guard can be keyed", () => {
     })
 
     testScenarios((enable) => {
-        enable(blockingThread([]));
-        enable(waitingThread([]));
+        enable(blockingThread());
+        enable(waitingThread());
     }, ({dispatch}) => {
         if(dispatch('A')) {
             expect(dispatch('A', 1300)).toBeDefined();

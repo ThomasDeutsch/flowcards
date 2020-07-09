@@ -14,8 +14,8 @@ test("the log will return an latestAction Object", () => {
     })
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({log}) => {
         expect(log?.latestAction.event.name).toEqual('eventOne');
     });
@@ -32,8 +32,8 @@ test("the log will have a Map of all active threads", () => {
     })
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({log}) => {
         expect(log?.bThreadInfoById.thread1.title).toEqual('myThread1');
         expect(log?.bThreadInfoById.thread2.title).toEqual('myThread2');

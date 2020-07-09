@@ -8,7 +8,7 @@ test("a set is a request, that will be cached. ", () => {
     })
 
     testScenarios((enable, ) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({event}) => {
         expect(event("count").value).toEqual(2);
     });
@@ -22,7 +22,7 @@ test("when a promise resolves, the cache gets updated", (done) => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch, event}) => {
         if(dispatch('fin')) {
             expect(event('testevent').value).toEqual("resolved value");
@@ -42,8 +42,8 @@ test("if there are multiple sets at the same time, one will be requested first (
     });
 
     testScenarios((enable) => {
-        enable(threadLow([]));
-        enable(threadHigh([]));
+        enable(threadLow());
+        enable(threadHigh());
     }, ({event}) => {
         expect(event("count").value).toEqual(2);
     });
@@ -60,8 +60,8 @@ test("sets can be extended", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread([]));
-        enable(thread2([]));
+        enable(thread());
+        enable(thread2());
     }, ({event}) => {
         expect(event('count').value).toEqual(4);
     });

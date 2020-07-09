@@ -6,7 +6,7 @@ import { BThreadKey } from './bthread';
 interface LoggedAction extends Action {
     actionIndex: number;
     reactingBThreads: Set<string>;
-    cancelledPromises: FCEvent[];
+    cancelledPromises?: FCEvent[];
 }
 
 export interface BThreadInfo {
@@ -27,8 +27,6 @@ export class Logger {
     private _actions: LoggedAction[] = [];
     private _bThreadInfoById: Record<string, BThreadInfo> = {};
 
-    public constructor() {}
-
     private _getActionIndex(): number {
         return this._actions.length-1;
     }
@@ -38,19 +36,20 @@ export class Logger {
     }
 
     public logAction(action: Action): void {
-        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex(), cancelledPromises: []});
+        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()});
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[]): void {
+    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[], changedProps?: string[]): void {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(threadId);
         const reaction: Reaction = {
             type: type,
             actionIndex: actionIndex,
-            cancelledPromises: cancelledPromises
+            cancelledPromises: cancelledPromises,
+            changedProps: changedProps
         };
         if(cancelledPromises && cancelledPromises.length > 0) {
-            this._actions[actionIndex].cancelledPromises = [...this._actions[actionIndex].cancelledPromises, ...cancelledPromises];
+            this._actions[actionIndex].cancelledPromises = [...(this._actions[actionIndex].cancelledPromises || []), ...cancelledPromises];
         }
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }

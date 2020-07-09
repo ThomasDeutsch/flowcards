@@ -9,13 +9,11 @@ import { EventCache, setEventCache, CachedItem } from './event-cache'
 import { FlowContext } from './flow';
 
 
-type EnableThread = ({id, title, gen, args, key}: FlowContext) => BThreadState;
+type EnableThread = ({id, title, gen, props, key}: FlowContext) => BThreadState;
 type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined; // todo: replace any with generic type
 export type StagingFunction = (enable: EnableThread, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
-
-
 type GetIsPending =  (event: FCEvent | string) => boolean;
 export type UpdateLoopFunction = (actionQueue?: Action[] | undefined) => ScenariosContext;
 
@@ -116,13 +114,13 @@ function setupScaffolding(
     logger?: Logger
 ) {
     const bids: BThreadBids[] = [];
-    function enableBThread({id, title, gen, args, key}: FlowContext): BThreadState {
+    function enableBThread({id, title, gen, props, key}: FlowContext): BThreadState {
         id = createBThreadId(id, key);
         if (bThreadDictionary[id]) {
-            bThreadDictionary[id].resetOnArgsChange(args);
+            bThreadDictionary[id].resetOnPropsChange(props);
         } else {
             logger?.addThreadInfo(id, title);
-            bThreadDictionary[id] = new BThread(id, gen, args, dispatch, key, logger, title);
+            bThreadDictionary[id] = new BThread(id, gen, props, dispatch, key, logger, title);
         }
         const threadBids = bThreadDictionary[id].getBids();
         bids.push(threadBids);

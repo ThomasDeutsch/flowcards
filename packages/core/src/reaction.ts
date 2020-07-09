@@ -9,4 +9,5 @@ export interface Reaction {
     actionIndex: number;
     type: ReactionType;
     cancelledPromises?: FCEvent[];
+    changedProps?: string[];
 }

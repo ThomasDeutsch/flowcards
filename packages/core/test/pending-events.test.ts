@@ -21,8 +21,8 @@ test("a pending event can not be requested", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread2([]));
-        enable(thread1([]));
+        enable(thread2());
+        enable(thread1());
     }, ({log, isPending}) => {
         expect(isPending('A')).toBeTruthy();
         expect(log?.latestAction.threadId).toBe("thread1");
@@ -42,8 +42,8 @@ test("a pending event can not be extended", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({log, isPending}) => {
         expect(isPending('A')).toBeTruthy();
         expect(log?.latestAction.threadId).toBe("thread1");
@@ -63,8 +63,8 @@ test("a pending event resolves can not be blocked", done => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({log, dispatch}) => {
         if(dispatch('fin')) {
             expect(log?.latestAction.threadId).toBe("thread1");
@@ -86,8 +86,8 @@ test("pending events can not be dispatched", done => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({dispatch}) => {
             expect(dispatch("A")).toBeUndefined();
             done();
@@ -102,7 +102,7 @@ test("After a pending event is resolved, a BThread that has requested this event
     });
 
     testScenarios((enable) => {
-        enable(threadOne([]));
+        enable(threadOne());
     });
 });
 
@@ -121,8 +121,8 @@ test("If one pending-event is resolved, other promises for this event are cancel
     })
 
     testScenarios((enable) => {
-        enable(threadOne([]));
-        enable(thread2([]));
+        enable(threadOne());
+        enable(thread2());
     });
 });
 
@@ -148,8 +148,8 @@ test("rejected pending events will not progress waiting BThreads", done => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     });
 });
 
@@ -169,8 +169,8 @@ test("if a pending event is rejected, the lower thread will use its request inst
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     });
 });
 
@@ -189,8 +189,8 @@ test("a pending event can not be requested - second example", (done) => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
         count++;
     }, ({dispatch}) => {
         if(dispatch('FIN')) {
@@ -219,8 +219,8 @@ test("if a threads waits for an already existing pending-event, it will also pro
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, ({log}) => {
         if(log?.latestAction.event.name === "fin") {
             expect(1).toBeTruthy();
@@ -246,7 +246,7 @@ test("if a threads extends an already existing pending-event, it will trigger th
     });
     
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     });
 });

@@ -35,7 +35,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
     });
 
     testLoop((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     });
 });
 
@@ -69,7 +69,7 @@ describe('dispatched action', () => {
         });
 
         testLoop((enable) => {
-            enable(thread1([]));
+            enable(thread1());
         });    
     });
 });

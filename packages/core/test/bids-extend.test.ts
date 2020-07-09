@@ -25,8 +25,8 @@ test("requests can be extended", () => {
     })
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread3([]));
+        enable(thread1());
+        enable(thread3());
         setupCount++;
     }, ({isPending}) => {
         expect(setupCount).toEqual(2);
@@ -58,9 +58,9 @@ test("if the extend has a payload, all threads will continue with that payload",
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
-        enable(thread3([]));
+        enable(thread1());
+        enable(thread2());
+        enable(thread3());
         setupCount++;
     }, () => {
         expect(setupCount).toEqual(2);
@@ -92,9 +92,9 @@ test("the extend payload can be a function.", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
-        enable(thread3([]));
+        enable(thread1());
+        enable(thread2());
+        enable(thread3());
         setupCount++;
     }, ({log}) => {
         expect(setupCount).toEqual(2);
@@ -126,9 +126,9 @@ test("if the extend payload is a promise, a pending-event is created.", done => 
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
-        enable(thread3([]));
+        enable(thread1());
+        enable(thread2());
+        enable(thread3());
         setupCount++;
     }, ({dispatch}) => {
         if(dispatch('Fin')) {
@@ -168,10 +168,10 @@ test("if an extend is not applied, than the next extend will get the event", () 
     });
 
     testScenarios((enable) => {
-        enable(requestThread([]));
-        enable(waitThread([]));
-        enable(extendPriorityLowThread([]));
-        enable(extendPriorityHighThread([]));
+        enable(requestThread());
+        enable(waitThread());
+        enable(extendPriorityLowThread());
+        enable(extendPriorityHighThread());
     }, ({log, isPending}) => {
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
@@ -198,8 +198,8 @@ test("if an extended thread completed, without resolving or rejecting the event,
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread3([]));
+        enable(thread1());
+        enable(thread3());
         setupCount++;
     }, ({isPending}) => {
         expect(isPending('A')).toBeTruthy();
@@ -229,9 +229,9 @@ test("extends will receive a value (like waits)", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
-        enable(thread3([]));
+        enable(thread1());
+        enable(thread2());
+        enable(thread3());
     }, ({isPending}) => {
         expect(thread1Advanced).toBe(false);
         expect(extendedValue.value).toBe(1000);
@@ -252,8 +252,8 @@ test("extends will extend requests", () => {
     }); 
 
     testScenarios((enable) => {
-        enable(thread1([]));
-        enable(thread2([]));
+        enable(thread1());
+        enable(thread2());
     }, () => {
         expect(extended.value).toEqual(1000);
     });
@@ -278,9 +278,9 @@ test("the last extend that is enabled has the highest priority", () => {
     });
 
     testScenarios((enable) => {
-        enable(requestThread([]));
-        enable(extendThread1([]));
-        enable(extendThread2([]));
+        enable(requestThread());
+        enable(extendThread1());
+        enable(extendThread2());
     });
 
     expect(advancedThread1).toBeFalsy();
@@ -298,8 +298,8 @@ test("an extend will create a pending event", () => {
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
     }, ({isPending}) => {
         expect(isPending('A')).toBeTruthy();
     });
@@ -318,8 +318,8 @@ test("an extend will wait for the pending-event to finish before it extends.", (
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
     }, ({isPending}) => {
         expect(isPending('A')).toBeTruthy();
     });
@@ -345,9 +345,9 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
-        enable(waitingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
+        enable(waitingThread());
     }, ({dispatch}) => {
         if(dispatch('fin')) {
             done();
@@ -375,9 +375,9 @@ test("an extend can be rejected. This will remove the pending event", (done) => 
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
-        enable(waitingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
+        enable(waitingThread());
     }, ({dispatch}) => {
         if(dispatch('fin')) {
             done();
@@ -398,8 +398,8 @@ test("an extend will keep the event-pending if the BThread with the extend compl
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
     }, ({isPending}) => {
         expect(isPending('A')).toBeTruthy();
         expect(requestingThreadProgressed).toBe(false);
@@ -431,10 +431,10 @@ test("multiple extends will resolve after another. After all extends complete, t
     });
     
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
-        enable(extendingThreadHigherPriority([])); // this BThread is enabled after the first extendingThread, giving it a higher priority
-        enable(waitingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
+        enable(extendingThreadHigherPriority()); // this BThread is enabled after the first extendingThread, giving it a higher priority
+        enable(waitingThread());
     }, ({dispatch}) => {
         if(dispatch('fin')) {
             done();
@@ -468,10 +468,10 @@ test("if the last extend rejects, the event will resolve to its starting value."
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
-        enable(extendingThreadHigherPriority([])); // this BThread is enabled after the first extendingThread, giving it a higher priority
-        enable(waitingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
+        enable(extendingThreadHigherPriority()); // this BThread is enabled after the first extendingThread, giving it a higher priority
+        enable(waitingThread());
     }, ({dispatch}) => {
         if(dispatch('fin')) {
             done();
@@ -505,10 +505,10 @@ test("if the previous extend rejects, the next extend will get the initial value
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(extendingThread([]));
-        enable(extendingThreadHigherPriority([])); // this BThread is enabled after the first extendingThread, giving it a higher priority
-        enable(waitingThread([]));
+        enable(requestingThread());
+        enable(extendingThread());
+        enable(extendingThreadHigherPriority()); // this BThread is enabled after the first extendingThread, giving it a higher priority
+        enable(waitingThread());
     }, ({dispatch}) => {
         if(dispatch('fin')) {
             done();

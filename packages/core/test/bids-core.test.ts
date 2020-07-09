@@ -7,9 +7,9 @@ import { flow } from '../src/flow';
 
 // REQUESTS & WAITS
 //-------------------------------------------------------------------------
-
 test("a requested event that is not blocked will advance", () => {
     let hasAdvanced = false;
+    
 
     const requestingThread = flow({id: 'thread1'}, function*() {
         yield bp.request("A");
@@ -17,7 +17,7 @@ test("a requested event that is not blocked will advance", () => {
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
+        enable(requestingThread());
     }, ({log})=> {
         expect(hasAdvanced).toBe(true);
         expect(log?.latestAction.event.name).toBe("A");
@@ -39,8 +39,8 @@ test("a request will also advance waiting threads", () => {
     });
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(waitingThread([]));
+        enable(requestingThread());
+        enable(waitingThread());
     }, ({log}) => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(true);
@@ -61,8 +61,8 @@ test("waits will return the value that has been requested", () => {
     });
 
     testScenarios((enable) => {
-        enable(requestThread([]));
-        enable(receiveThread([]));
+        enable(requestThread());
+        enable(receiveThread());
     }, ({log}) => {
         expect(receivedValue).toBe(1000);
         expect(log?.latestAction.event.name).toBe("A");
@@ -88,9 +88,9 @@ test("multiple requests will return an array of [eventId, value].", () => {
     });
 
     testScenarios((enable) => {
-        enable(requestThread([]));
-        enable(receiveThreadA([]));
-        enable(receiveThreadB([]));
+        enable(requestThread());
+        enable(receiveThreadA());
+        enable(receiveThreadB());
     });
 
     if (progressedeventId === "A") {
@@ -117,8 +117,8 @@ test("multiple waits will return an array of [value, eventId].", () => {
     })
 
     testScenarios((enable) => {
-        enable(requestThread([]));
-        enable(receiveThread([]));
+        enable(requestThread());
+        enable(receiveThread());
     });
 
 
@@ -140,8 +140,8 @@ test("A request-value can be a function. It will get called, when the event is s
     })
 
     testScenarios((enable) => {
-        enable(requestThread([]));
-        enable(receiveThread([]));
+        enable(requestThread());
+        enable(receiveThread());
     });
     
 
@@ -169,9 +169,9 @@ test("if a request value is a function, it will only be called once.", () => {
     })
 
     testScenarios((enable) => {
-        enable(requestThread([]));
-        enable(receiveThread1([]));
-        enable(receiveThread2([]));
+        enable(requestThread());
+        enable(receiveThread1());
+        enable(receiveThread2());
     });
 
     expect(receivedValue1).toBe(1000);
@@ -196,9 +196,9 @@ test("When there are multiple requests with the same event-name, the payload fro
     })
 
     testScenarios((enable) => {
-        enable(requestThreadLower([]));
-        enable(requestThreadHigher([]));
-        enable(receiveThread([]));
+        enable(requestThreadLower());
+        enable(requestThreadHigher());
+        enable(receiveThread());
     });
 
     expect(receivedValue).toBe(2);
@@ -227,9 +227,9 @@ test("events can be blocked", () => {
 
     testScenarios((enable) => {
         
-        enable(requestThread([]));
-        enable(waitingThread([]));
-        enable(blockingThread([]));
+        enable(requestThread());
+        enable(waitingThread());
+        enable(blockingThread());
     });
 
     expect(advancedRequest).toBeUndefined();
@@ -249,8 +249,8 @@ test("if an async request gets blocked, it will not call the promise", () => {
     })
 
     testScenarios((enable) => {
-        enable(requestingThread([]));
-        enable(blockingThread([]));
+        enable(requestingThread());
+        enable(blockingThread());
     });
     expect(calledFunction).toBe(false);
 });

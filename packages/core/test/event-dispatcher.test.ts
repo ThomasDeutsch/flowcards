@@ -14,7 +14,7 @@ test("on-bids can not be dispatched", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch}) => {
         expect(dispatch('A')).toBeUndefined();
     });
@@ -29,7 +29,7 @@ test("dispatch is always the same Object.", (done) => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch}) => {
         if(dispatch('A')) x = dispatch;
         else {
@@ -51,7 +51,7 @@ test("dispatch[eventId] is the same Object, as long as there is a wait", (done) 
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch}) => {
         if(dispatch('X')) x = dispatch('A');
         if(dispatch('Y')) y = dispatch('A');
@@ -76,7 +76,7 @@ test("A guarded dispatch will return undefined if the value is not valid", (done
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch}) => {
         if(dispatch("X")) {
             x = dispatch("A", 0);
@@ -102,7 +102,7 @@ test("the evaluated dispatch function is a different Object, when the guard Func
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch}) => {
         if(dispatch("X")) x = dispatch("A", 1);
         if(dispatch("Y")) y = dispatch("A", 2);
@@ -127,7 +127,7 @@ test("the evaluated dispatch function is the same Object, for every key/payload 
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({dispatch}) => {
         if(dispatch("X")) x = dispatch({name: 'A', key: 'key1'}, 1);
         if(dispatch("Y")) y = dispatch({name: 'A', key: 'key2'}, 2);
@@ -150,7 +150,7 @@ test("multiple dispatches are batched", (done) => {
     });
 
     const [context, dispatch] = testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     });
     expect(dispatch('X')).toBeDefined();
     dispatch('X')?.();

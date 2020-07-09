@@ -14,7 +14,7 @@ test("the cache function will return the history and the current value", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread1([]));
+        enable(thread1());
     }, ({event}) => {
         expect(event('A')?.history.length).toEqual(2);
         expect(event('A')?.value).toEqual('second');
