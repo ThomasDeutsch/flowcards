@@ -10,7 +10,7 @@ import { FlowContext } from './flow';
 
 
 type EnableThread = ({id, title, gen, props, key}: FlowContext) => BThreadState;
-type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined; // todo: replace any with generic type
+type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
 export type StagingFunction = (enable: EnableThread, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;

@@ -8,7 +8,7 @@ export function getChangedProps(nextDeps: Record<string, any>, prevDeps?: Record
     const result = {...prevDeps};
     for (const key in nextDeps) {
         if((key in prevDeps) && Object.is(nextDeps[key], prevDeps[key])) {
-            result.delete(key);
+            delete result[key];
         }
     }
     const keys = Object.keys(result);

@@ -11,19 +11,79 @@ test("a thread gets reset, when the arguments change", () => {
         yield bp.wait('fin');
     });
 
-    const threadB = flow(null, function* (isWaitingForB: boolean) {
+    interface MyProps {waitingForB: boolean}
+    const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.wait('A');
     }); 
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        enable(threadB([state.isWaitingFor('B')]));
+        enable(threadB({waitingForB: state.isWaitingFor('B')}));
+    }, ({log}) => {
+        const threadBReactions = log?.bThreadInfoById['threadB'].reactions;
+        expect(threadBReactions?.get(0)?.changedProps?.[0]).toEqual('waitingForB');
+        
     });
+
 
     expect(initCount).toBe(2);
 });
 
+test("a thread gets reset, when the arguments change - 2", () => {
+    let initCount = 0;
+    const threadA = flow(null, function* () {
+        yield [bp.request('A'), bp.wait('B')];
+        yield bp.wait('fin');
+    });
+
+    interface MyProps {waitingForB: boolean, waitingForX?: boolean}
+    const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+        initCount++;
+        yield bp.wait('A');
+    }); 
+
+    testScenarios((enable) => {
+        const state = enable(threadA());
+        const test: MyProps = state.isWaitingFor('B') ? {waitingForB: state.isWaitingFor('B')} : {waitingForB: false, waitingForX: false};
+        enable(threadB(test));
+    }, ({log}) => {
+        const threadBReactions = log?.bThreadInfoById['threadB'].reactions;
+        expect(threadBReactions?.get(0)?.changedProps?.[0]).toEqual('waitingForB');
+        expect(threadBReactions?.get(0)?.changedProps?.[1]).toEqual('waitingForX');
+        
+    });
+
+
+    expect(initCount).toBe(2);
+});
+
+test("a thread gets reset, when the arguments change - 3", () => {
+    let initCount = 0;
+    const threadA = flow(null, function* () {
+        yield [bp.request('A'), bp.wait('B')];
+        yield bp.wait('fin');
+    });
+
+    interface MyProps {waitingForB: boolean, waitingForX?: boolean}
+    const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+        initCount++;
+        yield bp.wait('A');
+    }); 
+
+    testScenarios((enable) => {
+        const state = enable(threadA());
+        const test: MyProps | undefined = state.isWaitingFor('B') ? {waitingForB: state.isWaitingFor('B')} : undefined;
+        enable(threadB(test));
+    }, ({log}) => {
+        const threadBReactions = log?.bThreadInfoById['threadB'].reactions;
+        expect(threadBReactions?.get(0)?.changedProps?.[0]).toEqual('waitingForB');
+        
+    });
+
+
+    expect(initCount).toBe(2);
+});
 
 test("a state from another thread is a fixed Ref-Object. Passing this Object will not reset a receiving thread", () => {
     let initCount = 0;
@@ -34,7 +94,8 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
         yield bp.request('A');
     });
 
-    const threadB = flow(null, function* (stateFromThreadA: BThreadState) {
+    interface MyProps {stateFromThreadA: BThreadState}
+    const threadB = flow(null, function* ({stateFromThreadA}: MyProps) {
         initCount++;
         yield bp.wait('A');
         receivedValue = stateFromThreadA.section;
@@ -42,7 +103,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        enable(threadB([state]));  // instead of state.current, we will pass state.
+        enable(threadB({stateFromThreadA: state}));  // instead of state.current, we will pass state.
     });
 
     expect(initCount).toBe(1);

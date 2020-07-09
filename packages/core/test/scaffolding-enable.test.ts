@@ -7,14 +7,15 @@ import { flow } from '../src/flow';
 
 test("a thread will accept an optional array of arguments", () => {
     let receivedArgs = ["", "", ""];
+    interface MyProps {a: string, b: string, c: string}
 
-    const thread = flow(null, function* (a: string, b: string, c: string) {
-        receivedArgs = [a, b, c];
+    const thread = flow(null, function* (props: MyProps) {
+        receivedArgs = [props.a, props.b, props.c];
         yield bp.wait('event');
     })
 
     testScenarios((enable) => {
-        enable(thread(["A", "B", "C"]));
+        enable(thread({a: 'A', b: 'B', c: 'C'}));
     });
 
     expect(receivedArgs[0]).toBe("A");
@@ -37,8 +38,8 @@ test("a thread will accept an optional key", () => {
     });
 
     testScenarios((enable) => {
-        enable(thread([], 0));
-        enable(threadB([], 'foo'));
+        enable(thread(undefined, 0));
+        enable(threadB(undefined, 'foo'));
     });
 
     expect(receivedKeyA).toBe(0); 
@@ -63,7 +64,7 @@ test("if no key is provided, the default key value is undefined", () => {
 });
 
 
-test("enable will return the current thread-state (check waits)", () => {
+test("enable will return the current thread waits", () => {
     let threadState: BThreadState;
 
     const thread = flow(null, function* (this: BTContext) {
@@ -77,7 +78,7 @@ test("enable will return the current thread-state (check waits)", () => {
 });
 
 
-test("enable will return the current thread-state (state value)", () => {
+test("enable will return the current thread-section", () => {
     let threadState: BThreadState;
 
     const thread = flow(null, function* (this: BTContext) {

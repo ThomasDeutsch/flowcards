@@ -79,7 +79,7 @@ export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, 
                 type: isPromise ? ActionType.promise : ActionType.requested,
                 threadId: bid.threadId,
                 event: bid.event,
-                payload: bid.payload,
+                payload: isPromise ? undefined : bid.payload,
                 cacheEnabled: bid.cacheEnabled,
                 onlyRequestWhenWaitedFor: bid.onlyRequestWhenWaitedFor
             };

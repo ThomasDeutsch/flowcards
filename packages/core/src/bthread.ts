@@ -7,7 +7,7 @@ import { ActionDispatch} from './update-loop';
 import { EventMap, reduceEventMaps, FCEvent, toEvent } from './event';
 
 export type BTGen = Generator<Bid | Bid[], void, any>;
-export type GeneratorFn = (props: Record<string, any>) => BTGen;
+export type GeneratorFn = (props: any) => BTGen;
 export type BThreadKey = string | number;
 
 export interface BTContext {
@@ -27,11 +27,13 @@ export enum ExtendResultType {
     extendingThread = "extendingThread"
 }
 
-type IsWaitingFunction = (event: string | FCEvent) => boolean
+type IsBidPlacedFn = (event: string | FCEvent) => boolean
 export interface BThreadState {
-    waits?: FCEvent[];
+    waits?: EventMap<Bid>;
+    blocks?: EventMap<Bid>;
     section?: string;
-    isWaitingFor: IsWaitingFunction;
+    isWaitingFor: IsBidPlacedFn;
+    isBlocking: IsBidPlacedFn;
 }
 
 export class BThread {
@@ -46,12 +48,15 @@ export class BThread {
     private _pendingExtendRecord: EventMap<Promise<any>> = new EventMap();
     private _isCompleted = false;
     private _state: BThreadState = {
-        waits: undefined,
+        waits: this._currentBids?.[BidType.wait],
+        blocks: this._currentBids?.[BidType.block],
+        section: undefined,
         isWaitingFor: function(event: string | FCEvent): boolean {
-            const fcevent = toEvent(event);
-            return !!this.waits?.some(e => (e.name === fcevent.name) && (e.key === fcevent.key) );
+           return !!this.waits?.has(toEvent(event));
         },
-        section: undefined
+        isBlocking: function(event: string | FCEvent): boolean {
+            return !!this.blocks?.has(toEvent(event));
+        }
     };
     public get state() {
         return this._state;
@@ -136,8 +141,11 @@ export class BThread {
     public getBids(): BThreadBids  {
         const pendingEvents: EventMap<Bid> | undefined = reduceEventMaps([this._pendingExtendRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
         if(this._isCompleted) return {[BidType.pending]: pendingEvents};
-        if(this._currentBids === undefined) this._currentBids = getBidsForBThread(this.id, this._nextBid);
-        this._state.waits = this._currentBids?.[BidType.wait]?.allEvents;
+        if(this._currentBids === undefined) {
+            this._currentBids = getBidsForBThread(this.id, this._nextBid);
+            this._state.waits = this._currentBids?.[BidType.wait];
+            this._state.blocks = this._currentBids?.[BidType.block];
+        }
         return {...this._currentBids, [BidType.pending]: pendingEvents};
     }
 
