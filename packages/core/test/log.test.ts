@@ -1,7 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
 import { flow } from '../src/flow';
-import { ReactionType } from "../src";
 
 test("the log will return an latestAction Object", () => {
 

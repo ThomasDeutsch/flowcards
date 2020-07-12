@@ -1,12 +1,11 @@
 import { Action, ActionType } from './action';
-import { Reaction, ReactionType } from './reaction';
 import { FCEvent } from './event';
 import { BThreadKey } from './bthread';
+import { Bid } from './bid';
 
-interface LoggedAction extends Action {
+export interface LoggedAction extends Action {
     actionIndex: number;
     reactingBThreads: Set<string>;
-    cancelledPromises?: FCEvent[];
 }
 
 export interface BThreadInfo {
@@ -14,13 +13,24 @@ export interface BThreadInfo {
     enabledInStep: number;
     key?: BThreadKey;
     title?: string;
-    reactions: Map<number, Reaction>;
+    reactions: Map<number, ThreadProgression | ThreadReset>;
 }
 
 export interface Log {
     actions: LoggedAction[];
     bThreadInfoById: Record<string, BThreadInfo>;
     latestAction: Action;
+}
+
+export interface ThreadProgression extends Bid {
+    actionIndex: number;
+    cancelledPromises?: FCEvent[];
+}
+
+export interface ThreadReset {
+    actionIndex: number;
+    changedProps: string[];
+    cancelledPromises?: FCEvent[];
 }
 
 export class Logger {
@@ -32,25 +42,32 @@ export class Logger {
     }
 
     public addThreadInfo(id: string, title?: string) {
-        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, Reaction>(), enabledInStep: this._getActionIndex()};
+        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, ThreadProgression>(), enabledInStep: this._getActionIndex()};
     }
 
     public logAction(action: Action): void {
         this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()});
     }
 
-    public logReaction(threadId: string, type: ReactionType, cancelledPromises?: FCEvent[], changedProps?: string[]): void {
+    public logThreadProgression(bid: Bid, cancelledPromises?: FCEvent[]): void {
+        const actionIndex = this._getActionIndex();
+        this._actions[actionIndex].reactingBThreads.add(bid.threadId);
+        const reaction: ThreadProgression = {
+            ...bid,
+            actionIndex: actionIndex,
+            cancelledPromises: cancelledPromises
+        };
+        this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
+    }
+
+    public logThreadReset(threadId: string, changedProps: string[], cancelledPromises?: FCEvent[], ) {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(threadId);
-        const reaction: Reaction = {
-            type: type,
+        const reaction: ThreadReset = {
             actionIndex: actionIndex,
-            cancelledPromises: cancelledPromises,
-            changedProps: changedProps
+            changedProps: changedProps,
+            cancelledPromises: cancelledPromises
         };
-        if(cancelledPromises && cancelledPromises.length > 0) {
-            this._actions[actionIndex].cancelledPromises = [...(this._actions[actionIndex].cancelledPromises || []), ...cancelledPromises];
-        }
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 

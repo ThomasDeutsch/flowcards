@@ -1,10 +1,10 @@
-import { getBidsForBThread, BThreadBids, BidType, Bid } from './bid';
+import { getBidsForBThread, BThreadBids, BidType, Bid, BidSubType } from './bid';
 import * as utils from "./utils";
 import { Logger } from "./logger";
 import { ActionType, Action } from './action';
-import { ReactionType } from './reaction';
 import { ActionDispatch} from './update-loop';
 import { EventMap, reduceEventMaps, FCEvent, toEvent } from './event';
+import { EventCache, setEventCache } from './event-cache';
 
 export type BTGen = Generator<Bid | Bid[], void, any>;
 export type GeneratorFn = (props: any) => BTGen;
@@ -108,13 +108,14 @@ export class BThread {
         return cancelledPending;
     }
 
-    private _progressBThread(event: FCEvent, payload: any, isReject = false): void {
+    private _progressBThread(bid: Bid, payload: any, isReject = false): void {
         let returnVal;
         if(!isReject) {
-            returnVal = this._currentBids && this._currentBids.withMultipleBids ? [event, payload] : payload;
-        }
+            returnVal = this._currentBids && this._currentBids.withMultipleBids ? [bid.event, payload] : payload;
+        }        
         const cancelledPending = this._processNextBid(returnVal);
-        this._logger?.logReaction(this.id, ReactionType.progress, cancelledPending);
+        this._logger?.logThreadProgression(bid, cancelledPending);
+
     }
 
     private _createExtendPromise(action: Action): ExtendResult {
@@ -139,7 +140,7 @@ export class BThread {
     // --- public
 
     public getBids(): BThreadBids  {
-        const pendingEvents: EventMap<Bid> | undefined = reduceEventMaps([this._pendingExtendRecord, this._pendingRequestRecord], (acc, curr, event) => ({type: BidType.pending, threadId: this.id, event: event}));
+        const pendingEvents: EventMap<true> | undefined = reduceEventMaps([this._pendingExtendRecord, this._pendingRequestRecord], () => true);
         if(this._isCompleted) return {[BidType.pending]: pendingEvents};
         if(this._currentBids === undefined) {
             this._currentBids = getBidsForBThread(this.id, this._nextBid);
@@ -159,7 +160,7 @@ export class BThread {
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
         const cancelledPending = this._processNextBid();
-        this._logger?.logReaction(this.id, ReactionType.reset, cancelledPending, changedProps);
+        this._logger?.logThreadReset(this.id, changedProps, cancelledPending);
     }
 
     public addPendingRequest(event: FCEvent, promise: Promise<any>): void {       
@@ -201,26 +202,33 @@ export class BThread {
         // rejection of a pending promise
         if (!isExtendDeleted && this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
             this._thread.throw({event: action.event, error: action.payload});
-            this._progressBThread(action.event, action.payload, true);
+            const bid = this._currentBids?.request?.get(action.event);
+            if(!bid) return;
+            this._progressBThread(bid, action.payload, true);
         }
     }
     
-    public progressRequest(action: Action): void {
-        this._progressBThread(action.event, action.payload);
+    public progressRequest(eventCache: EventCache, action: Action): void {
+        const bid = this._currentBids?.request?.get(action.event);
+        if(!bid) return;
+        if(bid.subType === BidSubType.set) {
+            setEventCache(eventCache, action.event, action.payload);
+        }
+        this._progressBThread(bid, action.payload);
     }
 
-    public progressWait(action: Action, bid: Bid): void {
-        if(!bid || bid.guard && !bid.guard(action.payload)) return;
-        this._progressBThread(bid.event, action.payload);
+    public progressWait(bid: Bid, actionPayload: any): void {
+        if(!bid || bid.guard && !bid.guard(actionPayload)) return;
+        this._progressBThread(bid, actionPayload);
     }
 
     public progressExtend(action: Action, bid: Bid): ExtendResultType {
         if(!bid || bid.guard && !bid.guard(action.payload)) return ExtendResultType.guarded;
         if(bid.payload !== undefined) {
-            this._progressBThread(bid.event, action.payload);
+            this._progressBThread(bid, action.payload);
             return ExtendResultType.progress;
         }
-        this._progressBThread(action.event, this._createExtendPromise(action));
+        this._progressBThread(bid, this._createExtendPromise(action));
         return ExtendResultType.extendingThread;
     }
 

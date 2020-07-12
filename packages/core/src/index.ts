@@ -11,7 +11,6 @@ export * from "./bid";
 export * from './event';
 export * from './logger';
 export * from './action';
-export * from './reaction';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 
 

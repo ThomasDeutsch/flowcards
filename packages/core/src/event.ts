@@ -127,11 +127,9 @@ export class EventMap<T>  {
         return mapped;
     }
 
-    public difference(a?: EventMap<any>): EventMap<T> {
-        if(a === undefined) return this;
-        this.forEach((event) => {
-            if(a.has(event)) this.delete(event);
-        });
+    public deleteAll(events: Set<FCEvent> | undefined) {
+        if(events == undefined) return this;
+        events.forEach(event => this.delete(event));
         return this;
     }
     

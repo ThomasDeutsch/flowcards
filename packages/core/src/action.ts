@@ -1,4 +1,4 @@
-import { BidsForBidType, Bid } from "./bid";
+import { BidsForBidType, Bid, BidSubType } from "./bid";
 import { FCEvent, EventMap } from './event';
 import { getGuardForWaits } from './guard';
 import * as utils from './utils';
@@ -23,8 +23,6 @@ export interface Action {
     threadId: string;
     event: FCEvent;
     payload?: any;
-    cacheEnabled?: boolean;
-    onlyRequestWhenWaitedFor?: boolean;
     pendingDuration?: number;
 }
 
@@ -42,7 +40,7 @@ function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
     if(!bids) return undefined;
     const reversedBids = [...bids].reverse(); // last bid has the highest priority.
     for (const bid of reversedBids) {
-        if(bid.onlyRequestWhenWaitedFor) {
+        if(bid.subType === BidSubType.trigger) {
             const waitsForEvent = waitBids?.get(bid.event);
             if(waitsForEvent) {
                 const guard = getGuardForWaits(waitsForEvent, bid.event);
@@ -80,8 +78,6 @@ export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, 
                 threadId: bid.threadId,
                 event: bid.event,
                 payload: isPromise ? undefined : bid.payload,
-                cacheEnabled: bid.cacheEnabled,
-                onlyRequestWhenWaitedFor: bid.onlyRequestWhenWaitedFor
             };
         } 
         [selectedEvent, rest] = getRandom(rest);

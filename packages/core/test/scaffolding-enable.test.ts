@@ -63,7 +63,6 @@ test("if no key is provided, the default key value is undefined", () => {
     expect(receivedKeyA).toBeUndefined(); 
 });
 
-
 test("enable will return the current thread waits", () => {
     let threadState: BThreadState;
 
@@ -76,6 +75,7 @@ test("enable will return the current thread waits", () => {
         expect(threadState?.isWaitingFor('A')).toBe(true);
     });
 });
+
 
 
 test("enable will return the current thread-section", () => {

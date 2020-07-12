@@ -24,7 +24,6 @@ test("A promise can be requested and will create a pending-event", () => {
     });
 });
 
-
 test("A promise-function can be requested and will create a pending-event", () => {
     const thread1 = flow({id: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));

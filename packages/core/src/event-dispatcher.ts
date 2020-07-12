@@ -1,4 +1,4 @@
-import { BidsForBidType, Bid } from './bid';
+import { BidsForBidType, Bid, BidSubType } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 import { FCEvent, EventMap, toEvent } from './event';
@@ -34,7 +34,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         guardByEvent.clear();
         const dpWaits = new EventMap<Bid[]>();
         waits?.forEach((event, bids) => {
-            const newBids = bids.filter(bid => bid.canBeDispatched === true);
+            const newBids = bids.filter(bid => bid.subType !== BidSubType.on);
             if(newBids.length > 0) dpWaits.set(event, newBids);
         })
         if(!dpWaits || dpWaits.size() === 0) { 
