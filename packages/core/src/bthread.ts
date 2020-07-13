@@ -114,7 +114,7 @@ export class BThread {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [bid.event, payload] : payload;
         }        
         const cancelledPending = this._processNextBid(returnVal);
-        this._logger?.logThreadProgression(bid, cancelledPending);
+        this._logger?.logThreadProgression(bid, this._state.section, cancelledPending);
 
     }
 
@@ -147,6 +147,7 @@ export class BThread {
             this._state.waits = this._currentBids?.[BidType.wait];
             this._state.blocks = this._currentBids?.[BidType.block];
         }
+        this._logger?.logCurrentBids(this.id, {...this._currentBids, [BidType.pending]: pendingEvents});
         return {...this._currentBids, [BidType.pending]: pendingEvents};
     }
 

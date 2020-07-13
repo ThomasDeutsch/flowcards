@@ -6,7 +6,6 @@ import { BThreadDictionary } from './update-loop';
 import { EventCache } from "./event-cache";
 
 
-
 export enum ActionType {
     initial = "initial",
     requested = "requested",
