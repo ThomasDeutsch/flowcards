@@ -47,7 +47,7 @@ function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
         if(nextBid.payload !== undefined && (nextAction.type === ActionType.dispatched || nextAction.type === ActionType.requested)) {
             nextAction.payload = (typeof nextBid.payload === 'function') ? nextBid.payload(nextAction.payload) : nextBid.payload;
             if(utils.isThenable(nextAction.payload) && bThreadDictionary[nextAction.threadId]) {
-                bThreadDictionary[nextAction.threadId].addPendingRequest(nextAction.event, nextAction.payload);
+                bThreadDictionary[nextAction.threadId].addPendingRequest(nextBid, nextAction.payload);
                 return undefined;
             }
         }

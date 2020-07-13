@@ -118,23 +118,24 @@ export class BThread {
 
     }
 
-    private _createExtendPromise(action: Action): ExtendResult {
+    private _createExtendPromise(bid: Bid, payload: any): ExtendResult {
         let resolveFn = () => {true};
         let rejectFn = () => {true};
         const promise = new Promise((resolve, reject) => {
             resolveFn = resolve;
                 rejectFn = reject;
             }).then((data): void => {
-                if (this._pendingExtendRecord.has(action.event)) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: action.event, payload: data });
+                if (this._pendingExtendRecord.has(bid.event)) {
+                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data });
                 }
             }).catch((): void => {
-                if (this._pendingExtendRecord.has(action.event)) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event });
+                if (this._pendingExtendRecord.has(bid.event)) {
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: bid.event });
                 }
             });
-        this._pendingExtendRecord.set(action.event, promise);
-        return {resolve: resolveFn, reject: rejectFn, value: action.payload};
+        this._pendingExtendRecord.set(bid.event, promise);
+        this._logger?.logExtend(bid);
+        return {resolve: resolveFn, reject: rejectFn, value: payload};
     }
 
     // --- public
@@ -147,7 +148,6 @@ export class BThread {
             this._state.waits = this._currentBids?.[BidType.wait];
             this._state.blocks = this._currentBids?.[BidType.block];
         }
-        this._logger?.logCurrentBids(this.id, {...this._currentBids, [BidType.pending]: pendingEvents});
         return {...this._currentBids, [BidType.pending]: pendingEvents};
     }
 
@@ -164,21 +164,22 @@ export class BThread {
         this._logger?.logThreadReset(this.id, changedProps, cancelledPending);
     }
 
-    public addPendingRequest(event: FCEvent, promise: Promise<any>): void {       
-        this._pendingRequestRecord.set(event, promise);
+    public addPendingRequest(bid: Bid, promise: Promise<any>): void {       
+        this._pendingRequestRecord.set(bid.event, promise);
+        this._logger?.logPromise(bid);
         const startTime = new Date().getTime();
         promise.then((data): void => {
                 const pendingDuration = new Date().getTime() - startTime;
-                const recordedPromise = this._pendingRequestRecord.get(event);
+                const recordedPromise = this._pendingRequestRecord.get(bid.event);
                 if (recordedPromise  && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: event, payload: data, pendingDuration: pendingDuration });
+                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data, pendingDuration: pendingDuration });
                 }
             })
             .catch((e): void => {
                 const pendingDuration = new Date().getTime() - startTime;
-                const recordedPromise = this._pendingRequestRecord.get(event);
+                const recordedPromise = this._pendingRequestRecord.get(bid.event);
                 if (recordedPromise && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: event, payload: e, pendingDuration: pendingDuration });
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: bid.event, payload: e, pendingDuration: pendingDuration });
                 }
             });
     }
@@ -229,7 +230,8 @@ export class BThread {
             this._progressBThread(bid, action.payload);
             return ExtendResultType.progress;
         }
-        this._progressBThread(bid, this._createExtendPromise(action));
+        const extendResult = this._createExtendPromise(bid, action.payload);
+        this._progressBThread(bid, extendResult);
         return ExtendResultType.extendingThread;
     }
 

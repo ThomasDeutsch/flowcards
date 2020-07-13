@@ -69,7 +69,7 @@ export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, 
                 bid.payload = eventCache.get(bid.event)?.value;
             }
             if(utils.isThenable(bid.payload) && bThreadDictionary[bid.threadId]) {
-                bThreadDictionary[bid.threadId].addPendingRequest(bid.event, bid.payload);
+                bThreadDictionary[bid.threadId].addPendingRequest(bid, bid.payload);
                 isPromise = true;
             }
             return {
