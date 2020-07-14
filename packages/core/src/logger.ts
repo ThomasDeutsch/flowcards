@@ -75,7 +75,6 @@ export class Logger {
     }
 
     public logThreadProgression(bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[]): void {
-
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(bid.threadId);
         const reaction: BThreadReaction = {

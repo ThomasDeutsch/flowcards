@@ -112,9 +112,10 @@ export class BThread {
         let returnVal;
         if(!isReject) {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [bid.event, payload] : payload;
-        }        
+        }   
+        const sectionBeforeProgression = this._state.section;
         const cancelledPending = this._processNextBid(returnVal);
-        this._logger?.logThreadProgression(bid, this._state.section, cancelledPending);
+        this._logger?.logThreadProgression(bid, sectionBeforeProgression, cancelledPending);
 
     }
 
