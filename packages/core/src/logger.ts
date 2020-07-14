@@ -51,7 +51,7 @@ export class Logger {
     }
 
     public logAction(action: Action): void {
-        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()});
+        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()+1});
     }
 
     public logPromise(bid: Bid): void {
