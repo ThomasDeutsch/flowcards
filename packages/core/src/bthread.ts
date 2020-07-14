@@ -115,8 +115,7 @@ export class BThread {
         }   
         const sectionBeforeProgression = this._state.section;
         const cancelledPending = this._processNextBid(returnVal);
-        this._logger?.logThreadProgression(bid, sectionBeforeProgression, cancelledPending);
-
+        this._logger?.logThreadProgression(this.id, bid, sectionBeforeProgression, cancelledPending);
     }
 
     private _createExtendPromise(bid: Bid, payload: any): ExtendResult {

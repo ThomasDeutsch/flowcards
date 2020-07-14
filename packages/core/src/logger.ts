@@ -46,12 +46,12 @@ export class Logger {
         return this._actions.length-1;
     }
 
-    public addThreadInfo(id: string, title?: string) {
-        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, BThreadReaction>(), enabledInStep: this._getActionIndex()};
-    }
-
     public logAction(action: Action): void {
         this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()+1});
+    }
+
+    public addThreadInfo(id: string, title?: string) {
+        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, BThreadReaction>(), enabledInStep: this._getActionIndex()};
     }
 
     public logPromise(bid: Bid): void {
@@ -74,7 +74,7 @@ export class Logger {
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logThreadProgression(bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[]): void {
+    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[]): void {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(bid.threadId);
         const reaction: BThreadReaction = {
@@ -84,7 +84,7 @@ export class Logger {
             threadSection: threadSection,
             bid: bid
         };
-        this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
+        this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
     public logThreadReset(threadId: string, changedProps: string[], cancelledPromises?: FCEvent[], ) {
