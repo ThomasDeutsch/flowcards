@@ -136,7 +136,7 @@ export class BThread {
                 }
             });
         this._pendingExtendRecord.set(bid.event, promise);
-        this._logger?.logExtend(bid);
+        this._logger?.logExtend(bid, this._state.section);
         return {resolve: resolveFn, reject: rejectFn, value: payload};
     }
 
@@ -166,22 +166,24 @@ export class BThread {
         this._logger?.logThreadReset(this.id, changedProps, cancelledPending);
     }
 
-    public addPendingRequest(bid: Bid, promise: Promise<any>): void {       
-        this._pendingRequestRecord.set(bid.event, promise);
-        this._logger?.logPromise(bid);
+    public addPendingRequest(event: FCEvent, promise: Promise<any>): void {       
+        const bid = this._currentBids?.request?.get(event);
+        if(!bid) return;
+        this._pendingRequestRecord.set(event, promise);
+        this._logger?.logPromise(bid, this._state.section);
         const startTime = new Date().getTime();
         promise.then((data): void => {
                 const pendingDuration = new Date().getTime() - startTime;
-                const recordedPromise = this._pendingRequestRecord.get(bid.event);
+                const recordedPromise = this._pendingRequestRecord.get(event);
                 if (recordedPromise  && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data, pendingDuration: pendingDuration });
+                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: event, payload: data, pendingDuration: pendingDuration });
                 }
             })
             .catch((e): void => {
                 const pendingDuration = new Date().getTime() - startTime;
-                const recordedPromise = this._pendingRequestRecord.get(bid.event);
+                const recordedPromise = this._pendingRequestRecord.get(event);
                 if (recordedPromise && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: bid.event, payload: e, pendingDuration: pendingDuration });
+                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: event, payload: e, pendingDuration: pendingDuration });
                 }
             });
     }

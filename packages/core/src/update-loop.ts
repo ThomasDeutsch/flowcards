@@ -47,7 +47,7 @@ function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
         if(nextBid.payload !== undefined && (nextAction.type === ActionType.dispatched || nextAction.type === ActionType.requested)) {
             nextAction.payload = (typeof nextBid.payload === 'function') ? nextBid.payload(nextAction.payload) : nextBid.payload;
             if(utils.isThenable(nextAction.payload) && bThreadDictionary[nextAction.threadId]) {
-                bThreadDictionary[nextAction.threadId].addPendingRequest(nextBid, nextAction.payload);
+                bThreadDictionary[nextAction.threadId].addPendingRequest(nextBid.event, nextAction.payload);
                 return undefined;
             }
         }
@@ -70,35 +70,40 @@ function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
 
 
 function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
-    // requested
-    if(action.type === ActionType.requested) {
-        const nextAction = extendAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return; // was extended
-        bThreadDictionary[nextAction.threadId].progressRequest(eventCache, nextAction); // request got resolved
-        advanceWaits(allBids, bThreadDictionary, nextAction);
-    }
-    // dispatched
-    else if(action.type === ActionType.dispatched) {
-        const nextAction = extendAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return; // was extended
-        const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
-        if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
-    }
-    // resolved
-    else if(action.type === ActionType.resolved) {
-        if(bThreadDictionary[action.threadId]) {
-            const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
-            if(isResolved === false) return;
+    switch (action.type) {
+        case ActionType.requested: {
+            const nextAction = extendAction(allBids, bThreadDictionary, action);
+            if(!nextAction) return; // was extended
+            bThreadDictionary[nextAction.threadId].progressRequest(eventCache, nextAction); // request got resolved
+            advanceWaits(allBids, bThreadDictionary, nextAction);
+            break;
         }
-        const nextAction = extendAction(allBids, bThreadDictionary, action);
-        if(!nextAction) return; // was extended
-        bThreadDictionary[action.threadId].progressRequest(eventCache, nextAction); // request got resolved
-        advanceWaits(allBids, bThreadDictionary, nextAction); 
-    }
-    // rejected
-    else if(action.type === ActionType.rejected) {
-        if(bThreadDictionary[action.threadId]) {
-            bThreadDictionary[action.threadId].rejectPending(action);
+        case ActionType.dispatched: {
+            const nextAction = extendAction(allBids, bThreadDictionary, action);
+            if(!nextAction) return; // was extended
+            const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
+            if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
+            break;
+        }
+        case ActionType.promise: {
+            bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
+            break;
+        }
+        case ActionType.resolved: {
+            if(bThreadDictionary[action.threadId]) {
+                const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
+                if(isResolved === false) return;
+            }
+            const nextAction = extendAction(allBids, bThreadDictionary, action);
+            if(!nextAction) return; // was extended
+            bThreadDictionary[action.threadId].progressRequest(eventCache, nextAction); // request got resolved
+            advanceWaits(allBids, bThreadDictionary, nextAction);
+            break;
+        }
+        case ActionType.rejected: {
+            if(bThreadDictionary[action.threadId]) {
+                bThreadDictionary[action.threadId].rejectPending(action);
+            }
         }
     }
 }

@@ -62,22 +62,19 @@ export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, 
         const bids = requestBids.get(selectedEvent);
         const bid = getBid(bids, waitBids);
         if(bid) {
-            let isPromise = false;
             if (typeof bid.payload === "function") {
                 bid.payload = bid.payload(eventCache.get(bid.event)?.value);
             } else if(bid.payload === undefined) {
                 bid.payload = eventCache.get(bid.event)?.value;
             }
-            if(utils.isThenable(bid.payload) && bThreadDictionary[bid.threadId]) {
-                bThreadDictionary[bid.threadId].addPendingRequest(bid, bid.payload);
-                isPromise = true;
-            }
-            return {
+            const isPromise = utils.isThenable(bid.payload) && bThreadDictionary[bid.threadId];
+            const action = {
                 type: isPromise ? ActionType.promise : ActionType.requested,
                 threadId: bid.threadId,
                 event: bid.event,
-                payload: isPromise ? undefined : bid.payload,
+                payload: bid.payload,
             };
+            return action;
         } 
         [selectedEvent, rest] = getRandom(rest);
     }

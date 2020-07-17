@@ -1,6 +1,6 @@
 import { Action, ActionType } from './action';
 import { BThreadKey } from './bthread';
-import { Bid, BThreadBids } from './bid';
+import { Bid, BThreadBids, BidType, BidSubType } from './bid';
 import { FCEvent } from './event';
 
 export interface LoggedAction extends Action {
@@ -35,7 +35,10 @@ export interface BThreadReaction {
     cancelledPromises?: FCEvent[];
     changedProps?: string[];
     threadSection?: string;
-    bid?: Bid;
+    event?: FCEvent;
+    bidType?: BidType;
+    BidSubType?: BidSubType;
+    payload?: any;
 }
 
 export class Logger {
@@ -47,29 +50,35 @@ export class Logger {
     }
 
     public logAction(action: Action): void {
-        this._actions.push({...action, reactingBThreads: new Set(), actionIndex: this._getActionIndex()+1});
+        const payload = (action.type === ActionType.promise) ? undefined : action.payload;
+        this._actions.push({...action, payload: payload, reactingBThreads: new Set(), actionIndex: this._getActionIndex()+1});
     }
 
     public addThreadInfo(id: string, title?: string) {
         this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, BThreadReaction>(), enabledInStep: this._getActionIndex()};
     }
 
-    public logPromise(bid: Bid): void {
+    public logPromise(bid: Bid, threadSection?: string): void {
         const actionIndex = this._getActionIndex();
         const reaction = {
             type: BThreadReactionType.promise,
             actionIndex: actionIndex,
-            bid: bid
+            event: bid.event,
+            bidType: bid.type,
+            BidSubType: bid.subType,
+            threadSection: threadSection,
         }
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logExtend(bid: Bid): void {
+    public logExtend(bid: Bid, threadSection?: string): void {
         const actionIndex = this._getActionIndex();
         const reaction = {
             type: BThreadReactionType.extend,
             actionIndex: actionIndex,
-            bid: bid
+            bidType: bid.type,
+            BidSubType: bid.subType,
+            threadSection: threadSection
         }
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
@@ -82,7 +91,9 @@ export class Logger {
             actionIndex: actionIndex,
             cancelledPromises: cancelledPromises,
             threadSection: threadSection,
-            bid: bid
+            event: bid.event,
+            bidType: bid.type,
+            BidSubType: bid.subType,
         };
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
