@@ -73,7 +73,7 @@ test("a thread gets reset, when the arguments change - 3", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        const test: MyProps | undefined = state.isWaitingFor('B') ? {waitingForB: state.isWaitingFor('B')} : undefined;
+        const test = state.isWaitingFor('B') ? {waitingForB: state.isWaitingFor('B')} : undefined;
         enable(threadB(test));
     }, ({log}) => {
         const threadBReactions = log?.bThreadInfoById['threadB'].reactions;
@@ -95,8 +95,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
         yield bp.wait('B');
     });
 
-    interface MyProps {stateFromThreadA: BThreadState}
-    const threadB = flow(null, function* ({stateFromThreadA}: MyProps) {
+    const threadB = flow(null, function* ({stateFromThreadA}) {
         initCount++;
         yield bp.wait('A');
         receivedValue = stateFromThreadA.section;
@@ -112,5 +111,8 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
 });
 
 
+
+
+// todo: when a thread resets, all pending events are removed as well (requests and extends)
 // todo: when a thread resets, its state will be reset as well.
 // todo: get BThreadState

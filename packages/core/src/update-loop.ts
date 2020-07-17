@@ -126,7 +126,7 @@ function setupScaffolding(
             bThreadDictionary[id] = new BThread(id, gen, props, dispatch, key, logger, title);
         }
         const threadBids = bThreadDictionary[id].getBids();
-        bids.push(threadBids);
+        if(threadBids) bids.push(threadBids);
         return bThreadDictionary[id].state;
     }
     function getCached<T>(event: FCEvent | string): CachedItem<T> {

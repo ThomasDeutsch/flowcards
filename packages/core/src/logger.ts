@@ -14,6 +14,7 @@ export interface BThreadInfo {
     key?: BThreadKey;
     title?: string;
     reactions: Map<number, BThreadReaction>;
+    pendingEvents: FCEvent[];
 }
 
 export interface Log {
@@ -32,13 +33,15 @@ export enum BThreadReactionType {
 export interface BThreadReaction {
     type: BThreadReactionType;
     actionIndex: number;
-    cancelledPromises?: FCEvent[];
+    cancelledPending?: FCEvent[];
+    pendingEvents?: FCEvent[];
     changedProps?: string[];
     threadSection?: string;
     event?: FCEvent;
     bidType?: BidType;
     BidSubType?: BidSubType;
     payload?: any;
+    
 }
 
 export class Logger {
@@ -55,57 +58,65 @@ export class Logger {
     }
 
     public addThreadInfo(id: string, title?: string) {
-        this._bThreadInfoById[id] = {id: id, title: title, reactions: new Map<number, BThreadReaction>(), enabledInStep: this._getActionIndex()};
+        this._bThreadInfoById[id] = {
+            id: id, title: title,
+            reactions: new Map<number, BThreadReaction>(), 
+            enabledInStep: this._getActionIndex(),
+            pendingEvents: []
+        };
     }
 
-    public logPromise(bid: Bid, threadSection?: string): void {
+    public logPromise(bid: Bid, threadSection?: string, pendingEvents?: FCEvent[]): void {
         const actionIndex = this._getActionIndex();
-        const reaction = {
+        const reaction: BThreadReaction = {
             type: BThreadReactionType.promise,
             actionIndex: actionIndex,
             event: bid.event,
             bidType: bid.type,
             BidSubType: bid.subType,
             threadSection: threadSection,
+            pendingEvents: pendingEvents
         }
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logExtend(bid: Bid, threadSection?: string): void {
+    public logExtend(bid: Bid, threadSection?: string, pendingEvents?: FCEvent[]): void {
         const actionIndex = this._getActionIndex();
-        const reaction = {
+        const reaction: BThreadReaction = {
             type: BThreadReactionType.extend,
             actionIndex: actionIndex,
             bidType: bid.type,
             BidSubType: bid.subType,
-            threadSection: threadSection
+            threadSection: threadSection,
+            pendingEvents: pendingEvents
         }
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[]): void {
+    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[], pendingEvents?: FCEvent[]): void {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(bid.threadId);
         const reaction: BThreadReaction = {
             type: BThreadReactionType.progress,
             actionIndex: actionIndex,
-            cancelledPromises: cancelledPromises,
+            cancelledPending: cancelledPromises,
             threadSection: threadSection,
             event: bid.event,
             bidType: bid.type,
             BidSubType: bid.subType,
+            pendingEvents: pendingEvents
         };
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logThreadReset(threadId: string, changedProps: string[], cancelledPromises?: FCEvent[], ) {
+    public logThreadReset(threadId: string, changedProps: string[], cancelledEvents?: FCEvent[], ) {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(threadId);
         const reaction: BThreadReaction = {
             type: BThreadReactionType.reset,
             actionIndex: actionIndex,
             changedProps: changedProps,
-            cancelledPromises: cancelledPromises
+            cancelledPending: cancelledEvents
         };
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }

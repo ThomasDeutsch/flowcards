@@ -81,23 +81,23 @@ test("log will contain reactions by thread-id", () => {
         const flow2Keys = [...(log?.bThreadInfoById['flow2'].reactions.keys() || [])];
         expect(flow1Keys[0]).toEqual(0);
         expect(log?.bThreadInfoById['flow1'].reactions.get(0)?.threadSection).toEqual('productList');
-        expect(log?.bThreadInfoById['flow1'].reactions.get(0)?.event.name).toEqual('selectProduct');
+        expect(log?.bThreadInfoById['flow1'].reactions.get(0)?.event?.name).toEqual('selectProduct');
         expect(flow1Keys[1]).toEqual(1);
-        expect(log?.bThreadInfoById['flow1'].reactions.get(1)?.event.name).toEqual('apiGetProductDetails');
+        expect(log?.bThreadInfoById['flow1'].reactions.get(1)?.event?.name).toEqual('apiGetProductDetails');
         expect(flow1Keys[2]).toEqual(2);
-        expect(log?.bThreadInfoById['flow1'].reactions.get(2)?.event.name).toEqual('productDetails');
+        expect(log?.bThreadInfoById['flow1'].reactions.get(2)?.event?.name).toEqual('productDetails');
         expect(flow1Keys[3]).toEqual(3);
-        expect(log?.bThreadInfoById['flow1'].reactions.get(3)?.event.name).toEqual('acceptAGB');
+        expect(log?.bThreadInfoById['flow1'].reactions.get(3)?.event?.name).toEqual('acceptAGB');
         expect(flow1Keys[4]).toEqual(4);
-        expect(log?.bThreadInfoById['flow1'].reactions.get(4)?.event.name).toEqual('agbAccepted');
+        expect(log?.bThreadInfoById['flow1'].reactions.get(4)?.event?.name).toEqual('agbAccepted');
         // flow 2
         expect(log?.bThreadInfoById['flow2'].reactions.size).toBe(2);
         expect(flow2Keys[0]).toEqual(0);
-        expect(log?.bThreadInfoById['flow2'].reactions.get(0)?.event.name).toEqual('selectProduct');
-        expect(log?.bThreadInfoById['flow2'].reactions.get(1)?.event.name).toBeUndefined();
-        expect(log?.bThreadInfoById['flow2'].reactions.get(2)?.event.name).toBeUndefined();
+        expect(log?.bThreadInfoById['flow2'].reactions.get(0)?.event?.name).toEqual('selectProduct');
+        expect(log?.bThreadInfoById['flow2'].reactions.get(1)?.event?.name).toBeUndefined();
+        expect(log?.bThreadInfoById['flow2'].reactions.get(2)?.event?.name).toBeUndefined();
         expect(flow2Keys[1]).toEqual(3);
-        expect(log?.bThreadInfoById['flow2'].reactions.get(3)?.event.name).toEqual('acceptAGB');
+        expect(log?.bThreadInfoById['flow2'].reactions.get(3)?.event?.name).toEqual('acceptAGB');
     });
 })
 

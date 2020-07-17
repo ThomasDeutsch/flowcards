@@ -16,7 +16,6 @@ export enum ActionType {
     replay = "replay"
 }
 
-
 export interface Action {
     type: ActionType;
     threadId: string;
