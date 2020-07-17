@@ -14,7 +14,7 @@ export interface BThreadInfo {
     key?: BThreadKey;
     title?: string;
     reactions: Map<number, BThreadReaction>;
-    pendingEvents: FCEvent[];
+    pendingEvents?: FCEvent[];
 }
 
 export interface Log {
@@ -77,6 +77,7 @@ export class Logger {
             threadSection: threadSection,
             pendingEvents: pendingEvents
         }
+        this._bThreadInfoById[bid.threadId].pendingEvents = pendingEvents;
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
@@ -90,6 +91,7 @@ export class Logger {
             threadSection: threadSection,
             pendingEvents: pendingEvents
         }
+        this._bThreadInfoById[bid.threadId].pendingEvents = pendingEvents;
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
@@ -106,6 +108,7 @@ export class Logger {
             BidSubType: bid.subType,
             pendingEvents: pendingEvents
         };
+        this._bThreadInfoById[bid.threadId].pendingEvents = pendingEvents;
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
