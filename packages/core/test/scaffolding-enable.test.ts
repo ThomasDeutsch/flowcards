@@ -77,17 +77,62 @@ test("enable will return the current thread waits", () => {
 });
 
 
+test("enable will return the current thread blocks", () => {
+    let threadState: BThreadState;
+
+    const thread = flow(null, function* (this: BTContext) {
+        yield bp.block('A');
+    });
+
+    testScenarios((enable) => {
+        threadState = enable(thread());
+        expect(threadState?.isBlocking('A')).toBe(true);
+    });
+});
+
 
 test("enable will return the current thread-section", () => {
     let threadState: BThreadState;
 
     const thread = flow(null, function* (this: BTContext) {
-        this.setSection('my state value');
+        this.section('my state value');
         yield bp.wait('A');
     });
 
     testScenarios((enable) => {
         threadState = enable(thread());
         expect(threadState?.section).toEqual('my state value');
+    });
+});
+
+
+test("enable will return the the state of completion", () => {
+    let threadState: BThreadState;
+
+    const thread = flow(null, function* (this: BTContext) {
+        this.section('my state value');
+        yield bp.request('A');
+    });
+
+    testScenarios((enable) => {
+        threadState = enable(thread());
+    }, () => {
+        expect(threadState?.isCompleted).toEqual(true);
+    });
+});
+
+test("the section will be deleted if the thread completes", () => {
+    let threadState: BThreadState;
+
+    const thread = flow(null, function* (this: BTContext) {
+        this.section('my state value');
+        yield bp.request('A');
+    });
+
+    testScenarios((enable) => {
+        threadState = enable(thread());
+    }, () => {
+        expect(threadState?.isCompleted).toEqual(true);
+        expect(threadState?.section).toBeUndefined();
     });
 });

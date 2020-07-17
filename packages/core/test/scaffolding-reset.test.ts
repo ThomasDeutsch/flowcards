@@ -90,8 +90,9 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
     let receivedValue;
     
     const threadA = flow(null, function* (this: BTContext) {
-        this.setSection('foo');
+        this.section('foo');
         yield bp.request('A');
+        yield bp.wait('B');
     });
 
     interface MyProps {stateFromThreadA: BThreadState}

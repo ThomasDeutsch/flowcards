@@ -12,7 +12,7 @@ export type BThreadKey = string | number;
 
 export interface BTContext {
     key?: BThreadKey;
-    setSection: (newValue: string) => void;
+    section: (newValue: string) => void;
 }
 
 export interface ExtendResult {
@@ -34,6 +34,7 @@ export interface BThreadState {
     section?: string;
     isWaitingFor: IsBidPlacedFn;
     isBlocking: IsBidPlacedFn;
+    isCompleted: boolean;
 }
 
 export class BThread {
@@ -46,7 +47,6 @@ export class BThread {
     private _nextBid?: any;
     private _pendingRequestRecord: EventMap<Promise<any>> = new EventMap();
     private _pendingExtendRecord: EventMap<Promise<any>> = new EventMap();
-    private _isCompleted = false;
     private _state: BThreadState = {
         waits: this._currentBids?.[BidType.wait],
         blocks: this._currentBids?.[BidType.block],
@@ -56,18 +56,19 @@ export class BThread {
         },
         isBlocking: function(event: string | FCEvent): boolean {
             return !!this.blocks?.has(toEvent(event));
-        }
+        },
+        isCompleted: false
     };
     public get state() {
         return this._state;
     }
     private _getBTContext(): BTContext {
-        const setSection = (value: string) => {
+        const section = (value: string) => {
             this._state.section = value;
         }
         return {
             key: this.key,
-            setSection: setSection
+            section: section
         };
     }
     public readonly id: string;
@@ -95,11 +96,12 @@ export class BThread {
     }
 
     private _processNextBid(returnValue?: any): FCEvent[] {
-        if(this._isCompleted) return [];
+        if(this._state.isCompleted) return [];
         const cancelledPending = this._cancelPendingPromises();
         const next = this._thread.next(returnValue);
         if (next.done) {
-            this._isCompleted = true;
+            this._state.isCompleted = true;
+            delete this._state.section;
             delete this._nextBid;
         } else {
             this._nextBid = next.value;
@@ -142,7 +144,7 @@ export class BThread {
 
     public getBids(): BThreadBids  {
         const pendingEvents: EventMap<true> | undefined = reduceEventMaps([this._pendingExtendRecord, this._pendingRequestRecord], () => true);
-        if(this._isCompleted) return {[BidType.pending]: pendingEvents};
+        if(this._state.isCompleted) return {[BidType.pending]: pendingEvents};
         if(this._currentBids === undefined) {
             this._currentBids = getBidsForBThread(this.id, this._nextBid);
             this._state.waits = this._currentBids?.[BidType.wait];
@@ -157,7 +159,7 @@ export class BThread {
         // reset
         this._pendingExtendRecord = new EventMap();
         this._currentProps = nextProps;
-        this._isCompleted = false;
+        this._state.isCompleted = false;
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
         const cancelledPending = this._processNextBid();
