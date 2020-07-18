@@ -3,7 +3,7 @@ import * as utils from "./utils";
 import { Logger, BThreadReactionType } from "./logger";
 import { ActionType, Action } from './action';
 import { ActionDispatch} from './update-loop';
-import { EventMap, reduceEventMaps, FCEvent, toEvent } from './event';
+import { EventMap, FCEvent, toEvent } from './event';
 import { EventCache, setEventCache } from './event-cache';
 
 export type BTGen = Generator<Bid | Bid[], void, any>;
@@ -148,8 +148,8 @@ export class BThread {
     }
 
     private _updatePendingEventsBid() {
-        const pendingExtends: EventMap<PendingEventInfo> = this._pendingExtendRecord.map(x => ({host: this.id, isExtend: true}));
-        const pendingRequests: EventMap<PendingEventInfo> = this._pendingRequestRecord.map(x => ({host: this.id, isExtend: false}));
+        const pendingExtends: EventMap<PendingEventInfo> = this._pendingExtendRecord.map(event => ({event: event, host: this.id, isExtend: true}));
+        const pendingRequests: EventMap<PendingEventInfo> = this._pendingRequestRecord.map(event => ({event: event, host: this.id, isExtend: false}));
         const pendingEvents: EventMap<PendingEventInfo> = pendingExtends.merge(pendingRequests);
         if(!pendingEvents) {
             if(this._currentBids) delete this._currentBids[BidType.pending];
