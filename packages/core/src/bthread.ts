@@ -208,7 +208,7 @@ export class BThread {
         // resolve extend
         if(this._pendingExtendRecord.delete(action.event)) {
             this._updatePendingEventsBid();
-            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action, this._currentBids?.[BidType.pending]?.allEvents);
+            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event);
             return true;
         } 
         // resolve pending promise
