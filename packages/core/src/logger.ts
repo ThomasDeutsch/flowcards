@@ -27,7 +27,9 @@ export enum BThreadReactionType {
     progress = "progress",
     reset = "reset",
     promise = "promise",
-    extend = "extend"
+    extend = "extend",
+    extendResolved = "extendResolved",
+    extendRejected = "extendRejected"
 }
 
 export interface BThreadReaction {
@@ -41,7 +43,6 @@ export interface BThreadReaction {
     bidType?: BidType;
     BidSubType?: BidSubType;
     payload?: any;
-    
 }
 
 export class Logger {
@@ -121,6 +122,17 @@ export class Logger {
             changedProps: changedProps,
             cancelledPending: cancelledEvents
         };
+        this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
+    }
+
+    public logExtendResult(type: BThreadReactionType.extendResolved | BThreadReactionType.extendRejected, threadId: string, action: Action, pendingEvents?: FCEvent[]) {
+        const actionIndex = this._getActionIndex();
+        const reaction: BThreadReaction = {
+            type: type,
+            actionIndex: actionIndex,
+            event: action.event
+        };
+        this._bThreadInfoById[threadId].pendingEvents = pendingEvents;
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 

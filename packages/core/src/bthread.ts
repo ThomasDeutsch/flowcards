@@ -1,6 +1,6 @@
 import { getBidsForBThread, BThreadBids, BidType, Bid, BidSubType } from './bid';
 import * as utils from "./utils";
-import { Logger } from "./logger";
+import { Logger, BThreadReactionType } from "./logger";
 import { ActionType, Action } from './action';
 import { ActionDispatch} from './update-loop';
 import { EventMap, reduceEventMaps, FCEvent, toEvent } from './event';
@@ -123,11 +123,11 @@ export class BThread {
     }
 
     private _createExtendPromise(bid: Bid, payload: any): ExtendResult {
-        let resolveFn = () => {true};
-        let rejectFn = () => {true};
+        let resolveFn: (value?: unknown) => void;
+        let rejectFn: (reason?: any) => void;
         const promise = new Promise((resolve, reject) => {
             resolveFn = resolve;
-                rejectFn = reject;
+            rejectFn = reject;
             }).then((data): void => {
                 if (this._pendingExtendRecord.has(bid.event)) {
                     this._dispatch({ type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data });
@@ -140,7 +140,11 @@ export class BThread {
         this._pendingExtendRecord.set(bid.event, promise);
         this._updatePendingEventsBid();
         this._logger?.logExtend(bid, this._state.section, this._currentBids?.[BidType.pending]?.allEvents);
-        return {resolve: resolveFn, reject: rejectFn, value: payload};
+        return {
+            resolve: (value?: unknown) => {resolveFn(value)}, 
+            reject: (reason: any) => {rejectFn(reason)}, 
+            value: payload
+        };
     }
 
     private _updatePendingEventsBid() {
@@ -204,6 +208,7 @@ export class BThread {
         // resolve extend
         if(this._pendingExtendRecord.delete(action.event)) {
             this._updatePendingEventsBid();
+            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action, this._currentBids?.[BidType.pending]?.allEvents);
             return true;
         } 
         // resolve pending promise
@@ -214,15 +219,17 @@ export class BThread {
         return false;
     }
 
+
     public rejectPending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;
         // rejection of an extend
         const isExtendDeleted = this._pendingExtendRecord.delete(action.event);
         if(isExtendDeleted) {
             this._updatePendingEventsBid();
+            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action, this._currentBids?.[BidType.pending]?.allEvents); // thread is not progressed after this, so a special logging is needed
         }
         // rejection of a pending promise
-        if (!isExtendDeleted && this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
+        else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
             this._thread.throw({event: action.event, error: action.payload});
             const bid = this._currentBids?.request?.get(action.event);
             if(!bid) return;
