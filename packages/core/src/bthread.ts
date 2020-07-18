@@ -119,7 +119,7 @@ export class BThread {
         }   
         const sectionBeforeProgression = this._state.section;
         const cancelledPending = this._processNextBid(returnVal);
-        this._logger?.logThreadProgression(this.id, bid, sectionBeforeProgression, cancelledPending, this._currentBids?.[BidType.pending]?.allEvents);
+        this._logger?.logThreadProgression(this.id, bid, sectionBeforeProgression, cancelledPending, this._currentBids?.[BidType.pending]);
     }
 
     private _createExtendPromise(bid: Bid, payload: any): ExtendResult {
@@ -139,7 +139,7 @@ export class BThread {
             });
         this._pendingExtendRecord.set(bid.event, promise);
         this._updatePendingEventsBid();
-        this._logger?.logExtend(bid, this._state.section, this._currentBids?.[BidType.pending]?.allEvents);
+        this._logger?.logExtend(bid, this._state.section, this._currentBids?.[BidType.pending]);
         return {
             resolve: (value?: unknown) => {resolveFn(value)}, 
             reject: (reason: any) => {rejectFn(reason)}, 
@@ -187,7 +187,7 @@ export class BThread {
         if(!bid) return;
         this._pendingRequestRecord.set(event, promise);
         this._updatePendingEventsBid();
-        this._logger?.logPromise(bid, this._state.section, this._currentBids?.[BidType.pending]?.allEvents);
+        this._logger?.logPromise(bid, this._state.section, this._currentBids?.[BidType.pending]);
         const startTime = new Date().getTime();
         promise.then((data): void => {
                 const pendingDuration = new Date().getTime() - startTime;
@@ -210,7 +210,7 @@ export class BThread {
         // resolve extend
         if(this._pendingExtendRecord.delete(action.event)) {
             this._updatePendingEventsBid();
-            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event, this._currentBids?.[BidType.pending]?.allEvents);
+            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event, this._currentBids?.[BidType.pending]);
             return true;
         } 
         // resolve pending promise
@@ -228,7 +228,7 @@ export class BThread {
         const isExtendDeleted = this._pendingExtendRecord.delete(action.event);
         if(isExtendDeleted) {
             this._updatePendingEventsBid();
-            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event, this._currentBids?.[BidType.pending]?.allEvents); // thread is not progressed after this, so a special logging is needed
+            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event, this._currentBids?.[BidType.pending]); // thread is not progressed after this, so a special logging is needed
         }
         // rejection of a pending promise
         else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {

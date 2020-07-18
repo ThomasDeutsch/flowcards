@@ -1,7 +1,7 @@
 import { Action, ActionType } from './action';
 import { BThreadKey } from './bthread';
-import { Bid, BThreadBids, BidType, BidSubType } from './bid';
-import { FCEvent } from './event';
+import { Bid, BThreadBids, BidType, BidSubType, PendingEventInfo } from './bid';
+import { FCEvent, EventMap } from './event';
 
 export interface LoggedAction extends Action {
     actionIndex: number;
@@ -14,7 +14,7 @@ export interface BThreadInfo {
     key?: BThreadKey;
     title?: string;
     reactions: Map<number, BThreadReaction>;
-    pendingEvents?: FCEvent[];
+    pendingEvents?: EventMap<PendingEventInfo>;
     props: any;
 }
 
@@ -37,7 +37,7 @@ export interface BThreadReaction {
     type: BThreadReactionType;
     actionIndex: number;
     cancelledPending?: FCEvent[];
-    pendingEvents?: FCEvent[];
+    pendingEvents?: EventMap<PendingEventInfo>;
     changedProps?: string[];
     threadSection?: string;
     event?: FCEvent;
@@ -64,12 +64,11 @@ export class Logger {
             id: id, title: title,
             reactions: new Map<number, BThreadReaction>(), 
             enabledInStep: this._getActionIndex()+1,
-            pendingEvents: [],
             props: props
         };
     }
 
-    public logPromise(bid: Bid, threadSection?: string, pendingEvents?: FCEvent[]): void {
+    public logPromise(bid: Bid, threadSection?: string, pendingEvents?: EventMap<PendingEventInfo>): void {
         const actionIndex = this._getActionIndex();
         const reaction: BThreadReaction = {
             type: BThreadReactionType.promise,
@@ -84,7 +83,7 @@ export class Logger {
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logExtend(bid: Bid, threadSection?: string, pendingEvents?: FCEvent[]): void {
+    public logExtend(bid: Bid, threadSection?: string, pendingEvents?: EventMap<PendingEventInfo>): void {
         const actionIndex = this._getActionIndex();
         const reaction: BThreadReaction = {
             type: BThreadReactionType.extend,
@@ -98,7 +97,7 @@ export class Logger {
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[], pendingEvents?: FCEvent[]): void {
+    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[], pendingEvents?: EventMap<PendingEventInfo>): void {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(bid.threadId);
         const reaction: BThreadReaction = {
@@ -127,7 +126,7 @@ export class Logger {
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logExtendResult(type: BThreadReactionType.extendResolved | BThreadReactionType.extendRejected, threadId: string, event: FCEvent, pendingEvents?: FCEvent[]) {
+    public logExtendResult(type: BThreadReactionType.extendResolved | BThreadReactionType.extendRejected, threadId: string, event: FCEvent, pendingEvents?: EventMap<PendingEventInfo>) {
         const actionIndex = this._getActionIndex();
         const reaction: BThreadReaction = {
             type: type,
