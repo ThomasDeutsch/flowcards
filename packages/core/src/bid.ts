@@ -12,9 +12,10 @@ export enum BidType {
 
 export enum BidSubType {
     none = "none",
-    on = "on",
     trigger = "trigger",
-    set = "set"
+    set = "set",
+    on = "on",
+    onPending = "onPending"
 }
 
 export interface Bid {
@@ -161,6 +162,15 @@ export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
         subType: BidSubType.on,
         event: toEvent(event), 
         guard: guard,
+        threadId: "" 
+    };
+}
+
+export function onPending(event: string | FCEvent): Bid {
+    return { 
+        type: BidType.wait,
+        subType: BidSubType.onPending,
+        event: toEvent(event),
         threadId: "" 
     };
 }

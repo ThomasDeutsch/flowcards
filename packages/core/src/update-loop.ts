@@ -1,5 +1,5 @@
 import { BThread, ExtendResultType, BThreadState, BThreadKey } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids } from './bid';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, BidSubType } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
@@ -60,7 +60,16 @@ function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
 
 
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
-    const bids = getMatchingBids(allBids[BidType.wait], action.event) || [];
+    const bids = (getMatchingBids(allBids[BidType.wait], action.event) || []).filter(event => event.subType && event.subType !== BidSubType.onPending);
+    if(bids.length === 0) return false;
+    bids.forEach(bid => {
+        bThreadDictionary[bid.threadId].progressWait(bid, action.payload);
+    });
+    return true;
+}
+
+function advanceOnPending(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
+    const bids = (getMatchingBids(allBids[BidType.wait], action.event) || []).filter(bid => bid.subType === BidSubType.onPending);
     if(bids.length === 0) return false;
     bids.forEach(bid => {
         bThreadDictionary[bid.threadId].progressWait(bid, action.payload);
@@ -87,6 +96,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         }
         case ActionType.promise: {
             bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
+            advanceOnPending(allBids, bThreadDictionary, action);
             break;
         }
         case ActionType.resolved: {
