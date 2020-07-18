@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/rxjs",
-  "version": "0.13.19",
+  "version": "0.13.20",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -19,7 +19,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@flowcards/core": "^0.13.19"
+    "@flowcards/core": "^0.13.20"
   },
   "peerDependencies": {
     "rxjs": ">=5.0.0"

@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/svelte",
-  "version": "0.13.19",
+  "version": "0.13.20",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -22,7 +22,7 @@
     "svelte": "^3.20.1"
   },
   "dependencies": {
-    "@flowcards/core": "^0.13.19"
+    "@flowcards/core": "^0.13.20"
   },
   "peerDependencies": {
     "svelte": "^3.7.0"
