@@ -132,7 +132,7 @@ export class Logger {
             actionIndex: actionIndex,
             event: event
         };
-        this._bThreadInfoById[threadId].pendingEvents = this._bThreadInfoById[threadId].pendingEvents?.filter(e => e !== action.event);
+        this._bThreadInfoById[threadId].pendingEvents = this._bThreadInfoById[threadId].pendingEvents?.filter(e => e !== event);
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
