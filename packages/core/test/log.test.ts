@@ -144,3 +144,23 @@ test("log will contain a list of executed actions (sorted)", () => {
 })
 
 
+test("the log will contain the flow-props", () => {
+
+  const thread1 = flow({id: 'thread1', title: 'myThread1'}, function* () {
+      yield [bp.request("eventOne"), bp.wait("eventTwo")];
+  });
+
+  const thread2 = flow({id: 'thread2', title: 'myThread2'}, function* ({prop1: number, prop2: string}) {
+      yield bp.wait("eventTwo");
+  })
+
+  testScenarios((enable) => {
+      enable(thread1());
+      enable(thread2({prop1: 912, prop2: 'test'}));
+  }, ({log}) => {
+      expect(log?.bThreadInfoById.thread1.props).toBeUndefined();
+      expect(log?.bThreadInfoById.thread2.props.prop1).toEqual(912);
+      expect(log?.bThreadInfoById.thread2.props.prop2).toEqual('test');
+      
+  });
+});

@@ -15,6 +15,7 @@ export interface BThreadInfo {
     title?: string;
     reactions: Map<number, BThreadReaction>;
     pendingEvents?: FCEvent[];
+    props: any;
 }
 
 export interface Log {
@@ -58,12 +59,13 @@ export class Logger {
         this._actions.push({...action, payload: payload, reactingBThreads: new Set(), actionIndex: this._getActionIndex()+1});
     }
 
-    public addThreadInfo(id: string, title?: string) {
+    public addThreadInfo(id: string, title?: string, props?: any) {
         this._bThreadInfoById[id] = {
             id: id, title: title,
             reactions: new Map<number, BThreadReaction>(), 
-            enabledInStep: this._getActionIndex(),
-            pendingEvents: []
+            enabledInStep: this._getActionIndex()+1,
+            pendingEvents: [],
+            props: props
         };
     }
 

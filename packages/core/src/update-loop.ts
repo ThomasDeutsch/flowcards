@@ -132,7 +132,7 @@ function setupScaffolding(
         if (bThreadDictionary[id]) {
             bThreadDictionary[id].resetOnPropsChange(props);
         } else {
-            logger?.addThreadInfo(id, title);
+            logger?.addThreadInfo(id, title, props);
             bThreadDictionary[id] = new BThread(id, gen, props, dispatch, key, logger, title);
         }
         const threadBids = bThreadDictionary[id].getBids();
