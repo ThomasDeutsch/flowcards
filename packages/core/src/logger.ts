@@ -125,14 +125,14 @@ export class Logger {
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logExtendResult(type: BThreadReactionType.extendResolved | BThreadReactionType.extendRejected, threadId: string, action: Action, pendingEvents?: FCEvent[]) {
+    public logExtendResult(type: BThreadReactionType.extendResolved | BThreadReactionType.extendRejected, threadId: string, event: FCEvent) {
         const actionIndex = this._getActionIndex();
         const reaction: BThreadReaction = {
             type: type,
             actionIndex: actionIndex,
-            event: action.event
+            event: event
         };
-        this._bThreadInfoById[threadId].pendingEvents = pendingEvents;
+        this._bThreadInfoById[threadId].pendingEvents = this._bThreadInfoById[threadId].pendingEvents?.filter(e => e !== action.event);
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 

@@ -226,7 +226,7 @@ export class BThread {
         const isExtendDeleted = this._pendingExtendRecord.delete(action.event);
         if(isExtendDeleted) {
             this._updatePendingEventsBid();
-            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action, this._currentBids?.[BidType.pending]?.allEvents); // thread is not progressed after this, so a special logging is needed
+            this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event); // thread is not progressed after this, so a special logging is needed
         }
         // rejection of a pending promise
         else if (this._pendingRequestRecord.delete(action.event) && this._thread && this._thread.throw) {
