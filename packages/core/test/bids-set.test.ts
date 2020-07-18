@@ -7,10 +7,11 @@ test("a set is a request, that will be cached. ", () => {
         yield bp.set("count", 2);
     })
 
+
     testScenarios((enable, ) => {
         enable(thread1());
     }, ({event}) => {
-        expect(event("count").value).toEqual(2);
+        expect(event("count")?.value).toEqual(2);
     });
 });
 
@@ -25,11 +26,12 @@ test("when a promise resolves, the cache gets updated", (done) => {
         enable(thread1());
     }, ({dispatch, event}) => {
         if(dispatch('fin')) {
-            expect(event('testevent').value).toEqual("resolved value");
+            expect(event('testevent')?.value).toEqual("resolved value");
             done();
         }
     });
 });
+
 
 test("if there are multiple sets at the same time, one will be requested first (the higher priority one).", () => {
 
@@ -45,7 +47,7 @@ test("if there are multiple sets at the same time, one will be requested first (
         enable(threadLow());
         enable(threadHigh());
     }, ({event}) => {
-        expect(event("count").value).toEqual(2);
+        expect(event("count")?.value).toEqual(2);
     });
 });
 
@@ -63,7 +65,7 @@ test("sets can be extended", () => {
         enable(thread());
         enable(thread2());
     }, ({event}) => {
-        expect(event('count').value).toEqual(4);
+        expect(event('count')?.value).toEqual(4);
     });
 });
 

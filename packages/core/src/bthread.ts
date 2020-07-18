@@ -1,4 +1,4 @@
-import { getBidsForBThread, BThreadBids, BidType, Bid, BidSubType } from './bid';
+import { getBidsForBThread, BThreadBids, BidType, Bid, BidSubType, PendingEventInfo } from './bid';
 import * as utils from "./utils";
 import { Logger, BThreadReactionType } from "./logger";
 import { ActionType, Action } from './action';
@@ -148,7 +148,9 @@ export class BThread {
     }
 
     private _updatePendingEventsBid() {
-        const pendingEvents: EventMap<true> | undefined = reduceEventMaps([this._pendingExtendRecord, this._pendingRequestRecord], () => true);
+        const pendingExtends: EventMap<PendingEventInfo> = this._pendingExtendRecord.map(x => ({host: this.id, isExtend: true}));
+        const pendingRequests: EventMap<PendingEventInfo> = this._pendingRequestRecord.map(x => ({host: this.id, isExtend: false}));
+        const pendingEvents: EventMap<PendingEventInfo> = pendingExtends.merge(pendingRequests);
         if(!pendingEvents) {
             if(this._currentBids) delete this._currentBids[BidType.pending];
             else delete this._currentBids;

@@ -146,6 +146,7 @@ export class Logger {
         };
     }
 
+    
     public resetLog(): void {
         this._actions = [];
         this._bThreadInfoById = {};  

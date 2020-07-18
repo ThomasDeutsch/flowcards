@@ -30,13 +30,17 @@ export interface Bid {
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
 export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
 export type BidsForBidType = EventMap<Bid[]> | undefined;
+export interface PendingEventInfo {
+    host: string,
+    isExtend: boolean
+}
 
 // bids from BThreads
 // --------------------------------------------------------------------------------------------------------------------
 
 export interface BThreadBids {
     withMultipleBids?: boolean;
-    [BidType.pending]?: EventMap<true>;
+    [BidType.pending]?: EventMap<PendingEventInfo>;
     [BidType.request]?: EventMap<Bid>;
     [BidType.wait]?: EventMap<Bid>;
     [BidType.block]?: EventMap<Bid>;

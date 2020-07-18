@@ -143,6 +143,13 @@ export class EventMap<T>  {
         });
         return this;
     }
+
+    public merge(em: EventMap<T>): EventMap<T> {
+        em.forEach((event, value) => {
+            this.set(event, value);
+        });
+        return this;
+    }
 }
 
 type ReducerFunction<T,X> = (acc: X | undefined, curr: T, event: FCEvent) => X;
