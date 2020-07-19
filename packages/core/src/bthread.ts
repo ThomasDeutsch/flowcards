@@ -283,5 +283,6 @@ export class BThread {
         delete this._pendingExtendMap;
         delete this._state;
         delete this._thread;
+        this._logger?.logOnDestroy(this.id);
     }
 }

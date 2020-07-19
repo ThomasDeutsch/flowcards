@@ -134,6 +134,10 @@ export class Logger {
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
+    public logOnDestroy(threadId: string) {
+        delete this._bThreadInfoById[threadId];
+    }
+
     public getLog(): Log {
         return {
             actions: this._actions,
@@ -142,7 +146,6 @@ export class Logger {
         };
     }
 
-    
     public resetLog(): void {
         this._actions = [];
         this._bThreadInfoById = {};  
