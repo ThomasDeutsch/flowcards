@@ -158,9 +158,13 @@ test("the log will contain the flow-props", () => {
       enable(thread1());
       enable(thread2({prop1: 912, prop2: 'test'}));
   }, ({log}) => {
-      expect(log?.bThreadInfoById.thread1.props).toBeUndefined();
-      expect(log?.bThreadInfoById.thread2.props.prop1).toEqual(912);
-      expect(log?.bThreadInfoById.thread2.props.prop2).toEqual('test');
+      expect(log?.bThreadInfoById.thread1.current.props).toBeUndefined();
+      expect(log?.bThreadInfoById.thread2.current.props.prop1).toEqual(912);
+      expect(log?.bThreadInfoById.thread2.current.props.prop2).toEqual('test');
       
   });
 });
+
+
+// add test for current.isCompleted
+// add test for current.pendingEvents

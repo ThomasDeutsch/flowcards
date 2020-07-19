@@ -8,14 +8,19 @@ export interface LoggedAction extends Action {
     reactingBThreads: Set<string>;
 }
 
+export interface currentBThreadInfo {
+    props: any;
+    isCompleted: boolean;
+    pendingEvents?: EventMap<PendingEventInfo>;
+}
+
 export interface BThreadInfo {
     id: string;
     enabledInStep: number;
     key?: BThreadKey;
     title?: string;
     reactions: Map<number, BThreadReaction>;
-    pendingEvents?: EventMap<PendingEventInfo>;
-    props: any;
+    current: currentBThreadInfo; 
 }
 
 export interface Log {
@@ -64,7 +69,10 @@ export class Logger {
             id: id, title: title,
             reactions: new Map<number, BThreadReaction>(), 
             enabledInStep: this._getActionIndex()+1,
-            props: props
+            current: {
+                props: props,
+                isCompleted: false
+            }
         };
     }
 
@@ -79,7 +87,7 @@ export class Logger {
             threadSection: threadSection,
             pendingEvents: pendingEvents
         }
-        this._bThreadInfoById[bid.threadId].pendingEvents = pendingEvents;
+        this._bThreadInfoById[bid.threadId].current.pendingEvents = pendingEvents;
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
@@ -93,7 +101,7 @@ export class Logger {
             threadSection: threadSection,
             pendingEvents: pendingEvents
         }
-        this._bThreadInfoById[bid.threadId].pendingEvents = pendingEvents;
+        this._bThreadInfoById[bid.threadId].current.pendingEvents = pendingEvents;
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
@@ -110,7 +118,7 @@ export class Logger {
             BidSubType: bid.subType,
             pendingEvents: pendingEvents
         };
-        this._bThreadInfoById[bid.threadId].pendingEvents = pendingEvents;
+        this._bThreadInfoById[bid.threadId].current.pendingEvents = pendingEvents;
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
@@ -133,7 +141,7 @@ export class Logger {
             actionIndex: actionIndex,
             event: event
         };
-        this._bThreadInfoById[threadId].pendingEvents = pendingEvents;
+        this._bThreadInfoById[threadId].current.pendingEvents = pendingEvents;
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 

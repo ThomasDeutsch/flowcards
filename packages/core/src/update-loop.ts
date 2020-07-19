@@ -1,5 +1,5 @@
 import { BThread, ExtendResultType, BThreadState, BThreadKey } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, BidSubType } from './bid';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, BidSubType, PendingEventInfo } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
@@ -26,7 +26,7 @@ export interface BThreadDictionary {
 export interface ScenariosContext {
     dispatch: EventDispatch;
     event: GetCachedItem;
-    isPending: GetIsPending;
+    pending: EventMap<PendingEventInfo>;
     log?: Log;
 }
 
@@ -39,11 +39,11 @@ function createBThreadId(id: string, key?: BThreadKey): string {
 function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
     let bids = getMatchingBids(allBids[BidType.extend], action.event);
     if(bids === undefined || bids.length === 0) return action;
+    const nextAction = {...action};
     bids = [...bids];
     while(bids.length > 0) {
         const nextBid = bids.pop();
         if(nextBid === undefined) continue;
-        const nextAction = {...action};
         if(nextBid.payload !== undefined && (nextAction.type === ActionType.dispatched || nextAction.type === ActionType.requested)) {
             nextAction.payload = (typeof nextBid.payload === 'function') ? nextBid.payload(nextAction.payload) : nextBid.payload;
             if(utils.isThenable(nextAction.payload) && bThreadDictionary[nextAction.threadId]) {
@@ -184,13 +184,11 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(actionQueue);
         }
         // create the return value:
-        updateEventDispatcher(bids.wait?.deleteAll(bids[BidType.pending]));
-        const pendingEvents = new EventMap<true>();
-        bids[BidType.pending]?.forEach(event => pendingEvents.set(event, true));
+        updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
         return {
             dispatch: eventDispatch,
             event: getEventCache, // latest values from event cache
-            isPending: (event: FCEvent | string) => !!pendingEvents.has(toEvent(event)), // pending Events
+            pending: bids[BidType.pending], // pending Events
             log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
         };
     }

@@ -77,23 +77,19 @@ function reduceMaps(allBidsForType: (EventMap<Bid> | undefined)[], blocks?: Set<
 }
 
 export interface AllBidsByType {
-    [BidType.pending]?: Set<FCEvent>;
+    [BidType.pending]: EventMap<PendingEventInfo>;
     [BidType.request]?: EventMap<Bid[]>;
     [BidType.wait]?: EventMap<Bid[]>;
     [BidType.extend]?: EventMap<Bid[]>;
 }
 
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
-    const pending = allBThreadBids.reduce((acc: FCEvent[], bids) => {
-        if(bids[BidType.pending]) acc = [...acc, ...(bids[BidType.pending]?.allEvents || [])]
-        return acc;
-    }, []);
-    const pendingEvents = new Set(pending);
+    const pending = allBThreadBids.reduce((acc: EventMap<PendingEventInfo>, bids) => acc.merge(bids[BidType.pending]), new EventMap<PendingEventInfo>());
     const blocks = reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]).filter(utils.notUndefined));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
-    const fixedBlocksAndPending = utils.union(pendingEvents, fixedBlocks);
+    const fixedBlocksAndPending = utils.union(new Set(pending.allEvents), fixedBlocks);
     return {
-        [BidType.pending]: pendingEvents,
+        [BidType.pending]: pending,
         [BidType.request]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]).filter(utils.notUndefined), fixedBlocksAndPending, guardedBlocks),
         [BidType.wait]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]).filter(utils.notUndefined), fixedBlocks, guardedBlocks),
         [BidType.extend]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]).filter(utils.notUndefined), fixedBlocks, guardedBlocks)

@@ -23,8 +23,8 @@ test("a pending event can not be requested", () => {
     testScenarios((enable) => {
         enable(thread2());
         enable(thread1());
-    }, ({log, isPending}) => {
-        expect(isPending('A')).toBeTruthy();
+    }, ({log, pending}) => {
+        expect(pending.has('A')).toBeTruthy();
         expect(log?.latestAction.threadId).toBe("thread1");
     });
 });
@@ -44,8 +44,8 @@ test("a pending event can not be extended", () => {
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({log, isPending}) => {
-        expect(isPending('A')).toBeTruthy();
+    }, ({log, pending}) => {
+        expect(pending.has('A')).toBeTruthy();
         expect(log?.latestAction.threadId).toBe("thread1");
     });
 });

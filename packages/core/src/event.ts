@@ -79,7 +79,8 @@ export class EventMap<T>  {
         return (result.length === 0) ? undefined : result;
     }
 
-    public has(event: FCEvent): boolean {
+    public has(event: FCEvent | string): boolean {
+        event = toEvent(event);
         if(event.key === undefined) {
             return this.noKey.has(event.name);
         } else {
@@ -144,7 +145,8 @@ export class EventMap<T>  {
         return this;
     }
 
-    public merge(em: EventMap<T>): EventMap<T> {
+    public merge(em: EventMap<T> | undefined): EventMap<T> {
+        if(!em) return this;
         em.forEach((event, value) => {
             this.set(event, value);
         });

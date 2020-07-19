@@ -18,7 +18,7 @@ test("an onPending-wait is progressed, when the event receives the pending state
         enable(thread1());
         enable(thread2());
     }, (x) => {
-        if(x.isPending('A')) {
+        if(x.pending.has('A')) {
             expect(thread2completed).toBeTruthy();
             done();
         }

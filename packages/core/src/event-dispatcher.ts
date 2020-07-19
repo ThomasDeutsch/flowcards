@@ -1,4 +1,4 @@
-import { BidsForBidType, Bid, BidSubType } from './bid';
+import { BidsForBidType, Bid, BidSubType, PendingEventInfo } from './bid';
 import { ActionType } from './action';
 import { ActionDispatch } from './update-loop';
 import { FCEvent, EventMap, toEvent } from './event';
@@ -8,7 +8,7 @@ import { getGuardForWaits, GuardFunction } from './guard';
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
-type EventDispatchUpdater = (waits: BidsForBidType) => void;
+type EventDispatchUpdater = (waits: BidsForBidType, pending: EventMap<PendingEventInfo>) => void;
 
 
 interface DispatchCache {
@@ -30,11 +30,11 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         if(dp === undefined) return undefined;
         return dp(payload);
     }
-    const updateEventDispatcher = (waits: BidsForBidType): void => {
+    const updateEventDispatcher = (waits: BidsForBidType, pending: EventMap<PendingEventInfo>): void => {
         guardByEvent.clear();
         const dpWaits = new EventMap<Bid[]>();
         waits?.forEach((event, bids) => {
-            const newBids = bids.filter(bid => bid.subType !== BidSubType.on);
+            const newBids = bids.filter(bid => (bid.subType !== BidSubType.on) && !pending.has(event));
             if(newBids.length > 0) dpWaits.set(event, newBids);
         })
         if(!dpWaits || dpWaits.size() === 0) { 
