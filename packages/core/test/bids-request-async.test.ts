@@ -2,11 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { ActionType } from '../src/action';
 import { flow } from '../src/flow'
-
-
-function delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+import { delay } from './testutils';
 
 
 test("A promise can be requested and will create a pending-event", () => {

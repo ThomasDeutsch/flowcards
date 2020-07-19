@@ -1,13 +1,12 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { BTContext, BThreadState } from '../src/bthread';
-import { toEvent } from '../src/event';
 import { flow } from '../src/flow';
-
+import { delay } from './testutils';
 
 test("a thread will accept an optional array of arguments", () => {
     let receivedArgs = ["", "", ""];
-    interface MyProps {a: string, b: string, c: string}
+    interface MyProps {a: string; b: string; c: string}
 
     const thread = flow(null, function* (props: MyProps) {
         receivedArgs = [props.a, props.b, props.c];
@@ -134,5 +133,47 @@ test("the section will be deleted if the thread completes", () => {
     }, () => {
         expect(threadState?.isCompleted).toEqual(true);
         expect(threadState?.section).toBeUndefined();
+    });
+});
+
+
+test("enable will return the current pending events and a isPending function", () => {
+    const thread1 = flow({id: 'thread1'}, function* () {
+        yield [bp.request("A", delay(100)), bp.request("B", delay(100))];
+    });
+
+    let enableReturn: BThreadState;
+
+    testScenarios((enable) => {
+        enableReturn = enable(thread1());
+    }, () => {
+        expect(enableReturn.isPending('A')).toBeTruthy();
+        expect(enableReturn.pending?.has('A')).toBeTruthy();
+        expect(enableReturn.isPending('B')).toBeTruthy();
+        expect(enableReturn.pending?.has('B')).toBeTruthy();
+    });
+});
+
+test("enable will return the current requesting events ( blocked and pending included )", () => {
+    const thread1 = flow({id: 'thread1'}, function* () {
+        yield [bp.request("A", delay(100)), bp.request("B")];
+    });
+
+    const thread2 = flow(null, function*() {
+        yield bp.block('B');
+    })
+
+    let enableReturn: BThreadState;
+
+    testScenarios((enable) => {
+        enableReturn = enable(thread1());
+        enable(thread2());
+    }, () => {
+        expect(enableReturn.isPending('A')).toBeTruthy();
+        expect(enableReturn.pending?.has('A')).toBeTruthy();
+        expect(enableReturn.isRequesting('A')).toBeTruthy();
+        expect(enableReturn.requests?.has('A')).toBeTruthy();
+        expect(enableReturn.isRequesting('B')).toBeTruthy();
+        expect(enableReturn.requests?.has('B')).toBeTruthy();
     });
 });

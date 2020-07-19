@@ -31,9 +31,9 @@ export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
 export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
 export type BidsForBidType = EventMap<Bid[]> | undefined;
 export interface PendingEventInfo {
-    event: FCEvent,
-    host: string,
-    isExtend: boolean
+    event: FCEvent;
+    host: string;
+    isExtend: boolean;
 }
 
 // bids from BThreads

@@ -31,10 +31,14 @@ type IsBidPlacedFn = (event: string | FCEvent) => boolean
 export interface BThreadState {
     waits?: EventMap<Bid>;
     blocks?: EventMap<Bid>;
+    pending?: EventMap<PendingEventInfo>;
+    requests?: EventMap<Bid>;
     section?: string;
     isWaitingFor: IsBidPlacedFn;
     isBlocking: IsBidPlacedFn;
     isCompleted: boolean;
+    isPending: IsBidPlacedFn;
+    isRequesting: IsBidPlacedFn;
 }
 
 export class BThread {
@@ -50,12 +54,20 @@ export class BThread {
     private _state: BThreadState = {
         waits: this._currentBids?.[BidType.wait],
         blocks: this._currentBids?.[BidType.block],
+        pending: this._currentBids?.[BidType.pending],
+        requests: this._currentBids?.[BidType.request],
         section: undefined,
         isWaitingFor: function(event: string | FCEvent): boolean {
            return !!this.waits?.has(event);
         },
         isBlocking: function(event: string | FCEvent): boolean {
             return !!this.blocks?.has(event);
+        },
+        isPending: function(event: string | FCEvent): boolean {
+            return !!this.pending?.has(event);
+        },
+        isRequesting: function(event: string | FCEvent): boolean {
+            return !!this.requests?.has(event);
         },
         isCompleted: false
     };
@@ -101,7 +113,7 @@ export class BThread {
             this._state.isCompleted = true;
             delete this._state.section;
             delete this._nextBid;
-            delete this._currentBids
+            delete this._currentBids;
         } else {
             this._nextBid = next.value;
             this._currentBids = getBidsForBThread(this.id, this._nextBid);
@@ -109,6 +121,7 @@ export class BThread {
         this._updatePendingEventsBid();
         this._state.waits = this._currentBids?.[BidType.wait];
         this._state.blocks = this._currentBids?.[BidType.block];
+        this._state.requests = this._currentBids?.[BidType.request];
         return cancelledRequests;
     }
 
@@ -151,6 +164,7 @@ export class BThread {
         const pendingExtends: EventMap<PendingEventInfo> = this._pendingExtendMap.map(event => ({event: event, host: this.id, isExtend: true}));
         const pendingRequests: EventMap<PendingEventInfo> = this._pendingRequestMap.map(event => ({event: event, host: this.id, isExtend: false}));
         const pendingEvents: EventMap<PendingEventInfo> = pendingExtends.merge(pendingRequests);
+        this._state.pending = pendingEvents;
         if(!pendingEvents) {
             if(this._currentBids) delete this._currentBids[BidType.pending];
             else delete this._currentBids;
