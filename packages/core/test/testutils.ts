@@ -1,4 +1,4 @@
-import { StagingFunction, createUpdateLoop, ScenariosContext } from '../src/update-loop';
+import { StagingFunction, ScenariosContext } from '../src/update-loop';
 import { scenarios } from '../src/index';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 

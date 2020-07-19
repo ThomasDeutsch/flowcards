@@ -19,9 +19,7 @@ export class Store {
   event = computedFn(function(this: Store, event: Fc.FCEvent | string) {
     return this.context.event(Fc.toEvent(event));
   });
-  isPending = computedFn(function(this: Store, event: Fc.FCEvent | string) {
-    return this.context.isPending(Fc.toEvent(event));
-  });
+  pending = this.context.pending;
 }
 
 decorate(Store, {

@@ -14,7 +14,6 @@ type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
 export type StagingFunction = (enable: EnableThread, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
 export type TriggerWaitDispatch = (payload: any) => void;
-type GetIsPending =  (event: FCEvent | string) => boolean;
 export type UpdateLoopFunction = (actionQueue?: Action[] | undefined) => ScenariosContext;
 
 
