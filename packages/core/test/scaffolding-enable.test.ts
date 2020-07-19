@@ -1,8 +1,7 @@
 import * as bp from "../src/bid";
-import { testScenarios } from "./testutils";
+import { testScenarios, delay } from './testutils';
 import { BTContext, BThreadState } from '../src/bthread';
 import { flow } from '../src/flow';
-import { delay } from './testutils';
 
 test("a thread will accept an optional array of arguments", () => {
     let receivedArgs = ["", "", ""];
@@ -175,5 +174,35 @@ test("enable will return the current requesting events ( blocked and pending inc
         expect(enableReturn.requests?.has('A')).toBeTruthy();
         expect(enableReturn.isRequesting('B')).toBeTruthy();
         expect(enableReturn.requests?.has('B')).toBeTruthy();
+    });
+});
+
+
+test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is set to true", () => {
+    const thread1 = flow({id: 'thread1'}, function* () {
+        yield bp.request("B");
+        yield bp.request('X');
+        yield bp.request("B", delay(100));
+    });
+
+    const thread2 = flow({id: 'thread2', destroyOnDisable: true}, function*() {
+        yield bp.wait('B');
+        yield bp.wait('C');
+    })
+
+    const thread3 = flow({id: 'thread3', destroyOnDisable: false}, function*() {
+        yield bp.wait('B');
+        yield bp.wait('C');
+    })
+
+    testScenarios((enable) => {
+        const enableReturn = enable(thread1());
+        if(enableReturn.isRequesting('B')) {
+            enable(thread2());
+            enable(thread3());
+        }
+    }, ({bThreadState}) => {
+        expect(bThreadState['thread2']?.waits?.has('B')).toBeTruthy();
+        expect(bThreadState['thread3']?.waits?.has('C')).toBeTruthy();
     });
 });

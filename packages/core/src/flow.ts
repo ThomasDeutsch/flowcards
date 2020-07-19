@@ -8,11 +8,13 @@ export type FlowContext = {
     key?: BThreadKey;
     gen: GeneratorFn;
     props: any;
+    destroyOnDisable: boolean;
 };
 
 interface FlowInfo {
     id?: string;
     title?: string;
+    destroyOnDisable?: boolean;
 }
 
 export function flow<T extends GeneratorFn>(info: FlowInfo | null, gen: T): (generatorProps?: Parameters<T>[0], flowKey?: BThreadKey) => FlowContext {
@@ -21,7 +23,8 @@ export function flow<T extends GeneratorFn>(info: FlowInfo | null, gen: T): (gen
         title: info?.title,
         key: undefined,
         gen: gen,
-        props: undefined
+        props: undefined,
+        destroyOnDisable: info?.destroyOnDisable || false
     };
     return (generatorProps?: Parameters<T>[0], key?: BThreadKey): FlowContext => {
         context.props = generatorProps;

@@ -132,13 +132,17 @@ function setupScaffolding(
     logger?: Logger
 ): () => ScaffoldingResult {
     const bids: BThreadBids[] = [];
+    const enabledIds = new Set<string>();
+    const destroyOnDisableThreadIds = new Set<string>();
     let bThreadStateById: Record<string, BThreadState>;
-    function enableBThread({id, title, gen, props, key}: FlowContext): BThreadState {
+    function enableBThread({id, title, gen, props, key, destroyOnDisable}: FlowContext): BThreadState {
         id = createBThreadId(id, key);
+        enabledIds.add(id);
         if (bThreadDictionary[id]) {
             bThreadDictionary[id].resetOnPropsChange(props);
         } else {
             logger?.addThreadInfo(id, title, props);
+            if(destroyOnDisable) destroyOnDisableThreadIds.add(id);
             bThreadDictionary[id] = new BThread(id, gen, props, dispatch, key, logger, title);
         }
         const threadBids = bThreadDictionary[id].getBids();
@@ -152,8 +156,17 @@ function setupScaffolding(
     }
     function run() {
         bThreadStateById = {};
+        enabledIds.clear();
         bids.length = 0;
-        stagingFunction(enableBThread, getCached); 
+        stagingFunction(enableBThread, getCached);
+        if(destroyOnDisableThreadIds.size > 0) 
+            destroyOnDisableThreadIds.forEach(id => {
+            if(!enabledIds.has(id)) {
+                destroyOnDisableThreadIds.delete(id);
+                bThreadDictionary[id].destroy();
+                delete bThreadDictionary[id];
+            }
+        });
         return {
             bThreadBids: bids,
             bThreadStateById: bThreadStateById
@@ -169,7 +182,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     const logger = disableLogging ? undefined : new Logger();
-    const scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
+    let scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const getEventCache: GetCachedItem = (event: FCEvent | string) => eventCache.get(toEvent(event));
     // main loop-function:
@@ -179,11 +192,12 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         if (action && action.type === ActionType.replay) {
             // delete all BThreads
             Object.keys(bThreadDictionary).forEach((threadId): void => { 
-                bThreadDictionary[threadId].onDelete();
-                delete bThreadDictionary[threadId]
+                bThreadDictionary[threadId].destroy();
+                delete bThreadDictionary[threadId];
             }); 
             eventCache.clear(); // clear cache
             logger?.resetLog(); // empty current log
+            scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger); // renew scaffolding function, because of the onDestroy-ids.
             return updateLoop(action.payload); // start a replay
         }
         // not a replay

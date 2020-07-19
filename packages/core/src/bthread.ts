@@ -278,7 +278,7 @@ export class BThread {
         return ExtendResultType.extendingThread;
     }
 
-    public onDelete(): void {
+    public destroy(): void {
         this._cancelPendingRequests();
         delete this._pendingExtendMap;
         delete this._state;
