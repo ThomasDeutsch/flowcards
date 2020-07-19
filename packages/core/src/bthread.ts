@@ -176,10 +176,10 @@ export class BThread {
         this._state.isCompleted = false;
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
-        let cancelledRequests = this._processNextBid();
-        let cancelledExtends = this._pendingExtendMap.allEvents;
+        const cancelledRequests = this._processNextBid();
+        const cancelledExtends = this._pendingExtendMap.allEvents;
         this._pendingExtendMap.clear();
-        this._logger?.logThreadReset(this.id, changedProps, cancelledExtends ? [...(cancelledRequests || []), ...cancelledExtends] : cancelledRequests);
+        this._logger?.logThreadReset(this.id, changedProps, cancelledExtends ? [...(cancelledRequests || []), ...cancelledExtends] : cancelledRequests, this._currentProps);
     }
 
     public addPendingRequest(event: FCEvent, promise: Promise<any>): void {       

@@ -26,6 +26,7 @@ export interface ScenariosContext {
     dispatch: EventDispatch;
     event: GetCachedItem;
     pending: EventMap<PendingEventInfo>;
+    bThreadState: Record<string, BThreadState>;
     log?: Log;
 }
 
@@ -117,6 +118,10 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     }
 }
 
+export interface ScaffoldingResult {
+    bThreadBids: BThreadBids[];
+    bThreadStateById: Record<string, BThreadState>;
+}
 
 function setupScaffolding(
     stagingFunction: StagingFunction,
@@ -124,8 +129,9 @@ function setupScaffolding(
     eventCache: EventCache,
     dispatch: ActionDispatch,
     logger?: Logger
-) {
+): () => ScaffoldingResult {
     const bids: BThreadBids[] = [];
+    let bThreadStateById: Record<string, BThreadState>;
     function enableBThread({id, title, gen, props, key}: FlowContext): BThreadState {
         id = createBThreadId(id, key);
         if (bThreadDictionary[id]) {
@@ -136,16 +142,21 @@ function setupScaffolding(
         }
         const threadBids = bThreadDictionary[id].getBids();
         if(threadBids) bids.push(threadBids);
+        bThreadStateById[id] = bThreadDictionary[id].state;
         return bThreadDictionary[id].state;
     }
     function getCached<T>(event: FCEvent | string): CachedItem<T> {
         event = toEvent(event);
         return eventCache.get(event)!;
     }
-    function run(): BThreadBids[] {
+    function run() {
+        bThreadStateById = {};
         bids.length = 0;
         stagingFunction(enableBThread, getCached); 
-        return [...bids];
+        return {
+            bThreadBids: bids,
+            bThreadStateById: bThreadStateById
+        };
     }
     return run;
 }
@@ -175,7 +186,8 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             return updateLoop(action.payload); // start a replay
         }
         // not a replay
-        const bids = getAllBids(scaffold());
+        const {bThreadBids, bThreadStateById} = scaffold();
+        const bids = getAllBids(bThreadBids);
         action = action || getNextActionFromRequests(bThreadDictionary, eventCache, bids.request, bids.wait);
         if (action) {
             logger?.logAction(action);
@@ -186,9 +198,10 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
         return {
             dispatch: eventDispatch,
-            event: getEventCache, // latest values from event cache
-            pending: bids[BidType.pending], // pending Events
-            log: logger?.getLog() // get all actions and reactions + pending event-names by thread-Id
+            event: getEventCache,
+            pending: bids[BidType.pending],
+            bThreadState: bThreadStateById,
+            log: logger?.getLog()
         };
     }
     return [updateLoop, eventDispatch];

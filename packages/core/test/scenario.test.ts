@@ -101,3 +101,23 @@ test("pending will accept a key as a second argument", () => {
         expect(event({name: "count", key: 1})).toBeUndefined();
     });
 });
+
+test("the bThreadState is returned by the scenarios function", () => {
+
+    const thread1 = flow({id: 'thread1', title: 'myThread1'}, function* () {
+        yield bp.request("eventOne");
+    });
+  
+    const thread2 = flow({id: 'thread2', title: 'myThread2'}, function* ({prop1: number, prop2: string}) {
+        yield bp.wait("eventTwo");
+    })
+  
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2({prop1: 912, prop2: 'test'}));
+    }, ({bThreadState}) => {
+        expect(bThreadState.thread1.isCompleted).toBeTruthy();
+        expect(bThreadState.thread2.isCompleted).toBeFalsy();
+        
+    });
+  });
