@@ -81,6 +81,7 @@ export interface AllBidsByType {
     [BidType.request]?: EventMap<Bid[]>;
     [BidType.wait]?: EventMap<Bid[]>;
     [BidType.extend]?: EventMap<Bid[]>;
+    [BidType.block]?: EventMap<Bid[]>;
 }
 
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
@@ -90,6 +91,7 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
     const fixedBlocksAndPending = utils.union(new Set(pending.allEvents), fixedBlocks);
     return {
         [BidType.pending]: pending,
+        [BidType.block]: blocks,
         [BidType.request]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]).filter(utils.notUndefined), fixedBlocksAndPending, guardedBlocks),
         [BidType.wait]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]).filter(utils.notUndefined), fixedBlocks, guardedBlocks),
         [BidType.extend]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]).filter(utils.notUndefined), fixedBlocks, guardedBlocks)

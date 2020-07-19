@@ -1,5 +1,5 @@
 import { BThread, ExtendResultType, BThreadState, BThreadKey } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, BidSubType, PendingEventInfo } from './bid';
+import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, BidSubType, PendingEventInfo, Bid } from './bid';
 import { Logger, Log } from './logger';
 import { Action, getNextActionFromRequests, ActionType } from './action';
 import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
@@ -26,6 +26,7 @@ export interface ScenariosContext {
     dispatch: EventDispatch;
     event: GetCachedItem;
     pending: EventMap<PendingEventInfo>;
+    blocks: EventMap<Bid[]>;
     bThreadState: Record<string, BThreadState>;
     log?: Log;
 }
@@ -199,6 +200,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         return {
             dispatch: eventDispatch,
             event: getEventCache,
+            blocks: bids[BidType.block] || new EventMap(),
             pending: bids[BidType.pending],
             bThreadState: bThreadStateById,
             log: logger?.getLog()
