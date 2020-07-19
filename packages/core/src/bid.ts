@@ -1,5 +1,5 @@
 import * as utils from "./utils";
-import { EventMap, reduceEventMaps, EventKey, toEvent, EventName, FCEvent } from "./event";
+import { EventMap, EventKey, toEvent, EventName, FCEvent } from "./event";
 import { GuardFunction, getGuardedUnguardedBlocks, combineGuards } from './guard';
 
 export enum BidType {
@@ -69,11 +69,17 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined |
 // bids from multiple BThreads
 // --------------------------------------------------------------------------------------------------------------------
 
-function reduceMaps(allBidsForType: (EventMap<Bid> | undefined)[], blocks?: Set<FCEvent>, guardedBlocks?: EventMap<GuardFunction>): EventMap<Bid[]> | undefined {
-    const reduced = reduceEventMaps(allBidsForType, (acc: Bid[] = [], curr: Bid) => [...acc, curr]);
-    if(blocks && reduced) blocks.forEach(event => reduced.delete(event));
-    if(guardedBlocks && reduced) combineGuards(reduced, guardedBlocks);
-    return reduced;
+function mergeMaps(maps: (EventMap<Bid> | undefined)[], blocks?: Set<FCEvent>, guardedBlocks?: EventMap<GuardFunction>): EventMap<Bid[]> | undefined {
+    if(maps.length === 0) return undefined
+    const result = new EventMap<Bid[]>();
+    maps.map(r => r?.forEach((event, valueCurr) => {
+        result.set(event, [...(result.get(event) || []), valueCurr]);        
+    }));
+    if(result.size() > 0) {
+        if(blocks) blocks.forEach(event => result.delete(event));
+        if(guardedBlocks) combineGuards(result, guardedBlocks);
+    }
+    return result;
 }
 
 export interface AllBidsByType {
@@ -86,15 +92,15 @@ export interface AllBidsByType {
 
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
     const pending = allBThreadBids.reduce((acc: EventMap<PendingEventInfo>, bids) => acc.merge(bids[BidType.pending]), new EventMap<PendingEventInfo>());
-    const blocks = reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]).filter(utils.notUndefined));
+    const blocks = mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
     const fixedBlocksAndPending = utils.union(new Set(pending.allEvents), fixedBlocks);
     return {
         [BidType.pending]: pending,
         [BidType.block]: blocks,
-        [BidType.request]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]).filter(utils.notUndefined), fixedBlocksAndPending, guardedBlocks),
-        [BidType.wait]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]).filter(utils.notUndefined), fixedBlocks, guardedBlocks),
-        [BidType.extend]: reduceMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]).filter(utils.notUndefined), fixedBlocks, guardedBlocks)
+        [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocksAndPending, guardedBlocks),
+        [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks),
+        [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks)
     };
 }
 

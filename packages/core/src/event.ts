@@ -153,17 +153,3 @@ export class EventMap<T>  {
         return this;
     }
 }
-
-type ReducerFunction<T,X> = (acc: X | undefined, curr: T, event: FCEvent) => X;
-
-export function reduceEventMaps<T, X>(maps: (EventMap<T> | undefined)[], reducer: ReducerFunction<T, X>): EventMap<X> | undefined {
-    const notUndefinedMaps = maps.filter(utils.notUndefined);
-    if(notUndefinedMaps.length === 0) return undefined
-    const result = new EventMap<X>();
-    notUndefinedMaps.map(r => r.forEach((event, valueCurr) => {
-        const valueAcc = result.get(event);
-        const addValue = reducer(valueAcc, valueCurr, event);
-        result.set(event, addValue);
-    }));
-    return result;
-}
