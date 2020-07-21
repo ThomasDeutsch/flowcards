@@ -21,6 +21,7 @@ export interface Log {
     actions: LoggedAction[];
     bThreadInfoById: Record<string, BThreadInfo>;
     latestAction: Action;
+    getReplayActions: (actionIndex?: number) => Action[];
 }
 
 export enum BThreadReactionType {
@@ -51,6 +52,18 @@ export class Logger {
 
     private _getActionIndex(): number {
         return this._actions.length-1;
+    }
+
+    private _getReplayActions(actionIndex?: number): Action[] {
+        if(typeof actionIndex === 'undefined' || actionIndex > this._actions.length-1) actionIndex = this._actions.length-1;
+        const replayActions = this._actions.slice(0, actionIndex + 1);
+        return replayActions.map(la => ({
+            type: la.type,
+            threadId: la.threadId,
+            event: la.event,
+            payload: la.payload,
+            pendingDuration: la.pendingDuration
+        }));
     }
 
     public logAction(action: Action): void {
@@ -134,17 +147,7 @@ export class Logger {
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
-    public getReplayActions(actionIndex?: number): Action[] {
-        if(typeof actionIndex === 'undefined' || actionIndex > this._actions.length-1) actionIndex = this._actions.length-1;
-        const replayActions = this._actions.slice(0, actionIndex + 1);
-        return replayActions.map(la => ({
-            type: la.type,
-            threadId: la.threadId,
-            event: la.event,
-            payload: la.payload,
-            pendingDuration: la.pendingDuration
-        }));
-    }
+
 
     public logOnDestroy(threadId: string) {
         delete this._bThreadInfoById[threadId];
@@ -154,7 +157,8 @@ export class Logger {
         return {
             actions: this._actions,
             latestAction: this._actions[this._actions.length-1],
-            bThreadInfoById: this._bThreadInfoById
+            bThreadInfoById: this._bThreadInfoById,
+            getReplayActions: this._getReplayActions
         };
     }
 
