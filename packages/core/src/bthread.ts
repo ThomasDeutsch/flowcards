@@ -1,4 +1,4 @@
-import { getBidsForBThread, BThreadBids, BidType, Bid, BidSubType, PendingEventInfo } from './bid';
+import { getBidsForBThread, BThreadBids, BidType, Bid, BidSubType, PendingEventInfo, extend } from './bid';
 import * as utils from "./utils";
 import { Logger, BThreadReactionType } from "./logger";
 import { ActionType, Action } from './action';
@@ -29,16 +29,18 @@ export enum ExtendResultType {
 
 type IsBidPlacedFn = (event: string | FCEvent) => boolean
 export interface BThreadState {
+    section?: string;
     waits?: EventMap<Bid>;
     blocks?: EventMap<Bid>;
-    pending?: EventMap<PendingEventInfo>;
     requests?: EventMap<Bid>;
-    section?: string;
-    isWaitingFor: IsBidPlacedFn;
-    isBlocking: IsBidPlacedFn;
+    extends?: EventMap<Bid>;
+    pendingRequests: EventMap<PendingEventInfo>;
+    pendingExtends: EventMap<PendingEventInfo>;
     isCompleted: boolean;
-    isPending: IsBidPlacedFn;
-    isRequesting: IsBidPlacedFn;
+    isWaitingFor: (event: FCEvent | string) => boolean;
+    isBlocking: (event: FCEvent | string) => boolean; 
+    isRequesting: (event: FCEvent | string) => boolean;
+    isExtending: (event: FCEvent | string) => boolean; 
 }
 
 export class BThread {
@@ -52,23 +54,17 @@ export class BThread {
     private _pendingRequestMap: EventMap<Promise<any>> = new EventMap();
     private _pendingExtendMap: EventMap<Promise<any>> = new EventMap();
     private _state: BThreadState = {
+        section: undefined,
         waits: this._currentBids?.[BidType.wait],
         blocks: this._currentBids?.[BidType.block],
-        pending: this._currentBids?.[BidType.pending],
         requests: this._currentBids?.[BidType.request],
-        section: undefined,
-        isWaitingFor: function(event: string | FCEvent): boolean {
-           return !!this.waits?.has(event);
-        },
-        isBlocking: function(event: string | FCEvent): boolean {
-            return !!this.blocks?.has(event);
-        },
-        isPending: function(event: string | FCEvent): boolean {
-            return !!this.pending?.has(event);
-        },
-        isRequesting: function(event: string | FCEvent): boolean {
-            return !!this.requests?.has(event);
-        },
+        extends: this._currentBids?.[BidType.extend],
+        pendingRequests: new EventMap<PendingEventInfo>(),
+        pendingExtends: new EventMap<PendingEventInfo>(),
+        isWaitingFor: (event: FCEvent | string) => !!this._currentBids?.[BidType.wait]?.has(event),
+        isBlocking: (event: FCEvent | string) => !!this._currentBids?.[BidType.block]?.has(event),
+        isRequesting: (event: FCEvent | string) => !!this._currentBids?.[BidType.request]?.has(event) || !!this._currentBids?.[BidType.pending]?.has(event),
+        isExtending: (event: FCEvent | string) => !!this._currentBids?.[BidType.extend]?.has(event) || !!this._currentBids?.[BidType.pending]?.has(event),
         isCompleted: false
     };
     public get state() {
@@ -164,7 +160,8 @@ export class BThread {
         const pendingExtends: EventMap<PendingEventInfo> = this._pendingExtendMap.map(event => ({event: event, host: this.id, isExtend: true}));
         const pendingRequests: EventMap<PendingEventInfo> = this._pendingRequestMap.map(event => ({event: event, host: this.id, isExtend: false}));
         const pendingEvents: EventMap<PendingEventInfo> = pendingExtends.merge(pendingRequests);
-        this._state.pending = pendingEvents;
+        this._state.pendingExtends = pendingExtends;
+        this._state.pendingRequests = pendingRequests
         if(!pendingEvents) {
             if(this._currentBids) delete this._currentBids[BidType.pending];
             else delete this._currentBids;

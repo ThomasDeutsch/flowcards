@@ -146,10 +146,8 @@ test("enable will return the current pending events and a isPending function", (
     testScenarios((enable) => {
         enableReturn = enable(thread1());
     }, () => {
-        expect(enableReturn.isPending('A')).toBeTruthy();
-        expect(enableReturn.pending?.has('A')).toBeTruthy();
-        expect(enableReturn.isPending('B')).toBeTruthy();
-        expect(enableReturn.pending?.has('B')).toBeTruthy();
+        expect(enableReturn.isRequesting('A')).toBeTruthy();
+        expect(enableReturn.isRequesting('B')).toBeTruthy();
     });
 });
 
@@ -168,12 +166,8 @@ test("enable will return the current requesting events ( blocked and pending inc
         enableReturn = enable(thread1());
         enable(thread2());
     }, () => {
-        expect(enableReturn.isPending('A')).toBeTruthy();
-        expect(enableReturn.pending?.has('A')).toBeTruthy();
         expect(enableReturn.isRequesting('A')).toBeTruthy();
-        expect(enableReturn.requests?.has('A')).toBeTruthy();
         expect(enableReturn.isRequesting('B')).toBeTruthy();
-        expect(enableReturn.requests?.has('B')).toBeTruthy();
     });
 });
 
@@ -202,7 +196,7 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
             enable(thread3());
         }
     }, ({bThreadState}) => {
-        expect(bThreadState['thread2']?.waits?.has('B')).toBeTruthy();
+        expect(bThreadState['thread2']?.isWaitingFor('B')).toBeTruthy();
         expect(bThreadState['thread3']?.waits?.has('C')).toBeTruthy();
     });
 });
