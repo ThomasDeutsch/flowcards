@@ -194,7 +194,7 @@ export class BThread {
         this._logger?.logThreadReset(this.id, changedProps, cancelledExtends ? [...(cancelledRequests || []), ...cancelledExtends] : cancelledRequests, this._currentProps);
     }
 
-    public addPendingRequest(event: FCEvent, promise: Promise<any>): void {       
+    public addPendingRequest(event: FCEvent, promise: Promise<any> = new Promise(() => null)): void {       
         const bid = this._currentBids?.request?.get(event);
         if(!bid) return;
         this._pendingRequestMap.set(event, promise);

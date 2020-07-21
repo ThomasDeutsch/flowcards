@@ -134,6 +134,18 @@ export class Logger {
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
+    public getReplayActions(actionIndex?: number): Action[] {
+        if(typeof actionIndex === 'undefined' || actionIndex > this._actions.length-1) actionIndex = this._actions.length-1;
+        const replayActions = this._actions.slice(0, actionIndex + 1);
+        return replayActions.map(la => ({
+            type: la.type,
+            threadId: la.threadId,
+            event: la.event,
+            payload: la.payload,
+            pendingDuration: la.pendingDuration
+        }));
+    }
+
     public logOnDestroy(threadId: string) {
         delete this._bThreadInfoById[threadId];
     }
