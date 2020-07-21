@@ -118,6 +118,7 @@ export class BThread {
         this._state.waits = this._currentBids?.[BidType.wait];
         this._state.blocks = this._currentBids?.[BidType.block];
         this._state.requests = this._currentBids?.[BidType.request];
+        this._state.extends = this._currentBids?.[BidType.extend];
         return cancelledRequests;
     }
 
