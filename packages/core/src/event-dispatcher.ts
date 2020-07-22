@@ -21,11 +21,6 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
     const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): TriggerDispatch | undefined  => {
-        const REPLAY_EVENT_NAME = '___REPLAY___';
-        if(event === REPLAY_EVENT_NAME) {
-            dispatch({type: ActionType.replay, payload: payload, threadId: "", event: {name: REPLAY_EVENT_NAME}});
-            return undefined
-        }
         const dp = dispatchByEvent.get(toEvent(event));
         if(dp === undefined) return undefined;
         return dp(payload);
@@ -51,7 +46,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
                     if(guard && guard(payload) === false) return undefined;
                     if(cache.dispatch && Object.is(payload, cache.payload)) return cache.dispatch;
                     cache.payload = payload;
-                    cache.dispatch = (): void => dispatch({ type: ActionType.dispatched, event: waitEvent, payload: payload, threadId: "" });
+                    cache.dispatch = (): void => dispatch({ type: ActionType.dispatched, event: waitEvent, payload: payload, threadId: "", isReplay: false });
                     return cache.dispatch;
                 });
             }

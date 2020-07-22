@@ -13,24 +13,12 @@ type EnableThread = ({id, title, gen, props, key}: FlowContext) => BThreadState;
 type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
 export type StagingFunction = (enable: EnableThread, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
-export type TriggerWaitDispatch = (payload: any) => void;
-export type UpdateLoopFunction = (actionQueue?: Action[] | undefined) => ScenariosContext;
+
 
 
 export interface BThreadDictionary {
     [Key: string]: BThread;
 }
-
-
-export interface ScenariosContext {
-    dispatch: EventDispatch;
-    event: GetCachedItem;
-    pending: EventMap<PendingEventInfo>;
-    blocks: EventMap<Bid[]>;
-    bThreadState: Record<string, BThreadState>;
-    log?: Log;
-}
-
 
 function createBThreadId(id: string, key?: BThreadKey): string {
     return key || key === 0 ? `${id}_${key.toString()}` : id;
@@ -178,6 +166,18 @@ function setupScaffolding(
 // -----------------------------------------------------------------------------------
 // UPDATE LOOP
 
+export interface ScenariosContext {
+    dispatch: EventDispatch;
+    actionDispatch: ActionDispatch;
+    event: GetCachedItem;
+    pending: EventMap<PendingEventInfo>;
+    blocks: EventMap<Bid[]>;
+    bThreadState: Record<string, BThreadState>;
+    log?: Log;
+}
+export type UpdateLoopFunction = (actionQueue?: Action[] | undefined) => ScenariosContext;
+
+
 export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch] {
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
@@ -185,20 +185,31 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     let scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const getEventCache: GetCachedItem = (event: FCEvent | string) => eventCache.get(toEvent(event));
+    const context: ScenariosContext = {
+        dispatch: eventDispatch,
+        actionDispatch: dispatch,
+        event: getEventCache,
+        blocks: new EventMap(),
+        pending: new EventMap(),
+        bThreadState: {},
+        log: undefined
+    }
+    let isReplay = false;
     // main loop-function:
     function updateLoop(actionQueue?: Action[]): ScenariosContext {
         let action = actionQueue?.shift();
         // start a replay?
-        if (action && action.type === ActionType.replay) {
+        if (!isReplay && action?.isReplay) {
             // delete all BThreads
+            isReplay = true;
             Object.keys(bThreadDictionary).forEach((threadId): void => { 
                 bThreadDictionary[threadId].destroy();
                 delete bThreadDictionary[threadId];
-            }); 
+            });
             eventCache.clear(); // clear cache
-            logger?.resetLog(); // empty current log
             scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger); // renew scaffolding function, because of the onDestroy-ids.
-            return updateLoop(action.payload); // start a replay
+        } else if (isReplay && action?.isReplay === false) {
+            isReplay = false;
         }
         // not a replay
         const {bThreadBids, bThreadStateById} = scaffold();
@@ -209,16 +220,13 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop(actionQueue);
         }
-        // create the return value:
+        // create the context:
         updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
-        return {
-            dispatch: eventDispatch,
-            event: getEventCache,
-            blocks: bids[BidType.block] || new EventMap(),
-            pending: bids[BidType.pending],
-            bThreadState: bThreadStateById,
-            log: logger?.getLog()
-        };
+        context.blocks = bids[BidType.block] || new EventMap();
+        context.pending = bids[BidType.pending];
+        context.bThreadState = bThreadStateById;
+        context.log = logger?.getLog();
+        return context;
     }
     return [updateLoop, eventDispatch];
 }

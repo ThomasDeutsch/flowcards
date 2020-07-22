@@ -40,9 +40,9 @@ export function flattenShallow<T>(arr: T[][]): T[] {
 
 export function union<T>(...sets: (Set<T> | undefined)[]): Set<T> | undefined {
     if(sets.length === 0) return undefined;
-    const notUndefindedSets = sets.filter(notUndefined);
-    if(notUndefindedSets.length === 0) return undefined;
-    return new Set<T>(notUndefindedSets.reduce((acc: T[], set: Set<T>) => [...acc, ...set], []));
+    const notUndefinedSets = sets.filter(notUndefined);
+    if(notUndefinedSets.length === 0) return undefined;
+    return new Set<T>(notUndefinedSets.reduce((acc: T[], set: Set<T>) => [...acc, ...set], []));
 }
 
 // UUID ------------------------

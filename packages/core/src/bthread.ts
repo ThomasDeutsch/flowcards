@@ -170,7 +170,6 @@ export class BThread {
         else {
             this._currentBids = {...(this._currentBids  || {}), [BidType.pending]: pendingEvents}
         }
-
     }
 
     // --- public
@@ -232,7 +231,6 @@ export class BThread {
         }
         return false;
     }
-
 
     public rejectPending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;

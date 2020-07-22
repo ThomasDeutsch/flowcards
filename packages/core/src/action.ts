@@ -12,8 +12,7 @@ export enum ActionType {
     promise = "promise",
     dispatched = "dispatched",
     resolved = "resolved",
-    rejected = "rejected",
-    replay = "replay"
+    rejected = "rejected"
 }
 
 export interface Action {
@@ -22,6 +21,8 @@ export interface Action {
     event: FCEvent;
     payload?: any;
     pendingDuration?: number;
+    isReplay?: boolean;
+    reRunRequest?: boolean;
 }
 
 
@@ -72,6 +73,7 @@ export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, 
                 threadId: bid.threadId,
                 event: bid.event,
                 payload: bid.payload,
+                isReplay: false
             };
             return action;
         } 

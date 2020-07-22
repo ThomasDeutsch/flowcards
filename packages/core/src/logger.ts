@@ -21,7 +21,6 @@ export interface Log {
     actions: LoggedAction[];
     bThreadInfoById: Record<string, BThreadInfo>;
     latestAction: Action;
-    getReplayActions: (actionIndex?: number) => Action[];
 }
 
 export enum BThreadReactionType {
@@ -52,18 +51,6 @@ export class Logger {
 
     private _getActionIndex(): number {
         return this._actions.length-1;
-    }
-
-    private _getReplayActions(actionIndex?: number): Action[] {
-        if(typeof actionIndex === 'undefined' || actionIndex > this._actions.length-1) actionIndex = this._actions.length-1;
-        const replayActions = this._actions.slice(0, actionIndex + 1);
-        return replayActions.map(la => ({
-            type: la.type,
-            threadId: la.threadId,
-            event: la.event,
-            payload: la.payload,
-            pendingDuration: la.pendingDuration
-        }));
     }
 
     public logAction(action: Action): void {
@@ -147,8 +134,6 @@ export class Logger {
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
-
-
     public logOnDestroy(threadId: string) {
         delete this._bThreadInfoById[threadId];
     }
@@ -157,8 +142,7 @@ export class Logger {
         return {
             actions: this._actions,
             latestAction: this._actions[this._actions.length-1],
-            bThreadInfoById: this._bThreadInfoById,
-            getReplayActions: this._getReplayActions
+            bThreadInfoById: this._bThreadInfoById
         };
     }
 
@@ -167,3 +151,26 @@ export class Logger {
         this._bThreadInfoById = {};  
     }
 }
+
+
+// REPLAY START
+// - the debugger will load the complete action-sequence (log)
+// - based on this action sequence, a replay will be selected ( only actions until an unresolved action (before this action) can be selected )
+// - if the user selects an action, a sequence will be replayed
+// - during the replay, the log is compared to the logged reactions ( later, the user is able to add payload tests  )
+// - when the action is reached, the replay will still be active, unless the last action is called
+// - also, the reached action (if not the last) will pause the replay!
+
+
+
+// DURING A REPLAY ( UNRESOLVED ASYNC REQUESTS )
+// - unresolved async requests need to be re-triggered
+// - if a async-resolve happens, it will add the result to the complete action-sequence (log)
+// - The replay is finished, if a dispatch is made or the replay-actions are completed
+// - If a dispatch is made during a replay, a new branch is created.
+// - in a replay, the log is not thrown away
+
+// -> a in-a-replay flag is needed
+//   - during a replay, all unfinished promises will be re-called, but the resolve/reject will only fire, after the replay is finished.
+//   - a replay can be paused
+//   - 
