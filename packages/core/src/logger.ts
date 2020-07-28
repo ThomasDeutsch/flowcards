@@ -153,24 +153,13 @@ export class Logger {
 }
 
 
-// REPLAY START
-// - the debugger will load the complete action-sequence (log)
-// - based on this action sequence, a replay will be selected ( only actions until an unresolved action (before this action) can be selected )
-// - if the user selects an action, a sequence will be replayed
-// - during the replay, the log is compared to the logged reactions ( later, the user is able to add payload tests  )
-// - when the action is reached, the replay will still be active, unless the last action is called
-// - also, the reached action (if not the last) will pause the replay!
+// SAVE A REPLAY
+// All Actions and reactions are saved
+// 
 
 
+// A REPLAY CAN START IN 2 WAYS
+// 1. Start a replay from an existing log
+// 2. Click on an action from the current log
 
-// DURING A REPLAY ( UNRESOLVED ASYNC REQUESTS )
-// - unresolved async requests need to be re-triggered
-// - if a async-resolve happens, it will add the result to the complete action-sequence (log)
-// - The replay is finished, if a dispatch is made or the replay-actions are completed
-// - If a dispatch is made during a replay, a new branch is created.
-// - in a replay, the log is not thrown away
-
-// -> a in-a-replay flag is needed
-//   - during a replay, all unfinished promises will be re-called, but the resolve/reject will only fire, after the replay is finished.
-//   - a replay can be paused
-//   - 
+// In Both cases, the log is the test-specification

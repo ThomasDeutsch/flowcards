@@ -26,7 +26,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
             }
             updateLoop(actionQueue);
         });
-        updateLoop();
+        updateLoop([]);
     };
 
     const thread1 = flow({id: 'thread1'}, function* () {
@@ -50,7 +50,7 @@ describe('dispatched action', () => {
                 updateLoop(actionQueue);
             }
         });
-        updateLoop();
+        updateLoop([]);
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {

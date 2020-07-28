@@ -50,7 +50,7 @@ function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): voi
         
         updateLoop(actionQueue);   
     });
-    updateLoop();
+    updateLoop([]);
 }
 
 test("if a request is cancelled, it will not trigger the same event-name after resolving - even if there are threads waiting for this event. ", done => {
