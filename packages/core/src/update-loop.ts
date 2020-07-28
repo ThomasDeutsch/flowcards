@@ -25,24 +25,8 @@ function createBThreadId(id: string, key?: BThreadKey): string {
 }
 
 
-function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
-    const bids = getMatchingBids(allBids[BidType.extend], action.event);
-    if(bids === undefined || bids.length === 0) return action;
-    while(bids.length > 0) {
-        const nextBid = bids.pop();
-        if(nextBid === undefined) continue;
-        if(nextBid.payload !== undefined && (action.type === ActionType.dispatched || action.type === ActionType.requested)) {
-            action.payload = (typeof nextBid.payload === 'function') ? nextBid.payload(action.payload) : nextBid.payload;
-            if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
-                bThreadDictionary[action.threadId].addPendingRequest(nextBid.event, action.payload);
-                return undefined;
-            }
-        }
-        const extendResult = bThreadDictionary[nextBid.threadId].progressExtend(action, nextBid);
-        if(extendResult === ExtendResultType.extendingThread) return undefined;
-    } 
-    return action;
-}
+
+
 
 
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
@@ -61,6 +45,27 @@ function advanceOnPending(allBids: AllBidsByType, bThreadDictionary: BThreadDict
         bThreadDictionary[bid.threadId].progressWait(bid, action.payload);
     });
     return true;
+}
+
+
+function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
+    const bids = getMatchingBids(allBids[BidType.extend], action.event);
+    if(bids === undefined || bids.length === 0) return action;
+    while(bids.length > 0) {
+        const bid = bids.pop();
+        if(bid === undefined) continue;
+        if(bid.payload !== undefined && action.type !== ActionType.resolved) {
+            action.payload = (typeof bid.payload === 'function') ? bid.payload(action.payload) : bid.payload;
+            if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
+                bThreadDictionary[action.threadId].addPendingRequest(action.event, action.payload);
+                advanceOnPending(allBids, bThreadDictionary, action);
+                return undefined;
+            }
+        }
+        const extendResult = bThreadDictionary[bid.threadId].progressExtend(action, bid);
+        if(extendResult === ExtendResultType.extendingThread) return undefined;
+    } 
+    return action;
 }
 
 
