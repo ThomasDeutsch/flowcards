@@ -7,7 +7,6 @@ import { EventCache } from "./event-cache";
 
 
 export enum ActionType {
-    initial = "initial",
     requested = "requested",
     promise = "promise",
     dispatched = "dispatched",
@@ -52,8 +51,23 @@ function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
     return undefined;
 }
 
+export function getActionFromBid(bid: Bid, bidFnValue: any) {
+    if (typeof bid.payload === "function") {
+        bid.payload = bid.payload();
+    } else if(bid.payload === undefined) {
+        bid.payload = bidFnValue;
+    }
+    const action = {
+        type: utils.isThenable(bid.payload) ? ActionType.promise : ActionType.requested,
+        threadId: bid.threadId,
+        event: bid.event,
+        payload: bid.payload,
+        isReplay: false
+    };
+    return action;
+}
 
-export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, eventCache: EventCache, requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
+export function getNextActionFromRequests(eventCache: EventCache, requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
     if(!requestBids) return undefined;
     const events = requestBids.allEvents;
     if(!events) return undefined;
@@ -62,20 +76,7 @@ export function getNextActionFromRequests(bThreadDictionary: BThreadDictionary, 
         const bids = requestBids.get(selectedEvent);
         const bid = getBid(bids, waitBids);
         if(bid) {
-            if (typeof bid.payload === "function") {
-                bid.payload = bid.payload(eventCache.get(bid.event)?.value);
-            } else if(bid.payload === undefined) {
-                bid.payload = eventCache.get(bid.event)?.value;
-            }
-            const isPromise = utils.isThenable(bid.payload) && bThreadDictionary[bid.threadId];
-            const action = {
-                type: isPromise ? ActionType.promise : ActionType.requested,
-                threadId: bid.threadId,
-                event: bid.event,
-                payload: bid.payload,
-                isReplay: false
-            };
-            return action;
+            return getActionFromBid(bid, eventCache.get(bid.event)?.value);
         } 
         [selectedEvent, rest] = getRandom(rest);
     }

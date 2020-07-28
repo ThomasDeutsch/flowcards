@@ -26,23 +26,20 @@ function createBThreadId(id: string, key?: BThreadKey): string {
 
 
 function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
-    let bids = getMatchingBids(allBids[BidType.extend], action.event);
+    const bids = getMatchingBids(allBids[BidType.extend], action.event);
     if(bids === undefined || bids.length === 0) return action;
-    const nextAction = {...action};
-    bids = [...bids];
     while(bids.length > 0) {
         const nextBid = bids.pop();
         if(nextBid === undefined) continue;
-        if(nextBid.payload !== undefined && (nextAction.type === ActionType.dispatched || nextAction.type === ActionType.requested)) {
-            nextAction.payload = (typeof nextBid.payload === 'function') ? nextBid.payload(nextAction.payload) : nextBid.payload;
-            if(utils.isThenable(nextAction.payload) && bThreadDictionary[nextAction.threadId]) {
-                bThreadDictionary[nextAction.threadId].addPendingRequest(nextBid.event, nextAction.payload);
+        if(nextBid.payload !== undefined && (action.type === ActionType.dispatched || action.type === ActionType.requested)) {
+            action.payload = (typeof nextBid.payload === 'function') ? nextBid.payload(action.payload) : nextBid.payload;
+            if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
+                bThreadDictionary[action.threadId].addPendingRequest(nextBid.event, action.payload);
                 return undefined;
             }
         }
-        const extendResult = bThreadDictionary[nextBid.threadId].progressExtend(nextAction, nextBid);
+        const extendResult = bThreadDictionary[nextBid.threadId].progressExtend(action, nextBid);
         if(extendResult === ExtendResultType.extendingThread) return undefined;
-        if(extendResult === ExtendResultType.progress) action = nextAction;
     } 
     return action;
 }
@@ -214,7 +211,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         // not a replay
         const {bThreadBids, bThreadStateById} = scaffold();
         const bids = getAllBids(bThreadBids);
-        action = action || getNextActionFromRequests(bThreadDictionary, eventCache, bids.request, bids.wait);
+        action = action || getNextActionFromRequests(eventCache, bids.request, bids.wait);
         if (action) {
             logger?.logAction(action);
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
