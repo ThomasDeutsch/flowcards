@@ -51,7 +51,7 @@ function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
     return undefined;
 }
 
-export function getActionFromBid(bid: Bid, bidFnValue: any) {
+function getActionFromBid(bid: Bid, bidFnValue: any) {
     if (typeof bid.payload === "function") {
         bid.payload = bid.payload();
     } else if(bid.payload === undefined) {

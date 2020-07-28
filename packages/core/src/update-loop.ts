@@ -25,10 +25,6 @@ function createBThreadId(id: string, key?: BThreadKey): string {
 }
 
 
-
-
-
-
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
     const bids = (getMatchingBids(allBids[BidType.wait], action.event) || []).filter(event => event.subType && event.subType !== BidSubType.onPending);
     if(bids.length === 0) return false;
