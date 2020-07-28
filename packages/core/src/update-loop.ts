@@ -228,7 +228,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         context.pending = bids[BidType.pending];
         context.bThreadState = bThreadStateById;
         context.log = logger?.getLog();
-        return context;
+        return {...context};
     }
     return [updateLoop, eventDispatch];
 }
