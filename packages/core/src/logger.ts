@@ -35,7 +35,7 @@ export enum BThreadReactionType {
 export interface BThreadReaction {
     type: BThreadReactionType;
     actionIndex: number;
-    cancelledPending?: FCEvent[];
+    cancelledPending?: EventMap<number>;
     pendingEvents?: EventMap<PendingEventInfo>;
     changedProps?: string[];
     threadSection?: string;
@@ -94,13 +94,13 @@ export class Logger {
         this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPromises?: FCEvent[], pendingEvents?: EventMap<PendingEventInfo>): void {
+    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPending: EventMap<number>, pendingEvents?: EventMap<PendingEventInfo>): void {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(bid.threadId);
         const reaction: BThreadReaction = {
             type: BThreadReactionType.progress,
             actionIndex: actionIndex,
-            cancelledPending: cancelledPromises,
+            cancelledPending: cancelledPending,
             threadSection: threadSection,
             event: bid.event,
             bidType: bid.type,
@@ -110,14 +110,14 @@ export class Logger {
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
     }
 
-    public logThreadReset(threadId: string, changedProps: string[], cancelledEvents?: FCEvent[], currentProps?: Record<string, any>) {
+    public logThreadReset(threadId: string, changedProps: string[], cancelledPending: EventMap<number>, currentProps?: Record<string, any>) {
         const actionIndex = this._getActionIndex();
         this._actions[actionIndex].reactingBThreads.add(threadId);
         const reaction: BThreadReaction = {
             type: BThreadReactionType.reset,
             actionIndex: actionIndex,
             changedProps: changedProps,
-            cancelledPending: cancelledEvents
+            cancelledPending: cancelledPending
         };
         this._bThreadInfoById[threadId].currentProps = currentProps;
         this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);

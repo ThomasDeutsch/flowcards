@@ -113,6 +113,14 @@ export class EventMap<T>  {
         return deleted.length > 0 ? deleted : undefined;
     }
 
+    public clone(): EventMap<T> {
+        const clone = new EventMap<T>();
+        this.forEach((event, value) => {
+            clone.set(event, value);
+        });
+        return clone;
+    }
+
     public get allEvents(): FCEvent[] | undefined {
         const elements: FCEvent[] = [];
         this.forEach((event) => elements.push(event));

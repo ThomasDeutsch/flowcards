@@ -14,13 +14,19 @@ export enum ActionType {
     rejected = "rejected"
 }
 
+export enum ReplayActionType {
+    breakpoint = "breakpoint",
+    replayStart = "replayStart",
+    replayEnd = "replayEnd"
+}
+
 export interface Action {
-    index?: number;
+    index: number;
     type: ActionType;
     threadId: string;
     event: FCEvent;
     payload?: any;
-    promiseInfo?: {fromAction?: number; duration: number};
+    promiseInfo?: {fromAction: number; duration: number};
     replayInfo?: {isBreakpoint: boolean; isFirstReplayAction: boolean; lastReplayAction: number };
 }
 
@@ -58,6 +64,7 @@ function getActionFromBid(bid: Bid, bidFnValue: any) {
         bid.payload = bidFnValue;
     }
     const action = {
+        index: -1,
         type: utils.isThenable(bid.payload) ? ActionType.promise : ActionType.requested,
         threadId: bid.threadId,
         event: bid.event,

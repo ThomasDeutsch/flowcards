@@ -51,8 +51,8 @@ export class BThread {
     private _thread: BTGen;
     private _currentBids?: BThreadBids;
     private _nextBid?: any;
-    private _pendingRequestMap: EventMap<Promise<any>> = new EventMap();
-    private _pendingExtendMap: EventMap<Promise<any>> = new EventMap();
+    private _pendingRequests: EventMap<number> = new EventMap();
+    private _pendingExtends: EventMap<number> = new EventMap();
     private _state: BThreadState = {
         section: undefined,
         waits: this._currentBids?.[BidType.wait],
@@ -97,12 +97,14 @@ export class BThread {
 
      // --- private
 
-    private _cancelPendingRequests(): FCEvent[] | undefined {
-        return this._pendingRequestMap.clear();
+    private _cancelPendingRequests(): EventMap<number> {
+        const clone = this._pendingRequests.clone();
+        this._pendingRequests.clear();
+        return clone;
     }
 
-    private _processNextBid(returnValue?: any): FCEvent[] | undefined {
-        if(this._state.isCompleted) return [];
+    private _processNextBid(returnValue?: any): EventMap<number> {
+        if(this._state.isCompleted) return this._pendingRequests;
         const cancelledRequests = this._cancelPendingRequests();
         const next = this._thread.next(returnValue);
         if (next.done) {
@@ -132,34 +134,36 @@ export class BThread {
         this._logger?.logThreadProgression(this.id, bid, sectionBeforeProgression, cancelledPending, this._currentBids?.[BidType.pending]);
     }
 
-    private _createExtendPromise(bid: Bid, payload: any): ExtendResult {
+    private _createExtendPromise(bid: Bid, action: Action): ExtendResult {
         let resolveFn: (value?: unknown) => void;
         let rejectFn: (reason?: any) => void;
-        const promise = new Promise((resolve, reject) => {
+        new Promise((resolve, reject) => {
             resolveFn = resolve;
             rejectFn = reject;
             }).then((data): void => {
-                if (this._pendingExtendMap.has(bid.event)) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data });
+                const actionIndex = this._pendingExtends.get(bid.event);
+                if (actionIndex === action.index) {
+                    this._dispatch({index: -1, type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data });
                 }
             }).catch((): void => {
-                if (this._pendingExtendMap.has(bid.event)) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: bid.event });
+                const actionIndex = this._pendingExtends.get(bid.event);
+                if (actionIndex === action.index) {
+                    this._dispatch({index: -1, type: ActionType.rejected, threadId: this.id, event: bid.event });
                 }
             });
-        this._pendingExtendMap.set(bid.event, promise);
+        this._pendingExtends.set(bid.event, action.index);
         this._updatePendingEventsBid();
         this._logger?.logExtend(bid, this._state.section, this._currentBids?.[BidType.pending]);
         return {
-            resolve: (value?: unknown) => {resolveFn(value)}, 
-            reject: (reason: any) => {rejectFn(reason)}, 
-            value: payload
+            resolve: (value?: unknown) => { resolveFn(value) }, 
+            reject: (reason: any) => { rejectFn(reason) }, 
+            value: action.payload
         };
     }
 
     private _updatePendingEventsBid() {
-        const pendingExtends: EventMap<PendingEventInfo> = this._pendingExtendMap.map(event => ({event: event, host: this.id, isExtend: true}));
-        const pendingRequests: EventMap<PendingEventInfo> = this._pendingRequestMap.map(event => ({event: event, host: this.id, isExtend: false}));
+        const pendingExtends: EventMap<PendingEventInfo> = this._pendingExtends.map(event => ({event: event, host: this.id, isExtend: true}));
+        const pendingRequests: EventMap<PendingEventInfo> = this._pendingRequests.map(event => ({event: event, host: this.id, isExtend: false}));
         const pendingEvents: EventMap<PendingEventInfo> = pendingExtends.merge(pendingRequests);
         this._state.pendingExtends = pendingExtends;
         this._state.pendingRequests = pendingRequests
@@ -188,31 +192,31 @@ export class BThread {
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
         const cancelledRequests = this._processNextBid();
-        const cancelledExtends = this._pendingExtendMap.allEvents;
-        this._pendingExtendMap.clear();
-        this._logger?.logThreadReset(this.id, changedProps, cancelledExtends ? [...(cancelledRequests || []), ...cancelledExtends] : cancelledRequests, this._currentProps);
+        const cancelledExtends = this._pendingExtends.clone();
+        this._pendingExtends.clear();
+        this._logger?.logThreadReset(this.id, changedProps, cancelledExtends.merge(cancelledRequests), this._currentProps);
     }
 
     public addPendingRequest(action: Action): void {    
         const promise = action.payload;
         const bid = this._currentBids?.request?.get(action.event);
         if(!bid) return;
-        this._pendingRequestMap.set(action.event, promise);
+        this._pendingRequests.set(action.event, action.index);
         this._updatePendingEventsBid();
         this._logger?.logPromise(bid, this._state.section, this._currentBids?.[BidType.pending]);
         const startTime = new Date().getTime();
         promise.then((data: any): void => {
                 const pendingDuration = new Date().getTime() - startTime;
-                const recordedPromise = this._pendingRequestMap.get(action.event);
-                if (recordedPromise  && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.resolved, threadId: this.id, event: action.event, payload: data, promiseInfo: {fromAction: action.index, duration: pendingDuration}});
+                const storedActionIndex = this._pendingRequests.get(action.event);
+                if (storedActionIndex === action.index) {
+                    this._dispatch({index: -1, type: ActionType.resolved, threadId: this.id, event: action.event, payload: data, promiseInfo: {fromAction: action.index, duration: pendingDuration}});
                 }
             })
             .catch((e: Error): void => {
                 const pendingDuration = new Date().getTime() - startTime;
-                const recordedPromise = this._pendingRequestMap.get(action.event);
-                if (recordedPromise && Object.is(promise, recordedPromise)) {
-                    this._dispatch({ type: ActionType.rejected, threadId: this.id, event: action.event, payload: e, promiseInfo: {fromAction: action.index, duration: pendingDuration} });
+                const storedActionIndex = this._pendingRequests.get(action.event);
+                if (storedActionIndex === action.index) {
+                    this._dispatch({index: -1, type: ActionType.rejected, threadId: this.id, event: action.event, payload: e, promiseInfo: {fromAction: action.index, duration: pendingDuration} });
                 }
             });
     }
@@ -220,13 +224,13 @@ export class BThread {
     public resolvePending(action: Action): boolean {
         if(action.threadId !== this.id || action.type !== ActionType.resolved) return false;
         // resolve extend
-        if(this._pendingExtendMap.delete(action.event)) {
+        if(this._pendingExtends.delete(action.event)) {
             this._updatePendingEventsBid();
             this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event, this._currentBids?.[BidType.pending]);
             return true;
         } 
         // resolve pending promise
-        else if(this._pendingRequestMap.delete(action.event)) {
+        else if(this._pendingRequests.delete(action.event)) {
             this._updatePendingEventsBid();
             return true;
         }
@@ -236,13 +240,13 @@ export class BThread {
     public rejectPending(action: Action): void {
         if(action.threadId !== this.id || action.type !== ActionType.rejected) return;
         // rejection of an extend
-        const isExtendDeleted = this._pendingExtendMap.delete(action.event);
+        const isExtendDeleted = this._pendingExtends.delete(action.event);
         if(isExtendDeleted) {
             this._updatePendingEventsBid();
             this._logger?.logExtendResult(BThreadReactionType.extendResolved, this.id, action.event, this._currentBids?.[BidType.pending]); // thread is not progressed after this, so a special logging is needed
         }
         // rejection of a pending promise
-        else if (this._pendingRequestMap.delete(action.event) && this._thread && this._thread.throw) {
+        else if (this._pendingRequests.delete(action.event) && this._thread && this._thread.throw) {
             this._thread.throw({event: action.event, error: action.payload});
             const bid = this._currentBids?.request?.get(action.event);
             if(!bid) return;
@@ -270,14 +274,14 @@ export class BThread {
             this._progressBThread(bid, action.payload);
             return ExtendResultType.progress;
         }
-        const extendResult = this._createExtendPromise(bid, action.payload);
+        const extendResult = this._createExtendPromise(bid, action);
         this._progressBThread(bid, extendResult);
         return ExtendResultType.extendingThread;
     }
 
     public destroy(): void {
         this._cancelPendingRequests();
-        delete this._pendingExtendMap;
+        delete this._pendingExtends;
         delete this._state;
         delete this._thread;
         this._logger?.logOnDestroy(this.id);
