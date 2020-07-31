@@ -14,12 +14,6 @@ export enum ActionType {
     rejected = "rejected"
 }
 
-export enum ReplayActionType {
-    breakpoint = "breakpoint",
-    replayStart = "replayStart",
-    replayEnd = "replayEnd"
-}
-
 export interface Action {
     index: number;
     type: ActionType;

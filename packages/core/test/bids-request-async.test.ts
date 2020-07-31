@@ -36,6 +36,34 @@ test("A promise-function can be requested and will create a pending-event", () =
 });
 
 
+test("a series of pending events will progress if one promise resolves", (done) => {
+    const flow1 = flow(
+        {
+          id: "flow1",
+          title: "card validation scenario"
+        },
+        function*() {
+          console.log('o')
+          yield bp.request("WaitForCard", () => delay(1));
+          console.log('1')
+          yield bp.request("ValidateCard", () => delay(1));
+          console.log('2')
+          yield bp.request("LoadAccount", () => delay(1));
+          console.log('3')
+          yield bp.request("WaitForPin", () => delay(1));
+          expect(1).toEqual(1);
+          done();
+        }
+      );
+
+    testScenarios((enable) => {
+        enable(flow1());
+    }, (({log, pending}) => {
+        console.log('TEST: ', pending.allEvents);
+    }));
+});
+
+
 test("if multiple promises resolve at the same time, only one is selected", (done) => {
     let threadState: any = null;
     let progressed2 = false;

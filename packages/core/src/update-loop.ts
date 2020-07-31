@@ -144,14 +144,14 @@ function setupScaffolding(
         enabledIds.clear();
         bids.length = 0;
         stagingFunction(enableBThread, getCached);
-        if(destroyOnDisableThreadIds.size > 0) 
-            destroyOnDisableThreadIds.forEach(id => {
-            if(!enabledIds.has(id)) {
-                destroyOnDisableThreadIds.delete(id);
-                bThreadDictionary[id].destroy();
-                delete bThreadDictionary[id];
-            }
-        });
+        // if(destroyOnDisableThreadIds.size > 0) 
+        //     destroyOnDisableThreadIds.forEach(id => {
+        //     if(!enabledIds.has(id)) {
+        //         destroyOnDisableThreadIds.delete(id);
+        //         bThreadDictionary[id].destroy();
+        //         delete bThreadDictionary[id];
+        //     }
+        // });
         return {
             bThreadBids: bids,
             bThreadStateById: bThreadStateById
