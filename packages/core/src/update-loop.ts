@@ -43,6 +43,7 @@ function advanceOnPending(allBids: AllBidsByType, bThreadDictionary: BThreadDict
 }
 
 
+
 function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
     const bids = getMatchingBids(allBids[BidType.extend], action.event);
     if(bids === undefined || bids.length === 0) return action;
@@ -144,14 +145,14 @@ function setupScaffolding(
         enabledIds.clear();
         bids.length = 0;
         stagingFunction(enableBThread, getCached);
-        // if(destroyOnDisableThreadIds.size > 0) 
-        //     destroyOnDisableThreadIds.forEach(id => {
-        //     if(!enabledIds.has(id)) {
-        //         destroyOnDisableThreadIds.delete(id);
-        //         bThreadDictionary[id].destroy();
-        //         delete bThreadDictionary[id];
-        //     }
-        // });
+        if(destroyOnDisableThreadIds.size > 0) 
+            destroyOnDisableThreadIds.forEach(id => {
+            if(!enabledIds.has(id)) {
+                destroyOnDisableThreadIds.delete(id);
+                bThreadDictionary[id].destroy();
+                delete bThreadDictionary[id];
+            }
+        });
         return {
             bThreadBids: bids,
             bThreadStateById: bThreadStateById
