@@ -4,7 +4,10 @@ import { StagingFunction, ScenariosContext, scenarios, EventDispatch } from "@fl
 export * from '@flowcards/core';
 
 export function useScenarios(stagingFunction: StagingFunction): [ScenariosContext, EventDispatch] {
-    const ref = useRef(scenarios(stagingFunction, (a: ScenariosContext): void => { setState(a) }));
-    const [state, setState] = useState(ref.current[0]);
-    return [state, ref.current[1]];
+    const [state, setState] = useState<ScenariosContext>();
+    const ref = useRef<[ScenariosContext, EventDispatch] | null>(null);
+    if(ref.current === null) {
+        ref.current = scenarios(stagingFunction, (a: ScenariosContext): void => { setState(a) })
+    }
+    return [state || ref.current[0], ref.current[1]];
 }
