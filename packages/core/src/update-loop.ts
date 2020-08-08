@@ -128,7 +128,6 @@ function setupScaffolding(
             bThreadDictionary[id].resetOnPropsChange(props);
         } else {
             logger?.addThreadInfo(id, title, props);
-            console.log('ADDED2', id)
             if(destroyOnDisable) destroyOnDisableThreadIds.add(id);
             bThreadDictionary[id] = new BThread(id, gen, props, dispatch, key, logger, title);
         }
@@ -149,7 +148,6 @@ function setupScaffolding(
         if(destroyOnDisableThreadIds.size > 0) 
             destroyOnDisableThreadIds.forEach(id => {
             if(!enabledIds.has(id)) {
-                console.log('destroy: ', id)
                 destroyOnDisableThreadIds.delete(id);
                 bThreadDictionary[id].destroy();
                 delete bThreadDictionary[id];
@@ -179,7 +177,6 @@ export type UpdateLoopFunction = (actionQueue: Action[]) => ScenariosContext;
 
 
 export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch] {
-    console.log('updateLoop is created!')
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     const logger = disableLogging ? undefined : new Logger();
@@ -210,7 +207,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop(actionQueue);
         }
-        console.log('DICT: ', bThreadDictionary)
         updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
         return { 
             dispatch: eventDispatch,

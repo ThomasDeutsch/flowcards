@@ -137,22 +137,21 @@ export class BThread {
     private _createExtendPromise(bid: Bid, action: Action): ExtendResult {
         let resolveFn: (value?: unknown) => void;
         let rejectFn: (reason?: any) => void;
-        const uuid = utils.uuidv4();
         new Promise((resolve, reject) => {
             resolveFn = resolve;
             rejectFn = reject;
             }).then((data): void => {
                 const pendingInfo = this._pendingExtends.get(bid.event);
-                if (pendingInfo?.uuid === uuid) {
+                if (pendingInfo?.actionIndex === action.index) {
                     this._dispatch({index: -1, type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data });
                 }
             }).catch((): void => {
                 const pendingInfo = this._pendingExtends.get(bid.event);
-                if (pendingInfo?.uuid === uuid) {
+                if (pendingInfo?.actionIndex === action.index) {
                     this._dispatch({index: -1, type: ActionType.rejected, threadId: this.id, event: bid.event });
                 }
             });
-        this._pendingExtends.set(bid.event, {uuid: uuid, event: bid.event, host: this.id, isExtend: true});
+        this._pendingExtends.set(bid.event, {actionIndex: action.index, event: bid.event, host: this.id, isExtend: true});
         this._updatePendingEventsBid();
         this._logger?.logExtend(bid, this._state.section, this._currentBids?.[BidType.pending]);
         return {
@@ -202,22 +201,21 @@ export class BThread {
         const promise = action.payload;
         const bid = this._currentBids?.request?.get(action.event);
         if(!bid) return;
-        const uuid = utils.uuidv4();
-        this._pendingRequests.set(action.event, {uuid: uuid, event: action.event, host: this.id, isExtend: false});
+        this._pendingRequests.set(action.event, {actionIndex: action.index, event: action.event, host: this.id, isExtend: false});
         this._updatePendingEventsBid();
         this._logger?.logPromise(bid, this._state.section, this._currentBids?.[BidType.pending]);
         const startTime = new Date().getTime();
         promise.then((data: any): void => {
                 const pendingDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
-                if (pendingEventInfo?.uuid === uuid) {
+                if (pendingEventInfo?.actionIndex === action.index) {
                     this._dispatch({index: -1, type: ActionType.resolved, threadId: this.id, event: action.event, payload: data, promiseInfo: {fromAction: action.index, duration: pendingDuration}});
                 }
             })
             .catch((e: Error): void => {
                 const pendingDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
-                if (pendingEventInfo?.uuid === uuid) {
+                if (pendingEventInfo?.actionIndex === action.index) {
                     this._dispatch({index: -1, type: ActionType.rejected, threadId: this.id, event: action.event, payload: e, promiseInfo: {fromAction: action.index, duration: pendingDuration} });
                 }
             });
