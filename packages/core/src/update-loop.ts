@@ -8,7 +8,7 @@ import { EventMap, FCEvent, toEvent } from './event';
 import { CachedItem, EventCache } from './event-cache';
 import { EventDispatch, setupEventDispatcher } from './event-dispatcher';
 import { FlowContext } from './flow';
-import { Log, Logger } from './logger';
+import { Log, Logger, LoggedAction } from './logger';
 import * as utils from './utils';
 
 type EnableThread = ({id, title, gen, props, key}: FlowContext) => BThreadState;
@@ -171,7 +171,6 @@ function setupScaffolding(
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
-    actionDispatch: ActionDispatch;
     event: GetCachedItem;
     pending: EventMap<PendingEventInfo>;
     blocks: EventMap<Bid[]>;
@@ -179,9 +178,9 @@ export interface ScenariosContext {
     log?: Log;
 }
 export type UpdateLoopFunction = () => ScenariosContext;
+export type StartReplayFunction = (actions: Action[]) => void;
 
-
-export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch, Action[]] {
+export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch, Action[], StartReplayFunction] {
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     const logger = disableLogging ? undefined : new Logger();
@@ -191,24 +190,13 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     let actionIndex = 0;
     const actionQueue: Action[] = [];
     let replayQueue: Action[] = [];
+
     // main loop-function:
     function updateLoop(): ScenariosContext {
         let action = replayQueue.length > 0 ? replayQueue.shift() : actionQueue.shift();
-        // start a replay?
-        if (logger && action?.type === ActionType.replay) {
-            replayQueue = action.payload;
-            actionIndex = 0;
-            // delete all BThreads
-            Object.keys(bThreadDictionary).forEach((threadId): void => { 
-                bThreadDictionary[threadId].destroy();
-                delete bThreadDictionary[threadId];
-            });
-            eventCache.clear();
-            return updateLoop();
-        }
         const { bThreadBids, bThreadStateById } = scaffold();
         const bids = getAllBids(bThreadBids);
-        if(logger && action?.type === ActionType.requested && action.payload === undefined) { // it is a replay action!
+        if(action?.type === ActionType.requested && action.payload === undefined) {
             action.payload = bThreadDictionary[action.threadId].getBids()?.request?.get(action.event);
         }
         action = action || getNextActionFromRequests(bids.request, bids.wait);
@@ -221,7 +209,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
         return { 
             dispatch: eventDispatch,
-            actionDispatch: dispatch,
             event: getEventCache,
             blocks: bids[BidType.block] || new EventMap(),
             pending: bids[BidType.pending],
@@ -229,5 +216,18 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             log: logger?.getLog()
         }
     }
-    return [updateLoop, eventDispatch, actionQueue];
+
+    const startReplay = (actions: Action[]) => {
+        replayQueue = actions;
+        actionIndex = 0;
+        // delete all BThreads
+        Object.keys(bThreadDictionary).forEach((threadId): void => { 
+            bThreadDictionary[threadId].destroy();
+            delete bThreadDictionary[threadId];
+        });
+        eventCache.clear();
+        updateLoop();
+    }
+
+    return [updateLoop, eventDispatch, actionQueue, startReplay];
 }

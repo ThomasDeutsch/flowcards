@@ -6,8 +6,7 @@ export enum ActionType {
     requested = "requested",
     dispatched = "dispatched",
     resolved = "resolved",
-    rejected = "rejected",
-    replay = "replay"
+    rejected = "rejected"
 }
 
 export interface Action {
