@@ -206,17 +206,37 @@ export class BThread {
         this._logger?.logPromise(bid, this._state.section, this._currentBids?.[BidType.pending]);
         const startTime = new Date().getTime();
         promise.then((data: any): void => {
-                const pendingDuration = new Date().getTime() - startTime;
+                const requestDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
                 if (pendingEventInfo?.actionIndex === action.index) {
-                    this._dispatch({index: null, type: ActionType.resolved, threadId: this.id, event: action.event, payload: data});
+                    this._dispatch({
+                        index: null, 
+                        type: ActionType.resolved,
+                        threadId: this.id,
+                        event: action.event,
+                        payload: data,
+                        resolve: {
+                            requestedActionIndex: action.index!,
+                            requestDuration: requestDuration
+                        }
+                    });
                 }
             })
             .catch((e: Error): void => {
-                const pendingDuration = new Date().getTime() - startTime;
+                const requestDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
                 if (pendingEventInfo?.actionIndex === action.index) {
-                    this._dispatch({index: null, type: ActionType.rejected, threadId: this.id, event: action.event, payload: e});
+                    this._dispatch({
+                        index: null,
+                        type: ActionType.rejected,
+                        threadId: this.id,
+                        event: action.event,
+                        payload: e,
+                        resolve: {
+                            requestedActionIndex: action.index!,
+                            requestDuration: requestDuration
+                        }
+                    });
                 }
             });
     }

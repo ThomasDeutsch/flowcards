@@ -7,6 +7,7 @@ import { EventMap, FCEvent, toEvent } from './event';
 import * as utils from './utils';
 import { EventCache, CachedItem } from './event-cache'
 import { FlowContext } from './flow';
+import { isThenable } from './utils';
 
 
 type EnableThread = ({id, title, gen, props, key}: FlowContext) => BThreadState;
@@ -68,6 +69,14 @@ function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
 function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
     switch (action.type) {
         case ActionType.requested: {
+            if (typeof action.payload === "function") {
+                action.payload = action.payload(eventCache.get(action.event)?.value);
+            }
+            if(isThenable(action.payload)) {
+                bThreadDictionary[action.threadId].addPendingRequest(action);
+                advanceOnPending(allBids, bThreadDictionary, action);
+                break;
+            }
             const nextAction = extendAction(allBids, bThreadDictionary, action);
             if(!nextAction) return; // was extended
             bThreadDictionary[nextAction.threadId].progressRequest(eventCache, nextAction); // request got resolved
@@ -79,11 +88,6 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             if(!nextAction) return; // was extended
             const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
             if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
-            break;
-        }
-        case ActionType.promise: {
-            bThreadDictionary[action.threadId].addPendingRequest(action);
-            advanceOnPending(allBids, bThreadDictionary, action);
             break;
         }
         case ActionType.resolved: {
@@ -180,7 +184,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     const logger = disableLogging ? undefined : new Logger();
-    let scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
+    const scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const getEventCache: GetCachedItem = (event: FCEvent | string) => eventCache.get(toEvent(event));
     let actionIndex = 0;
@@ -188,9 +192,9 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     let replayQueue: Action[] = [];
     // main loop-function:
     function updateLoop(): ScenariosContext {
-        let action = actionQueue.shift();
+        let action = replayQueue.length > 0 ? replayQueue.shift() : actionQueue.shift();
         // start a replay?
-        if (action?.type === ActionType.replay) {
+        if (logger && action?.type === ActionType.replay) {
             replayQueue = action.payload;
             actionIndex = 0;
             // delete all BThreads
@@ -198,15 +202,17 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
                 bThreadDictionary[threadId].destroy();
                 delete bThreadDictionary[threadId];
             });
-            eventCache.clear(); // clear cache
-            scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger); // renew scaffolding function, because of the onDestroy-ids.
+            eventCache.clear();
             return updateLoop();
         }
-        const {bThreadBids, bThreadStateById} = scaffold();
+        const { bThreadBids, bThreadStateById } = scaffold();
         const bids = getAllBids(bThreadBids);
-        action = action || getNextActionFromRequests(eventCache, bids.request, bids.wait);
+        if(logger && action?.type === ActionType.requested && action.payload === undefined) { // it is a replay action!
+            action.payload = bThreadDictionary[action.threadId].getBids()?.request?.get(action.event);
+        }
+        action = action || getNextActionFromRequests(bids.request, bids.wait);
         if (action) {
-            action.index = ++actionIndex;
+            action.index = actionIndex++;
             logger?.logAction(action);
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop();

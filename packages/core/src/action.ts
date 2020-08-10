@@ -8,7 +8,6 @@ import { EventCache } from "./event-cache";
 
 export enum ActionType {
     requested = "requested",
-    promise = "promise",
     dispatched = "dispatched",
     resolved = "resolved",
     rejected = "rejected",
@@ -21,6 +20,10 @@ export interface Action {
     threadId: string;
     event: FCEvent;
     payload?: any;
+    resolve?: {
+        requestDuration: number;
+        requestedActionIndex: number;
+    };
 }
 
 
@@ -50,15 +53,10 @@ function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
     return undefined;
 }
 
-function getActionFromBid(bid: Bid, bidFnValue: any) {
-    if (typeof bid.payload === "function") {
-        bid.payload = bid.payload();
-    } else if(bid.payload === undefined) {
-        bid.payload = bidFnValue;
-    }
+function getActionFromBid(bid: Bid) {
     const action = {
         index: null,
-        type: utils.isThenable(bid.payload) ? ActionType.promise : ActionType.requested,
+        type: ActionType.requested,
         threadId: bid.threadId,
         event: bid.event,
         payload: bid.payload
@@ -66,7 +64,7 @@ function getActionFromBid(bid: Bid, bidFnValue: any) {
     return action;
 }
 
-export function getNextActionFromRequests(eventCache: EventCache, requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
+export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
     if(!requestBids) return undefined;
     const events = requestBids.allEvents;
     if(!events) return undefined;
@@ -75,7 +73,7 @@ export function getNextActionFromRequests(eventCache: EventCache, requestBids: B
         const bids = requestBids.get(selectedEvent);
         const bid = getBid(bids, waitBids);
         if(bid) {
-            return getActionFromBid(bid, eventCache.get(bid.event)?.value);
+            return getActionFromBid(bid);
         } 
         [selectedEvent, rest] = getRandom(rest);
     }

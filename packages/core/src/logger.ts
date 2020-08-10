@@ -1,11 +1,11 @@
 import { Action, ActionType } from './action';
 import { BThreadKey } from './bthread';
-import { Bid, BThreadBids, BidType, BidSubType, PendingEventInfo } from './bid';
+import { Bid, BThreadBids, BidType, BidSubType, PendingEventInfo, request } from './bid';
 import { FCEvent, EventMap } from './event';
 
 export interface LoggedAction extends Action {
     reactingBThreads: Set<string>;
-    resolvedInMs?: number;
+    resolvedIndex?: number;
 }
 
 export interface BThreadInfo {
@@ -54,8 +54,10 @@ export class Logger {
     }
 
     public logAction(action: Action): void {
-        const payload = (action.type === ActionType.promise) ? undefined : action.payload;
-        this._actions.push({...action, payload: payload, reactingBThreads: new Set()});
+        if(action.resolve) {
+            this._actions[action.resolve.requestedActionIndex].resolvedIndex = action.index!;
+        }
+        this._actions.push({...action, reactingBThreads: new Set()});
     }
 
     public addThreadInfo(id: string, title?: string, props?: Record<string, any>) {

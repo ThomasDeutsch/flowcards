@@ -144,6 +144,25 @@ test("log will contain a list of executed actions (sorted)", () => {
 })
 
 
+test("the actions in a log will contain info, if and when the promise got resolved.", (done) => {
+
+  const thread1 = flow({id: 'thread1', title: 'myThread1'}, function* () {
+      yield bp.request('asyncRequest', () => delay(10, 'value'));
+      yield bp.request('request2');
+      yield bp.wait('fin');
+  });
+
+  testScenarios((enable) => {
+      enable(thread1());
+  }, ({log, dispatch}) => {
+    if(dispatch('fin')) {
+      expect(log?.actions[1]?.payload).toEqual('value');
+      expect(log?.actions[1]?.resolve?.requestedActionIndex).toEqual(0);
+      expect(log?.actions[1]?.resolve?.requestDuration).toBeGreaterThan(8);
+      done();
+    }
+  });
+});
 
 
 
