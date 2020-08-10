@@ -1,7 +1,7 @@
-import { Action, ActionType } from './action';
+import { Action } from './action';
+import { Bid, BidSubType, BidType, PendingEventInfo } from './bid';
 import { BThreadKey } from './bthread';
-import { Bid, BThreadBids, BidType, BidSubType, PendingEventInfo, request } from './bid';
-import { FCEvent, EventMap } from './event';
+import { EventMap, FCEvent } from './event';
 
 export interface LoggedAction extends Action {
     reactingBThreads: Set<string>;

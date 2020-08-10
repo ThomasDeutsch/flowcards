@@ -1,10 +1,12 @@
-import { getBidsForBThread, BThreadBids, BidType, Bid, BidSubType, PendingEventInfo, extend } from './bid';
-import * as utils from "./utils";
-import { Logger, BThreadReactionType } from "./logger";
-import { ActionType, Action } from './action';
-import { ActionDispatch} from './update-loop';
+import { Action, ActionType } from './action';
+import {
+    Bid, BidSubType, BidType, BThreadBids, getBidsForBThread, PendingEventInfo
+} from './bid';
 import { EventMap, FCEvent, toEvent } from './event';
 import { EventCache, setEventCache } from './event-cache';
+import { BThreadReactionType, Logger } from './logger';
+import { ActionDispatch } from './update-loop';
+import * as utils from './utils';
 
 export type BTGen = Generator<Bid | Bid[], void, any>;
 export type GeneratorFn = (props: any) => BTGen;

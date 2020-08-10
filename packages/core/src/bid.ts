@@ -1,6 +1,6 @@
-import * as utils from "./utils";
-import { EventMap, EventKey, toEvent, EventName, FCEvent } from "./event";
-import { GuardFunction, getGuardedUnguardedBlocks, combineGuards } from './guard';
+import { EventKey, EventMap, EventName, FCEvent, toEvent } from './event';
+import { combineGuards, getGuardedUnguardedBlocks, GuardFunction } from './guard';
+import * as utils from './utils';
 
 export enum BidType {
     request = "request",

@@ -1,10 +1,6 @@
-import { BidsForBidType, Bid, BidSubType } from "./bid";
-import { FCEvent, EventMap } from './event';
+import { Bid, BidsForBidType, BidSubType } from './bid';
+import { EventMap, FCEvent } from './event';
 import { getGuardForWaits } from './guard';
-import * as utils from './utils';
-import { BThreadDictionary } from './update-loop';
-import { EventCache } from "./event-cache";
-
 
 export enum ActionType {
     requested = "requested",

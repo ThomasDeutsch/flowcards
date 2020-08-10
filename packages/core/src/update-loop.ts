@@ -1,14 +1,15 @@
-import { BThread, ExtendResultType, BThreadState, BThreadKey } from './bthread';
-import { getAllBids, BidType, AllBidsByType, getMatchingBids, BThreadBids, BidSubType, PendingEventInfo, Bid } from './bid';
-import { Logger, Log } from './logger';
-import { Action, getNextActionFromRequests, ActionType } from './action';
-import { setupEventDispatcher, EventDispatch } from "./event-dispatcher";
+import { Action, ActionType, getNextActionFromRequests } from './action';
+import {
+    AllBidsByType, Bid, BidSubType, BidType, BThreadBids, getAllBids, getMatchingBids,
+    PendingEventInfo
+} from './bid';
+import { BThread, BThreadKey, BThreadState, ExtendResultType } from './bthread';
 import { EventMap, FCEvent, toEvent } from './event';
-import * as utils from './utils';
-import { EventCache, CachedItem } from './event-cache'
+import { CachedItem, EventCache } from './event-cache';
+import { EventDispatch, setupEventDispatcher } from './event-dispatcher';
 import { FlowContext } from './flow';
-import { isThenable } from './utils';
-
+import { Log, Logger } from './logger';
+import * as utils from './utils';
 
 type EnableThread = ({id, title, gen, props, key}: FlowContext) => BThreadState;
 type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
@@ -72,7 +73,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             if (typeof action.payload === "function") {
                 action.payload = action.payload(eventCache.get(action.event)?.value);
             }
-            if(isThenable(action.payload)) {
+            if(utils.isThenable(action.payload)) {
                 bThreadDictionary[action.threadId].addPendingRequest(action);
                 advanceOnPending(allBids, bThreadDictionary, action);
                 break;

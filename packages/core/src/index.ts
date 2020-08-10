@@ -1,6 +1,6 @@
-import { StagingFunction, createUpdateLoop, ScenariosContext } from './update-loop';
-import { Action } from './action'
+import { Action } from './action';
 import { EventDispatch } from './event-dispatcher';
+import { createUpdateLoop, ScenariosContext, StagingFunction } from './update-loop';
 
 export * from './flow';
 export * from './event-dispatcher';
@@ -12,7 +12,6 @@ export * from './event';
 export * from './logger';
 export * from './action';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch] {
     const [updateLoop, dispatch, actionQueue] = createUpdateLoop(stagingFunction, (action: Action): void => {

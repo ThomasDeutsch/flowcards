@@ -1,9 +1,8 @@
-import { BidsForBidType, Bid, BidSubType, PendingEventInfo } from './bid';
 import { ActionType } from './action';
-import { ActionDispatch } from './update-loop';
-import { FCEvent, EventMap, toEvent } from './event';
+import { Bid, BidsForBidType, BidSubType, PendingEventInfo } from './bid';
+import { EventMap, FCEvent, toEvent } from './event';
 import { getGuardForWaits, GuardFunction } from './guard';
-
+import { ActionDispatch } from './update-loop';
 
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;

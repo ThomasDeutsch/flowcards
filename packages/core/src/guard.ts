@@ -1,5 +1,5 @@
-import { FCEvent, EventMap } from './event';
 import { Bid } from './bid';
+import { EventMap, FCEvent } from './event';
 import * as utils from './utils';
 
 export type GuardFunction = (payload: any) => boolean
