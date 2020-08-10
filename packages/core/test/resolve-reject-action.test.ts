@@ -15,8 +15,7 @@ function delay(ms: number) {
 test("when a promise is resolved, it will dispatch an Action.", done => {
 
     const testLoop = (enable: StagingFunction): void => {
-        const actionQueue: Action[] = [];
-        const [updateLoop] = createUpdateLoop(enable, (action: Action) => {
+        const [updateLoop, dispatch, actionQueue] = createUpdateLoop(enable, (action: Action) => {
             if(action) {
                 actionQueue.push(action)
                 expect(action.type).toBe(ActionType.resolved);
@@ -24,9 +23,9 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
                 expect(action.event.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
-            updateLoop(actionQueue);
+            updateLoop();
         });
-        updateLoop([]);
+        updateLoop();
     };
 
     const thread1 = flow({id: 'thread1'}, function* () {
@@ -43,14 +42,13 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
 describe('dispatched action', () => {
 
     const testLoop = (enable: StagingFunction): void => {
-        const actionQueue: Action[] = [];
-        const [updateLoop] = createUpdateLoop(enable, (action: Action) => {
+        const [updateLoop, dispatch, actionQueue] = createUpdateLoop(enable, (action: Action) => {
             if(action) {
                 actionQueue.push(action);
-                updateLoop(actionQueue);
+                updateLoop();
             }
         });
-        updateLoop([]);
+        updateLoop();
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {

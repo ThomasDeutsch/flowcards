@@ -15,21 +15,16 @@ export type UpdateCallback = (scenario: ScenariosContext) => any;
 
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch] {
-    const actionQueue: Action[] = [];
-    const [updateLoop, dispatch] = createUpdateLoop(stagingFunction, (action: Action): void => {
+    const [updateLoop, dispatch, actionQueue] = createUpdateLoop(stagingFunction, (action: Action): void => {
         if(action) { 
             actionQueue.push(action);
             Promise.resolve().then(() => { 
-                if(actionQueue.length > 0) {
-                    const nextActions = [...actionQueue];
-                    actionQueue.length = 0;
-                    const scenarioContext = updateLoop(nextActions);
-                    if(updateCb !== undefined) updateCb(scenarioContext);
-                }
+                const scenarioContext = updateLoop();
+                if(updateCb !== undefined) updateCb(scenarioContext);
             }).catch(e => false);
         }
     });
-    const initialScenarioContext = updateLoop([]);
+    const initialScenarioContext = updateLoop();
     if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
     return [initialScenarioContext, dispatch];
 }

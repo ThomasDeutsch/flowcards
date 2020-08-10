@@ -173,10 +173,10 @@ export interface ScenariosContext {
     bThreadState: Record<string, BThreadState>;
     log?: Log;
 }
-export type UpdateLoopFunction = (actionQueue: Action[]) => ScenariosContext;
+export type UpdateLoopFunction = () => ScenariosContext;
 
 
-export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch] {
+export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch, Action[]] {
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     const logger = disableLogging ? undefined : new Logger();
@@ -184,8 +184,9 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
     const getEventCache: GetCachedItem = (event: FCEvent | string) => eventCache.get(toEvent(event));
     let actionIndex = 0;
+    const actionQueue: Action[] = [];
     // main loop-function:
-    function updateLoop(actionQueue: Action[]): ScenariosContext {
+    function updateLoop(): ScenariosContext {
         let action = actionQueue.shift();
         // start a replay?
         if (action?.replayInfo?.isFirstReplayAction) {
@@ -205,7 +206,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             action.index = ++actionIndex;
             logger?.logAction(action);
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
-            return updateLoop(actionQueue);
+            return updateLoop();
         }
         updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
         return { 
@@ -218,5 +219,5 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             log: logger?.getLog()
         }
     }
-    return [updateLoop, eventDispatch];
+    return [updateLoop, eventDispatch, actionQueue];
 }

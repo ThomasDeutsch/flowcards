@@ -41,16 +41,15 @@ test("there is be a dispatch-function for every waiting event", () => {
 
 
 function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): void {
-    const actionQueue: Action[] = [];
-    const [updateLoop] = createUpdateLoop(stagingFunction, (a: Action): void => {
+    const [updateLoop, dispatch, actionQueue] = createUpdateLoop(stagingFunction, (a: Action): void => {
         if(a) {
             if(a.payload) da.add(a.payload.event.name);
             actionQueue.push(a);
         }
         
-        updateLoop(actionQueue);   
+        updateLoop();   
     });
-    updateLoop([]);
+    updateLoop();
 }
 
 test("if a request is cancelled, it will not trigger the same event-name after resolving - even if there are threads waiting for this event. ", done => {
