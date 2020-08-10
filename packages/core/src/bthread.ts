@@ -143,12 +143,12 @@ export class BThread {
             }).then((data): void => {
                 const pendingInfo = this._pendingExtends.get(bid.event);
                 if (pendingInfo?.actionIndex === action.index) {
-                    this._dispatch({index: -1, type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data });
+                    this._dispatch({index: null, type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data });
                 }
             }).catch((): void => {
                 const pendingInfo = this._pendingExtends.get(bid.event);
                 if (pendingInfo?.actionIndex === action.index) {
-                    this._dispatch({index: -1, type: ActionType.rejected, threadId: this.id, event: bid.event });
+                    this._dispatch({index: null, type: ActionType.rejected, threadId: this.id, event: bid.event });
                 }
             });
         this._pendingExtends.set(bid.event, {actionIndex: action.index, event: bid.event, host: this.id, isExtend: true});
@@ -209,14 +209,14 @@ export class BThread {
                 const pendingDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
                 if (pendingEventInfo?.actionIndex === action.index) {
-                    this._dispatch({index: -1, type: ActionType.resolved, threadId: this.id, event: action.event, payload: data, promiseInfo: {fromAction: action.index, duration: pendingDuration}});
+                    this._dispatch({index: null, type: ActionType.resolved, threadId: this.id, event: action.event, payload: data});
                 }
             })
             .catch((e: Error): void => {
                 const pendingDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
                 if (pendingEventInfo?.actionIndex === action.index) {
-                    this._dispatch({index: -1, type: ActionType.rejected, threadId: this.id, event: action.event, payload: e, promiseInfo: {fromAction: action.index, duration: pendingDuration} });
+                    this._dispatch({index: null, type: ActionType.rejected, threadId: this.id, event: action.event, payload: e});
                 }
             });
     }

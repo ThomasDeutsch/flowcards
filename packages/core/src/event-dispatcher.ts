@@ -46,7 +46,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
                     if(guard && guard(payload) === false) return undefined;
                     if(cache.dispatch && Object.is(payload, cache.payload)) return cache.dispatch;
                     cache.payload = payload;
-                    cache.dispatch = (): void => dispatch({index: -1, type: ActionType.dispatched, event: waitEvent, payload: payload, threadId: ""});
+                    cache.dispatch = (): void => dispatch({index: null, type: ActionType.dispatched, event: waitEvent, payload: payload, threadId: ""});
                     return cache.dispatch;
                 });
             }

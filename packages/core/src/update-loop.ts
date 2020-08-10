@@ -185,11 +185,13 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const getEventCache: GetCachedItem = (event: FCEvent | string) => eventCache.get(toEvent(event));
     let actionIndex = 0;
     const actionQueue: Action[] = [];
+    let replayQueue: Action[] = [];
     // main loop-function:
     function updateLoop(): ScenariosContext {
         let action = actionQueue.shift();
         // start a replay?
-        if (action?.replayInfo?.isFirstReplayAction) {
+        if (action?.type === ActionType.replay) {
+            replayQueue = action.payload;
             actionIndex = 0;
             // delete all BThreads
             Object.keys(bThreadDictionary).forEach((threadId): void => { 
@@ -198,6 +200,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
             });
             eventCache.clear(); // clear cache
             scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger); // renew scaffolding function, because of the onDestroy-ids.
+            return updateLoop();
         }
         const {bThreadBids, bThreadStateById} = scaffold();
         const bids = getAllBids(bThreadBids);

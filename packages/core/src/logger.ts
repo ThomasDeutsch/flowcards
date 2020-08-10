@@ -4,8 +4,8 @@ import { Bid, BThreadBids, BidType, BidSubType, PendingEventInfo } from './bid';
 import { FCEvent, EventMap } from './event';
 
 export interface LoggedAction extends Action {
-    actionIndex: number;
     reactingBThreads: Set<string>;
+    resolvedInMs?: number;
 }
 
 export interface BThreadInfo {
@@ -55,7 +55,7 @@ export class Logger {
 
     public logAction(action: Action): void {
         const payload = (action.type === ActionType.promise) ? undefined : action.payload;
-        this._actions.push({...action, payload: payload, reactingBThreads: new Set(), actionIndex: this._getActionIndex()+1});
+        this._actions.push({...action, payload: payload, reactingBThreads: new Set()});
     }
 
     public addThreadInfo(id: string, title?: string, props?: Record<string, any>) {

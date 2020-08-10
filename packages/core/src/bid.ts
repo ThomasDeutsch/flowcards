@@ -34,7 +34,7 @@ export interface PendingEventInfo {
     event: FCEvent;
     host: string;
     isExtend: boolean;
-    actionIndex: number;
+    actionIndex: number | null;
 }
 
 // bids from BThreads

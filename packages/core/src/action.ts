@@ -11,17 +11,16 @@ export enum ActionType {
     promise = "promise",
     dispatched = "dispatched",
     resolved = "resolved",
-    rejected = "rejected"
+    rejected = "rejected",
+    replay = "replay"
 }
 
 export interface Action {
-    index: number;
+    index: number | null;
     type: ActionType;
     threadId: string;
     event: FCEvent;
     payload?: any;
-    promiseInfo?: {fromAction: number; duration: number};
-    replayInfo?: {isBreakpoint: boolean; isFirstReplayAction: boolean; lastReplayAction: number };
 }
 
 
@@ -58,7 +57,7 @@ function getActionFromBid(bid: Bid, bidFnValue: any) {
         bid.payload = bidFnValue;
     }
     const action = {
-        index: -1,
+        index: null,
         type: utils.isThenable(bid.payload) ? ActionType.promise : ActionType.requested,
         threadId: bid.threadId,
         event: bid.event,
