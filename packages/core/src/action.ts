@@ -15,10 +15,10 @@ export interface Action {
     threadId: string;
     event: FCEvent;
     payload?: any;
+    resolvedActionIndex?: number;
     resolve?: {
-        resolvedIndex?: number;
-        requestDuration: number;
         requestedActionIndex: number;
+        requestDuration: number;  
     };
 }
 

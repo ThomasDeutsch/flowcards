@@ -143,7 +143,6 @@ test("log will contain a list of executed actions (sorted)", () => {
     });
 })
 
-
 test("the actions in a log will contain info, if and when the promise got resolved.", (done) => {
 
   const thread1 = flow({id: 'thread1', title: 'myThread1'}, function* () {

@@ -96,7 +96,7 @@ test("pending events can not be dispatched", done => {
 
 test("After a pending event is resolved, a BThread that has requested this event is progressed", done => {
     const threadOne = flow(null, function* () {
-        yield bp.request("B", () => delay(100));
+        yield bp.request("singleAsyncRequest", () => delay(100));
         expect(1).toBe(1);
         done();
     });

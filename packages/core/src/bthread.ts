@@ -208,11 +208,11 @@ export class BThread {
         this._logger?.logPromise(bid, this._state.section, this._currentBids?.[BidType.pending]);
         const startTime = new Date().getTime();
         promise.then((data: any): void => {
-                const requestDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
                 if (pendingEventInfo?.actionIndex === action.index) {
+                    const requestDuration = new Date().getTime() - startTime;
                     this._dispatch({
-                        index: null, 
+                        index: action.resolvedActionIndex || null, 
                         type: ActionType.resolved,
                         threadId: this.id,
                         event: action.event,
@@ -225,11 +225,11 @@ export class BThread {
                 }
             })
             .catch((e: Error): void => {
-                const requestDuration = new Date().getTime() - startTime;
                 const pendingEventInfo = this._pendingRequests.get(action.event);
                 if (pendingEventInfo?.actionIndex === action.index) {
+                    const requestDuration = new Date().getTime() - startTime;
                     this._dispatch({
-                        index: null,
+                        index: action.resolvedActionIndex || null,
                         type: ActionType.rejected,
                         threadId: this.id,
                         event: action.event,

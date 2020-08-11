@@ -178,12 +178,12 @@ export interface ScenariosContext {
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
 
-export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch, Action[], ReplayMap] {
+export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch, Action[], ReplayMap, ActionDispatch] {
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     const logger = disableLogging ? undefined : new Logger();
-    const scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, dispatch, logger);
-    const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(dispatch);
+    const scaffold = setupScaffolding(stagingFunction, bThreadDictionary, eventCache, actionDispatch, logger);
+    const [updateEventDispatcher, eventDispatch] = setupEventDispatcher(actionDispatch);
     const getEventCache: GetCachedItem = (event: FCEvent | string) => eventCache.get(toEvent(event));
     let actionIndex = 0;
     const actionQueue: Action[] = [];
@@ -191,6 +191,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
 
     const startReplay = () => {
         actionIndex = 0;
+        actionQueue.length = 0;
         // delete all BThreads
         Object.keys(bThreadDictionary).forEach((threadId): void => { 
             bThreadDictionary[threadId].destroy();
@@ -198,29 +199,36 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         });
         eventCache.clear();
     }
-
-    // main loop-function:
+    // main loop-function
     function updateLoop(): ScenariosContext {
-        let action: Action | undefined;
-        if(replayMap.size) {
-            if(replayMap.has(0)) startReplay();
-            action = replayMap.get(actionIndex);
-            replayMap.delete(actionIndex);
-        } else {
-            action = actionQueue.shift();
-        }
+        // setup
+        if(replayMap.has(0)) startReplay();
         const { bThreadBids, bThreadStateById } = scaffold();
         const bids = getAllBids(bThreadBids);
-        if(action?.type === ActionType.requested && action.payload === undefined) {
-            action.payload = bThreadDictionary[action.threadId].getBids()?.request?.get(action.event);
+        // get next action
+        let action: Action | undefined;
+        if(replayMap.size !== 0) {
+            action = replayMap.get(actionIndex);
+            console.log('REPLAY ACTION: ', action, replayMap)
+            replayMap.delete(actionIndex);
+            if(action?.type === ActionType.requested) {
+                action.payload = bThreadDictionary[action.threadId].getBids()?.request?.get(action.event)?.payload;
+                console.log('payload: ', action.payload)
+            }
+        } else {
+            action = actionQueue.shift() || getNextActionFromRequests(bids.request, bids.wait);
+            if(action) {
+                action.index = actionIndex;
+                logger?.logAction(action);
+            }
         }
-        action = action || getNextActionFromRequests(bids.request, bids.wait);
+        // use next action
         if (action) {
-            action.index = actionIndex++;
-            logger?.logAction(action);
+            actionIndex++;
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop();
         }
+        // return to UI
         updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
         return { 
             dispatch: eventDispatch,
@@ -232,5 +240,5 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
     }
 
-    return [updateLoop, eventDispatch, actionQueue, replayMap];
+    return [updateLoop, eventDispatch, actionQueue, replayMap, actionDispatch];
 }

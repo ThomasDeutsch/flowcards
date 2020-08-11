@@ -1,4 +1,4 @@
-import { Action } from './action';
+import { Action, ActionType } from './action';
 import { Bid, BidSubType, BidType, PendingEventInfo } from './bid';
 import { BThreadKey } from './bthread';
 import { EventMap, FCEvent } from './event';
@@ -54,6 +54,9 @@ export class Logger {
 
     public logAction(action: Action): void {
         this._actions.push({...action, reactingBThreads: new Set()});
+        if(action.resolve) {
+            this._actions[action.resolve.requestedActionIndex].resolvedActionIndex = action.index!;
+        }
     }
 
     public addThreadInfo(id: string, title?: string, props?: Record<string, any>) {
