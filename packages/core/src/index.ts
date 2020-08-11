@@ -1,6 +1,6 @@
 import { Action } from './action';
 import { EventDispatch } from './event-dispatcher';
-import { createUpdateLoop, ScenariosContext, StagingFunction, StartReplayFunction } from './update-loop';
+import { createUpdateLoop, ScenariosContext, StagingFunction } from './update-loop';
 
 export * from './flow';
 export * from './event-dispatcher';
@@ -13,10 +13,15 @@ export * from './logger';
 export * from './action';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 
-export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch, StartReplayFunction] {
-    const [updateLoop, dispatch, actionQueue, startReplay] = createUpdateLoop(stagingFunction, (action: Action): void => {
+export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch] {
+    const [updateLoop, dispatch, actionQueue, replayMap] = createUpdateLoop(stagingFunction, (action: Action): void => {
         if(action) { 
-            actionQueue.push(action);
+            if(action.index !== null) { // is a replay action
+                if(action.index === 0) replayMap.clear();
+                replayMap.set(action.index, action);
+            } else {
+                actionQueue.push(action);
+            }
             Promise.resolve().then(() => { 
                 const scenarioContext = updateLoop();
                 if(updateCb !== undefined) updateCb(scenarioContext);
@@ -25,5 +30,5 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
     });
     const initialScenarioContext = updateLoop();
     if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
-    return [initialScenarioContext, dispatch, startReplay];
+    return [initialScenarioContext, dispatch];
 }

@@ -5,7 +5,6 @@ import { EventMap, FCEvent } from './event';
 
 export interface LoggedAction extends Action {
     reactingBThreads: Set<string>;
-    resolvedIndex?: number;
 }
 
 export interface BThreadInfo {
@@ -54,9 +53,6 @@ export class Logger {
     }
 
     public logAction(action: Action): void {
-        if(action.resolve) {
-            this._actions[action.resolve.requestedActionIndex].resolvedIndex = action.index!;
-        }
         this._actions.push({...action, reactingBThreads: new Set()});
     }
 

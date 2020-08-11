@@ -16,6 +16,7 @@ export interface Action {
     event: FCEvent;
     payload?: any;
     resolve?: {
+        resolvedIndex?: number;
         requestDuration: number;
         requestedActionIndex: number;
     };

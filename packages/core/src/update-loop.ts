@@ -44,8 +44,6 @@ function advanceOnPending(allBids: AllBidsByType, bThreadDictionary: BThreadDict
     return true;
 }
 
-
-
 function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
     const bids = getMatchingBids(allBids[BidType.extend], action.event);
     if(bids === undefined || bids.length === 0) return action;
@@ -178,9 +176,9 @@ export interface ScenariosContext {
     log?: Log;
 }
 export type UpdateLoopFunction = () => ScenariosContext;
-export type StartReplayFunction = (actions: Action[]) => void;
+export type ReplayMap = Map<number, Action>;
 
-export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch, Action[], StartReplayFunction] {
+export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: ActionDispatch, disableLogging?: boolean): [UpdateLoopFunction, EventDispatch, Action[], ReplayMap] {
     const bThreadDictionary: BThreadDictionary = {};
     const eventCache: EventCache = new EventMap();
     const logger = disableLogging ? undefined : new Logger();
@@ -189,11 +187,28 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
     const getEventCache: GetCachedItem = (event: FCEvent | string) => eventCache.get(toEvent(event));
     let actionIndex = 0;
     const actionQueue: Action[] = [];
-    let replayQueue: Action[] = [];
+    const replayMap = new Map<number, Action>();
+
+    const startReplay = () => {
+        actionIndex = 0;
+        // delete all BThreads
+        Object.keys(bThreadDictionary).forEach((threadId): void => { 
+            bThreadDictionary[threadId].destroy();
+            delete bThreadDictionary[threadId];
+        });
+        eventCache.clear();
+    }
 
     // main loop-function:
     function updateLoop(): ScenariosContext {
-        let action = replayQueue.length > 0 ? replayQueue.shift() : actionQueue.shift();
+        let action: Action | undefined;
+        if(replayMap.size) {
+            if(replayMap.has(0)) startReplay();
+            action = replayMap.get(actionIndex);
+            replayMap.delete(actionIndex);
+        } else {
+            action = actionQueue.shift();
+        }
         const { bThreadBids, bThreadStateById } = scaffold();
         const bids = getAllBids(bThreadBids);
         if(action?.type === ActionType.requested && action.payload === undefined) {
@@ -217,17 +232,5 @@ export function createUpdateLoop(stagingFunction: StagingFunction, dispatch: Act
         }
     }
 
-    const startReplay = (actions: Action[]) => {
-        replayQueue = actions;
-        actionIndex = 0;
-        // delete all BThreads
-        Object.keys(bThreadDictionary).forEach((threadId): void => { 
-            bThreadDictionary[threadId].destroy();
-            delete bThreadDictionary[threadId];
-        });
-        eventCache.clear();
-        updateLoop();
-    }
-
-    return [updateLoop, eventDispatch, actionQueue, startReplay];
+    return [updateLoop, eventDispatch, actionQueue, replayMap];
 }
