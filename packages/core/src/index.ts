@@ -15,17 +15,31 @@ export type UpdateCallback = (scenario: ScenariosContext) => any;
 type StartReplay = (actions: Action[]) => void;
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch, StartReplay] {
+    const batchedActions: Action[] = [];
+    const batchedReplayMap = new Map<number, Action>();
     const [updateLoop, dispatch, actionQueue, replayMap, actionDispatch] = createUpdateLoop(stagingFunction, (action: Action): void => {
         if(action) {
             if(action.index !== null) { // is a replay action
                 if(action.index === 0) replayMap.clear();
-                replayMap.set(action.index, action);
+                batchedReplayMap.set(action.index, action);
             } else {
-                actionQueue.push(action);
+                batchedActions.push(action);
             }
             Promise.resolve().then(() => {
-                if(updateCb !== undefined) updateCb(updateLoop());
-                else updateLoop();
+                let withUpdate = false;
+                if(batchedActions.length !== 0) {
+                    batchedActions.forEach(action => actionQueue.push(action));
+                    batchedActions.length = 0;
+                    withUpdate = true;
+                } if(batchedReplayMap.size !== 0) {
+                    batchedReplayMap.forEach((action, key) => replayMap.set(key, action));
+                    batchedReplayMap.clear();
+                    withUpdate = true;
+                }
+                if(withUpdate) {
+                    if(updateCb !== undefined) updateCb(updateLoop());
+                    else updateLoop();
+                }
             }).catch(e => false);
         }
     });

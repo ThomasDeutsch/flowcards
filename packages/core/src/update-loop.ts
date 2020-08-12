@@ -87,6 +87,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             if(!nextAction) return; // was extended
             const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
             if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
+            
+
             break;
         }
         case ActionType.resolved: {
@@ -188,7 +190,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
     let actionIndex = 0;
     const actionQueue: Action[] = [];
     const replayMap = new Map<number, Action>();
-
     const startReplay = () => {
         actionIndex = 0;
         actionQueue.length = 0;
@@ -207,10 +208,10 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
         const bids = getAllBids(bThreadBids);
         // get next action
         let action: Action | undefined;
-        if(replayMap.size > 0) {
+        if(replayMap.size !== 0) {
             action = replayMap.get(actionIndex);
             replayMap.delete(actionIndex);
-            if(action?.type === ActionType.requested) {
+            if(action?.type === ActionType.requested && action.payload === undefined) {
                 action.payload = bThreadDictionary[action.threadId].getBids()?.request?.get(action.event)?.payload;
             }
         } else {
@@ -220,8 +221,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
                 logger?.logAction(action);
             }
         }
-        // use next action
-        if (action) {
+        if (action) { // use next action
             actionIndex++;
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop();

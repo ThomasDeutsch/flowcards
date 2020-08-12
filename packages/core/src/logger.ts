@@ -97,6 +97,7 @@ export class Logger {
 
     public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPending: EventMap<PendingEventInfo>, pendingEvents?: EventMap<PendingEventInfo>): void {
         const actionIndex = this._getActionIndex();
+        if(!this._actions[actionIndex]) return;
         this._actions[actionIndex].reactingBThreads.add(bid.threadId);
         const reaction: BThreadReaction = {
             type: BThreadReactionType.progress,
