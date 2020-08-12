@@ -207,13 +207,11 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
         const bids = getAllBids(bThreadBids);
         // get next action
         let action: Action | undefined;
-        if(replayMap.size !== 0) {
+        if(replayMap.size > 0) {
             action = replayMap.get(actionIndex);
-            console.log('REPLAY ACTION: ', action, replayMap)
             replayMap.delete(actionIndex);
             if(action?.type === ActionType.requested) {
                 action.payload = bThreadDictionary[action.threadId].getBids()?.request?.get(action.event)?.payload;
-                console.log('payload: ', action.payload)
             }
         } else {
             action = actionQueue.shift() || getNextActionFromRequests(bids.request, bids.wait);
