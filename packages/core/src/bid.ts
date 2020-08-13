@@ -90,7 +90,7 @@ export interface AllBidsByType {
 }
 
 export function getAllPendingEvents(BThreadDictionary: BThreadDictionary): EventMap<PendingEventInfo>  {
-    return Object.keys(BThreadDictionary).reduce((acc: EventMap<PendingEventInfo>, key) => acc.merge(BThreadDictionary[key].state.pendingEvents), new EventMap<PendingEventInfo>());
+    return Object.keys(BThreadDictionary).reduce((acc: EventMap<PendingEventInfo>, key) => acc.merge(BThreadDictionary[key].state.pendingRequests), new EventMap<PendingEventInfo>());
 }
 
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {

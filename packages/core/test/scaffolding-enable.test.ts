@@ -70,7 +70,7 @@ test("enable will return the current thread waits", () => {
 
     testScenarios((enable) => {
         threadState = enable(thread());
-        expect(threadState?.isWaitingFor('A')).toBe(true);
+        expect(threadState?.waits.has('A')).toBe(true);
     });
 });
 
@@ -84,7 +84,7 @@ test("enable will return the current thread blocks", () => {
 
     testScenarios((enable) => {
         threadState = enable(thread());
-        expect(threadState?.isBlocking('A')).toBe(true);
+        expect(threadState?.blocks.has('A')).toBe(true);
     });
 });
 
@@ -147,8 +147,8 @@ test("enable will return the current pending events and a isPending function", (
         enableReturn = enable(thread1());
     }, ({pending}) => {
         if(pending.has('A') && pending.has('B')) {
-            expect(enableReturn.isRequesting('A')).toBeFalsy();
-            expect(enableReturn.isRequesting('B')).toBeFalsy();
+            expect(enableReturn.requests.has('A')).toBeFalsy();
+            expect(enableReturn.requests.has('B')).toBeFalsy();
             done();
         }
     });
@@ -170,8 +170,8 @@ test("enable will return the current requesting events ( blocked and pending inc
         enable(thread2());
     }, ({pending}) => {
         if(pending.has('A')) {
-            expect(enableReturn.isRequesting('A')).toBeFalsy();
-            expect(enableReturn.isRequesting('B')).toBeTruthy();
+            expect(enableReturn.requests.has('A')).toBeFalsy();
+            expect(enableReturn.requests.has('B')).toBeTruthy();
             done();
         }
     });
@@ -202,16 +202,16 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
 
     testScenarios((enable) => {
         const enableReturn = enable(thread1());
-        if(enableReturn.isRequesting('B') || enableReturn.isWaitingFor('FIN')) {
+        if(enableReturn.requests?.has('B') || enableReturn.waits?.has('FIN')) {
             enable(thread2());
             enable(thread3());
         }
-    }, ({bThreadState, dispatch}) => {
+    }, ({state, dispatch}) => {
         if(dispatch('B')) {
             expect(thread1init).toBe(1);
             expect(thread2init).toBe(2);
-            expect(bThreadState['thread3']?.waits?.has('C')).toBeTruthy();
-            expect(bThreadState['thread2']?.isWaitingFor('B')).toBeTruthy();
+            expect(state['thread3']?.waits?.has('C')).toBeTruthy();
+            expect(state['thread2']?.waits?.has('B')).toBeTruthy();
             done();
         }
     });

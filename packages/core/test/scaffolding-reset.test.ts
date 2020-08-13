@@ -19,7 +19,7 @@ test("a thread gets reset, when the arguments change", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        enable(threadB({waitingForB: state.isWaitingFor('B')}));
+        enable(threadB({waitingForB: state.waits.has('B')}));
     }, ({log}) => {
         const threadBReactions = log?.bThreadInfoById['threadB'].reactions;
         expect(threadBReactions?.get(0)?.changedProps?.[0]).toEqual('waitingForB');
@@ -45,7 +45,7 @@ test("a thread gets reset, when the arguments change - 2", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        const test: MyProps = state.isWaitingFor('B') ? {waitingForB: state.isWaitingFor('B')} : {waitingForB: false, waitingForX: false};
+        const test: MyProps = state.waits.has('B') ? {waitingForB: state.waits.has('B')} : {waitingForB: false, waitingForX: false};
         enable(threadB(test));
     }, ({log}) => {
         const threadBReactions = log?.bThreadInfoById['threadB'].reactions;
@@ -73,7 +73,7 @@ test("a thread gets reset, when the arguments change - 3", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        const test = state.isWaitingFor('B') ? {waitingForB: state.isWaitingFor('B')} : undefined;
+        const test = state.waits.has('B') ? {waitingForB: state.waits.has('B')} : undefined;
         enable(threadB(test));
     }, ({log}) => {
         const threadBReactions = log?.bThreadInfoById['threadB'].reactions;

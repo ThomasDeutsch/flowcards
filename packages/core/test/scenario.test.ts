@@ -119,9 +119,9 @@ test("the bThreadState is returned by the scenarios function", () => {
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2({prop1: 912, prop2: 'test'}));
-    }, ({bThreadState}) => {
-        expect(bThreadState.thread1.isCompleted).toBeTruthy();
-        expect(bThreadState.thread2.isCompleted).toBeFalsy();
+    }, ({state}) => {
+        expect(state.thread1.isCompleted).toBeTruthy();
+        expect(state.thread2.isCompleted).toBeFalsy();
         
     });
   });

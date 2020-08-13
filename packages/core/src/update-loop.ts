@@ -170,7 +170,7 @@ export interface ScenariosContext {
     event: GetCachedItem;
     pending: EventMap<PendingEventInfo>;
     blocks: EventMap<Bid[]>;
-    bThreadState: Record<string, BThreadState>;
+    state: Record<string, BThreadState>;
     log?: Log;
 }
 export type UpdateLoopFunction = () => ScenariosContext;
@@ -229,7 +229,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
             event: getEventCache,
             blocks: bids[BidType.block] || new EventMap(),
             pending: getAllPendingEvents(bThreadDictionary),
-            bThreadState: bThreadStateById,
+            state: bThreadStateById,
             log: logger?.getLog()
         }
     }

@@ -23,9 +23,9 @@ test("a pending event can be requested by another thread", () => {
     testScenarios((enable) => {
         enable(thread2());
         enable(thread1());
-    }, ({log, pending, bThreadState}) => {
+    }, ({pending, state}) => {
         expect(pending.has('A')).toBeTruthy();
-        expect(bThreadState['thread2'].isCompleted).toBeTruthy();
+        expect(state['thread2'].isCompleted).toBeTruthy();
     });
 });
 
