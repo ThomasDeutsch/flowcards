@@ -179,32 +179,39 @@ test("enable will return the current requesting events ( blocked and pending inc
 
 
 test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is set to true", (done) => {
+    let thread2init = 0;
+    let thread1init = 0;
+
     const thread1 = flow({id: 'thread1'}, function* () {
         yield bp.request("B");
         yield bp.request('X');
-        yield bp.request("B", delay(100));
+        yield bp.wait("FIN");
     });
 
     const thread2 = flow({id: 'thread2', destroyOnDisable: true}, function*() {
+        thread2init++
         yield bp.wait('B');
         yield bp.wait('C');
     })
 
     const thread3 = flow({id: 'thread3', destroyOnDisable: false}, function*() {
+        thread1init++
         yield bp.wait('B');
         yield bp.wait('C');
     })
 
     testScenarios((enable) => {
         const enableReturn = enable(thread1());
-        if(enableReturn.isRequesting('B')) {
+        if(enableReturn.isRequesting('B') || enableReturn.isWaitingFor('FIN')) {
             enable(thread2());
             enable(thread3());
         }
-    }, ({bThreadState, pending}) => {
-        if(pending.has('B')) {
-            expect(bThreadState['thread2']?.isWaitingFor('B')).toBeTruthy();
+    }, ({bThreadState, dispatch}) => {
+        if(dispatch('B')) {
+            expect(thread1init).toBe(1);
+            expect(thread2init).toBe(2);
             expect(bThreadState['thread3']?.waits?.has('C')).toBeTruthy();
+            expect(bThreadState['thread2']?.isWaitingFor('B')).toBeTruthy();
             done();
         }
     });

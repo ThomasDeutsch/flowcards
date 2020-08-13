@@ -155,14 +155,13 @@ export function set(event: string | FCEvent, payload?: any): Bid {
     };
 }
 
-export function extend(event: string | FCEvent, guard?: GuardFunction | null, payload?: any): Bid {
+export function extend(event: string | FCEvent, guard?: GuardFunction | null): Bid {
     return { 
         type: BidType.extend,
         subType: BidSubType.none, 
         event: toEvent(event), 
         guard: guard !== null ? guard : undefined, 
-        threadId: "", 
-        payload: payload
+        threadId: ""
     };
 }
 

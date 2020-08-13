@@ -23,9 +23,9 @@ test("a pending event can be requested by another thread", () => {
     testScenarios((enable) => {
         enable(thread2());
         enable(thread1());
-    }, ({log, pending}) => {
+    }, ({log, pending, bThreadState}) => {
         expect(pending.has('A')).toBeTruthy();
-        expect(log?.latestAction.threadId).toBe("thread2");
+        expect(bThreadState['thread2'].isCompleted).toBeTruthy();
     });
 });
 
@@ -88,9 +88,11 @@ test("pending events can be dispatched if there is a wait for the same event.", 
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({dispatch}) => {
-            expect(dispatch("A")).toBeDefined();
-            done();
+    }, ({dispatch, pending}) => {
+            if(pending.has('A')) {
+                expect(dispatch("A")).toBeDefined();
+                done();
+            }
     });
 });
 
@@ -171,39 +173,6 @@ test("if a pending event is rejected, the lower thread will use its request inst
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    });
-});
-
-
-test("a pending event can not be requested - second example", (done) => {
-    let count = 0;
-
-    const thread1 = flow(null, function* () {
-        yield bp.request('X', () => delay(100));
-        yield bp.request('A', 1);
-        yield bp.wait('FIN');
-    })
-
-    const thread2 = flow(null, function* () {
-        yield bp.request('A', () => delay(200));
-    });
-
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-        count++;
-    }, ({dispatch}) => {
-        if(dispatch('FIN')) {
-            expect(count).toEqual(8);
-            // 1:   initial
-            // 2,3: x & a request, 
-            // 4:   no request-bid ( waiting for dispatched action, because 'A' is still pending )
-            // 5:   x resolved
-            // 6:   a resolved
-            // 7:   a requested
-            // 8:   no request-bid ( waiting for dispatched action )
-            done();
-        }
     });
 });
 

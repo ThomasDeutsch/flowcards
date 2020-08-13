@@ -3,12 +3,12 @@ import {
     AllBidsByType, Bid, BidSubType, BidType, BThreadBids, getAllBids, getMatchingBids,
     PendingEventInfo
 } from './bid';
-import { BThread, BThreadKey, BThreadState, ExtendResultType } from './bthread';
+import { BThread, BThreadKey, BThreadState } from './bthread';
 import { EventMap, FCEvent, toEvent } from './event';
 import { CachedItem, EventCache } from './event-cache';
 import { EventDispatch, setupEventDispatcher } from './event-dispatcher';
 import { FlowContext } from './flow';
-import { Log, Logger, LoggedAction } from './logger';
+import { Log, Logger } from './logger';
 import * as utils from './utils';
 import { getAllPendingEvents } from './bid';
 
@@ -50,17 +50,13 @@ function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
     while(bids && bids.length > 0) {
         const bid = bids.pop(); // get last bid ( highest priority )
         if(bid === undefined) continue;
-        if(bid.payload !== undefined) {  // not an extend command, but an extend thread.
-            action.payload = (typeof bid.payload === 'function') ? bid.payload(action.payload) : bid.payload;
-            if(utils.isThenable(action.payload) && bThreadDictionary[bid.threadId]) {
-                if((action.type === ActionType.requested || action.type === ActionType.resolved) && action.extendedRequestingThreadId === undefined) action.extendedRequestingThreadId = action.threadId;
-                bThreadDictionary[bid.threadId].addPendingRequest(action);             
-                advanceOnPending(allBids, bThreadDictionary, action);
-                return undefined;
-            }
+        const extendPromise = bThreadDictionary[bid.threadId].progressExtend(action, bid);
+        if(extendPromise) {
+            action.payload = extendPromise;
+            action.extendedByThreadId = bid.threadId;
+            bThreadDictionary[action.threadId].addPendingRequest(action);
+            return undefined;
         }
-        const extendResult = bThreadDictionary[bid.threadId].progressExtend(action, bid);
-        if(extendResult === ExtendResultType.extendingThread) return undefined; // extend thread
     } 
     return action;
 }
@@ -98,8 +94,6 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             const nextAction = extendAction(allBids, bThreadDictionary, action);
             if(!nextAction) return; // was extended
             bThreadDictionary[action.threadId].progressRequest(eventCache, nextAction.event, nextAction.payload); // request got resolved
-            if(action.extendedRequestingThreadId) bThreadDictionary[action.extendedRequestingThreadId].progressRequest(eventCache, nextAction.event, nextAction.payload); // request got resolved
-
             advanceWaits(allBids, bThreadDictionary, nextAction);
             break;
         }

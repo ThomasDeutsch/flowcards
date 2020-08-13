@@ -12,12 +12,12 @@ test("requests can be extended", () => {
         progressedExtend = false,
         setupCount = 0;
 
-    const thread1 = flow(null, function* () {
+    const thread1 = flow({id: 'requesting thread'}, function* () {
         yield bp.request("A");
         progressedRequest = true;
     });
 
-    const thread3 = flow(null, function* () {
+    const thread3 = flow({id: 'extending thread'}, function* () {
         yield bp.extend("A");
         progressedExtend = true;
         yield bp.wait('X');
@@ -27,7 +27,7 @@ test("requests can be extended", () => {
         enable(thread1());
         enable(thread3());
         setupCount++;
-    }, ({pending}) => {
+    }, ({pending, log}) => {
         expect(setupCount).toEqual(2);
         expect(progressedExtend).toBe(true);
         expect(progressedRequest).toBe(false);
@@ -36,111 +36,6 @@ test("requests can be extended", () => {
  );  
 });
 
-
-test("if the extend has a payload, all threads will continue with that payload", () => {
-    let requestValue = 0,
-        extendValue = 0,
-        waitValue = 0,
-        setupCount = 0;
-
-    const thread1 = flow(null, function* () {
-        requestValue = yield bp.request("A");
-    });
-
-    const thread2 = flow(null, function* () {
-        waitValue = yield bp.wait('A');
-    })
-
-    const thread3 = flow(null, function* () {
-        extendValue = yield bp.extend("A", null, 1000);
-        yield bp.wait('X');
-    });
-
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-        enable(thread3());
-        setupCount++;
-    }, () => {
-        expect(setupCount).toEqual(2);
-        expect(waitValue).toEqual(1000);
-        expect(requestValue).toEqual(1000);
-        expect(extendValue).toEqual(1000);
-    }
- );  
-});
-
-
-test("the extend payload can be a function.", () => {
-    let requestValue = 0,
-        extendValue = 0,
-        waitValue = 0,
-        setupCount = 0;
-
-    const thread1 = flow(null, function* () {
-        requestValue = yield bp.request("A", 100);
-    });
-
-    const thread2 = flow(null, function* () {
-        waitValue = yield bp.wait('A');
-    });
-
-    const thread3 = flow(null, function* () {
-        extendValue = yield bp.extend("A", null, (x: number) => x + 1000);
-        yield bp.wait('X');
-    });
-
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-        enable(thread3());
-        setupCount++;
-    }, ({log}) => {
-        expect(setupCount).toEqual(2);
-        expect(waitValue).toEqual(1100);
-        expect(requestValue).toEqual(1100);
-        expect(extendValue).toEqual(1100);
-    }
- );  
-});
-
-
-// test("if the extend payload is a promise, a pending-event is created.", done => {
-//     let requestValue = 0,
-//         extendValue = 0,
-//         waitValue = 0,
-//         setupCount = 0;
-
-//     const thread1 = flow({id: 'requestingThread'}, function* () {
-//         requestValue = yield bp.request("A", 100);
-//     });
-
-//     const thread2 = flow({id: 'waitingThread'}, function* () {
-//         waitValue = yield bp.wait('A');
-//     });
-
-//     const thread3 = flow({id: 'extendingThread'}, function* () {
-//         extendValue = yield bp.extend("A", null, (x: number) => delay(10, x + 1000));
-//         console.log('extend Value: ', extendValue);
-//         yield bp.wait('Fin')
-//     });
-
-//     testScenarios((enable) => {
-//         enable(thread1());
-//         enable(thread2());
-//         console.log('enable thread', enable(thread3()));
-//         setupCount++;
-//     }, ({dispatch, log, pending}) => {
-//         console.log(log?.actions, pending);
-//         if(dispatch('Fin')) {
-//             expect(waitValue).toEqual(1100);
-//             expect(requestValue).toEqual(1100);
-//             expect(extendValue).toEqual(1100);
-//             done();
-//         }
-//     }
-//  );  
-// });
 
 test("if an extend is not applied, than the next extend will get the event", () => {
     let requestAdvanced = false;
@@ -356,36 +251,6 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
     });
 });
 
-
-test("an extend can be rejected. This will remove the pending event", (done) => {
-    const requestingThread = flow(null, function* () {
-        const val = yield bp.request("A", delay(100, 'super'));
-        expect(val).toBe('super');
-    });
-
-    const extendingThread = flow(null, function* () {
-        const extend = yield bp.extend("A");
-        expect(extend.value).toBe('super');
-        extend.reject();
-    });
-
-    const waitingThread = flow(null, function* () {
-        const val = yield bp.wait("A");
-        expect(val).toBe('super');
-        yield bp.wait('fin');
-    });
-
-    testScenarios((enable) => {
-        enable(requestingThread());
-        enable(extendingThread());
-        enable(waitingThread());
-    }, ({dispatch}) => {
-        if(dispatch('fin')) {
-            done();
-        }  
-    });
-});
-
 test("an extend will keep the event-pending if the BThread with the extend completes.", () => {
     let requestingThreadProgressed = false;
     const requestingThread = flow(null, function* () {
@@ -444,75 +309,32 @@ test("multiple extends will resolve after another. After all extends complete, t
 });
 
 
-test("if the last extend rejects, the event will resolve to its starting value.", (done) => {
-    const requestingThread = flow(null, function* () {
-        const val = yield bp.request("A", delay(100, 'super'));
-        expect(val).toBe('super'); // will have the initial value
-    });
+// todo 
+// test("If an extends rejects, an errow will be thrown in the extended event thread", (done) => {
+//     const requestingThread = flow(null, function* () {
+//         const val = yield bp.request("A", delay(100, 'super'));
+//         expect(val).toBe('super');
+//     });
 
-    const extendingThread = flow(null, function* () {
-        const extend = yield bp.extend("A");
-        expect(extend.value).toBe('super duper');
-        extend.reject();
-    });
+//     const extendingThread = flow(null, function* () {
+//         const extend = yield bp.extend("A");
+//         expect(extend.value).toBe('super');
+//         extend.reject();
+//     });
 
-    const extendingThreadHigherPriority = flow(null, function* () {
-        const extend = yield bp.extend("A");
-        expect(extend.value).toBe('super');
-        extend.resolve('super duper');
-    });
+//     const waitingThread = flow(null, function* () {
+//         const val = yield bp.wait("A");
+//         expect(val).toBe('super');
+//         yield bp.wait('fin');
+//     });
 
-    const waitingThread = flow(null, function* () {
-        const val = yield bp.wait("A");
-        expect(val).toBe('super');
-        yield bp.wait('fin');
-    });
-
-    testScenarios((enable) => {
-        enable(requestingThread());
-        enable(extendingThread());
-        enable(extendingThreadHigherPriority()); // this BThread is enabled after the first extendingThread, giving it a higher priority
-        enable(waitingThread());
-    }, ({dispatch}) => {
-        if(dispatch('fin')) {
-            done();
-        }  
-    });
-});
-
-
-test("if the previous extend rejects, the next extend will get the initial value", (done) => {
-    const requestingThread = flow(null, function* () {
-        const val = yield bp.request("A", delay(100, 'super'));
-        expect(val).toBe('super duper'); // it will have the value for the last extend
-    });
-
-    const extendingThread = flow(null, function* () {
-        const extend = yield bp.extend("A");
-        expect(extend.value).toBe('super');
-        extend.resolve(extend.value + ' duper');
-    });
-
-    const extendingThreadHigherPriority = flow(null, function* () {
-        const extend = yield bp.extend("A");
-        expect(extend.value).toBe('super');
-        extend.reject();
-    });
-
-    const waitingThread = flow(null, function* () {
-        const val = yield bp.wait("A");
-        expect(val).toBe('super duper');
-        yield bp.wait('fin');
-    });
-
-    testScenarios((enable) => {
-        enable(requestingThread());
-        enable(extendingThread());
-        enable(extendingThreadHigherPriority()); // this BThread is enabled after the first extendingThread, giving it a higher priority
-        enable(waitingThread());
-    }, ({dispatch}) => {
-        if(dispatch('fin')) {
-            done();
-        }  
-    });
-});
+//     testScenarios((enable) => {
+//         enable(requestingThread());
+//         enable(extendingThread());
+//         enable(waitingThread());
+//     }, ({dispatch}) => {
+//         if(dispatch('fin')) {
+//             done();
+//         }  
+//     });
+// });

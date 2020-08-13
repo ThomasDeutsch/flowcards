@@ -55,17 +55,22 @@ test("sets can be extended", () => {
 
     const thread = flow(null, function* () {
         yield bp.set("count", 2);
+        yield bp.wait('fin');
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.extend("count", undefined, (val: number) => val + 2);
+        const extend = yield bp.extend("count");
+        extend.resolve(extend.value + 2);
     });
 
     testScenarios((enable) => {
         enable(thread());
         enable(thread2());
-    }, ({event}) => {
-        expect(event('count')?.value).toEqual(4);
+    }, ({event, dispatch}) => {
+        if(dispatch('fin')) {
+            expect(event('count')?.value).toEqual(4);
+
+        }
     });
 });
 

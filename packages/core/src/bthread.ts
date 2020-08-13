@@ -21,12 +21,7 @@ export interface ExtendResult {
     resolve: Function;
     reject: Function;
     value: any;
-}
-
-export enum ExtendResultType {
-    guarded = "guarded",
-    progress = "progress",
-    extendingThread = "extendingThread"
+    promise: Promise<unknown>;
 }
 
 type IsBidPlacedFn = (event: string | FCEvent) => boolean
@@ -154,27 +149,28 @@ export class BThread {
     private _createExtendPromise(bid: Bid, action: Action): ExtendResult {
         let resolveFn: (value?: unknown) => void;
         let rejectFn: (reason?: any) => void;
-        new Promise((resolve, reject) => {
+        const promise = new Promise((resolve, reject) => {
             resolveFn = resolve;
             rejectFn = reject;
-            }).then((data): void => {
-                const pendingInfo = this._pendingExtends.get(bid.event);
-                if (pendingInfo?.actionIndex === action.index) {
-                    this._dispatch({index: null, type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data, extendedRequestingThreadId: action.extendedRequestingThreadId });
-                }
-            }).catch((): void => {
-                const pendingInfo = this._pendingExtends.get(bid.event);
-                if (pendingInfo?.actionIndex === action.index) {
-                    this._dispatch({index: null, type: ActionType.rejected, threadId: this.id, event: bid.event });
-                }
+            // }).then((data): void => {
+            //     const pendingInfo = this._pendingExtends.get(bid.event);
+            //     if (pendingInfo?.actionIndex === action.index) {
+            //         this._dispatch({index: null, type: ActionType.resolved, threadId: this.id, event: bid.event, payload: data, extendedRequestingThreadId: action.extendedRequestingThreadId });
+            //     }
+            // }).catch((): void => {
+            //     const pendingInfo = this._pendingExtends.get(bid.event);
+            //     if (pendingInfo?.actionIndex === action.index) {
+            //         this._dispatch({index: null, type: ActionType.rejected, threadId: this.id, event: bid.event });
+            //     }
             });
-        this._pendingExtends.set(bid.event, {actionIndex: action.index, event: bid.event, host: this.id, isExtend: true});
-        this._setCurrentBids();
+        // this._pendingExtends.set(bid.event, {actionIndex: action.index, event: bid.event, host: this.id, isExtend: true});
+        // this._setCurrentBids();
         this._logger?.logExtend(bid, this._state.section, this._state.pendingEvents);
         return {
             resolve: (value?: unknown) => { resolveFn(value) }, 
             reject: (reason: any) => { rejectFn(reason) }, 
-            value: action.payload
+            value: action.payload,
+            promise: promise
         };
     }
 
@@ -214,7 +210,7 @@ export class BThread {
                         type: ActionType.resolved,
                         threadId: this.id,
                         event: action.event,
-                        extendedRequestingThreadId: action.extendedRequestingThreadId,
+                        extendedByThreadId: action.extendedByThreadId,
                         payload: data,
                         resolve: {
                             requestedActionIndex: action.index!,
@@ -232,6 +228,7 @@ export class BThread {
                         type: ActionType.rejected,
                         threadId: this.id,
                         event: action.event,
+                        extendedByThreadId: action.extendedByThreadId,
                         payload: e,
                         resolve: {
                             requestedActionIndex: action.index!,
@@ -289,16 +286,11 @@ export class BThread {
         this._progressBThread(bid, actionPayload);
     }
 
-    public progressExtend(action: Action, bid: Bid): ExtendResultType {
-        if(!bid || bid.guard && !bid.guard(action.payload)) return ExtendResultType.guarded;
-        if((action.type === ActionType.requested || action.type === ActionType.resolved) && action.extendedRequestingThreadId === undefined) action.extendedRequestingThreadId = action.threadId;
-        if(bid.payload !== undefined) {
-            this._progressBThread(bid, action.payload);
-            return ExtendResultType.progress;
-        }
+    public progressExtend(action: Action, bid: Bid): Promise<unknown> | undefined {
+        if(!bid || bid.guard && !bid.guard(action.payload)) return undefined;
         const extendResult = this._createExtendPromise(bid, action);
         this._progressBThread(bid, extendResult);
-        return ExtendResultType.extendingThread;
+        return extendResult.promise;
     }
 
     public destroy(): void {

@@ -15,7 +15,7 @@ export interface Action {
     threadId: string;
     event: FCEvent;
     payload?: any;
-    extendedRequestingThreadId?: string;
+    extendedByThreadId?: string;
     resolvedActionIndex?: number;
     resolve?: {
         requestedActionIndex: number;
