@@ -74,7 +74,7 @@ test("if a request is cancelled, it will not trigger the same event-name after r
 });
 
 
-test("pending will show what events are pending", () => {
+test("pending will show what events are pending", (done) => {
     const thread1 = flow(null, function* () {
         yield bp.request("count", () => delay(2000));
     });
@@ -82,9 +82,12 @@ test("pending will show what events are pending", () => {
     testScenarios((enable, cache) => {
         cache('count');
         enable(thread1());
-    }, ({event, pending}) => {
-        expect(pending.has("count")).toEqual(true);
-        expect(event("count")).toBeUndefined();
+    }, ({event, pending, log}) => {
+        if(pending.has('count')) {
+            expect(pending.has("count")).toEqual(true);
+            expect(event("count")).toBeUndefined();
+            done();
+        }
     });
 });
 
@@ -95,9 +98,11 @@ test("pending will accept a key as a second argument", () => {
 
     testScenarios((enable) => {
         enable(thread1());
-    }, ({event, pending}) => {
-        expect(pending.has({name: "count", key: 1})).toEqual(true);
-        expect(event({name: "count", key: 1})).toBeUndefined();
+    }, ({event, pending, log}) => {
+        if(pending.has({name: 'count', key: 1})) { // do not check in initial update
+            expect(pending.has({name: "count", key: 1})).toEqual(true);
+            expect(event({name: "count", key: 1})).toBeUndefined();
+        }
     });
 });
 

@@ -15,13 +15,13 @@ export interface Action {
     threadId: string;
     event: FCEvent;
     payload?: any;
+    extendedRequestingThreadId?: string;
     resolvedActionIndex?: number;
     resolve?: {
         requestedActionIndex: number;
         requestDuration: number;  
     };
 }
-
 
 function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
     if (!coll || coll.length === 0) return [undefined, undefined]

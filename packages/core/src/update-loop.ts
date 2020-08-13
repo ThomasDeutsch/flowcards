@@ -10,6 +10,7 @@ import { EventDispatch, setupEventDispatcher } from './event-dispatcher';
 import { FlowContext } from './flow';
 import { Log, Logger, LoggedAction } from './logger';
 import * as utils from './utils';
+import { getAllPendingEvents } from './bid';
 
 type EnableThread = ({id, title, gen, props, key}: FlowContext) => BThreadState;
 type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
@@ -46,20 +47,20 @@ function advanceOnPending(allBids: AllBidsByType, bThreadDictionary: BThreadDict
 
 function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): Action | undefined {
     const bids = getMatchingBids(allBids[BidType.extend], action.event);
-    if(bids === undefined || bids.length === 0) return action;
-    while(bids.length > 0) {
-        const bid = bids.pop();
+    while(bids && bids.length > 0) {
+        const bid = bids.pop(); // get last bid ( highest priority )
         if(bid === undefined) continue;
-        if(bid.payload !== undefined && action.type !== ActionType.resolved) {
+        if(bid.payload !== undefined) {  // not an extend command, but an extend thread.
             action.payload = (typeof bid.payload === 'function') ? bid.payload(action.payload) : bid.payload;
-            if(utils.isThenable(action.payload) && bThreadDictionary[action.threadId]) {
-                bThreadDictionary[action.threadId].addPendingRequest(action);
+            if(utils.isThenable(action.payload) && bThreadDictionary[bid.threadId]) {
+                if((action.type === ActionType.requested || action.type === ActionType.resolved) && action.extendedRequestingThreadId === undefined) action.extendedRequestingThreadId = action.threadId;
+                bThreadDictionary[bid.threadId].addPendingRequest(action);             
                 advanceOnPending(allBids, bThreadDictionary, action);
                 return undefined;
             }
         }
         const extendResult = bThreadDictionary[bid.threadId].progressExtend(action, bid);
-        if(extendResult === ExtendResultType.extendingThread) return undefined;
+        if(extendResult === ExtendResultType.extendingThread) return undefined; // extend thread
     } 
     return action;
 }
@@ -78,7 +79,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             }
             const nextAction = extendAction(allBids, bThreadDictionary, action);
             if(!nextAction) return; // was extended
-            bThreadDictionary[nextAction.threadId].progressRequest(eventCache, nextAction); // request got resolved
+            bThreadDictionary[nextAction.threadId].progressRequest(eventCache, nextAction.event, nextAction.payload); // request got resolved
             advanceWaits(allBids, bThreadDictionary, nextAction);
             break;
         }
@@ -87,8 +88,6 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             if(!nextAction) return; // was extended
             const isValidDispatch = advanceWaits(allBids, bThreadDictionary, nextAction);
             if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
-            
-
             break;
         }
         case ActionType.resolved: {
@@ -98,7 +97,9 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
             }
             const nextAction = extendAction(allBids, bThreadDictionary, action);
             if(!nextAction) return; // was extended
-            bThreadDictionary[action.threadId].progressRequest(eventCache, nextAction); // request got resolved
+            bThreadDictionary[action.threadId].progressRequest(eventCache, nextAction.event, nextAction.payload); // request got resolved
+            if(action.extendedRequestingThreadId) bThreadDictionary[action.extendedRequestingThreadId].progressRequest(eventCache, nextAction.event, nextAction.payload); // request got resolved
+
             advanceWaits(allBids, bThreadDictionary, nextAction);
             break;
         }
@@ -109,6 +110,7 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
         }
     }
 }
+
 
 export interface ScaffoldingResult {
     bThreadBids: BThreadBids[];
@@ -227,16 +229,15 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
             return updateLoop();
         }
         // return to UI
-        updateEventDispatcher(bids[BidType.wait], bids[BidType.pending]);
+        updateEventDispatcher(bids[BidType.wait]);
         return { 
             dispatch: eventDispatch,
             event: getEventCache,
             blocks: bids[BidType.block] || new EventMap(),
-            pending: bids[BidType.pending],
+            pending: getAllPendingEvents(bThreadDictionary),
             bThreadState: bThreadStateById,
             log: logger?.getLog()
         }
     }
-
     return [updateLoop, eventDispatch, actionQueue, replayMap, actionDispatch];
 }

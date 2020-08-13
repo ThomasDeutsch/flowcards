@@ -68,18 +68,16 @@ export class Logger {
         };
     }
 
-    public logPromise(bid: Bid, threadSection?: string, pendingEvents?: EventMap<PendingEventInfo>): void {
+    public logPromise(action: Action, threadSection?: string, pendingEvents?: EventMap<PendingEventInfo>): void {
         const actionIndex = this._getActionIndex();
         const reaction: BThreadReaction = {
             type: BThreadReactionType.promise,
             actionIndex: actionIndex,
-            event: bid.event,
-            bidType: bid.type,
-            BidSubType: bid.subType,
+            event: action.event,
             threadSection: threadSection,
             pendingEvents: pendingEvents
         }
-        this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
+        this._bThreadInfoById[action.threadId].reactions.set(actionIndex, reaction);
     }
 
     public logExtend(bid: Bid, threadSection?: string, pendingEvents?: EventMap<PendingEventInfo>): void {

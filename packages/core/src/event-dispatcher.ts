@@ -7,14 +7,13 @@ import { ActionDispatch } from './update-loop';
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
-type EventDispatchUpdater = (waits: BidsForBidType, pending: EventMap<PendingEventInfo>) => void;
+type EventDispatchUpdater = (waits: BidsForBidType) => void;
 
 
 interface DispatchCache {
     payload?: any;
     dispatch?: TriggerDispatch | undefined;
 }
-
 
 export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
@@ -24,11 +23,11 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         if(dp === undefined) return undefined;
         return dp(payload);
     }
-    const updateEventDispatcher = (waits: BidsForBidType, pending: EventMap<PendingEventInfo>): void => {
+    const updateEventDispatcher = (waits: BidsForBidType): void => {
         guardByEvent.clear();
         const dpWaits = new EventMap<Bid[]>();
         waits?.forEach((event, bids) => {
-            const newBids = bids.filter(bid => (bid.subType !== BidSubType.on) && !pending.has(event));
+            const newBids = bids.filter(bid => (bid.subType !== BidSubType.on));
             if(newBids.length > 0) dpWaits.set(event, newBids);
         })
         if(!dpWaits || dpWaits.size() === 0) { 

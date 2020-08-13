@@ -1,13 +1,13 @@
 import { EventKey, EventMap, EventName, FCEvent, toEvent } from './event';
 import { combineGuards, getGuardedUnguardedBlocks, GuardFunction } from './guard';
 import * as utils from './utils';
+import { BThreadDictionary } from './update-loop';
 
 export enum BidType {
     request = "request",
     wait = "wait",
     block = "block",
-    extend = "extend", 
-    pending = "pending"
+    extend = "extend"
 }
 
 export enum BidSubType {
@@ -42,22 +42,21 @@ export interface PendingEventInfo {
 
 export interface BThreadBids {
     withMultipleBids?: boolean;
-    [BidType.pending]?: EventMap<PendingEventInfo>;
     [BidType.request]?: EventMap<Bid>;
     [BidType.wait]?: EventMap<Bid>;
     [BidType.block]?: EventMap<Bid>;
     [BidType.extend]?: EventMap<Bid>;
 }
 
-export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined | (Bid | undefined)[]): BThreadBids | undefined {
+export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined | (Bid | undefined)[], pendingEvents: EventMap<PendingEventInfo>): BThreadBids | undefined {
     if(!bidOrBids) return undefined;
-    const bids = utils.toArray(bidOrBids).filter(utils.notUndefined);
+    const bids = utils.toArray(bidOrBids).filter(utils.notUndefined).filter(bid => !pendingEvents.has(bid.event));
     const defaultBidsByType = {
         withMultipleBids: Array.isArray(bidOrBids)
     }
     if(bids.length === 0) return defaultBidsByType;
     return bids.reduce((acc: BThreadBids, bid: Bid | undefined): BThreadBids => {
-        if(bid && bid.type !== BidType.pending) {
+        if(bid) {
             if(!acc[bid.type]) {
                 acc[bid.type] = new EventMap();
             }
@@ -84,26 +83,27 @@ function mergeMaps(maps: (EventMap<Bid> | undefined)[], blocks?: Set<FCEvent>, g
 }
 
 export interface AllBidsByType {
-    [BidType.pending]: EventMap<PendingEventInfo>;
     [BidType.request]?: EventMap<Bid[]>;
     [BidType.wait]?: EventMap<Bid[]>;
     [BidType.extend]?: EventMap<Bid[]>;
     [BidType.block]?: EventMap<Bid[]>;
 }
 
+export function getAllPendingEvents(BThreadDictionary: BThreadDictionary): EventMap<PendingEventInfo>  {
+    return Object.keys(BThreadDictionary).reduce((acc: EventMap<PendingEventInfo>, key) => acc.merge(BThreadDictionary[key].state.pendingEvents), new EventMap<PendingEventInfo>());
+}
+
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
-    const pending = allBThreadBids.reduce((acc: EventMap<PendingEventInfo>, bids) => acc.merge(bids[BidType.pending]), new EventMap<PendingEventInfo>());
     const blocks = mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
-    const fixedBlocksAndPending = utils.union(new Set(pending.allEvents), fixedBlocks);
     return {
-        [BidType.pending]: pending,
         [BidType.block]: blocks,
-        [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocksAndPending, guardedBlocks),
+        [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocks, guardedBlocks),
         [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks),
         [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks)
     };
 }
+
 
 export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] | undefined {
     if(bids === undefined) return undefined

@@ -73,5 +73,6 @@ test("a async request can be replayed", (done) => {
     replay([
         {index: 0, type: ActionType.dispatched, threadId: '', event: {name: 'replayEvent1'}},
         {index: 1, type: ActionType.requested, threadId: 'thread1', event: {name: 'replayEvent2'}, resolvedActionIndex: 2},
+        // the index:2 action is missing ... this is where the resolve will be placed.
         {index: 3, type: ActionType.dispatched, threadId: '', event: {name: 'replayEvent3'}}])
 });

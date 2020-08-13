@@ -9,7 +9,7 @@ function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }
 
-test("a pending event can not be requested", () => {
+test("a pending event can be requested by another thread", () => {
     const thread1 = flow({id: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
@@ -25,7 +25,7 @@ test("a pending event can not be requested", () => {
         enable(thread1());
     }, ({log, pending}) => {
         expect(pending.has('A')).toBeTruthy();
-        expect(log?.latestAction.threadId).toBe("thread1");
+        expect(log?.latestAction.threadId).toBe("thread2");
     });
 });
 
@@ -76,7 +76,7 @@ test("a pending event resolves can not be blocked", done => {
 
 
 
-test("pending events can not be dispatched", done => {
+test("pending events can be dispatched if there is a wait for the same event.", done => {
     const thread1 = flow(null, function* () {
         yield bp.request("A", () => delay(500));
     });
@@ -89,7 +89,7 @@ test("pending events can not be dispatched", done => {
         enable(thread1());
         enable(thread2());
     }, ({dispatch}) => {
-            expect(dispatch("A")).toBeUndefined();
+            expect(dispatch("A")).toBeDefined();
             done();
     });
 });
