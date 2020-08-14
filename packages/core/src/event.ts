@@ -3,7 +3,6 @@ import * as utils from './utils';
 export type EventName = string;
 export type EventKey = string | number;
 type EventIteratorFunction<T> = (e: FCEvent, value: T) => any;
-type EventMapFunction<T, X> = (e: FCEvent, value: T) => X;
 
 export interface FCEvent {
     name: EventName;

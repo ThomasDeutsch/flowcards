@@ -1,4 +1,4 @@
-import { Action, ActionType } from './action';
+import { Action } from './action';
 import { EventDispatch } from './event-dispatcher';
 import { createUpdateLoop, ScenariosContext, StagingFunction } from './update-loop';
 
@@ -12,36 +12,38 @@ export * from './event';
 export * from './logger';
 export * from './action';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-type StartReplay = (actions: Action[]) => void;
+export type StartReplay = (actions: Action[]) => void;
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch, StartReplay] {
-    const batchedActions: Action[] = [];
-    const batchedReplayMap = new Map<number, Action>();
-    const [updateLoop, dispatch, actionQueue, replayMap, actionDispatch] = createUpdateLoop(stagingFunction, (action: Action): void => {
-        if(action) {
-            if(action.index !== null) { // is a replay action
-                if(action.index === 0) replayMap.clear();
-                batchedReplayMap.set(action.index, action);
-            } else {
-                batchedActions.push(action);
+    const bufferedActions: Action[] = [];
+    const bufferedReplayMap = new Map<number, Action>();
+    const [updateLoop, dispatch, actionQueue, replayMap, actionDispatch] = createUpdateLoop(stagingFunction, 
+        (action: Action): void => {
+            if(action) {
+                if(action.index === null) {
+                    bufferedActions.push(action);
+                } else {  // is a replay action
+                    if(action.index === 0) replayMap.clear();
+                    bufferedReplayMap.set(action.index, action);
+                }
+                // this promise will resolve immediatly, but in the next cycle
+                Promise.resolve().then(() => {
+                    let withUpdate = false;
+                    if(bufferedActions.length !== 0) {
+                        bufferedActions.forEach(action => actionQueue.push(action));
+                        bufferedActions.length = 0;
+                        withUpdate = true;
+                    } if(bufferedReplayMap.size !== 0) {
+                        bufferedReplayMap.forEach((action, key) => replayMap.set(key, action));
+                        bufferedReplayMap.clear();
+                        withUpdate = true;
+                    }
+                    if(withUpdate) {
+                        if(updateCb !== undefined) updateCb(updateLoop());
+                        else updateLoop();
+                    }
+                }).catch(e => console.error(e));
             }
-            Promise.resolve().then(() => {
-                let withUpdate = false;
-                if(batchedActions.length !== 0) {
-                    batchedActions.forEach(action => actionQueue.push(action));
-                    batchedActions.length = 0;
-                    withUpdate = true;
-                } if(batchedReplayMap.size !== 0) {
-                    batchedReplayMap.forEach((action, key) => replayMap.set(key, action));
-                    batchedReplayMap.clear();
-                    withUpdate = true;
-                }
-                if(withUpdate) {
-                    if(updateCb !== undefined) updateCb(updateLoop());
-                    else updateLoop();
-                }
-            }).catch(e => console.error(e));
-        }
     });
     const startReplay = (actions: Action[]) => {
        actions.forEach(action => actionDispatch(action));

@@ -2,14 +2,18 @@
 import * as Fc from "@flowcards/core";
 import { computedFn } from "mobx-utils";
 import { observable, decorate } from "mobx";
+import { StartReplay } from '../../core/src/index';
+import { EventDispatch } from '../../core/src/event-dispatcher';
 
 export * from '@flowcards/core';
 
 export class Store {
   public context: Fc.ScenariosContext;
+  private _startReplay: StartReplay;
+  private _eventDispatch: EventDispatch;
 
   constructor(stagingFunction: Fc.StagingFunction) {
-    [this.context] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
+    [this.context, this._eventDispatch, this._startReplay] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
       this.context = updatedContext;
     });
   }
@@ -20,6 +24,10 @@ export class Store {
     return this.context.event(Fc.toEvent(event));
   });
   pending = this.context.pending;
+  blocks = this.context.blocks;
+  state = this.context.state;
+  log =  this.context.log
+  startReplay = this._startReplay;
 }
 
 decorate(Store, {
