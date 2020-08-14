@@ -30,11 +30,16 @@ export interface Bid {
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
 export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
 export type BidsForBidType = EventMap<Bid[]> | undefined;
+
 export interface PendingEventInfo {
     event: FCEvent;
     host: string;
     isExtend: boolean;
     actionIndex: number | null;
+}
+
+export function getAllPendingEvents(BThreadDictionary: BThreadDictionary): EventMap<PendingEventInfo>  {
+    return Object.keys(BThreadDictionary).reduce((acc: EventMap<PendingEventInfo>, key) => acc.merge(BThreadDictionary[key].state.pendingRequests), new EventMap<PendingEventInfo>());
 }
 
 // bids from BThreads
@@ -89,10 +94,6 @@ export interface AllBidsByType {
     [BidType.block]?: EventMap<Bid[]>;
 }
 
-export function getAllPendingEvents(BThreadDictionary: BThreadDictionary): EventMap<PendingEventInfo>  {
-    return Object.keys(BThreadDictionary).reduce((acc: EventMap<PendingEventInfo>, key) => acc.merge(BThreadDictionary[key].state.pendingRequests), new EventMap<PendingEventInfo>());
-}
-
 export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
     const blocks = mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
@@ -103,7 +104,6 @@ export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
         [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks)
     };
 }
-
 
 export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] | undefined {
     if(bids === undefined) return undefined

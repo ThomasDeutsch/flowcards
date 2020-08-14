@@ -151,15 +151,3 @@ export class Logger {
         this._bThreadInfoById = {};  
     }
 }
-
-
-// SAVE A REPLAY
-// All Actions and reactions are saved
-// 
-
-
-// A REPLAY CAN START IN 2 WAYS
-// 1. Start a replay from an existing log
-// 2. Click on an action from the current log
-
-// In Both cases, the log is the test-specification

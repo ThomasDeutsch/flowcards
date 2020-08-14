@@ -34,8 +34,10 @@ function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
 
 function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
     if(!bids) return undefined;
-    const reversedBids = [...bids].reverse(); // last bid has the highest priority.
-    for (const bid of reversedBids) {
+    const checkBids = [...bids];
+    while (checkBids.length > 0) {
+        const bid = checkBids.pop();
+        if(!bid) continue;
         if(bid.subType === BidSubType.trigger) {
             const waitsForEvent = waitBids?.get(bid.event);
             if(waitsForEvent) {

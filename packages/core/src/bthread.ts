@@ -2,9 +2,9 @@ import { Action, ActionType } from './action';
 import {
     Bid, BidSubType, BidType, BThreadBids, getBidsForBThread, PendingEventInfo
 } from './bid';
-import { EventMap, FCEvent, toEvent } from './event';
+import { EventMap, FCEvent } from './event';
 import { EventCache, setEventCache } from './event-cache';
-import { BThreadReactionType, Logger } from './logger';
+import { Logger } from './logger';
 import { ActionDispatch } from './update-loop';
 import * as utils from './utils';
 
@@ -36,12 +36,16 @@ export interface BThreadState {
 }
 
 export class BThread {
+    public readonly id: string;
+    public readonly title?: string;
+    public readonly key?: BThreadKey;
     private readonly _logger?: Logger;
     private readonly _dispatch: ActionDispatch;
     private readonly _generatorFn: GeneratorFn;
     private _currentProps: Record<string, any>;
     private _thread: BTGen;
     private _currentBids?: BThreadBids;
+    public get currentBids() { return this._currentBids; }
     private _nextBid?: any;
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _state: BThreadState = {
@@ -53,21 +57,7 @@ export class BThread {
         pendingRequests: new EventMap<PendingEventInfo>(),
         isCompleted: false
     };
-    public get state() {
-        return this._state;
-    }
-    private _getBTContext(): BTContext {
-        const section = (value: string) => {
-            this._state.section = value;
-        }
-        return {
-            key: this.key,
-            section: section
-        };
-    }
-    public readonly id: string;
-    public readonly title?: string;
-    public readonly key?: BThreadKey;
+    public get state() { return this._state; }
 
     public constructor(id: string, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, key?: BThreadKey, logger?: Logger, title?: string) {
         this.id = id;
@@ -82,6 +72,16 @@ export class BThread {
     }
 
      // --- private
+
+     private _getBTContext(): BTContext {
+        const section = (value: string) => {
+            this._state.section = value;
+        }
+        return {
+            key: this.key,
+            section: section
+        };
+    }
 
     private _cancelPendingRequests(): EventMap<PendingEventInfo> {
         const clone = this._pendingRequests.clone();
@@ -141,12 +141,7 @@ export class BThread {
         };
     }
 
-
     // --- public
-
-    public getBids(): BThreadBids | undefined {
-        return this._currentBids;
-    }
 
     public resetOnPropsChange(nextProps: any): void {
         const changedProps = utils.getChangedProps(this._currentProps, nextProps);
@@ -167,41 +162,40 @@ export class BThread {
         this._logger?.logPromise(action, this._state.section, this._pendingRequests);
         const startTime = new Date().getTime();
         action.payload.then((data: any): void => {
-                const pendingEventInfo = this._pendingRequests.get(action.event);
-                if (pendingEventInfo?.actionIndex === action.index) {
-                    const requestDuration = new Date().getTime() - startTime;
-                    this._dispatch({
-                        index: action.resolvedActionIndex || null, 
-                        type: ActionType.resolved,
-                        threadId: this.id,
-                        event: action.event,
-                        extendedByThreadId: action.extendedByThreadId,
-                        payload: data,
-                        resolve: {
-                            requestedActionIndex: action.index!,
-                            requestDuration: requestDuration
-                        }
-                    });
-                }
-            })
-            .catch((e: Error): void => {
-                const pendingEventInfo = this._pendingRequests.get(action.event);
-                if (pendingEventInfo?.actionIndex === action.index) {
-                    const requestDuration = new Date().getTime() - startTime;
-                    this._dispatch({
-                        index: action.resolvedActionIndex || null,
-                        type: ActionType.rejected,
-                        threadId: this.id,
-                        event: action.event,
-                        extendedByThreadId: action.extendedByThreadId,
-                        payload: e,
-                        resolve: {
-                            requestedActionIndex: action.index!,
-                            requestDuration: requestDuration
-                        }
-                    });
-                }
-            });
+            const pendingEventInfo = this._pendingRequests.get(action.event);
+            if (pendingEventInfo?.actionIndex === action.index) {
+                const requestDuration = new Date().getTime() - startTime;
+                this._dispatch({
+                    index: action.resolvedActionIndex || null, 
+                    type: ActionType.resolved,
+                    threadId: this.id,
+                    event: action.event,
+                    extendedByThreadId: action.extendedByThreadId,
+                    payload: data,
+                    resolve: {
+                        requestedActionIndex: action.index!,
+                        requestDuration: requestDuration
+                    }
+                });
+            }
+        }).catch((e: Error): void => {
+            const pendingEventInfo = this._pendingRequests.get(action.event);
+            if (pendingEventInfo?.actionIndex === action.index) {
+                const requestDuration = new Date().getTime() - startTime;
+                this._dispatch({
+                    index: action.resolvedActionIndex || null,
+                    type: ActionType.rejected,
+                    threadId: this.id,
+                    event: action.event,
+                    extendedByThreadId: action.extendedByThreadId,
+                    payload: e,
+                    resolve: {
+                        requestedActionIndex: action.index!,
+                        requestDuration: requestDuration
+                    }
+                });
+            }
+        });
     }
 
     public resolvePending(action: Action): boolean {

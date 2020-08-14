@@ -126,21 +126,6 @@ export class EventMap<T>  {
         this.forEach((event) => elements.push(event));
         return elements.length > 0 ? elements : undefined;
     }
-
-    public map<X>(mapFunction: EventMapFunction<T, X>):  EventMap<X> {
-        const mapped = new EventMap<X>();
-        this.forEach((event, value) => {
-            const newValue = mapFunction(event, value);
-            mapped.set(event, newValue);
-        })
-        return mapped;
-    }
-
-    public deleteAll(events: Set<FCEvent> | undefined) {
-        if(events == undefined) return this;
-        events.forEach(event => this.delete(event));
-        return this;
-    }
     
     public intersection(a?: EventMap<any>): EventMap<T> {
         if(a === undefined) {

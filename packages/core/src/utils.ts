@@ -15,7 +15,8 @@ export function getChangedProps(nextDeps: Record<string, any>, prevDeps?: Record
     return keys.length > 0 ? keys : undefined;
 }
 
-export function isThenable(p?: any): boolean { // promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
+// promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
+export function isThenable(p?: any): boolean { 
     return p !== undefined && p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
 
@@ -34,15 +35,6 @@ export function toArray<T>(x: T | T[]): T[] {
 
 export function flattenShallow<T>(arr: T[][]): T[] {
     return arr.reduce((acc, val) => acc.concat(val), []);
-}
-
-// SET ----------------------
-
-export function union<T>(...sets: (Set<T> | undefined)[]): Set<T> | undefined {
-    if(sets.length === 0) return undefined;
-    const notUndefinedSets = sets.filter(notUndefined);
-    if(notUndefinedSets.length === 0) return undefined;
-    return new Set<T>(notUndefinedSets.reduce((acc: T[], set: Set<T>) => [...acc, ...set], []));
 }
 
 // UUID ------------------------

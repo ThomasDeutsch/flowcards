@@ -27,6 +27,9 @@ function createBThreadId(id: string, key?: BThreadKey): string {
 }
 
 
+// advance threads, based on selected action
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------
+
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: BThreadDictionary, action: Action): boolean {
     const bids = (getMatchingBids(allBids[BidType.wait], action.event) || []).filter(event => event.subType && event.subType !== BidSubType.onPending);
     if(bids.length === 0) return false;
@@ -60,7 +63,6 @@ function extendAction(allBids: AllBidsByType, bThreadDictionary: BThreadDictiona
     } 
     return action;
 }
-
 
 function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
     switch (action.type) {
@@ -105,6 +107,8 @@ function advanceBThreads(bThreadDictionary: BThreadDictionary, eventCache: Event
     }
 }
 
+// enable, disable or delete bThreads
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
 export interface ScaffoldingResult {
     bThreadBids: BThreadBids[];
@@ -132,7 +136,7 @@ function setupScaffolding(
             if(destroyOnDisable) destroyOnDisableThreadIds.add(id);
             bThreadDictionary[id] = new BThread(id, gen, props, dispatch, key, logger, title);
         }
-        const threadBids = bThreadDictionary[id].getBids();
+        const threadBids = bThreadDictionary[id].currentBids;
         if(threadBids) bids.push(threadBids);
         bThreadStateById[id] = bThreadDictionary[id].state;
         return bThreadDictionary[id].state;
@@ -162,8 +166,8 @@ function setupScaffolding(
     return run;
 }
 
+// update loop ( central construct )
 // -----------------------------------------------------------------------------------
-// UPDATE LOOP
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
@@ -208,7 +212,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
             action = replayMap.get(actionIndex);
             replayMap.delete(actionIndex);
             if(action?.type === ActionType.requested && action.payload === undefined) {
-                action.payload = bThreadDictionary[action.threadId].getBids()?.request?.get(action.event)?.payload;
+                action.payload = bThreadDictionary[action.threadId].currentBids?.request?.get(action.event)?.payload;
             }
         } else {
             action = actionQueue.shift() || getNextActionFromRequests(bids.request, bids.wait);
