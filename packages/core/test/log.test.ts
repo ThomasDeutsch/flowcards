@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 import { delay } from './testutils';
 import { BTContext } from '../src/bthread';
 

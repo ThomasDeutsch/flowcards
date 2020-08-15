@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 
 test("a trigger is a request, that is only selected if another thread is waiting for the same event.", () => {

@@ -2,7 +2,7 @@ import { Action } from './action';
 import { EventDispatch } from './event-dispatcher';
 import { createUpdateLoop, ScenariosContext, StagingFunction } from './update-loop';
 
-export * from './flow';
+export * from './scenario';
 export * from './event-dispatcher';
 export * from './bthread';
 export * from './update-loop';
@@ -26,7 +26,6 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
                     if(action.index === 0) replayMap.clear();
                     bufferedReplayMap.set(action.index, action);
                 }
-                // this promise will resolve immediatly, but in the next cycle
                 Promise.resolve().then(() => {
                     let withUpdate = false;
                     if(bufferedActions.length !== 0) {

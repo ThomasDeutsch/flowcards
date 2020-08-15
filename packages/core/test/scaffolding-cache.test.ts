@@ -1,7 +1,7 @@
 import * as bp from "../src/index";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 
 test("the cache function will return the history and the current value", () => {

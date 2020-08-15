@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { FCEvent } from "../src/event";
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 
 

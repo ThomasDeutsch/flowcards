@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
 import { BTContext } from '../src/index';
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));

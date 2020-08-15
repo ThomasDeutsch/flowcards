@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { ActionType } from '../src/action';
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 test("a thread can be replayed", (done) => {
     let value1: number, value2: number;

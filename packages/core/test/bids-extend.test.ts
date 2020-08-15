@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from "./testutils";
 import { ExtendResult } from "../src/bthread";
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 
 // Extends

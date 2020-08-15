@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { ActionType } from '../src/action';
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 
 

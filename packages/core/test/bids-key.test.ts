@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { flow } from "../src/flow";
+import { flow } from "../src/scenario";
 
 test("keys can be a string or a number", () => {
     const thread1 = flow(null, function* () {

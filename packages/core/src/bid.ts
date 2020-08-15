@@ -2,6 +2,7 @@ import { EventKey, EventMap, EventName, FCEvent, toEvent } from './event';
 import { combineGuards, getGuardedUnguardedBlocks, GuardFunction } from './guard';
 import * as utils from './utils';
 import { BThreadDictionary } from './update-loop';
+import { PendingEventInfo } from './bthread';
 
 export enum BidType {
     request = "request",
@@ -31,16 +32,6 @@ export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
 export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
 export type BidsForBidType = EventMap<Bid[]> | undefined;
 
-export interface PendingEventInfo {
-    event: FCEvent;
-    host: string;
-    isExtend: boolean;
-    actionIndex: number | null;
-}
-
-export function getAllPendingEvents(BThreadDictionary: BThreadDictionary): EventMap<PendingEventInfo>  {
-    return Object.keys(BThreadDictionary).reduce((acc: EventMap<PendingEventInfo>, key) => acc.merge(BThreadDictionary[key].state.pendingRequests), new EventMap<PendingEventInfo>());
-}
 
 // bids from BThreads
 // --------------------------------------------------------------------------------------------------------------------
@@ -74,14 +65,14 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined |
 // bids from multiple BThreads
 // --------------------------------------------------------------------------------------------------------------------
 
-function mergeMaps(maps: (EventMap<Bid> | undefined)[], blocks?: Set<FCEvent>, guardedBlocks?: EventMap<GuardFunction>): EventMap<Bid[]> | undefined {
+function mergeMaps(maps: (EventMap<Bid> | undefined)[], blocks?: EventMap<true>, guardedBlocks?: EventMap<GuardFunction>): EventMap<Bid[]> | undefined {
     if(maps.length === 0) return undefined
     const result = new EventMap<Bid[]>();
     maps.map(r => r?.forEach((event, valueCurr) => {
         result.set(event, [...(result.get(event) || []), valueCurr]);        
     }));
     if(result.size() > 0) {
-        if(blocks) blocks.forEach(event => result.delete(event));
+        blocks?.forEach(event => result.delete(event));
         if(guardedBlocks) combineGuards(result, guardedBlocks);
     }
     return result;
@@ -94,12 +85,14 @@ export interface AllBidsByType {
     [BidType.block]?: EventMap<Bid[]>;
 }
 
-export function getAllBids(allBThreadBids: BThreadBids[]): AllBidsByType {
+export function getAllBids(allBThreadBids: BThreadBids[], allPending: EventMap<PendingEventInfo>): AllBidsByType {
     const blocks = mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
+    const fixedBlocksAndPending = fixedBlocks;
+    if(fixedBlocks?.size()) allPending.forEach(event => fixedBlocks?.set(event, true));
     return {
         [BidType.block]: blocks,
-        [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocks, guardedBlocks),
+        [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocksAndPending, guardedBlocks),
         [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks),
         [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks)
     };

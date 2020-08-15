@@ -1,6 +1,6 @@
 import * as bp from "../src/index";
 import { testScenarios, delay } from "./testutils";
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 test("an onPending-wait is progressed, when the event receives the pending state", (done) => {
     let thread2completed = false;

@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { Action, ActionType } from '../src/action';
 import { createUpdateLoop, StagingFunction } from '../src/update-loop';
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 
 function rejectedDelay(ms: number) {

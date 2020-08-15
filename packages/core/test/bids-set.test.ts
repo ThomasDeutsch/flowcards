@@ -1,6 +1,6 @@
 import * as bp from "../src/index";
 import { testScenarios, delay } from "./testutils";
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 test("a set is a request, that will be cached. ", () => {
     const thread1 = flow(null, function* () {

@@ -20,16 +20,16 @@ export function getGuardForWaits(bids: Bid[] | undefined, event: FCEvent): Guard
 }
 
 
-export function getGuardedUnguardedBlocks(eventMap: EventMap<Bid[]> | undefined): [Set<FCEvent> | undefined, EventMap<GuardFunction> | undefined] {
+export function getGuardedUnguardedBlocks(eventMap: EventMap<Bid[]> | undefined): [EventMap<true> | undefined, EventMap<GuardFunction> | undefined] {
     if(eventMap === undefined) return [undefined, undefined];
-    const fixed: FCEvent[] = [];
+    const fixed: EventMap<true> = new EventMap();
     const guarded = new EventMap<GuardFunction>();
     eventMap.forEach((event, bids) => {
         const guards = bids.map(bid => bid.guard).filter(utils.notUndefined);
-        if(guards.length !== bids.length) fixed.push(event);
+        if(guards.length !== bids.length) fixed.set(event, true);
         else guarded.set(event, (payload: any) => guards.some(guard => guard(payload)))
     });
-    return [fixed.length > 0 ? new Set(fixed): undefined, guarded.size() > 0 ? guarded: undefined];
+    return [fixed, guarded.size() > 0 ? guarded: undefined];
 }
 
 

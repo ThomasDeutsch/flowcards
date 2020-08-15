@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { ActionType } from '../src/action';
-import { flow } from '../src/flow'
+import { flow } from '../src/scenario'
 import { delay } from './testutils';
 
 
@@ -101,3 +101,7 @@ test("if multiple promises resolve at the same time, only one is selected", (don
         }
     });
 });
+
+
+// TODO: if a thread holds a pending event, but gets disabled or destroyed, the pending event will not be part in the event selection.
+// TODO: if a thread resolves a pending event, but is disabled -> the dispatch will be paused or a new option is needed:  "clearPendingOnDisable"

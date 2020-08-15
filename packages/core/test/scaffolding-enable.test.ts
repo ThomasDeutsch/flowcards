@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { BTContext, BThreadState } from '../src/bthread';
-import { flow } from '../src/flow';
+import { flow } from '../src/scenario';
 
 test("a thread will accept an optional array of arguments", () => {
     let receivedArgs = ["", "", ""];

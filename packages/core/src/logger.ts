@@ -1,153 +1,61 @@
-import { Action, ActionType } from './action';
-import { Bid, BidSubType, BidType, PendingEventInfo } from './bid';
-import { BThreadKey } from './bthread';
-import { EventMap, FCEvent } from './event';
+import { Action } from './action';
+import { Bid } from './bid';
+import { EventMap } from './event';
+import { PendingEventInfo } from './bthread';
 
-export interface LoggedAction extends Action {
-    reactingBThreads: Set<string>;
-}
-
-export interface BThreadInfo {
-    id: string;
-    enabledInStep: number;
-    key?: BThreadKey;
-    title?: string;
-    reactions: Map<number, BThreadReaction>;
-    currentProps?: Record<string, any>;
-}
-
-export interface Log {
-    actions: LoggedAction[];
-    bThreadInfoById: Record<string, BThreadInfo>;
-    latestAction: Action;
-}
-
-export enum BThreadReactionType {
-    progress = "progress",
-    reset = "reset",
-    promise = "promise",
-    extend = "extend",
-    extendResolved = "extendResolved",
-    extendRejected = "extendRejected"
-}
-
-export interface BThreadReaction {
-    type: BThreadReactionType;
-    actionIndex: number;
+export interface Reaction {
+    type: 'progress' | 'reset' | 'pending';
+    bid?: Bid;
     cancelledPending?: EventMap<PendingEventInfo>;
-    pendingEvents?: EventMap<PendingEventInfo>;
     changedProps?: string[];
-    threadSection?: string;
-    event?: FCEvent;
-    bidType?: BidType;
-    BidSubType?: BidSubType;
-    payload?: any;
+    pendingEventInfo?: PendingEventInfo;
 }
 
 export class Logger {
-    private _actions: LoggedAction[] = [];
-    private _bThreadInfoById: Record<string, BThreadInfo> = {};
+    public actions: Action[] = [];
+    public reactions: Map<string, Reaction>[] = [];
 
-    private _getActionIndex(): number {
-        return this._actions.length-1;
-    }
+    // log action
 
     public logAction(action: Action): void {
-        this._actions.push({...action, reactingBThreads: new Set()});
+        this.actions.push({...action});
+        this.reactions.push(new Map());
         if(action.resolve) {
-            this._actions[action.resolve.requestedActionIndex].resolvedActionIndex = action.index!;
+            this.actions[action.resolve.requestedActionIndex].resolvedActionIndex = action.index!;
         }
     }
 
-    public addThreadInfo(id: string, title?: string, props?: Record<string, any>) {
-        this._bThreadInfoById[id] = {
-            id: id, title: title,
-            reactions: new Map<number, BThreadReaction>(), 
-            enabledInStep: this._getActionIndex()+1,
-            currentProps: props
+    // log reactions
+
+    public logPending(bid: Bid, pendingEventInfo: PendingEventInfo): void {
+        const reaction: Reaction = {
+            type: 'pending',
+            bid: bid,
+            pendingEventInfo: pendingEventInfo
+        }
+        this.reactions[this.actions.length-1].set(bid.threadId, reaction);
+    }
+
+    public logProgress(bid: Bid, cancelledPending: EventMap<PendingEventInfo>): void {
+        const reaction: Reaction = {
+            type: 'progress',
+            bid: bid,
+            cancelledPending: cancelledPending
         };
+        this.reactions[this.actions.length-1].set(bid.threadId, reaction);
     }
 
-    public logPromise(action: Action, threadSection?: string, pendingEvents?: EventMap<PendingEventInfo>): void {
-        const actionIndex = this._getActionIndex();
-        const reaction: BThreadReaction = {
-            type: BThreadReactionType.promise,
-            actionIndex: actionIndex,
-            event: action.event,
-            threadSection: threadSection,
-            pendingEvents: pendingEvents
-        }
-        this._bThreadInfoById[action.threadId].reactions.set(actionIndex, reaction);
-    }
-
-    public logExtend(bid: Bid, threadSection?: string, pendingEvents?: EventMap<PendingEventInfo>): void {
-        const actionIndex = this._getActionIndex();
-        const reaction: BThreadReaction = {
-            type: BThreadReactionType.extend,
-            actionIndex: actionIndex,
-            bidType: bid.type,
-            BidSubType: bid.subType,
-            threadSection: threadSection,
-            pendingEvents: pendingEvents
-        }
-        this._bThreadInfoById[bid.threadId].reactions.set(actionIndex, reaction);
-    }
-
-    public logThreadProgression(threadId: string, bid: Bid, threadSection: string | undefined, cancelledPending: EventMap<PendingEventInfo>, pendingEvents?: EventMap<PendingEventInfo>): void {
-        const actionIndex = this._getActionIndex();
-        if(!this._actions[actionIndex]) return;
-        this._actions[actionIndex].reactingBThreads.add(bid.threadId);
-        const reaction: BThreadReaction = {
-            type: BThreadReactionType.progress,
-            actionIndex: actionIndex,
-            cancelledPending: cancelledPending,
-            threadSection: threadSection,
-            event: bid.event,
-            bidType: bid.type,
-            BidSubType: bid.subType,
-            pendingEvents: pendingEvents
-        };
-        this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
-    }
-
-    public logThreadReset(threadId: string, changedProps: string[], cancelledPending: EventMap<PendingEventInfo>, currentProps?: Record<string, any>) {
-        const actionIndex = this._getActionIndex();
-        this._actions[actionIndex].reactingBThreads.add(threadId);
-        const reaction: BThreadReaction = {
-            type: BThreadReactionType.reset,
-            actionIndex: actionIndex,
+    public logReset(threadId: string, changedProps: string[], cancelledPending: EventMap<PendingEventInfo>) {
+        const reaction: Reaction = {
+            type: 'reset',
             changedProps: changedProps,
             cancelledPending: cancelledPending
         };
-        this._bThreadInfoById[threadId].currentProps = currentProps;
-        this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
-    }
-
-    public logExtendResult(type: BThreadReactionType.extendResolved | BThreadReactionType.extendRejected, threadId: string, event: FCEvent, pendingEvents?: EventMap<PendingEventInfo>) {
-        const actionIndex = this._getActionIndex();
-        const reaction: BThreadReaction = {
-            type: type,
-            actionIndex: actionIndex,
-            event: event,
-            pendingEvents: pendingEvents
-        };
-        this._bThreadInfoById[threadId].reactions.set(actionIndex, reaction);
-    }
-
-    public logOnDestroy(threadId: string) {
-        delete this._bThreadInfoById[threadId];
-    }
-
-    public getLog(): Log {
-        return {
-            actions: this._actions,
-            latestAction: this._actions[this._actions.length-1],
-            bThreadInfoById: this._bThreadInfoById
-        };
+        this.reactions[this.actions.length-1].set(threadId, reaction);
     }
 
     public resetLog(): void {
-        this._actions = [];
-        this._bThreadInfoById = {};  
+        this.actions = [];
+        this.reactions = [];
     }
 }
