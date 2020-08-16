@@ -130,3 +130,6 @@ test("a block-guard can be keyed", () => {
         }
     });
 });
+
+
+// TODO: explain function will return an array of EventInfo

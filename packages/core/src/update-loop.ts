@@ -1,11 +1,12 @@
 import { Action, ActionType, getNextActionFromRequests } from './action';
-import { AllBidsByType, Bid, BidSubType, BidType, BThreadBids, getAllBids, getMatchingBids, request } from './bid';
+import { AllBidsByType, Bid, BidSubType, BidType, BThreadBids, getAllBids, getMatchingBids } from './bid';
 import { BThread, BThreadKey, BThreadState, GeneratorFn, BThreadInfo, PendingEventInfo } from './bthread';
 import { EventMap, FCEvent, toEvent } from './event';
 import { CachedItem, EventCache } from './event-cache';
 import { EventDispatch, setupEventDispatcher } from './event-dispatcher';
 import { Logger, Reaction } from './logger';
 import * as utils from './utils';
+import { explain, EventInfo } from './guard';
 
 type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
 export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
@@ -164,6 +165,7 @@ function setupScaffolding(
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
+    getEventInfo: (event: string | FCEvent, payload: any) => EventInfo[];
     event: GetCachedItem;
     pending: EventMap<PendingEventInfo>;
     blocks: EventMap<Bid[]>;
@@ -216,13 +218,15 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
         }
         if (action) { // use next action
             actionIndex++;
+            bids.wait?.without(bids.block); // TODO: do i need to remove all matchin events instead??? same problem in explain and mergeBids!!!!
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop();
         }
         // return to UI
-        updateEventDispatcher(allPending, bids[BidType.wait]);
+        updateEventDispatcher(allPending, bids[BidType.block], bids[BidType.wait]);
         return { 
             dispatch: eventDispatch,
+            getEventInfo: (event: string | FCEvent, payload: any) => explain(bids[BidType.wait], bids[BidType.block], allPending, toEvent(event), payload),
             event: getEventCache,
             blocks: bids[BidType.block] || new EventMap(),
             pending: allPending,

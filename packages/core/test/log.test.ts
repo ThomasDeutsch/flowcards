@@ -57,8 +57,8 @@ test("log will contain reactions by thread-id", () => {
       testScenarios((enable) => {
         enable(flow1());
         enable(flow2());
-    }, ({log}) => {
-        expect(log?.bThreadInfoById['flow1'].reactions.size).toBe(5);
+    }, ({state}) => {
+        expect(state['flow1'].reactions.size).toBe(5);
         const flow1Keys = [...(log?.bThreadInfoById['flow1'].reactions.keys() || [])];
         const flow2Keys = [...(log?.bThreadInfoById['flow2'].reactions.keys() || [])];
         expect(flow1Keys[0]).toEqual(0);

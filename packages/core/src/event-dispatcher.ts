@@ -1,23 +1,19 @@
 import { ActionType } from './action';
 import { Bid, BidSubType } from './bid';
 import { EventMap, FCEvent, toEvent } from './event';
-import { getGuardForWaits, GuardFunction } from './guard';
+import { getGuardForWaits, GuardFunction, isGuardPassed } from './guard';
 import { ActionDispatch } from './update-loop';
 import { PendingEventInfo } from './bthread';
 
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
-type EventDispatchUpdater = (pending: EventMap<PendingEventInfo>, waits?: EventMap<Bid[]>) => void;
-
+type EventDispatchUpdater = (pending: EventMap<PendingEventInfo>, blocks?: EventMap<Bid[]>, waits?: EventMap<Bid[]>) => void;
 
 interface DispatchCache {
     payload?: any;
     dispatch?: TriggerDispatch | undefined;
 }
-
-// dispatch(event) will return a dispatchEventContext
-// a reason will tell the user if 
 
 export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
@@ -27,7 +23,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         if(dp === undefined) return undefined;
         return dp(payload);
     }
-    const updateEventDispatcher = (pending: EventMap<PendingEventInfo>, waits?: EventMap<Bid[]>): void => {
+    const updateEventDispatcher = (pending: EventMap<PendingEventInfo>, blocks?: EventMap<Bid[]>, waits?: EventMap<Bid[]>): void => {
         guardByEvent.clear();
         const dpWaits = new EventMap<Bid[]>();
         waits?.forEach((event, bids) => {
@@ -39,6 +35,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
             return;
         }
         dpWaits.without(pending);
+        if(blocks) dpWaits.without(blocks);
         dispatchByEvent.intersection(dpWaits);
         dpWaits.forEach((waitEvent) => {
             guardByEvent.set(waitEvent, getGuardForWaits(dpWaits.get(waitEvent), waitEvent));
@@ -46,7 +43,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
                 const cache: DispatchCache = {};
                 dispatchByEvent.set(waitEvent, (payload?: any): TriggerDispatch | undefined => {
                     const guard = guardByEvent.get(waitEvent);
-                    if(guard && guard(payload) === false) return undefined;
+                    if(guard && !isGuardPassed(guard(payload))) return undefined;
                     if(cache.dispatch && Object.is(payload, cache.payload)) return cache.dispatch;
                     cache.payload = payload;
                     cache.dispatch = (): void => dispatch({index: null, type: ActionType.dispatched, event: waitEvent, payload: payload, threadId: ""});

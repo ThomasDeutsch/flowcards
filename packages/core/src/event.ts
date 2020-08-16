@@ -137,7 +137,8 @@ export class EventMap<T>  {
         return this;
     }
 
-    public without(a: EventMap<any>): EventMap<T> {
+    public without(a?: EventMap<any>): EventMap<T> {
+        if(!a) return this;
         if(a.size() === 0) return this;
         a.forEach((event) => {
             if(this.has(event)) this.delete(event);

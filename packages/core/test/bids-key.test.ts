@@ -169,3 +169,7 @@ test("if an event cache has keyed values, they will be replaced by a request wit
         expect(event({name: 'A', key: 2})?.value).toEqual('replacement value');
     });
 });
+
+
+
+// TODO: Test the scenario: one event is requesting a keyed event, and there is a block for the same event without a key.
