@@ -98,3 +98,5 @@ test("if multiple promises resolve at the same time, only one is selected", (don
 
 // TODO: if a thread holds a pending event, but gets disabled or destroyed, the pending event will not be part in the event selection.
 // TODO: if a thread resolves a pending event, but is disabled -> the dispatch will be paused or a new option is needed:  "clearPendingOnDisable"
+// TODO: if an event is pending, the same thread can block other events.
+//      example:   yield [request('async', () => delay(100)), this.isPending('A') ? block('otherEvent')];

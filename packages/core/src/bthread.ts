@@ -1,6 +1,6 @@
 import { Action, ActionType } from './action';
 import { Bid, BidSubType, BidType, BThreadBids, getBidsForBThread } from './bid';
-import { EventMap, FCEvent } from './event';
+import { EventMap, FCEvent, toEvent } from './event';
 import { EventCache, setEventCache } from './event-cache';
 import { Logger } from './logger';
 import { ActionDispatch } from './update-loop';
@@ -21,6 +21,7 @@ export interface BThreadInfo {
 export interface BTContext {
     key?: BThreadKey;
     section: (newValue: string) => void;
+    isPending: (event: string | FCEvent) => boolean;
 }
 
 export interface ExtendResult {
@@ -33,6 +34,7 @@ export interface ExtendResult {
 
 export interface PendingEventInfo {
     event: FCEvent;
+    threadId: string;
     extendByThreadId?: string;
     actionIndex: number | null;
 }
@@ -88,7 +90,8 @@ export class BThread {
         }
         return {
             key: this.info.key,
-            section: section
+            section: section,
+            isPending: (event: string | FCEvent) => this._state.pendingRequests.has(toEvent(event))
         };
     }
 
@@ -166,6 +169,7 @@ export class BThread {
 
     public addPendingRequest(action: Action, bid: Bid): void {
         const eventInfo: PendingEventInfo = {
+            threadId: action.threadId,
             event: action.event,
             extendByThreadId: action.extendByThreadId,
             actionIndex: action.index

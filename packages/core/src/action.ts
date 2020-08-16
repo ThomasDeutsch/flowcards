@@ -1,4 +1,4 @@
-import { Bid, BidsForBidType, BidSubType } from './bid';
+import { Bid, BidSubType } from './bid';
 import { EventMap, FCEvent } from './event';
 import { getGuardForWaits } from './guard';
 
@@ -32,7 +32,7 @@ function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
 }
 
 
-function getBid(bids?: Bid[], waitBids?: BidsForBidType): Bid | undefined {
+function getBid(bids?: Bid[], waitBids?: EventMap<Bid[]>): Bid | undefined {
     if(!bids) return undefined;
     const checkBids = [...bids];
     while (checkBids.length > 0) {
@@ -62,7 +62,7 @@ function getActionFromBid(bid: Bid) {
     return action;
 }
 
-export function getNextActionFromRequests(requestBids: BidsForBidType, waitBids?: EventMap<Bid[]>): Action | undefined {
+export function getNextActionFromRequests(requestBids?: EventMap<Bid[]>, waitBids?: EventMap<Bid[]>): Action | undefined {
     if(!requestBids) return undefined;
     const events = requestBids.allEvents;
     if(!events) return undefined;

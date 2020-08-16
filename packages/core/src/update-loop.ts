@@ -117,19 +117,19 @@ function setupScaffolding(
     const destroyOnDisableThreadIds = new Set<string>();
     let bThreadStateById: Record<string, BThreadState>;
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
-        const id = createBThreadId(bThreadInfo.id, bThreadInfo.key);
-        enabledIds.add(id);
-        if (bThreadDictionary[id]) {
-            bThreadDictionary[id].resetOnPropsChange(props);
+        bThreadInfo.id = createBThreadId(bThreadInfo.id, bThreadInfo.key);
+        enabledIds.add(bThreadInfo.id);
+        if (bThreadDictionary[bThreadInfo.id]) {
+            bThreadDictionary[bThreadInfo.id].resetOnPropsChange(props);
         } else {
-            if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(id);
-            bThreadDictionary[id] = new BThread(bThreadInfo, generatorFn, props, dispatch, logger);
+            if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadInfo.id);
+            bThreadDictionary[bThreadInfo.id] = new BThread(bThreadInfo, generatorFn, props, dispatch, logger);
         }
-        const bThreadBids = bThreadDictionary[id].currentBids;
+        const bThreadBids = bThreadDictionary[bThreadInfo.id].currentBids;
         if(bThreadBids) bids.push(bThreadBids);
-        allPending.merge(bThreadDictionary[id].pending);
-        bThreadStateById[id] = bThreadDictionary[id].state;
-        return bThreadDictionary[id].state;
+        allPending.merge(bThreadDictionary[bThreadInfo.id].pending);
+        bThreadStateById[bThreadInfo.id] = bThreadDictionary[bThreadInfo.id].state;
+        return bThreadDictionary[bThreadInfo.id].state;
     }
     function getCached<T>(event: FCEvent | string): CachedItem<T> {
         event = toEvent(event);
@@ -220,7 +220,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
             return updateLoop();
         }
         // return to UI
-        updateEventDispatcher(bids[BidType.wait], allPending);
+        updateEventDispatcher(allPending, bids[BidType.wait]);
         return { 
             dispatch: eventDispatch,
             event: getEventCache,

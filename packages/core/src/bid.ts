@@ -29,7 +29,6 @@ export interface Bid {
 
 export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
 export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
-export type BidsForBidType = EventMap<Bid[]> | undefined;
 
 
 // bids from BThreads
@@ -90,10 +89,10 @@ export function getAllBids(allBThreadBids: BThreadBids[], allPending: EventMap<P
     const fixedBlocksAndPending = fixedBlocks;
     if(fixedBlocks?.size()) allPending.forEach(event => fixedBlocks?.set(event, true));
     return {
-        [BidType.block]: blocks,
         [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocksAndPending, guardedBlocks),
         [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks),
-        [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks)
+        [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks),
+        [BidType.block]: blocks
     };
 }
 
@@ -136,10 +135,6 @@ export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
         threadId: ""
     };
 }
-
-block('event1', (value) => {
-    'x is required' : true
-});
 
 export function set(event: string | FCEvent, payload?: any): Bid {
     return {
