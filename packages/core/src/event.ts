@@ -137,6 +137,14 @@ export class EventMap<T>  {
         return this;
     }
 
+    public without(a: EventMap<any>): EventMap<T> {
+        if(a.size() === 0) return this;
+        a.forEach((event) => {
+            if(this.has(event)) this.delete(event);
+        });
+        return this;
+    }
+
     public merge(em: EventMap<T> | undefined): EventMap<T> {
         if(!em) return this;
         em.forEach((event, value) => {

@@ -37,7 +37,7 @@ test("if a request-replay has no payload, the original payload will be used", (d
     });
     const [context, dispatch, replay] = testScenarios((enable) => {
         enable(thread1());
-    }, ({dispatch, log, bThreadState}) => {
+    }, ({dispatch}) => {
         if(dispatch('fin')) {
             expect(value1).toEqual(5);
             done();
@@ -63,7 +63,7 @@ test("a async request can be replayed", (done) => {
     });
     const [context, dispatch, replay] = testScenarios((enable) => {
         enable(thread1());
-    }, ({dispatch, log, bThreadState}) => {
+    }, ({dispatch}) => {
         if(dispatch('fin')) {
             expect(value1).toEqual('YEAH');
             expect(eventReplayed).toBeTruthy();

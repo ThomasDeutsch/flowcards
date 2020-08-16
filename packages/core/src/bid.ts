@@ -1,7 +1,6 @@
 import { EventKey, EventMap, EventName, FCEvent, toEvent } from './event';
 import { combineGuards, getGuardedUnguardedBlocks, GuardFunction } from './guard';
 import * as utils from './utils';
-import { BThreadDictionary } from './update-loop';
 import { PendingEventInfo } from './bthread';
 
 export enum BidType {
@@ -137,6 +136,10 @@ export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
         threadId: ""
     };
 }
+
+block('event1', (value) => {
+    'x is required' : true
+});
 
 export function set(event: string | FCEvent, payload?: any): Bid {
     return {

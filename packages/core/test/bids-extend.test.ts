@@ -74,7 +74,6 @@ test("if an extend is not applied, than the next extend will get the event", () 
         expect(waitDAdvanced).toBe(false);
         expect(requestAdvanced).toBe(false);
         expect(pending.has('A')).toBeTruthy();
-        expect(log?.latestAction.event.name).toBe("A");
     });
 });
 
@@ -307,6 +306,8 @@ test("multiple extends will resolve after another. After all extends complete, t
         }  
     });
 });
+
+// TODO: A dispatch can be extended
 
 
 // todo 

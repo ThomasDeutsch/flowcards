@@ -60,6 +60,7 @@ test("sets can be extended", () => {
 
     const thread2 = flow(null, function* () {
         const extend = yield bp.extend("count");
+        console.log('EXTENSION IS ACTIVE:', extend);
         extend.resolve(extend.value + 2);
     });
 

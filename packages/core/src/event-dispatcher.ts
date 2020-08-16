@@ -1,19 +1,31 @@
 import { ActionType } from './action';
-import { Bid, BidsForBidType, BidSubType, PendingEventInfo } from './bid';
+import { Bid, BidsForBidType, BidSubType } from './bid';
 import { EventMap, FCEvent, toEvent } from './event';
 import { getGuardForWaits, GuardFunction } from './guard';
 import { ActionDispatch } from './update-loop';
+import { PendingEventInfo } from './bthread';
 
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
-type EventDispatchUpdater = (waits: BidsForBidType) => void;
+type EventDispatchUpdater = (waits: BidsForBidType, pending: EventMap<PendingEventInfo>) => void;
 
 
 interface DispatchCache {
     payload?: any;
     dispatch?: TriggerDispatch | undefined;
 }
+
+interface DispatchEventContext {
+    trigger: () => void;
+    reasons: {
+        type: 'noWait' | 'blocked' | 'pending' | 'guarded';
+        explain?: any;
+    }[];
+}
+
+// dispatch(event) will return a dispatchEventContext
+// a reason will tell the user if 
 
 export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
@@ -23,7 +35,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
         if(dp === undefined) return undefined;
         return dp(payload);
     }
-    const updateEventDispatcher = (waits: BidsForBidType): void => {
+    const updateEventDispatcher = (waits: BidsForBidType, pending: EventMap<PendingEventInfo>): void => {
         guardByEvent.clear();
         const dpWaits = new EventMap<Bid[]>();
         waits?.forEach((event, bids) => {
@@ -34,6 +46,7 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
             dispatchByEvent.clear();
             return;
         }
+        dpWaits.without(pending);
         dispatchByEvent.intersection(dpWaits);
         dpWaits.forEach((waitEvent) => {
             guardByEvent.set(waitEvent, getGuardForWaits(dpWaits.get(waitEvent), waitEvent));

@@ -25,7 +25,6 @@ test("a trigger is a request, that is only selected if another thread is waiting
     }, ({log})=> {
         expect(hasAdvancedFirstTrigger).toBe(true);
         expect(hasAdvancedSecondTrigger).toBe(false);
-        expect(log?.latestAction.event.name).toBe("eventA");
     });
 });
 

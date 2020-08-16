@@ -159,3 +159,7 @@ test("multiple dispatches are batched", (done) => {
     expect(true).toBe(true);
     done();
 });
+
+
+
+// TODO: A pending event can not be dispatched
