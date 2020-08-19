@@ -5,6 +5,7 @@ import { EventCache, setEventCache } from './event-cache';
 import { Logger } from './logger';
 import { ActionDispatch } from './update-loop';
 import * as utils from './utils';
+import { ExtendContext } from './extend-context';
 
 export type BTGen = Generator<Bid | Bid[], void, any>;
 export type GeneratorFn = (props: any) => BTGen;
@@ -23,14 +24,6 @@ export interface BTContext {
     section: (newValue: string) => void;
     isPending: (event: string | FCEvent) => boolean;
 }
-
-export interface ExtendResult {
-    resolve: Function;
-    reject: Function;
-    value: any;
-    promise: Promise<unknown>;
-}
-
 
 export interface PendingEventInfo {
     event: FCEvent;
@@ -132,25 +125,11 @@ export class BThread {
         if(!isReject) {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [bid.event, payload] : payload;
         }   
-        // const sectionBeforeProgression = this._state.section;
         const cancelledPending = this._processNextBid(returnVal);
         this._logger?.logProgress(bid, cancelledPending);
     }
 
-    private _createExtendPromise(action: Action): ExtendResult {
-        let resolveFn: (value?: unknown) => void;
-        let rejectFn: (reason?: any) => void;
-        const promise = new Promise((resolve, reject) => {
-            resolveFn = resolve;
-            rejectFn = reject;
-        });
-        return {
-            resolve: (value?: unknown) => { resolveFn(value) }, 
-            reject: (reason: any) => { rejectFn(reason) }, 
-            value: action.payload,
-            promise: promise
-        };
-    }
+
 
     // --- public
 
@@ -246,11 +225,11 @@ export class BThread {
         this._progressBThread(bid, actionPayload);
     }
 
-    public progressExtend(action: Action, bid: Bid): Promise<unknown> | undefined {
+    public progressExtend(action: Action, bid: Bid): ExtendContext | undefined {
         if(!bid || bid.guard && !bid.guard(action.payload)) return undefined;
-        const extendResult = this._createExtendPromise(action);
-        this._progressBThread(bid, extendResult);
-        return extendResult.promise;
+        const extendContext = new ExtendContext(action.payload)
+        this._progressBThread(bid, extendContext);
+        return extendContext
     }
 
     public destroy(): void {

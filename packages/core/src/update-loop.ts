@@ -38,20 +38,23 @@ function advanceOnPending(allBids: AllBidsByType, bThreadDictionary: Record<stri
     return true;
 }
 
-function extendAction(allBids: AllBidsByType, bThreadDictionary: Record<string, BThread>, action: Action): boolean {
+function extendAction(allBids: AllBidsByType, bThreadDictionary: Record<string, BThread>, action: Action): Action | 'extended with promise' {
     const bids = getMatchingBids(allBids[BidType.extend], action.event);
     while(bids && bids.length > 0) {
         const bid = bids.pop(); // get last bid ( highest priority )
         if(bid === undefined) continue;
-        const extendPromise = bThreadDictionary[bid.threadId].progressExtend(action, bid);
-        if(extendPromise) {
-            action.payload = extendPromise;
+        const extendContext = bThreadDictionary[bid.threadId].progressExtend(action, bid);
+        if(extendContext === undefined) continue;
+        if(extendContext.promise) {
+            action.payload = extendContext.promise;
             bThreadDictionary[action.threadId || bid.threadId].addPendingRequest(action, bid); // use the bid.threadId, if this action was not a request
             advanceOnPending(allBids, bThreadDictionary, action);
-            return true;
+            return 'extended with promise';
+        } else {
+            action.payload = extendContext.value;
         }
     }
-    return false;
+    return action;
 }
 
 function advanceBThreads(bThreadDictionary: Record<string, BThread>, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
@@ -67,13 +70,13 @@ function advanceBThreads(bThreadDictionary: Record<string, BThread>, eventCache:
                 advanceOnPending(allBids, bThreadDictionary, action);
                 return;
             }
-            if(extendAction(allBids, bThreadDictionary, action)) return;
+            if(extendAction(allBids, bThreadDictionary, action) === 'extended with promise') return;
             bThreadDictionary[action.threadId].progressRequest(eventCache, action.event, action.payload); // request got resolved
             advanceWaits(allBids, bThreadDictionary, action);
             return;
         }
         case ActionType.dispatched: {
-            if(extendAction(allBids, bThreadDictionary, action)) return;
+            if(extendAction(allBids, bThreadDictionary, action) === 'extended with promise') return;
             const isValidDispatch = advanceWaits(allBids, bThreadDictionary, action);
             if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
             return;
@@ -83,7 +86,7 @@ function advanceBThreads(bThreadDictionary: Record<string, BThread>, eventCache:
                 const isResolved = bThreadDictionary[action.threadId].resolvePending(action);
                 if(isResolved === false) return;
             }
-            if(extendAction(allBids, bThreadDictionary, action)) return;
+            if(extendAction(allBids, bThreadDictionary, action) === 'extended with promise') return;
             bThreadDictionary[action.threadId].progressRequest(eventCache, action.event, action.payload); // request got resolved
             advanceWaits(allBids, bThreadDictionary, action);
             return;

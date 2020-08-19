@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from "./testutils";
-import { ExtendResult } from "../src/bthread";
 import { flow } from '../src/scenario';
+import { ExtendContext } from '../src/extend-context';
 
 
 // Extends
@@ -107,7 +107,7 @@ test("if an extended thread completed, without resolving or rejecting the event,
 
 
 test("extends will receive a value (like waits)", () => {
-    let extendedValue: ExtendResult;
+    let extendedValue: ExtendContext;
     let thread1Advanced = false;
 
     const thread1 = flow(null, function* () {
@@ -136,7 +136,7 @@ test("extends will receive a value (like waits)", () => {
 
 
 test("extends will extend requests", () => {
-    let extended: ExtendResult
+    let extended: ExtendContext
 
     const thread1 = flow(null, function* () {
         yield bp.request("A", 1000);
@@ -307,35 +307,30 @@ test("multiple extends will resolve after another. After all extends complete, t
     });
 });
 
+test("an extend can be resolved in the same cycle", () => {
+    let loopCount = 0;
+    let requestedValue: number;
+
+    const requestingThread = flow(null, function* () {
+        const val: number = yield bp.request("A", 1);
+        requestedValue = val;
+    });
+
+    const extendingThread = flow(null, function* () {
+        const extendContext: ExtendContext = yield bp.extend("A");
+        extendContext.resolve(extendContext.value + 1);
+    });
+
+    testScenarios((enable) => {
+        loopCount++;
+        enable(requestingThread());
+        enable(extendingThread());
+    }, ({pending}) => {
+        expect(pending.has('A')).toBeFalsy();
+        expect(requestedValue).toEqual(2);
+        expect(loopCount).toEqual(2); // 1: init, 2: request & extend (same loop)
+    });
+});
+
+
 // TODO: A dispatch can be extended
-
-
-// todo 
-// test("If an extends rejects, an errow will be thrown in the extended event thread", (done) => {
-//     const requestingThread = flow(null, function* () {
-//         const val = yield bp.request("A", delay(100, 'super'));
-//         expect(val).toBe('super');
-//     });
-
-//     const extendingThread = flow(null, function* () {
-//         const extend = yield bp.extend("A");
-//         expect(extend.value).toBe('super');
-//         extend.reject();
-//     });
-
-//     const waitingThread = flow(null, function* () {
-//         const val = yield bp.wait("A");
-//         expect(val).toBe('super');
-//         yield bp.wait('fin');
-//     });
-
-//     testScenarios((enable) => {
-//         enable(requestingThread());
-//         enable(extendingThread());
-//         enable(waitingThread());
-//     }, ({dispatch}) => {
-//         if(dispatch('fin')) {
-//             done();
-//         }  
-//     });
-// });
