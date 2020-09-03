@@ -6,10 +6,14 @@ import { PendingEventInfo } from './bthread';
 
 
 export interface EventInfo {
-    type: 'no check' | 'valid' | 'invalid' | 'blocked' | 'pending' | 'no wait';
+    type: 'valid' | 'invalid' | 'blocked' | 'pending' | 'no wait';
     event?: FCEvent;
     threadId?: string;
     details?: any;
+}
+
+function getResultDetails(result: boolean | { isValid: boolean; details?: string | undefined }): any {
+    return (typeof result !== 'boolean') ? result.details : undefined;
 }
 
 export function explain(waits: EventMap<Bid[]> | undefined, blocks: EventMap<Bid[]> | undefined, pending: EventMap<PendingEventInfo>, event: FCEvent, payload: any): EventInfo[] {
@@ -24,7 +28,7 @@ export function explain(waits: EventMap<Bid[]> | undefined, blocks: EventMap<Bid
             const guardResult = bid.guard?.(payload);
             if(guardResult === undefined) {
                 infos.push({
-                    type: 'no check',
+                    type: 'valid',
                     threadId: bid.threadId,
                     event: bid.event
                 });
@@ -33,7 +37,7 @@ export function explain(waits: EventMap<Bid[]> | undefined, blocks: EventMap<Bid
                 infos.push({
                     type: 'valid',
                     threadId: bid.threadId,
-                    details: guardResult,
+                    details: getResultDetails(guardResult),
                     event: bid.event
                 });
             }
@@ -41,7 +45,7 @@ export function explain(waits: EventMap<Bid[]> | undefined, blocks: EventMap<Bid
                 infos.push({
                     type: 'invalid',
                     threadId: bid.threadId,
-                    details: guardResult,
+                    details: getResultDetails(guardResult),
                     event: bid.event
                 });
             }
@@ -49,12 +53,21 @@ export function explain(waits: EventMap<Bid[]> | undefined, blocks: EventMap<Bid
     }
     const blocksColl = utils.flattenShallow(blocks?.getExactMatchAndUnkeyedMatch(event));
     blocksColl.forEach(bid => {
-        const guardResult = bid.guard?.(payload);
-        if(guardResult === undefined || isGuardPassed(guardResult)) {
+        const guard = bid.guard;
+        if(!guard) return;
+        const guardResult = guard(payload);
+        if(isGuardPassed(guardResult)) {
             infos.push({
                 type: 'blocked',
                 threadId: bid.threadId,
-                details: guardResult,
+                details: getResultDetails(guardResult),
+                event: bid.event
+            });
+        } else {
+            infos.push({
+                type: 'valid',
+                threadId: bid.threadId,
+                details: getResultDetails(guardResult),
                 event: bid.event
             });
         }
