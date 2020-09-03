@@ -34,8 +34,8 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
             dispatchByEvent.clear();
             return;
         }
-        dpWaits.without(pending);
-        if(blocks) dpWaits.without(blocks);
+        dpWaits.deleteMatching(pending);
+        if(blocks) dpWaits.deleteMatching(blocks);
         dispatchByEvent.intersection(dpWaits);
         dpWaits.forEach((waitEvent) => {
             guardByEvent.set(waitEvent, getGuardForWaits(dpWaits.get(waitEvent), waitEvent));

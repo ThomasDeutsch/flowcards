@@ -209,7 +209,7 @@ test("events can be blocked", () => {
     let advancedRequest, advancedWait;
 
     const requestThread = flow(null, function* () {
-        yield bp.request("AX", 1000);
+        yield bp.request("AX");
         advancedRequest = true;
     });
 
@@ -234,7 +234,7 @@ test("events can be blocked", () => {
 });
 
 
-test("if an async request gets blocked, it will not call the promise", () => {
+test("if an async request gets blocked, it will not call the bid-function", () => {
     let calledFunction = false;
 
     const requestingThread = flow(null, function* () {
@@ -250,4 +250,49 @@ test("if an async request gets blocked, it will not call the promise", () => {
         enable(blockingThread());
     });
     expect(calledFunction).toBe(false);
+});
+
+
+test("a requested event with a key is blocked by a block for the same event that has no key", () => {
+    let progressedRequestThread = false;
+
+    const requestingThread = flow(null, function* () {
+        yield bp.request({name: 'AX', key: 1});
+        progressedRequestThread = true;
+    })
+
+    const blockingThread = flow(null, function* () {
+        yield bp.block("AX");
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+        enable(blockingThread());
+    });
+    expect(progressedRequestThread).toBe(false);
+});
+
+
+test("a requested event with a key is blocked by a block with the same event-name and -key", () => {
+    let progressedRequestThread1 = false;
+    let progressedRequestThread2 = false;
+
+    const requestingThread = flow(null, function* () {
+        yield bp.request({name: 'AX', key: 1});
+        progressedRequestThread1 = true;
+        yield bp.request({name: 'AX', key: 2});
+        progressedRequestThread2 = true;
+    })
+
+    const blockingThread = flow(null, function* () {
+        yield bp.block({name: 'AX', key: 2});
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+        enable(blockingThread());
+    });
+    expect(progressedRequestThread1).toBe(true);
+    expect(progressedRequestThread2).toBe(false);
+
 });

@@ -11,6 +11,8 @@ export * from "./bid";
 export * from './event';
 export * from './logger';
 export * from './action';
+export * from './explain';
+export * from './extend-context';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 export type StartReplay = (actions: Action[]) => void;
 

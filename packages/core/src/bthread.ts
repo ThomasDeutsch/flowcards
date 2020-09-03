@@ -194,7 +194,7 @@ export class BThread {
 
     public resolvePending(action: Action): boolean {
         if(action.threadId !== this.info.id || action.type !== ActionType.resolved) return false;
-        else if(this._pending.delete(action.event)) {
+        else if(this._pending.deleteSingle(action.event)) {
             this._setCurrentBids();
             return true;
         }
@@ -203,7 +203,7 @@ export class BThread {
 
     public rejectPending(action: Action): void {
         if(action.threadId !== this.info.id || action.type !== ActionType.rejected) return;
-        else if (this._pending.delete(action.event) && this._thread && this._thread.throw) {
+        else if (this._pending.deleteSingle(action.event) && this._thread && this._thread.throw) {
             this._thread.throw({event: action.event, error: action.payload});
             const bid = this._currentBids?.request?.get(action.event);
             if(!bid) return;
@@ -229,7 +229,7 @@ export class BThread {
         if(!bid || bid.guard && !bid.guard(action.payload)) return undefined;
         const extendContext = new ExtendContext(action.payload)
         this._progressBThread(bid, extendContext);
-        return extendContext
+        return extendContext;
     }
 
     public destroy(): void {

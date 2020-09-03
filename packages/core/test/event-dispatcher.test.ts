@@ -161,5 +161,49 @@ test("multiple dispatches are batched", (done) => {
 });
 
 
+test("a keyed event is blocked by a no-key block, and can not be dispatched", () => {
+    let progressedRequestThread = false;
+
+    const waitingThread = flow(null, function* () {
+        yield bp.wait({name: 'AX', key: 1});
+        progressedRequestThread = true;
+    })
+
+    const blockingThread = flow(null, function* () {
+        yield bp.block("AX");
+    })
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(blockingThread());
+    }, ({dispatch}) => {
+        expect(dispatch({name: 'AX', key: 1})).toBeUndefined();
+    });
+    expect(progressedRequestThread).toBe(false);
+});
+
+
+test("only one key is blocked, by a block that has a key", () => {
+    let progressedRequestThread = false;
+
+    const waitingThread = flow(null, function* () {
+        yield [bp.wait({name: 'AX', key: 1}), bp.wait({name: 'AX', key: 2})];
+        progressedRequestThread = true;
+    })
+
+    const blockingThread = flow(null, function* () {
+        yield bp.block({name: 'AX', key: 1});
+    })
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(blockingThread());
+    }, ({dispatch}) => {
+        expect(dispatch({name: 'AX', key: 1})).toBeUndefined();
+        expect(dispatch({name: 'AX', key: 2})).toBeDefined();
+
+    });
+    expect(progressedRequestThread).toBe(false);
+});
 
 // TODO: A pending event can not be dispatched

@@ -71,6 +71,13 @@ export class EventMap<T>  {
         }
     }
 
+    public getExactMatchAndUnkeyedMatch(event: FCEvent): T[] {
+        if(event.key === undefined) {
+            return [this.noKey.get(event.name)].filter(utils.notUndefined);
+        }
+        return [this.noKey.get(event.name), this.withKey.get(event.name)?.get(event.key)].filter(utils.notUndefined);
+    }
+
     public getAllMatchingValues(event?: FCEvent): T[] | undefined {
         const events = this.getAllMatchingEvents(event);
         if(events === undefined) return undefined;
@@ -91,7 +98,7 @@ export class EventMap<T>  {
         return (this.withKey.size === 0) && (this.noKey.size === 0);
     }
 
-    public delete(event: FCEvent): boolean {
+    public deleteSingle(event: FCEvent): boolean {
         if(!this.has(event)) return false;
         if(event.key === undefined) {
             return this.noKey.delete(event.name);
@@ -103,13 +110,22 @@ export class EventMap<T>  {
         return hasDeletedKey;
     }
 
-    public clear(): FCEvent[] | undefined {
-        const deleted: FCEvent[] = []
-        this.forEach((event) => {
-            deleted.push(event);
-            this.delete(event);
+    public deleteMatching(a?: EventMap<any>): EventMap<T> {
+        if(!a) return this;
+        if(a.size() === 0) return this;
+        a.forEach((event) => {
+            if(event.key !== undefined) this.deleteSingle(event);
+            else {
+                this.noKey.delete(event.name);
+                this.withKey.delete(event.name);
+            }
         });
-        return deleted.length > 0 ? deleted : undefined;
+        return this;
+    }
+
+    public clear(): void {
+        this.withKey.clear();
+        this.noKey.clear();
     }
 
     public clone(): EventMap<T> {
@@ -132,16 +148,7 @@ export class EventMap<T>  {
             return this;
         }
         this.forEach((event) => {
-            if(!a.has(event)) this.delete(event);
-        });
-        return this;
-    }
-
-    public without(a?: EventMap<any>): EventMap<T> {
-        if(!a) return this;
-        if(a.size() === 0) return this;
-        a.forEach((event) => {
-            if(this.has(event)) this.delete(event);
+            if(!a.has(event)) this.deleteSingle(event);
         });
         return this;
     }

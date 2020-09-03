@@ -70,7 +70,7 @@ function mergeMaps(maps: (EventMap<Bid> | undefined)[], blocks?: EventMap<true>,
         result.set(event, [...(result.get(event) || []), valueCurr]);        
     }));
     if(result.size() > 0) {
-        blocks?.forEach(event => result.delete(event));
+        result.deleteMatching(blocks);
         if(guardedBlocks) combineGuards(result, guardedBlocks);
     }
     return result;

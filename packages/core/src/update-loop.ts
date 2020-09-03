@@ -6,7 +6,7 @@ import { CachedItem, EventCache } from './event-cache';
 import { EventDispatch, setupEventDispatcher } from './event-dispatcher';
 import { Logger, Reaction } from './logger';
 import * as utils from './utils';
-import { explain, EventInfo } from './guard';
+import { explain, EventInfo } from './explain';
 
 type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
 export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
@@ -21,7 +21,8 @@ function createBThreadId(id: string, key?: BThreadKey): string {
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
 function advanceWaits(allBids: AllBidsByType, bThreadDictionary: Record<string, BThread>, action: Action): boolean {
-    const bids = (getMatchingBids(allBids[BidType.wait], action.event) || []).filter(event => event.subType && event.subType !== BidSubType.onPending);
+    const bids = (getMatchingBids(allBids[BidType.wait], action.event) || [])
+    .filter(bid => (bid.subType !== BidSubType.onPending) && !allBids.block?.has(bid.event) && !allBids.block?.has({name: bid.event.name}));
     if(bids.length === 0) return false;
     bids.forEach(bid => {
         bThreadDictionary[bid.threadId].progressWait(bid, action.payload);
@@ -30,7 +31,8 @@ function advanceWaits(allBids: AllBidsByType, bThreadDictionary: Record<string, 
 }
 
 function advanceOnPending(allBids: AllBidsByType, bThreadDictionary: Record<string, BThread>, action: Action): boolean {
-    const bids = (getMatchingBids(allBids[BidType.wait], action.event) || []).filter(bid => bid.subType === BidSubType.onPending);
+    const bids = (getMatchingBids(allBids[BidType.wait], action.event) || [])
+        .filter(bid => (bid.subType === BidSubType.onPending) && !allBids.block?.has(bid.event) && !allBids.block?.has({name: bid.event.name}));
     if(bids.length === 0) return false;
     bids.forEach(bid => {
         bThreadDictionary[bid.threadId].progressWait(bid, action.payload);
@@ -78,7 +80,7 @@ function advanceBThreads(bThreadDictionary: Record<string, BThread>, eventCache:
         case ActionType.dispatched: {
             if(extendAction(allBids, bThreadDictionary, action) === 'extended with promise') return;
             const isValidDispatch = advanceWaits(allBids, bThreadDictionary, action);
-            if(!isValidDispatch) console.warn('action was not waited for: ', action.event.name);
+            if(!isValidDispatch) console.warn(`no wait for action: ${action.event.name}` + (action.event.key !== undefined) ? ` with key ${action.event.key}` : '');
             return;
         }
         case ActionType.resolved: {
@@ -168,7 +170,7 @@ function setupScaffolding(
 
 export interface ScenariosContext {
     dispatch: EventDispatch;
-    getEventInfo: (event: string | FCEvent, payload: any) => EventInfo[];
+    explain: (event: string | FCEvent, payload?: any) => EventInfo[];
     event: GetCachedItem;
     pending: EventMap<PendingEventInfo>;
     blocks: EventMap<Bid[]>;
@@ -221,7 +223,6 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
         }
         if (action) { // use next action
             actionIndex++;
-            bids.wait?.without(bids.block); // TODO: do i need to remove all matchin events instead??? same problem in explain and mergeBids!!!!
             advanceBThreads(bThreadDictionary, eventCache, bids, action);
             return updateLoop();
         }
@@ -229,7 +230,7 @@ export function createUpdateLoop(stagingFunction: StagingFunction, actionDispatc
         updateEventDispatcher(allPending, bids[BidType.block], bids[BidType.wait]);
         return { 
             dispatch: eventDispatch,
-            getEventInfo: (event: string | FCEvent, payload: any) => explain(bids[BidType.wait], bids[BidType.block], allPending, toEvent(event), payload),
+            explain: (event: string | FCEvent, payload?: any) => explain(bids[BidType.wait], bids[BidType.block], allPending, toEvent(event), payload),
             event: getEventCache,
             blocks: bids[BidType.block] || new EventMap(),
             pending: allPending,
