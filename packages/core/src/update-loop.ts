@@ -32,7 +32,9 @@ function setupScaffolding(
     const allPending: EventMap<PendingEventInfo> = new EventMap();
     const enabledIds = new Set<string>();
     const destroyOnDisableThreadIds = new Set<string>();
+    const cancelPendingOnDisableThreadIds = new Set<string>();
     let bThreadStateById: Record<string, BThreadState>;
+
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
         const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
         const bThreadIdString = BThreadMap.toIdString({name: bThreadInfo.name, key: bThreadInfo.key})
@@ -43,7 +45,7 @@ function setupScaffolding(
         } else {
             bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, generatorFn, props, dispatch));
             if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadIdString);
-
+            if(bThreadInfo.cancelPendingOnDisable) cancelPendingOnDisableThreadIds.add(bThreadIdString);
         }
         bThread = bThreadMap.get(bThreadId);
         if(bThread!.currentBids) bids.push(bThread!.currentBids);
@@ -61,12 +63,21 @@ function setupScaffolding(
         bids.length = 0;
         allPending.clear();
         stagingFunction(enableBThread, getCached);
+        if(cancelPendingOnDisableThreadIds.size > 0) {
+            cancelPendingOnDisableThreadIds.forEach(idString => {
+                if(!enabledIds.has(idString)) {
+                    const bThreadId = BThreadMap.toThreadId(idString);
+                    bThreadMap.get(bThreadId)?.cancelPending();
+                }
+            });
+        }
         if(destroyOnDisableThreadIds.size > 0) 
             destroyOnDisableThreadIds.forEach(idString => {
             if(!enabledIds.has(idString)) {
                 const bThreadId = BThreadMap.toThreadId(idString);
                 bThreadMap.get(bThreadId)?.destroy();
                 bThreadMap.delete(bThreadId);
+                cancelPendingOnDisableThreadIds.delete(idString);
                 destroyOnDisableThreadIds.delete(idString);
             }
         });

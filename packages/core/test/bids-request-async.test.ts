@@ -2,6 +2,8 @@ import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { flow } from '../src/scenario'
 import { delay } from './testutils';
+import { BTContext } from '../src/bthread';
+
 
 test("A promise can be requested and will create a pending-event", () => {
     const thread1 = flow({name: 'requestingThread', key: 1}, function* () {
@@ -20,7 +22,8 @@ test("A promise can be requested and will create a pending-event", () => {
     });
 });
 
-test("A promise with a key and a promise without a key can be pending at the same time, even if the event-name is the same", (done) => {
+
+test("pending-events are different, if the name and key do not match.", (done) => {
     let value1: number, value2: number;
     const thread1 = flow({name: 'requestingThreadOne'}, function* () {
         value1 = yield bp.request("A", delay(100, 55));
@@ -44,6 +47,7 @@ test("A promise with a key and a promise without a key can be pending at the sam
         }
     });
 });
+
 
 test("A promise-function can be requested and will create a pending-event", () => {
     const thread1 = flow({name: 'thread1'}, function* () {
@@ -89,7 +93,7 @@ test("multiple async-requests can be run sequentially", (done) => {
 });
 
 
-test("if multiple promises resolve at the same time, only one is selected", (done) => {
+test("for multiple active promises in one yield, only one resolve will progress the BThread", (done) => {
     let threadState: any = null;
     let progressed2 = false;
     let progressed3 = false;
@@ -121,7 +125,93 @@ test("if multiple promises resolve at the same time, only one is selected", (don
 });
 
 
-// TODO: if a thread holds a pending event, but gets disabled or destroyed, the pending event will not be part in the event selection.
-// TODO: if a thread resolves a pending event, but is disabled -> the dispatch will be paused or a new option is needed:  "clearPendingOnDisable"
-// TODO: if an event is pending, the same thread can block other events.
-//      example:   yield [request('async', () => delay(100)), this.isPending('A') ? block('otherEvent')];
+test("if a thread gets disabled, before the pending-event resolves, the pending-event resolve will still be dispatched", (done) => {
+    const thread1 = flow({name: 'thread1'}, function* () {
+        yield bp.request("A", () => delay(100));
+        const [event] = yield [bp.wait('B'),  bp.request("X", () => delay(500))];
+        expect(event.name).toEqual('B');
+    });
+
+    const thread2 = flow({name: 'thread2'}, function*() {
+        yield bp.request("B", () => delay(300)); 
+    });
+
+    testScenarios((enable) => {
+        const t1 = enable(thread1());
+        if(t1.pendingEvents.has('A')) {
+            enable(thread2());
+        }
+    }, (({actionLog, thread}) => {
+        if(thread['thread1'].isCompleted) {
+            expect(thread['thread2']?.isCompleted).toBeFalsy();
+            done();
+        }
+    }));
+});
+
+test("given the cancelPendingOnDisable option, pending events will be canceled on disable", (done) => {
+    const thread1 = flow({name: 'thread1'}, function* () {
+        yield bp.request("A", () => delay(100));
+        const [event] = yield [bp.wait('B'),  bp.request("X", () => delay(500))];
+        expect(event.name).toEqual('X');
+    });
+
+    const thread2 = flow({name: 'thread2', cancelPendingOnDisable: true}, function*() {
+        yield bp.request("B", () => delay(300));
+    });
+
+    testScenarios((enable) => {
+        const t1 = enable(thread1());
+        if(t1.pendingEvents.has('A')) {
+            enable(thread2());
+        }
+    }, (({thread}) => {
+        if(thread['thread1'].isCompleted) {
+            expect(thread['thread2']?.isCompleted).toBeFalsy();
+            done();
+        }
+    }));
+});
+
+test("given the destoryOnDisable option, pending events will be canceled on destroy", (done) => {
+    const thread1 = flow({name: 'thread1'}, function* () {
+        yield bp.request("A", () => delay(100));
+        const [event] = yield [bp.wait('B'),  bp.request("X", () => delay(500))];
+        expect(event.name).toEqual('X');
+    });
+
+    const thread2 = flow({name: 'thread2', destroyOnDisable: true}, function*() {
+        yield bp.request("B", () => delay(300));
+    });
+
+    testScenarios((enable) => {
+        const t1 = enable(thread1());
+        if(t1.pendingEvents.has('A')) {
+            enable(thread2());
+        }
+    }, (({thread}) => {
+        if(thread['thread1'].isCompleted) {
+            expect(thread['thread2']?.isCompleted).toBeFalsy();
+            done();
+        }
+    }));
+});
+
+test("a thread in a pending-event state can place additional bids.", () => {
+    const thread1 = flow({name: 'requestingThread'}, function* (this: BTContext) {
+        yield [bp.request("A", () => delay(100)), this.isPending('A') ? bp.block('B') : null];
+    });
+
+    const thread2 = flow({name: 'waitingThread'}, function* () {
+        yield bp.wait('B');
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({event}) => {
+        if(event('A').isPending) {
+            expect(event('B').explain().blocked.length > 0).toBeTruthy();
+        }
+    });
+});

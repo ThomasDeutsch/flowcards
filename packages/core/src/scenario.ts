@@ -6,6 +6,7 @@ export function flow<T extends GeneratorFn>(info: BThreadInfo | null, gen: T): (
         name: info?.name || uuidv4(),
         title: info?.title,
         key: info?.key,
+        cancelPendingOnDisable: info?.cancelPendingOnDisable || false,
         destroyOnDisable: info?.destroyOnDisable || false
     };
     return (generatorProps?: Parameters<T>[0], key?: BThreadKey): [BThreadInfo, GeneratorFn, Parameters<T>[0]] => {

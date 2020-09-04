@@ -12,14 +12,11 @@ export type GeneratorFn = (props: any) => BTGen;
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
 
-function sameBThreadIds(a: BThreadId, b: BThreadId) {
-    return BThreadMap.toIdString(a) === BThreadMap.toIdString(b);
-}
-
 export interface BThreadInfo {
     name: string;
     key?: BThreadKey;
     destroyOnDisable?: boolean;
+    cancelPendingOnDisable?: boolean;
     title?: string;
     description?: string;
 }
@@ -168,6 +165,7 @@ export class BThread {
         this._setCurrentBids();
         const startTime = new Date().getTime();
         action.payload.then((data: any): void => {
+            if(!this._thread) return; // was deleted
             const pendingEventInfo = this.state.pendingEvents.get(action.event);
             if (pendingEventInfo?.actionIndex === action.index) {
                 const requestDuration = new Date().getTime() - startTime;
@@ -185,6 +183,7 @@ export class BThread {
                 });
             }
         }).catch((e: Error): void => {
+            if(!this._thread) return; // was deleted
             const pendingEventInfo = this.state.pendingEvents.get(action.event);
             if (pendingEventInfo?.actionIndex === action.index) {
                 const requestDuration = new Date().getTime() - startTime;
@@ -244,9 +243,13 @@ export class BThread {
         return extendContext;
     }
 
-    public destroy(): void {
+    public cancelPending() {
         this._pendingRequests.clear();
         this._pendingExtends.clear();
+    }
+
+    public destroy(): void {
+        this.cancelPending();
         delete this._state;
         delete this._thread;
     }

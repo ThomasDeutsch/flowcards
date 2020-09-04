@@ -43,7 +43,7 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
                         if(updateCb !== undefined) updateCb(loop.runLoop());
                         else loop.runLoop();
                     }
-                }).catch(e => console.error(e));
+                });
             }
     });
     const startReplay = (actions: Action[]) => {
