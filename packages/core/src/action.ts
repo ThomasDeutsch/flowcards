@@ -1,6 +1,7 @@
 import { Bid, BidSubType } from './bid';
 import { EventMap, FCEvent } from './event';
 import { getGuardForWaits } from './guard';
+import { BThreadId } from './bthread';
 
 export enum ActionType {
     requested = "requested",
@@ -12,12 +13,12 @@ export enum ActionType {
 export interface Action {
     index: number | null;
     type: ActionType;
-    threadId: string;
+    bThreadId: BThreadId;
     event: FCEvent;
     payload?: any;
-    extendByThreadId?: string;
-    resolvedActionIndex?: number;
+    resolveActionIndex?: number;
     resolve?: {
+        isResolvedExtend: boolean;
         requestedActionIndex: number;
         requestDuration: number;  
     };
@@ -30,7 +31,6 @@ function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
     const value = coll.splice(randomIndex, 1)[0];
     return [value, coll];
 }
-
 
 function getBid(bids?: Bid[], waitBids?: EventMap<Bid[]>): Bid | undefined {
     if(!bids) return undefined;
@@ -55,7 +55,7 @@ function getActionFromBid(bid: Bid) {
     const action = {
         index: null,
         type: ActionType.requested,
-        threadId: bid.threadId,
+        bThreadId: bid.bThreadId,
         event: bid.event,
         payload: bid.payload
     };

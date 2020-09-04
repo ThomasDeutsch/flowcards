@@ -1,64 +1,90 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { ActionType } from '../src/action';
 import { flow } from '../src/scenario'
 import { delay } from './testutils';
 
-
 test("A promise can be requested and will create a pending-event", () => {
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'requestingThread', key: 1}, function* () {
         yield bp.request("A", delay(100));
     });
 
     testScenarios((enable) => {
         enable(thread1());
-    }, ({log, pending}) => {
-        if(pending.has('A')) {
-            expect(pending.has('A')).toBeTruthy();
+    }, ({event}) => {
+        if(event('A').isPending) {
+            expect(event('A').isPending).toBeTruthy();
+            expect(event('A').value).toBeUndefined();
+            expect(event('A').history).toBeUndefined();
+            expect(event('A').explain().pending?.threadId.name).toEqual('requestingThread');
+        }
+    });
+});
+
+test("A promise with a key and a promise without a key can be pending at the same time, even if the event-name is the same", (done) => {
+    let value1: number, value2: number;
+    const thread1 = flow({name: 'requestingThreadOne'}, function* () {
+        value1 = yield bp.request("A", delay(100, 55));
+    });
+    const thread2 = flow({name: 'requestingThreadTwo'}, function* () {
+        value2 = yield bp.request({name: "A", key: 1}, delay(100, 66));
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({event, thread, actionLog}) => {
+        if(event('A').isPending && event('A', 1).isPending) {
+            expect(event('A').explain().pending?.threadId.name).toEqual('requestingThreadOne');
+            expect(event('A', 1).explain().pending?.threadId.name).toEqual('requestingThreadTwo');
+        } else if(thread['requestingThreadOne'].isCompleted && thread['requestingThreadTwo'].isCompleted) {
+            expect(value1).toBe(55);
+            expect(value2).toBe(66);
+            expect(actionLog.length).toEqual(4); // 2x request, 2x resolve
+            done();
         }
     });
 });
 
 test("A promise-function can be requested and will create a pending-event", () => {
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));
     });
 
     testScenarios((enable) => {
         enable(thread1());
-    }, (({log, pending}) => {
-        if(pending.has('A')) {
-            expect(pending.has('A')).toBeTruthy();
+    }, (({event}) => {
+        const isAPending = event('A').isPending;
+        if(isAPending) {
+            expect(isAPending).toBeTruthy();
+            expect(event('A').dispatch).toBeUndefined();
         }
     }));
 });
 
 
-test("a series of pending events will progress if one promise resolves", (done) => {
-    let inits = 0;
+test("multiple async-requests can be run sequentially", (done) => {
+    let threadResetCounter = -1;
     const flow1 = flow(
         {
-          id: "flow1",
+          name: "flow1",
           title: "card validation scenario"
         },
         function*() {
-            inits++;
+            threadResetCounter++;
             yield bp.request("WaitForCard", () => delay(100));
             yield bp.request("ValidateCard", () => delay(100));
             yield bp.request("LoadAccount", () => delay(100));
             yield bp.request("WaitForPin", () => delay(100));
-            yield bp.wait('x')
         }
-      );
+    );
 
     testScenarios((enable) => {
         enable(flow1());
-    }, (({log, pending}) => {
-        if(pending.isEmpty()) {
-            expect(inits).toEqual(1);
+    }, (({thread}) => {
+        if(thread['flow1'].isCompleted) {
+            expect(threadResetCounter).toEqual(0);
             done();
         }
-
     }));
 });
 
@@ -68,9 +94,8 @@ test("if multiple promises resolve at the same time, only one is selected", (don
     let progressed2 = false;
     let progressed3 = false;
     
-    const thread1 = flow(null, function* () {
+    const thread1 = flow({name: 'requestingThread'}, function* () {
         yield [bp.request("HeyA", () => delay(1000)), bp.request("HeyB", () => delay(1000))];
-        yield bp.wait('fin');
     });
 
     const thread2 = flow(null, function* () {
@@ -87,8 +112,8 @@ test("if multiple promises resolve at the same time, only one is selected", (don
         threadState = enable(thread1());
         enable(thread2());
         enable(thread3());
-    }, ({dispatch}) => {
-        if(dispatch('fin')) {
+    }, ({thread}) => {
+        if(thread['requestingThread'].isCompleted) {
             expect(progressed2).not.toBe(progressed3);
             done();
         }

@@ -8,14 +8,14 @@ import { PendingEventInfo } from './bthread';
 export type TriggerDispatch = () => void
 type CachedDispatch = (payload: any) => TriggerDispatch | undefined;
 export type EventDispatch = (event: FCEvent | string, payload?: any) => TriggerDispatch | undefined;
-type EventDispatchUpdater = (pending: EventMap<PendingEventInfo>, blocks?: EventMap<Bid[]>, waits?: EventMap<Bid[]>) => void;
+export type EventDispatchUpdater = (pending: EventMap<PendingEventInfo>, blocks?: EventMap<Bid[]>, waits?: EventMap<Bid[]>) => void;
 
 interface DispatchCache {
     payload?: any;
     dispatch?: TriggerDispatch | undefined;
 }
 
-export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUpdater, EventDispatch] {
+export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatch, EventDispatchUpdater] {
     const dispatchByEvent = new EventMap<CachedDispatch>();
     const guardByEvent = new EventMap<GuardFunction | undefined>();
     const dispatchFunction: EventDispatch = (event: FCEvent | string, payload?: any): TriggerDispatch | undefined  => {
@@ -46,11 +46,11 @@ export function setupEventDispatcher(dispatch: ActionDispatch): [EventDispatchUp
                     if(guard && !isGuardPassed(guard(payload))) return undefined;
                     if(cache.dispatch && Object.is(payload, cache.payload)) return cache.dispatch;
                     cache.payload = payload;
-                    cache.dispatch = (): void => dispatch({index: null, type: ActionType.dispatched, event: waitEvent, payload: payload, threadId: ""});
+                    cache.dispatch = (): void => dispatch({index: null, type: ActionType.dispatched, event: waitEvent, payload: payload, bThreadId: {name: ""}});
                     return cache.dispatch;
                 });
             }
         });
     }
-    return [updateEventDispatcher, dispatchFunction];
+    return [dispatchFunction, updateEventDispatcher];
 }

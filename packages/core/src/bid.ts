@@ -1,7 +1,7 @@
-import { EventKey, EventMap, EventName, FCEvent, toEvent } from './event';
+import { EventKey, EventMap, FCEvent, toEvent } from './event';
 import { combineGuards, getGuardedUnguardedBlocks, GuardFunction } from './guard';
 import * as utils from './utils';
-import { PendingEventInfo } from './bthread';
+import { PendingEventInfo, BThreadId } from './bthread';
 
 export enum BidType {
     request = "request",
@@ -21,14 +21,14 @@ export enum BidSubType {
 export interface Bid {
     type: BidType;
     subType: BidSubType;
-    threadId: string;
+    bThreadId: BThreadId;
     event: FCEvent;
     payload?: any;
     guard?: GuardFunction;
 }
 
-export type BidByEventNameAndKey = Record<EventName, Record<EventKey, Bid>>;
-export type AllBidsByEventNameAndKey = Record<EventName, Record<EventKey, Bid[]>>;
+export type BidByEventNameAndKey = Record<string, Record<EventKey, Bid>>;
+export type AllBidsByEventNameAndKey = Record<string, Record<EventKey, Bid[]>>;
 
 
 // bids from BThreads
@@ -42,7 +42,7 @@ export interface BThreadBids {
     [BidType.extend]?: EventMap<Bid>;
 }
 
-export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined | (Bid | undefined)[], pendingEvents: EventMap<PendingEventInfo>): BThreadBids | undefined {
+export function getBidsForBThread(bThreadId: BThreadId, bidOrBids: Bid | undefined | (Bid | undefined)[], pendingEvents: EventMap<PendingEventInfo>): BThreadBids | undefined {
     if(!bidOrBids) return undefined;
     const bids = utils.toArray(bidOrBids).filter(utils.notUndefined).filter(bid => !pendingEvents.has(bid.event));
     const defaultBidsByType = {
@@ -54,7 +54,7 @@ export function getBidsForBThread(threadId: string, bidOrBids: Bid | undefined |
             if(!acc[bid.type]) {
                 acc[bid.type] = new EventMap();
             }
-            acc[bid.type]!.set(bid.event, {...bid, threadId: threadId});
+            acc[bid.type]!.set(bid.event, {...bid, bThreadId: bThreadId});
         }
         return acc;
     }, defaultBidsByType);
@@ -112,7 +112,7 @@ export function request(event: string | FCEvent, payload?: any): Bid {
         subType: BidSubType.none,
         event: toEvent(event), 
         payload: payload, 
-        threadId: ""
+        bThreadId: {name: ""}
     };
 }
 
@@ -122,7 +122,7 @@ export function wait(event: string | FCEvent, guard?: GuardFunction): Bid {
         subType: BidSubType.none,
         event: toEvent(event), 
         guard: guard,
-        threadId: "" 
+        bThreadId: {name: ""}
     };
 }
 
@@ -132,7 +132,7 @@ export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
         subType: BidSubType.none,
         event: toEvent(event), 
         guard: guard, 
-        threadId: ""
+        bThreadId: {name: ""}
     };
 }
 
@@ -142,7 +142,7 @@ export function set(event: string | FCEvent, payload?: any): Bid {
         subType: BidSubType.set,
         event: toEvent(event), 
         payload: payload,
-        threadId: ""
+        bThreadId: {name: ""}
     };
 }
 
@@ -152,7 +152,7 @@ export function extend(event: string | FCEvent, guard?: GuardFunction | null): B
         subType: BidSubType.none, 
         event: toEvent(event), 
         guard: guard !== null ? guard : undefined, 
-        threadId: ""
+        bThreadId: {name: ""}
     };
 }
 
@@ -162,7 +162,7 @@ export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
         subType: BidSubType.on,
         event: toEvent(event), 
         guard: guard,
-        threadId: "" 
+        bThreadId: {name: ""}
     };
 }
 
@@ -171,7 +171,7 @@ export function onPending(event: string | FCEvent): Bid {
         type: BidType.wait,
         subType: BidSubType.onPending,
         event: toEvent(event),
-        threadId: "" 
+        bThreadId: {name: ""}
     };
 }
 
@@ -181,6 +181,6 @@ export function trigger(event: string | FCEvent, payload?: any): Bid {
         subType: BidSubType.trigger,
         event: toEvent(event), 
         payload: payload,
-        threadId: ""
+        bThreadId: {name: ""}
     };
 }

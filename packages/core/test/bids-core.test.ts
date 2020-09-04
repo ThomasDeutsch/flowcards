@@ -1,298 +1,299 @@
-import * as bp from "../src/bid";
-import { testScenarios } from "./testutils";
-import { FCEvent } from "../src/event";
-import { flow } from '../src/scenario';
+// import * as bp from "../src/bid";
+// import { testScenarios } from "./testutils";
+// import { FCEvent } from "../src/event";
+// import { flow } from '../src/scenario';
 
 
 
-// REQUESTS & WAITS
-//-------------------------------------------------------------------------
-test("a requested event that is not blocked will advance", () => {
-    let hasAdvanced = false;
+// // REQUESTS & WAITS
+// //-------------------------------------------------------------------------
+// test("a requested event that is not blocked will advance", () => {
+//     let hasAdvanced = false;
     
 
-    const requestingThread = flow({id: 'thread1'}, function*() {
-        yield bp.request("A");
-        hasAdvanced = true;
-    });
+//     const requestingThread = flow({id: 'thread1'}, function*() {
+//         yield bp.request("A");
+//         hasAdvanced = true;
+//     });
 
-    testScenarios((enable) => {
-        enable(requestingThread());
-    }, ({log})=> {
-        expect(hasAdvanced).toBe(true);
-    });
-});
-
-
-
-test("a request will also advance waiting threads", () => {
-    let requestProgressed: any, waitProgressed: any;
-
-    const requestingThread = flow({id: 'thread1'}, function*() {
-        yield bp.request("A");
-        requestProgressed = true;
-    });
-
-    const waitingThread = flow(null, function*() {
-        yield bp.wait("A");
-        waitProgressed = true;
-    });
-
-    testScenarios((enable) => {
-        enable(requestingThread());
-        enable(waitingThread());
-    }, ({log}) => {
-        expect(requestProgressed).toBe(true);
-        expect(waitProgressed).toBe(true);
-    });
-});
+//     testScenarios((enable) => {
+//         enable(requestingThread());
+//     }, ({state})=> {
+//         expect(hasAdvanced).toBe(true);
+//         expect(state['thread1'].isCompleted).toBe(true);
+//     });
+// });
 
 
-test("waits will return the value that has been requested", () => {
-    const requestThread = flow({id: 'requestThread'}, function* () {
-        yield bp.request("A", 1000);
-    });
 
-    let receivedValue: any = null;
+// test("a request will also advance waiting threads", () => {
+//     let requestProgressed: any, waitProgressed: any;
 
-    const receiveThread = flow({id: 'receiveThread'}, function* () {
-        receivedValue = yield bp.wait("A");
-    });
+//     const requestingThread = flow({id: 'thread1'}, function*() {
+//         yield bp.request("A");
+//         requestProgressed = true;
+//     });
 
-    testScenarios((enable) => {
-        enable(requestThread());
-        enable(receiveThread());
-    }, ({log}) => {
-        expect(receivedValue).toBe(1000);
-    });
-});
+//     const waitingThread = flow(null, function*() {
+//         yield bp.wait("A");
+//         waitProgressed = true;
+//     });
 
-
-test("multiple requests will return an array of [eventId, value].", () => {
-    let progressedeventId, receivedValueA, receivedValueB;
-
-    const requestThread = flow(null, function* (): any {
-        const [event] = yield [bp.request("A", 1000), bp.request("B", 2000)];
-        progressedeventId = event.name;
-    });
-
-    const receiveThreadA = flow(null, function* () {
-        receivedValueA = yield bp.wait("A");
-    });
-
-    const receiveThreadB = flow(null, function* () {
-        receivedValueB = yield bp.wait("B");
-    });
-
-    testScenarios((enable) => {
-        enable(requestThread());
-        enable(receiveThreadA());
-        enable(receiveThreadB());
-    });
-
-    if (progressedeventId === "A") {
-        expect(receivedValueA).toEqual(1000);
-        expect(receivedValueB).toBeUndefined();
-    } else {
-        expect(receivedValueB).toBe(2000);
-        expect(receivedValueA).toBeUndefined();
-    }
-});
+//     testScenarios((enable) => {
+//         enable(requestingThread());
+//         enable(waitingThread());
+//     }, () => {
+//         expect(requestProgressed).toBe(true);
+//         expect(waitProgressed).toBe(true);
+//     });
+// });
 
 
-test("multiple waits will return an array of [value, eventId].", () => {
-    let receivedValue: any, receivedeventId: any;
+// test("waits will return the value that has been requested", () => {
+//     const requestThread = flow({id: 'requestThread'}, function* () {
+//         yield bp.request("A", 1000);
+//     });
 
-    const requestThread = flow(null, function* () {
-        yield bp.request("A", 1000);
-    })
+//     let receivedValue: any = null;
 
-    const receiveThread = flow(null, function* () {
-        [receivedeventId, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
-        expect(receivedValue).toBe(1000);
-        expect(receivedeventId?.name).toBe("A");
-    })
+//     const receiveThread = flow({id: 'receiveThread'}, function* () {
+//         receivedValue = yield bp.wait("A");
+//     });
 
-    testScenarios((enable) => {
-        enable(requestThread());
-        enable(receiveThread());
-    });
-
-
-});
+//     testScenarios((enable) => {
+//         enable(requestThread());
+//         enable(receiveThread());
+//     }, () => {
+//         expect(receivedValue).toBe(1000);
+//     });
+// });
 
 
-test("A request-value can be a function. It will get called, when the event is selected", () => {
-    let receivedValue: any
-    let receivedEvent: FCEvent;
+// test("multiple requests will return an array of [eventId, value].", () => {
+//     let progressedeventId, receivedValueA, receivedValueB;
 
-    const requestThread = flow(null, function* () {
-        yield bp.request("A", () => 1000);
-    })
+//     const requestThread = flow(null, function* (): any {
+//         const [event] = yield [bp.request("A", 1000), bp.request("B", 2000)];
+//         progressedeventId = event.name;
+//     });
 
-    const receiveThread = flow(null, function* () {
-        [receivedEvent, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
-        expect(receivedValue).toBe(1000);
-        expect(receivedEvent?.name).toBe("A");
-    })
+//     const receiveThreadA = flow(null, function* () {
+//         receivedValueA = yield bp.wait("A");
+//     });
 
-    testScenarios((enable) => {
-        enable(requestThread());
-        enable(receiveThread());
-    });
+//     const receiveThreadB = flow(null, function* () {
+//         receivedValueB = yield bp.wait("B");
+//     });
+
+//     testScenarios((enable) => {
+//         enable(requestThread());
+//         enable(receiveThreadA());
+//         enable(receiveThreadB());
+//     });
+
+//     if (progressedeventId === "A") {
+//         expect(receivedValueA).toEqual(1000);
+//         expect(receivedValueB).toBeUndefined();
+//     } else {
+//         expect(receivedValueB).toBe(2000);
+//         expect(receivedValueA).toBeUndefined();
+//     }
+// });
+
+
+// test("multiple waits will return an array of [value, eventId].", () => {
+//     let receivedValue: any, receivedeventId: any;
+
+//     const requestThread = flow(null, function* () {
+//         yield bp.request("A", 1000);
+//     })
+
+//     const receiveThread = flow(null, function* () {
+//         [receivedeventId, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
+//         expect(receivedValue).toBe(1000);
+//         expect(receivedeventId?.name).toBe("A");
+//     })
+
+//     testScenarios((enable) => {
+//         enable(requestThread());
+//         enable(receiveThread());
+//     });
+
+
+// });
+
+
+// test("A request-value can be a function. It will get called, when the event is selected", () => {
+//     let receivedValue: any
+//     let receivedEvent: FCEvent;
+
+//     const requestThread = flow(null, function* () {
+//         yield bp.request("A", () => 1000);
+//     })
+
+//     const receiveThread = flow(null, function* () {
+//         [receivedEvent, receivedValue] = yield [bp.wait("A"), bp.wait("B")];
+//         expect(receivedValue).toBe(1000);
+//         expect(receivedEvent?.name).toBe("A");
+//     })
+
+//     testScenarios((enable) => {
+//         enable(requestThread());
+//         enable(receiveThread());
+//     });
     
 
-});
+// });
 
 
-test("if a request value is a function, it will only be called once.", () => {
-    let receivedValue1 = 1000,
-        receivedValue2 = 1000,
-        fnCount = 0;
+// test("if a request value is a function, it will only be called once.", () => {
+//     let receivedValue1 = 1000,
+//         receivedValue2 = 1000,
+//         fnCount = 0;
 
-    const requestThread = flow(null, function* () {
-        yield bp.request("A", () => {
-            fnCount++;
-            return 1000;
-        });
-    });
+//     const requestThread = flow(null, function* () {
+//         yield bp.request("A", () => {
+//             fnCount++;
+//             return 1000;
+//         });
+//     });
 
-    const receiveThread1 = flow(null, function* () {
-        receivedValue1 = yield bp.wait("A");
-    });
+//     const receiveThread1 = flow(null, function* () {
+//         receivedValue1 = yield bp.wait("A");
+//     });
 
-    const receiveThread2 = flow(null, function* () {
-        receivedValue2 = yield bp.wait("A");
-    })
+//     const receiveThread2 = flow(null, function* () {
+//         receivedValue2 = yield bp.wait("A");
+//     })
 
-    testScenarios((enable) => {
-        enable(requestThread());
-        enable(receiveThread1());
-        enable(receiveThread2());
-    });
+//     testScenarios((enable) => {
+//         enable(requestThread());
+//         enable(receiveThread1());
+//         enable(receiveThread2());
+//     });
 
-    expect(receivedValue1).toBe(1000);
-    expect(receivedValue2).toBe(1000);
-    expect(fnCount).toBe(1);
-});
-
-
-test("When there are multiple requests with the same event-name, the payload from the higher priority threads gets chosen", () => {
-    let receivedValue;
-
-    const requestThreadLower = flow(null, function* () {
-        yield bp.request("A", 1);
-    });
-
-    const requestThreadHigher = flow(null, function* () {
-        yield bp.request("A", 2);
-    });
-
-    const receiveThread = flow(null, function* () {
-        receivedValue = yield bp.wait("A");
-    })
-
-    testScenarios((enable) => {
-        enable(requestThreadLower());
-        enable(requestThreadHigher());
-        enable(receiveThread());
-    });
-
-    expect(receivedValue).toBe(2);
-});
+//     expect(receivedValue1).toBe(1000);
+//     expect(receivedValue2).toBe(1000);
+//     expect(fnCount).toBe(1);
+// });
 
 
-// BLOCK
-//-------------------------------------------------------------------------
+// test("When there are multiple requests with the same event-name, the payload from the higher priority threads gets chosen", () => {
+//     let receivedValue;
 
-test("events can be blocked", () => {
-    let advancedRequest, advancedWait;
+//     const requestThreadLower = flow(null, function* () {
+//         yield bp.request("A", 1);
+//     });
 
-    const requestThread = flow(null, function* () {
-        yield bp.request("AX");
-        advancedRequest = true;
-    });
+//     const requestThreadHigher = flow(null, function* () {
+//         yield bp.request("A", 2);
+//     });
 
-    const waitingThread = flow(null, function* () {
-        yield bp.wait("AX");
-        advancedWait = true;
-    });
+//     const receiveThread = flow(null, function* () {
+//         receivedValue = yield bp.wait("A");
+//     })
 
-    const blockingThread = flow(null, function* () {
-        yield bp.block("AX");
-    });
+//     testScenarios((enable) => {
+//         enable(requestThreadLower());
+//         enable(requestThreadHigher());
+//         enable(receiveThread());
+//     });
 
-    testScenarios((enable) => {
+//     expect(receivedValue).toBe(2);
+// });
+
+
+// // BLOCK
+// //-------------------------------------------------------------------------
+
+// test("events can be blocked", () => {
+//     let advancedRequest, advancedWait;
+
+//     const requestThread = flow(null, function* () {
+//         yield bp.request("AX");
+//         advancedRequest = true;
+//     });
+
+//     const waitingThread = flow(null, function* () {
+//         yield bp.wait("AX");
+//         advancedWait = true;
+//     });
+
+//     const blockingThread = flow(null, function* () {
+//         yield bp.block("AX");
+//     });
+
+//     testScenarios((enable) => {
         
-        enable(requestThread());
-        enable(waitingThread());
-        enable(blockingThread());
-    });
+//         enable(requestThread());
+//         enable(waitingThread());
+//         enable(blockingThread());
+//     });
 
-    expect(advancedRequest).toBeUndefined();
-    expect(advancedWait).toBeUndefined();
-});
-
-
-test("if an async request gets blocked, it will not call the bid-function", () => {
-    let calledFunction = false;
-
-    const requestingThread = flow(null, function* () {
-        yield bp.request("AX", () => { calledFunction = true; });
-    })
-
-    const blockingThread = flow(null, function* () {
-        yield bp.block("AX");
-    })
-
-    testScenarios((enable) => {
-        enable(requestingThread());
-        enable(blockingThread());
-    });
-    expect(calledFunction).toBe(false);
-});
+//     expect(advancedRequest).toBeUndefined();
+//     expect(advancedWait).toBeUndefined();
+// });
 
 
-test("a requested event with a key is blocked by a block for the same event that has no key", () => {
-    let progressedRequestThread = false;
+// test("if an async request gets blocked, it will not call the bid-function", () => {
+//     let calledFunction = false;
 
-    const requestingThread = flow(null, function* () {
-        yield bp.request({name: 'AX', key: 1});
-        progressedRequestThread = true;
-    })
+//     const requestingThread = flow(null, function* () {
+//         yield bp.request("AX", () => { calledFunction = true; });
+//     })
 
-    const blockingThread = flow(null, function* () {
-        yield bp.block("AX");
-    })
+//     const blockingThread = flow(null, function* () {
+//         yield bp.block("AX");
+//     })
 
-    testScenarios((enable) => {
-        enable(requestingThread());
-        enable(blockingThread());
-    });
-    expect(progressedRequestThread).toBe(false);
-});
+//     testScenarios((enable) => {
+//         enable(requestingThread());
+//         enable(blockingThread());
+//     });
+//     expect(calledFunction).toBe(false);
+// });
 
 
-test("a requested event with a key is blocked by a block with the same event-name and -key", () => {
-    let progressedRequestThread1 = false;
-    let progressedRequestThread2 = false;
+// test("a requested event with a key is blocked by a block for the same event that has no key", () => {
+//     let progressedRequestThread = false;
 
-    const requestingThread = flow(null, function* () {
-        yield bp.request({name: 'AX', key: 1});
-        progressedRequestThread1 = true;
-        yield bp.request({name: 'AX', key: 2});
-        progressedRequestThread2 = true;
-    })
+//     const requestingThread = flow(null, function* () {
+//         yield bp.request({name: 'AX', key: 1});
+//         progressedRequestThread = true;
+//     })
 
-    const blockingThread = flow(null, function* () {
-        yield bp.block({name: 'AX', key: 2});
-    })
+//     const blockingThread = flow(null, function* () {
+//         yield bp.block("AX");
+//     })
 
-    testScenarios((enable) => {
-        enable(requestingThread());
-        enable(blockingThread());
-    });
-    expect(progressedRequestThread1).toBe(true);
-    expect(progressedRequestThread2).toBe(false);
+//     testScenarios((enable) => {
+//         enable(requestingThread());
+//         enable(blockingThread());
+//     });
+//     expect(progressedRequestThread).toBe(false);
+// });
 
-});
+
+// test("a requested event with a key is blocked by a block with the same event-name and -key", () => {
+//     let progressedRequestThread1 = false;
+//     let progressedRequestThread2 = false;
+
+//     const requestingThread = flow(null, function* () {
+//         yield bp.request({name: 'AX', key: 1});
+//         progressedRequestThread1 = true;
+//         yield bp.request({name: 'AX', key: 2});
+//         progressedRequestThread2 = true;
+//     })
+
+//     const blockingThread = flow(null, function* () {
+//         yield bp.block({name: 'AX', key: 2});
+//     })
+
+//     testScenarios((enable) => {
+//         enable(requestingThread());
+//         enable(blockingThread());
+//     });
+//     expect(progressedRequestThread1).toBe(true);
+//     expect(progressedRequestThread2).toBe(false);
+
+// });

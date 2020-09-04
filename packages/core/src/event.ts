@@ -1,11 +1,10 @@
 import * as utils from './utils';
 
-export type EventName = string;
 export type EventKey = string | number;
 type EventIteratorFunction<T> = (e: FCEvent, value: T) => any;
 
 export interface FCEvent {
-    name: EventName;
+    name: string;
     key?: EventKey;
 }
 
@@ -14,8 +13,8 @@ export function toEvent(e: string | FCEvent): FCEvent {
 }
 
 export class EventMap<T>  {
-    public noKey: Map<EventName, T>;
-    public withKey: Map<EventName, Map<EventKey, T>>;
+    public noKey: Map<string, T>;
+    public withKey: Map<string, Map<EventKey, T>>;
 
     constructor() {
         this.noKey = new Map();
@@ -159,5 +158,9 @@ export class EventMap<T>  {
             this.set(event, value);
         });
         return this;
+    }
+
+    public hasMatching(event: FCEvent): boolean {
+        return (this.has(event) || this.has({name: event.name})) === true;
     }
 }

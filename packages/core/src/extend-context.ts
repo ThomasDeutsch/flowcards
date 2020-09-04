@@ -11,10 +11,6 @@ export class ExtendContext {
 
     constructor(payload: any) {
         this._value = payload;
-        this._promise = new Promise((resolve, reject) => {
-            this._resolveFn = resolve;
-            this._rejectFn = reject;
-        });
     }
 
     public resolve(value?: unknown) { 
@@ -28,5 +24,12 @@ export class ExtendContext {
         delete this._promise;
         this._isCompleted = true; 
         this._rejectFn?.(reason)
+    }
+
+    public createPromiseIfNotCompleted() {
+        this._promise = new Promise((resolve, reject) => {
+            this._resolveFn = resolve;
+            this._rejectFn = reject;
+        });
     }
 }
