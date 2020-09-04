@@ -47,7 +47,7 @@
 
 // test("the actions in a log will contain info, if and when the promise got resolved.", (done) => {
 
-//   const thread1 = flow({id: 'thread1', title: 'myThread1'}, function* () {
+//   const thread1 = flow({name: 'thread1', title: 'myThread1'}, function* () {
 //       yield bp.request('asyncRequest', () => delay(10, 'value'));
 //       yield bp.request('request2');
 //       yield bp.wait('fin');

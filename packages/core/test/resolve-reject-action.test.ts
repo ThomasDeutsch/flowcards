@@ -28,7 +28,7 @@
 //         loop.runLoop();
 //     };
 
-//     const thread1 = flow({id: 'thread1'}, function* () {
+//     const thread1 = flow({name: 'thread1'}, function* () {
 //         yield bp.request("A", delay(100));
 //         done();
 //     });

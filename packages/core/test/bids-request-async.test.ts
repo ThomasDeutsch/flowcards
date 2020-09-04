@@ -38,8 +38,9 @@ test("pending-events are different, if the name and key do not match.", (done) =
     }, ({event, thread, actionLog}) => {
         if(event('A').isPending && event('A', 1).isPending) {
             expect(event('A').explain().pending?.threadId.name).toEqual('requestingThreadOne');
+            console.log('EXPLAIN: ', event('A', 1).explain())
             expect(event('A', 1).explain().pending?.threadId.name).toEqual('requestingThreadTwo');
-        } else if(thread['requestingThreadOne'].isCompleted && thread['requestingThreadTwo'].isCompleted) {
+        } else if(thread.get('requestingThreadOne')?.isCompleted && thread.get('requestingThreadTwo')?.isCompleted) {
             expect(value1).toBe(55);
             expect(value2).toBe(66);
             expect(actionLog.length).toEqual(4); // 2x request, 2x resolve
@@ -85,7 +86,7 @@ test("multiple async-requests can be run sequentially", (done) => {
     testScenarios((enable) => {
         enable(flow1());
     }, (({thread}) => {
-        if(thread['flow1'].isCompleted) {
+        if(thread.get('flow1')?.isCompleted) {
             expect(threadResetCounter).toEqual(0);
             done();
         }
@@ -117,7 +118,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
         enable(thread2());
         enable(thread3());
     }, ({thread}) => {
-        if(thread['requestingThread'].isCompleted) {
+        if(thread.get('requestingThread')?.isCompleted) {
             expect(progressed2).not.toBe(progressed3);
             done();
         }
@@ -141,9 +142,9 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
         if(t1.pendingEvents.has('A')) {
             enable(thread2());
         }
-    }, (({actionLog, thread}) => {
-        if(thread['thread1'].isCompleted) {
-            expect(thread['thread2']?.isCompleted).toBeFalsy();
+    }, (({thread}) => {
+        if(thread.get('thread1')?.isCompleted) {
+            expect(thread.get('thread2')?.isCompleted).toBeTruthy();
             done();
         }
     }));
@@ -166,8 +167,8 @@ test("given the cancelPendingOnDisable option, pending events will be canceled o
             enable(thread2());
         }
     }, (({thread}) => {
-        if(thread['thread1'].isCompleted) {
-            expect(thread['thread2']?.isCompleted).toBeFalsy();
+        if(thread.get('thread1')?.isCompleted) {
+            expect(thread.get('thread2')?.isCompleted).toBeFalsy();
             done();
         }
     }));
@@ -190,16 +191,17 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
             enable(thread2());
         }
     }, (({thread}) => {
-        if(thread['thread1'].isCompleted) {
-            expect(thread['thread2']?.isCompleted).toBeFalsy();
+        if(thread.get('thread1')?.isCompleted) {
+            expect(thread.get('thread2')?.isCompleted).toBeFalsy();
             done();
         }
     }));
 });
 
-test("a thread in a pending-event state can place additional bids.", () => {
+
+test("a thread in a pending-event state can place additional bids.", (done) => {
     const thread1 = flow({name: 'requestingThread'}, function* (this: BTContext) {
-        yield [bp.request("A", () => delay(100)), this.isPending('A') ? bp.block('B') : null];
+        yield [bp.request("A", () => delay(100)), bp.block('B', () => this.isPending('A'))];
     });
 
     const thread2 = flow({name: 'waitingThread'}, function* () {
@@ -209,9 +211,12 @@ test("a thread in a pending-event state can place additional bids.", () => {
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({event}) => {
+    }, ({event, thread}) => {
         if(event('A').isPending) {
             expect(event('B').explain().blocked.length > 0).toBeTruthy();
+        } else if( thread.get('requestingThread')?.isCompleted) {
+            expect(event('B').explain().blocked.length === 0).toBeTruthy();
+            done();
         }
     });
 });

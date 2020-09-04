@@ -1,8 +1,8 @@
-import { BThread, BThreadId } from './bthread';
+import { BThreadId } from './bthread';
 
 
-export class BThreadMap extends Map<BThreadId, BThread> {
-    private _map: Map<string, BThread> = new Map();
+export class BThreadMap<T> extends Map<BThreadId, T> {
+    private _map: Map<string, T> = new Map();
 
     public static toIdString(bThreadId: BThreadId): string { 
         return bThreadId.key !== undefined ? `${bThreadId.name}__${bThreadId.key}` : bThreadId.name
@@ -13,12 +13,15 @@ export class BThreadMap extends Map<BThreadId, BThread> {
         return {name: id, key: key};
     }
 
-    public get(bThreadId: BThreadId): BThread | undefined{
+    public get(bThreadId: BThreadId | string): T | undefined{
+        if(typeof bThreadId === 'string') {
+            return this._map.get(BThreadMap.toIdString(BThreadMap.toThreadId(bThreadId)));
+        }
         return this._map.get(BThreadMap.toIdString(bThreadId));
     }
 
-    public set(bThreadId: BThreadId, bThread: BThread): this {
-        this._map.set(BThreadMap.toIdString(bThreadId), bThread);
+    public set(bThreadId: BThreadId, val: T): this {
+        this._map.set(BThreadMap.toIdString(bThreadId), val);
         return this;
     }
 

@@ -7,7 +7,7 @@ import * as utils from './utils';
 import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 
-export type BTGen = Generator<Bid | Bid[], void, any>;
+export type BTGen = Generator<Bid | (Bid | null)[] | null, void, any>;
 export type GeneratorFn = (props: any) => BTGen;
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};

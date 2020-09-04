@@ -1,138 +1,138 @@
-// import * as bp from "../src/bid";
-// import { testScenarios, delay } from "./testutils";
-// import { flow } from '../src/scenario';
-// import { ExtendContext } from '../src/extend-context';
+import * as bp from "../src/bid";
+import { testScenarios, delay } from "./testutils";
+import { flow } from '../src/scenario';
+import { ExtendContext } from '../src/extend-context';
 
 
-// // Extends
-// //-------------------------------------------------------------------------
+// Extends
+//-------------------------------------------------------------------------
 
-// test("requests can be extended", () => {
-//     let progressedRequest = false,
-//         progressedExtend = false,
-//         setupCount = 0;
+test("requests can be extended", () => {
+    let progressedRequest = false,
+        progressedExtend = false,
+        setupCount = 0;
 
-//     const thread1 = flow({id: 'requesting thread'}, function* () {
-//         yield bp.request("A");
-//         progressedRequest = true;
-//     });
+    const thread1 = flow({name: 'requesting thread'}, function* () {
+        yield bp.request("A");
+        progressedRequest = true;
+    });
 
-//     const thread3 = flow({id: 'extending thread'}, function* () {
-//         yield bp.extend("A");
-//         progressedExtend = true;
-//         yield bp.wait('X');
-//     })
+    const thread3 = flow({name: 'extending thread'}, function* () {
+        yield bp.extend("A");
+        progressedExtend = true;
+        yield bp.wait('X');
+    })
 
-//     testScenarios((enable) => {
-//         enable(thread1());
-//         enable(thread3());
-//         setupCount++;
-//     }, ({pending}) => {
-//         expect(setupCount).toEqual(2);
-//         expect(progressedExtend).toBe(true);
-//         expect(progressedRequest).toBe(false);
-//         expect(pending.has('A')).toBeTruthy();
-//     }
-//  );  
-// });
-
-
-// test("if an extend is not applied, than the next extend will get the event", () => {
-//     let requestAdvanced = false;
-//     let waitBAdvanced = false;
-//     let waitCAdvanced = false;
-//     let waitDAdvanced = false;
-
-//     const requestThread = flow(null, function* () {
-//         yield bp.request("A", 1000);
-//         requestAdvanced = true;
-//     });
-
-//     const waitThread = flow(null, function* () {
-//         yield bp.wait("A", (pl: number) => pl === 1000);
-//         waitBAdvanced = true;
-//     });
-
-//     const extendPriorityLowThread = flow(null, function* () {
-//         yield bp.extend("A", (pl: number) => pl === 1000);
-//         waitCAdvanced = true;
-//     });
-
-//     const extendPriorityHighThread = flow(null, function* () {
-//         yield bp.extend("A", (pl: number) => pl !== 1000);
-//         waitDAdvanced = true;
-//     });
-
-//     testScenarios((enable) => {
-//         enable(requestThread());
-//         enable(waitThread());
-//         enable(extendPriorityLowThread());
-//         enable(extendPriorityHighThread());
-//     }, ({pending}) => {
-//         expect(waitBAdvanced).toBe(false);
-//         expect(waitCAdvanced).toBe(true);
-//         expect(waitDAdvanced).toBe(false);
-//         expect(requestAdvanced).toBe(false);
-//         expect(pending.has('A')).toBeTruthy();
-//     });
-// });
-
-// test("if an extended thread completed, without resolving or rejecting the event, it will keep the event pending", () => {
-//     let progressedRequest = false,
-//         progressedExtend = false,
-//         setupCount = 0;
-
-//     const thread1 = flow(null, function* () {
-//         yield bp.request("A");
-//         progressedRequest = true;
-//     });
-
-//     const thread3 = flow(null, function* () {
-//         yield bp.extend("A");
-//         progressedExtend = true;
-//     });
-
-//     testScenarios((enable) => {
-//         enable(thread1());
-//         enable(thread3());
-//         setupCount++;
-//     }, ({pending}) => {
-//         expect(pending.has('A')).toBeTruthy();
-//     }
-//  );
-//     expect(setupCount).toEqual(2);
-//     expect(progressedRequest).toBe(false);
-//     expect(progressedExtend).toBe(true);
-// });
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread3());
+        setupCount++;
+    }, ({event}) => {
+        expect(progressedExtend).toBe(true);
+        expect(event('A').isPending).toBeTruthy();
+        expect(progressedRequest).toBe(false);
+        expect(setupCount).toEqual(2);
+    }
+ );  
+});
 
 
-// test("extends will receive a value (like waits)", () => {
-//     let extendedValue: ExtendContext;
-//     let thread1Advanced = false;
+test("if an extend is not applied, than the next extend will get the event", () => {
+    let requestAdvanced = false;
+    let waitBAdvanced = false;
+    let waitCAdvanced = false;
+    let waitDAdvanced = false;
 
-//     const thread1 = flow(null, function* () {
-//         yield bp.request("A", 1000);
-//         thread1Advanced = true;
-//     });
+    const requestThread = flow(null, function* () {
+        yield bp.request("A", 1000);
+        requestAdvanced = true;
+    });
 
-//     const thread2 = flow(null, function* () {
-//         yield bp.wait("A");
-//     });
+    const waitThread = flow(null, function* () {
+        yield bp.wait("A", (pl: number) => pl === 1000);
+        waitBAdvanced = true;
+    });
 
-//     const thread3 = flow(null, function* () {
-//         extendedValue = yield bp.extend("A");
-//     });
+    const extendPriorityLowThread = flow(null, function* () {
+        yield bp.extend("A", (pl: number) => pl === 1000);
+        waitCAdvanced = true;
+    });
 
-//     testScenarios((enable) => {
-//         enable(thread1());
-//         enable(thread2());
-//         enable(thread3());
-//     }, ({pending}) => {
-//         expect(thread1Advanced).toBe(false);
-//         expect(extendedValue.value).toBe(1000);
-//         expect(pending.has({name: 'A'})).toBe(true);
-//     });
-// });
+    const extendPriorityHighThread = flow(null, function* () {
+        yield bp.extend("A", (pl: number) => pl !== 1000);
+        waitDAdvanced = true;
+    });
+
+    testScenarios((enable) => {
+        enable(requestThread());
+        enable(waitThread());
+        enable(extendPriorityLowThread());
+        enable(extendPriorityHighThread());
+    }, ({event}) => {
+        expect(waitBAdvanced).toBe(false);
+        expect(waitCAdvanced).toBe(true);
+        expect(waitDAdvanced).toBe(false);
+        expect(requestAdvanced).toBe(false);
+        expect(event('A').isPending).toBeTruthy();
+    });
+});
+
+test("if an extended thread completed, without resolving or rejecting the event, it will keep the event pending", () => {
+    let progressedRequest = false,
+        progressedExtend = false,
+        setupCount = 0;
+
+    const thread1 = flow(null, function* () {
+        yield bp.request("A");
+        progressedRequest = true;
+    });
+
+    const thread3 = flow(null, function* () {
+        yield bp.extend("A");
+        progressedExtend = true;
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread3());
+        setupCount++;
+    }, ({event}) => {
+        expect(event('A').isPending).toBeTruthy();
+    }
+ );
+    expect(setupCount).toEqual(2);
+    expect(progressedRequest).toBe(false);
+    expect(progressedExtend).toBe(true);
+});
+
+
+test("extends will receive a value (like waits)", () => {
+    let extendedValue: ExtendContext;
+    let thread1Advanced = false;
+
+    const thread1 = flow(null, function* () {
+        yield bp.request("A", 1000);
+        thread1Advanced = true;
+    });
+
+    const thread2 = flow(null, function* () {
+        yield bp.wait("A");
+    });
+
+    const thread3 = flow(null, function* () {
+        extendedValue = yield bp.extend("A");
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+        enable(thread3());
+    }, ({event}) => {
+        expect(thread1Advanced).toBe(false);
+        expect(extendedValue.value).toBe(1000);
+        expect(event('A').isPending).toBe(true);
+    });
+});
 
 
 // test("extends will extend requests", () => {

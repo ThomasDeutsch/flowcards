@@ -5,7 +5,7 @@
 
 // test("a thread can be replayed", (done) => {
 //     let value1: number, value2: number;
-//     const thread1 = flow({id: 'thread1'}, function* () {
+//     const thread1 = flow({name: 'thread1'}, function* () {
 //         yield bp.wait('HEY');
 //         value1 = yield bp.request("A", () => delay(100, 1));
 //         value2 = yield bp.wait("B");
@@ -30,7 +30,7 @@
 
 // test("if a request-replay has no payload, the original payload will be used", (done) => {
 //     let value1: number;
-//     const thread1 = flow({id: 'thread1'}, function* () {
+//     const thread1 = flow({name: 'thread1'}, function* () {
 //         yield bp.wait('replayEvent1');
 //         value1 = yield bp.request("replayEvent2", 5);
 //         yield bp.wait('fin');
@@ -52,7 +52,7 @@
 // test("a async request can be replayed", (done) => {
 //     let value1: number;
 //     let eventReplayed = false;
-//     const thread1 = flow({id: 'thread1'}, function* () {
+//     const thread1 = flow({name: 'thread1'}, function* () {
 //         yield bp.wait('replayEvent1');
 //         value1 = yield bp.request("replayEvent2", () => {
 //             eventReplayed = true;

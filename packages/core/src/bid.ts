@@ -44,7 +44,7 @@ export interface BThreadBids {
 
 export function getBidsForBThread(bThreadId: BThreadId, bidOrBids: Bid | undefined | (Bid | undefined)[], pendingEvents: EventMap<PendingEventInfo>): BThreadBids | undefined {
     if(!bidOrBids) return undefined;
-    const bids = utils.toArray(bidOrBids).filter(utils.notUndefined).filter(bid => !pendingEvents.has(bid.event));
+    const bids = utils.toArray(bidOrBids).filter(bid => bid !== undefined && bid !== null && !pendingEvents.has(bid.event));
     const defaultBidsByType = {
         withMultipleBids: Array.isArray(bidOrBids)
     }
@@ -86,11 +86,11 @@ export interface AllBidsByType {
 export function getAllBids(allBThreadBids: BThreadBids[], allPending: EventMap<PendingEventInfo>): AllBidsByType {
     const blocks = mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
-    const fixedBlocksAndPending = fixedBlocks;
-    if(fixedBlocks?.size()) allPending.forEach(event => fixedBlocks?.set(event, true));
+    const fixedBlocksAndPending = fixedBlocks?.clone() || new EventMap<true>();
+    allPending.forEach(event => fixedBlocksAndPending.set(event, true));
     return {
         [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocksAndPending, guardedBlocks),
-        [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait])),
+        [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks), // TODO: added fixed blocks and guarded blocks to waits! - recheck needed
         [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks),
         [BidType.block]: blocks
     };

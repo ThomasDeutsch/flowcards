@@ -18,13 +18,13 @@ export type ActionDispatch = (action: Action) => void;
 
 export interface ScaffoldingResult {
     bThreadBids: BThreadBids[];
-    bThreadStateById: Record<string, BThreadState>;
+    bThreadStateMap: BThreadMap<BThreadState>;
     allPending: EventMap<PendingEventInfo>;
 }
 
 function setupScaffolding(
     stagingFunction: StagingFunction,
-    bThreadMap: BThreadMap,
+    bThreadMap: BThreadMap<BThread>,
     eventCache: EventCache,
     dispatch: ActionDispatch
 ): () => ScaffoldingResult {
@@ -33,7 +33,7 @@ function setupScaffolding(
     const enabledIds = new Set<string>();
     const destroyOnDisableThreadIds = new Set<string>();
     const cancelPendingOnDisableThreadIds = new Set<string>();
-    let bThreadStateById: Record<string, BThreadState>;
+    const bThreadStateMap: BThreadMap<BThreadState> = new BThreadMap();
 
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
         const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
@@ -50,7 +50,7 @@ function setupScaffolding(
         bThread = bThreadMap.get(bThreadId);
         if(bThread!.currentBids) bids.push(bThread!.currentBids);
         allPending.merge(bThread!.state.pendingEvents);
-        bThreadStateById[bThreadIdString] = bThread!.state;
+        bThreadStateMap.set(bThreadId, bThread!.state);
         return bThread!.state;
     }
     function getCached<T>(event: FCEvent | string): CachedItem<T> {
@@ -58,7 +58,7 @@ function setupScaffolding(
         return eventCache.get(event)!;
     }
     function run() {
-        bThreadStateById = {};
+        bThreadStateMap.clear();
         enabledIds.clear();
         bids.length = 0;
         allPending.clear();
@@ -83,7 +83,7 @@ function setupScaffolding(
         });
         return {
             bThreadBids: bids,
-            bThreadStateById: bThreadStateById,
+            bThreadStateMap: bThreadStateMap,
             allPending: allPending
         };
     }
@@ -95,19 +95,19 @@ function setupScaffolding(
 
 export interface ScenariosContext {
     event: (eventName: string, eventKey?: string | number | undefined) => EventContextResult;
-    thread: Record<string, BThreadState>;
+    thread: BThreadMap<BThreadState>;
     actionLog: Action[];
 }
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
 
 export class UpdateLoop {
-    readonly bThreadMap: BThreadMap;
+    readonly bThreadMap: BThreadMap<BThread>;
     readonly eventCache: EventCache;
     readonly logger: Logger;
     readonly scaffold: () => ScaffoldingResult;
     readonly updateEventDispatcher: EventDispatchUpdater;
-    readonly getEventCache: GetCachedItem = (event: FCEvent | string) => this.eventCache.get(toEvent(event));
+    readonly getEventCache: GetCachedItem;
     readonly eventContext: EventContext;
     readonly startReplay = () => {
         this._actionIndex = 0;
@@ -132,13 +132,14 @@ export class UpdateLoop {
         this.scaffold = setupScaffolding(stagingFunction, this.bThreadMap, this.eventCache, actionDispatch);
         [this.eventDispatch, this.updateEventDispatcher] = setupEventDispatcher(actionDispatch);
         this.actionDispatch = actionDispatch;
+        this.getEventCache = (event: FCEvent | string) => this.eventCache.get(toEvent(event));
         this.eventContext = new EventContext(this.getEventCache);
     }
 
     public runLoop(): ScenariosContext {
         // setup
         if(this.replayMap.has(0)) this.startReplay();
-        const { bThreadBids, bThreadStateById, allPending } = this.scaffold();
+        const { bThreadBids, bThreadStateMap, allPending } = this.scaffold();
         const bids = getAllBids(bThreadBids, allPending);
         // get next action
         let action: Action | undefined;
@@ -164,9 +165,10 @@ export class UpdateLoop {
         const x = allPending
         this.updateEventDispatcher(allPending, bids[BidType.block], bids[BidType.wait]);
         this.eventContext.update(bids[BidType.wait], bids[BidType.block], allPending);
+        const getEvent = (eventName: string, eventKey?: string | number) => this.eventContext.getContext(eventName, eventKey)
         return { 
-            event: this.eventContext.getContext.bind(this.eventContext),
-            thread: bThreadStateById,
+            event: getEvent,
+            thread: bThreadStateMap,
             actionLog: this.logger.actions
         }
     }

@@ -8,7 +8,7 @@ import { BThreadMap } from './bthread-map';
 // advance threads, based on selected action
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-function advanceWaits(allBids: AllBidsByType, bThreadMap: BThreadMap, action: Action): boolean {
+function advanceWaits(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread>, action: Action): boolean {
     const bids = (getMatchingBids(allBids[BidType.wait], action.event) || [])
     .filter(bid => (bid.subType !== BidSubType.onPending) && !allBids.block?.has(bid.event) && !allBids.block?.has({name: bid.event.name}));
     if(bids.length === 0) return false;
@@ -18,7 +18,7 @@ function advanceWaits(allBids: AllBidsByType, bThreadMap: BThreadMap, action: Ac
     return true;
 }
 
-function advanceOnPending(allBids: AllBidsByType, bThreadMap: BThreadMap, action: Action): boolean {
+function advanceOnPending(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread>, action: Action): boolean {
     const bids = (getMatchingBids(allBids[BidType.wait], action.event) || [])
         .filter(bid => (bid.subType === BidSubType.onPending) && !allBids.block?.has(bid.event) && !allBids.block?.has({name: bid.event.name}));
     if(bids.length === 0) return false;
@@ -28,7 +28,7 @@ function advanceOnPending(allBids: AllBidsByType, bThreadMap: BThreadMap, action
     return true;
 }
 
-function extendAction(allBids: AllBidsByType, bThreadMap: BThreadMap, action: Action): Action | 'extended with promise' {
+function extendAction(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread>, action: Action): Action | 'extended with promise' {
     const bids = getMatchingBids(allBids[BidType.extend], action.event);
     while(bids && bids.length > 0) {
         const bid = bids.pop(); // get last bid ( highest priority )
@@ -47,7 +47,7 @@ function extendAction(allBids: AllBidsByType, bThreadMap: BThreadMap, action: Ac
     return action;
 }
 
-export function advanceBThreads(bThreadMap: BThreadMap, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
+export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
     switch (action.type) {
         case ActionType.requested: {
             const bThread = bThreadMap.get(action.bThreadId);

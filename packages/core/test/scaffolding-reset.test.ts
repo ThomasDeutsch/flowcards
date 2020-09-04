@@ -12,7 +12,7 @@
 //     });
 
 //     interface MyProps {waitingForB: boolean}
-//     const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+//     const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
 //         initCount++;
 //         yield bp.wait('A');
 //     }); 
@@ -38,7 +38,7 @@
 //     });
 
 //     interface MyProps {waitingForB: boolean; waitingForX?: boolean}
-//     const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+//     const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
 //         initCount++;
 //         yield bp.wait('A');
 //     }); 
@@ -66,7 +66,7 @@
 //     });
 
 //     interface MyProps {waitingForB: boolean; waitingForX?: boolean}
-//     const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+//     const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
 //         initCount++;
 //         yield bp.wait('A');
 //     }); 
