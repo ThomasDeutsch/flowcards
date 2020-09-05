@@ -25,3 +25,5 @@
 
 // TODO: a block is expained!
 // TODO: a guarded block is explained
+
+// TODO: THE BTHREADSTATEMAP WILL HOLD STATES OF EVENTS THAT ARE DISABLED OR COMPLETED!

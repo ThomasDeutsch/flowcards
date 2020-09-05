@@ -27,6 +27,7 @@ export class ExtendContext {
     }
 
     public createPromiseIfNotCompleted() {
+        if(this.isCompleted) return
         this._promise = new Promise((resolve, reject) => {
             this._resolveFn = resolve;
             this._rejectFn = reject;

@@ -15,7 +15,7 @@ export class BThreadMap<T> extends Map<BThreadId, T> {
 
     public get(bThreadId: BThreadId | string): T | undefined{
         if(typeof bThreadId === 'string') {
-            return this._map.get(BThreadMap.toIdString(BThreadMap.toThreadId(bThreadId)));
+            return this._map.get(bThreadId);
         }
         return this._map.get(BThreadMap.toIdString(bThreadId));
     }
@@ -31,5 +31,13 @@ export class BThreadMap<T> extends Map<BThreadId, T> {
 
     public delete(bThreadId: BThreadId): boolean {
         return this._map.delete(BThreadMap.toIdString(bThreadId));
+    }
+
+    public clone(): BThreadMap<T> {
+        const clone = new BThreadMap<T>();
+        this._map.forEach((value, key) => {
+            clone.set(BThreadMap.toThreadId(key), value);
+        });
+        return clone;
     }
 }

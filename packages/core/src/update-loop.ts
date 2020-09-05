@@ -58,10 +58,9 @@ function setupScaffolding(
         return eventCache.get(event)!;
     }
     function run() {
-        bThreadStateMap.clear();
-        enabledIds.clear();
         bids.length = 0;
         allPending.clear();
+        enabledIds.clear();
         stagingFunction(enableBThread, getCached);
         if(cancelPendingOnDisableThreadIds.size > 0) {
             cancelPendingOnDisableThreadIds.forEach(idString => {
@@ -77,6 +76,7 @@ function setupScaffolding(
                 const bThreadId = BThreadMap.toThreadId(idString);
                 bThreadMap.get(bThreadId)?.destroy();
                 bThreadMap.delete(bThreadId);
+                bThreadStateMap.delete(bThreadId);
                 cancelPendingOnDisableThreadIds.delete(idString);
                 destroyOnDisableThreadIds.delete(idString);
             }
@@ -109,16 +109,7 @@ export class UpdateLoop {
     readonly updateEventDispatcher: EventDispatchUpdater;
     readonly getEventCache: GetCachedItem;
     readonly eventContext: EventContext;
-    readonly startReplay = () => {
-        this._actionIndex = 0;
-        this.actionQueue.length = 0;
-        // delete all BThreads
-        this.bThreadMap.forEach(bThread => { 
-            bThread.destroy();
-        });
-        this.bThreadMap.clear();
-        this.eventCache.clear();
-    }
+
     private _actionIndex = 0;
     public eventDispatch: EventDispatch;
     public actionQueue: Action[] = [];
@@ -136,9 +127,19 @@ export class UpdateLoop {
         this.eventContext = new EventContext(this.getEventCache);
     }
 
+    private _startReplay() {
+        this._actionIndex = 0;
+        this.actionQueue.length = 0;
+        this.bThreadMap.forEach(bThread => { 
+            bThread.destroy();
+        });
+        this.bThreadMap.clear();
+        this.eventCache.clear();
+    }
+
     public runLoop(): ScenariosContext {
         // setup
-        if(this.replayMap.has(0)) this.startReplay();
+        if(this.replayMap.has(0)) this._startReplay();
         const { bThreadBids, bThreadStateMap, allPending } = this.scaffold();
         const bids = getAllBids(bThreadBids, allPending);
         // get next action
@@ -162,10 +163,8 @@ export class UpdateLoop {
             return this.runLoop();
         }
         // return to UI
-        const x = allPending
         this.updateEventDispatcher(allPending, bids[BidType.block], bids[BidType.wait]);
-        this.eventContext.update(bids[BidType.wait], bids[BidType.block], allPending);
-        const getEvent = (eventName: string, eventKey?: string | number) => this.eventContext.getContext(eventName, eventKey)
+        const getEvent = (eventName: string, eventKey?: string | number) => this.eventContext.getContext(this.eventDispatch, eventName, eventKey, bids[BidType.wait], bids[BidType.block], allPending)
         return { 
             event: getEvent,
             thread: bThreadStateMap,

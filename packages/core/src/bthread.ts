@@ -204,7 +204,6 @@ export class BThread {
     }
 
     public resolvePending(action: Action): boolean {
-        if(action.type !== ActionType.resolved) return false;
         if(this._deletePending(action) === false) return false;
         this._setCurrentBids();
         return true;

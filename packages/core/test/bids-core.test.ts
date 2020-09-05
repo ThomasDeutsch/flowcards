@@ -46,8 +46,6 @@ test("a request will also advance waiting threads", () => {
     });
 });
 
-// TODO: REWRITE THE explain TO USE .state = 'blocked', 'noWait', 'valid', 
-//                                  .explain = 'TEST'
 
 test("waits will return the value that has been requested", () => {
     const requestThread = flow({name: 'requestThread'}, function* () {
@@ -166,16 +164,16 @@ test("if a request value is a function, it will only be called once.", () => {
         enable(requestThread());
         enable(receiveThread1());
         enable(receiveThread2());
+    }, () => {
+        expect(receivedValue1).toBe(1000);
+        expect(receivedValue2).toBe(1000);
+        expect(fnCount).toBe(1);
     });
-
-    expect(receivedValue1).toBe(1000);
-    expect(receivedValue2).toBe(1000);
-    expect(fnCount).toBe(1);
 });
 
 
 test("When there are multiple requests with the same event-name, the payload from the higher priority threads gets chosen", () => {
-    let receivedValue;
+    let receivedValue: number;
 
     const requestThreadLower = flow(null, function* () {
         yield bp.request("A", 1);
@@ -193,9 +191,9 @@ test("When there are multiple requests with the same event-name, the payload fro
         enable(requestThreadLower());
         enable(requestThreadHigher());
         enable(receiveThread());
+    }, () => {
+        expect(receivedValue).toBe(2);
     });
-
-    expect(receivedValue).toBe(2);
 });
 
 
@@ -203,7 +201,7 @@ test("When there are multiple requests with the same event-name, the payload fro
 //-------------------------------------------------------------------------
 
 test("events can be blocked", () => {
-    let advancedRequest, advancedWait;
+    let advancedRequest: boolean, advancedWait: boolean;
 
     const requestThread = flow(null, function* () {
         yield bp.request("AX");
@@ -224,10 +222,10 @@ test("events can be blocked", () => {
         enable(requestThread());
         enable(waitingThread());
         enable(blockingThread());
+    }, () => {
+        expect(advancedRequest).toBeUndefined();
+        expect(advancedWait).toBeUndefined();
     });
-
-    expect(advancedRequest).toBeUndefined();
-    expect(advancedWait).toBeUndefined();
 });
 
 

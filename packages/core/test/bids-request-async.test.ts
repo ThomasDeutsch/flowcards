@@ -38,7 +38,6 @@ test("pending-events are different, if the name and key do not match.", (done) =
     }, ({event, thread, actionLog}) => {
         if(event('A').isPending && event('A', 1).isPending) {
             expect(event('A').explain().pending?.threadId.name).toEqual('requestingThreadOne');
-            console.log('EXPLAIN: ', event('A', 1).explain())
             expect(event('A', 1).explain().pending?.threadId.name).toEqual('requestingThreadTwo');
         } else if(thread.get('requestingThreadOne')?.isCompleted && thread.get('requestingThreadTwo')?.isCompleted) {
             expect(value1).toBe(55);

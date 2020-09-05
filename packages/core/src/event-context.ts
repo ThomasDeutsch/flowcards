@@ -3,12 +3,12 @@ import { Bid, block, getMatchingBids, BidType, BidSubType } from './bid';
 import * as utils from './utils';
 import { isGuardPassed } from './guard';
 import { PendingEventInfo, BThreadId } from './bthread';
-import { EventDispatch } from './event-dispatcher';
+import { EventDispatch, TriggerDispatch } from './event-dispatcher';
 import { GetCachedItem } from './update-loop';
 
 export interface EventContextResult {
     isPending: boolean;
-    dispatch?: (payload: any) => EventDispatch;
+    dispatch?: TriggerDispatch;
     value: any;
     history?: any[];
     explain: (payload?: any) => ExplainResult;
@@ -26,15 +26,13 @@ function getResultDetails(result: boolean | { isValid: boolean; details?: string
 
 type ExplainResult = {valid: EventInfo[]; invalid: EventInfo[]; blocked: EventInfo[]; pending?: PendingEventInfo}
 
+//TODO: make this a function?!!!!
 export class EventContext {
     private _getEventCache: GetCachedItem;
-    private _waits?: EventMap<Bid[]>;
-    private _blocks?: EventMap<Bid[]>;
-    private _allPending?: EventMap<PendingEventInfo>;
 
-    private _explain(event: FCEvent, payload?: any): ExplainResult {
+    private _explain(event: FCEvent, payload?: any, waits?: EventMap<Bid[]>, blocks?: EventMap<Bid[]>, allPending?: EventMap<PendingEventInfo>): ExplainResult {
         const infos: ExplainResult  = {valid: [], invalid: [], blocked: []};
-        const waitsColl = utils.flattenShallow(this._waits?.getAllMatchingValues(event));
+        const waitsColl = utils.flattenShallow(waits?.getAllMatchingValues(event));
         if(waitsColl !== undefined) {
             waitsColl.forEach(bid => {
                 const guardResult = bid.guard?.(payload);
@@ -60,7 +58,7 @@ export class EventContext {
                 }
             });
         }
-        const blocksColl = utils.flattenShallow(this._blocks?.getExactMatchAndUnkeyedMatch(event));
+        const blocksColl = utils.flattenShallow(blocks?.getExactMatchAndUnkeyedMatch(event));
         blocksColl.forEach(bid => {
             const guard = bid.guard;
             if(!guard) {
@@ -85,32 +83,26 @@ export class EventContext {
                 });
             }
         });
-        const pendingEventInfo = this._allPending?.get(event);
+        const pendingEventInfo = allPending?.get(event);
         if(pendingEventInfo) {
-            infos.pending = pendingEventInfo
+            infos.pending = {...pendingEventInfo}
         }
         return infos;
-    }
-
-    public update(waits?: EventMap<Bid[]>, blocks?: EventMap<Bid[]>, allPending?: EventMap<PendingEventInfo>) {
-        this._waits = waits;
-        this._blocks = blocks;
-        this._allPending = allPending;
     }
 
     constructor(getEventCache: GetCachedItem) {
         this._getEventCache = getEventCache;
     }
 
-    public getContext(eventName: string, eventKey?: EventKey): EventContextResult {
+    public getContext(eventDispatch: EventDispatch, eventName: string, eventKey?: EventKey, waits?: EventMap<Bid[]>, blocks?: EventMap<Bid[]>, allPending?: EventMap<PendingEventInfo>): EventContextResult {
         const event: FCEvent = { name: eventName, key: eventKey };
-        const cache =  this._getEventCache(event);
+        const cache = this._getEventCache(event);
         return {
-            isPending: this._allPending?.hasMatching(event) === true,
-            // TODO: dispatch?: (payload: any) => EventDispatch;
+            isPending: allPending?.get(event) !== undefined,
+            dispatch: eventDispatch(event),
             value: cache?.value,
             history: cache?.history,
-            explain: (payload?: any) => this._explain(event, payload)
+            explain: (payload?: any) => this._explain(event, payload, waits, blocks, allPending)
         }
     }
 }

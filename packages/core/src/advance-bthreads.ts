@@ -28,8 +28,9 @@ function advanceOnPending(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread
     return true;
 }
 
-function extendAction(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread>, action: Action): Action | 'extended with promise' {
+function extendAction(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread>, action: Action): undefined | 'extended with promise' {
     const bids = getMatchingBids(allBids[BidType.extend], action.event);
+    if(!bids || bids.length === 0) return;
     while(bids && bids.length > 0) {
         const bid = bids.pop(); // get last bid ( highest priority )
         if(bid === undefined) continue;
@@ -44,7 +45,6 @@ function extendAction(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread>, a
             action.payload = extendContext.value;
         }
     }
-    return action;
 }
 
 export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
@@ -76,8 +76,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
         case ActionType.resolved: {
             const bThread = bThreadMap.get(action.bThreadId);
             if(bThread === undefined) return;
-            const isResolved = bThread.resolvePending(action);
-            if(isResolved === false) return;
+            if(bThread.resolvePending(action) === false) return;
             if(extendAction(allBids, bThreadMap, action) === 'extended with promise') return;
             bThread.progressRequest(eventCache, action.event, action.payload); // request got resolved
             advanceWaits(allBids, bThreadMap, action);
