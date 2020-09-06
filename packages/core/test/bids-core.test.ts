@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { FCEvent } from "../src/event";
+import { EventId } from "../src/event-map";
 import { flow } from '../src/scenario';
 
 
@@ -121,7 +121,7 @@ test("multiple waits will return an array of [value, eventId].", () => {
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
     let receivedValue: any
-    let receivedEvent: FCEvent;
+    let receivedEvent: EventId;
 
     const requestThread = flow(null, function* () {
         yield bp.request("A", () => 1000);

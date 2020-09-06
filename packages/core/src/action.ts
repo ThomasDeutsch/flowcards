@@ -1,5 +1,5 @@
 import { Bid, BidSubType } from './bid';
-import { EventMap, FCEvent } from './event';
+import { EventMap, EventId } from './event-map';
 import { getGuardForWaits } from './guard';
 import { BThreadId } from './bthread';
 
@@ -14,7 +14,7 @@ export interface Action {
     index: number | null;
     type: ActionType;
     bThreadId: BThreadId;
-    event: FCEvent;
+    event: EventId;
     payload?: any;
     resolveActionIndex?: number;
     resolve?: {

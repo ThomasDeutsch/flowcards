@@ -1,14 +1,14 @@
 import * as utils from './utils';
 
 export type EventKey = string | number;
-type EventIteratorFunction<T> = (e: FCEvent, value: T) => any;
+type EventIteratorFunction<T> = (e: EventId, value: T) => any;
 
-export interface FCEvent {
+export interface EventId {
     name: string;
     key?: EventKey;
 }
 
-export function toEvent(e: string | FCEvent): FCEvent {
+export function toEvent(e: string | EventId): EventId {
     return (typeof e === 'string') ? {name: e} : e;
 }
 
@@ -39,7 +39,7 @@ export class EventMap<T>  {
         }
     }
 
-    public set(event: FCEvent, value: T): EventMap<T> {
+    public set(event: EventId, value: T): EventMap<T> {
         if(event.key === undefined) {
             this.noKey.set(event.name, value);
         } else {
@@ -49,7 +49,7 @@ export class EventMap<T>  {
         return this;
     }
 
-    public get(event: FCEvent): T | undefined {
+    public get(event: EventId): T | undefined {
         if(event.key === undefined) {
             return this.noKey.get(event.name);
         } else {
@@ -57,7 +57,7 @@ export class EventMap<T>  {
         }
     }
 
-    public getAllMatchingEvents(event?: FCEvent): FCEvent[] | undefined {
+    public getAllMatchingEvents(event?: EventId): EventId[] | undefined {
         if(event === undefined) return undefined;
         if(event.key === undefined) { // there was no key, so add all items with a key.
             const keys = this.withKey.get(event.name)?.keys();
@@ -70,21 +70,21 @@ export class EventMap<T>  {
         }
     }
 
-    public getExactMatchAndUnkeyedMatch(event: FCEvent): T[] {
+    public getExactMatchAndUnkeyedMatch(event: EventId): T[] {
         if(event.key === undefined) {
             return [this.noKey.get(event.name)].filter(utils.notUndefined);
         }
         return [this.noKey.get(event.name), this.withKey.get(event.name)?.get(event.key)].filter(utils.notUndefined);
     }
 
-    public getAllMatchingValues(event?: FCEvent): T[] | undefined {
+    public getAllMatchingValues(event?: EventId): T[] | undefined {
         const events = this.getAllMatchingEvents(event);
         if(events === undefined) return undefined;
         const result = events.map(event => this.get(event)).filter(utils.notUndefined);
         return (result.length === 0) ? undefined : result;
     }
 
-    public has(event: FCEvent | string): boolean {
+    public has(event: EventId | string): boolean {
         event = toEvent(event);
         if(event.key === undefined) {
             return this.noKey.has(event.name);
@@ -97,7 +97,7 @@ export class EventMap<T>  {
         return (this.withKey.size === 0) && (this.noKey.size === 0);
     }
 
-    public deleteSingle(event: FCEvent): boolean {
+    public deleteSingle(event: EventId): boolean {
         if(!this.has(event)) return false;
         if(event.key === undefined) {
             return this.noKey.delete(event.name);
@@ -135,8 +135,8 @@ export class EventMap<T>  {
         return clone;
     }
 
-    public get allEvents(): FCEvent[] | undefined {
-        const elements: FCEvent[] = [];
+    public get allEvents(): EventId[] | undefined {
+        const elements: EventId[] = [];
         this.forEach((event) => elements.push(event));
         return elements.length > 0 ? elements : undefined;
     }
@@ -160,7 +160,15 @@ export class EventMap<T>  {
         return this;
     }
 
-    public hasMatching(event: FCEvent): boolean {
+    public hasMatching(event: EventId): boolean {
         return (this.has(event) || this.has({name: event.name})) === true;
+    }
+
+    public filter(filterFn: (t: T) => boolean): EventMap<T> {
+        const result = new EventMap<T>();
+        this.forEach((event, value) => {
+            if(filterFn(value)) result.set(event, value);
+        })
+        return result;
     }
 }

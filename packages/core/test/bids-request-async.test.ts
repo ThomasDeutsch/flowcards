@@ -23,26 +23,45 @@ test("A promise can be requested and will create a pending-event", () => {
 });
 
 
-test("pending-events are different, if the name and key do not match.", (done) => {
+test("a pending event is different from another pending-event if the name OR key are not the same", (done) => {
     let value1: number, value2: number;
     const thread1 = flow({name: 'requestingThreadOne'}, function* () {
-        value1 = yield bp.request("A", delay(100, 55));
+        yield bp.onPending({name: 'A' });
+        value1 = yield bp.request("A", delay(100));
     });
     const thread2 = flow({name: 'requestingThreadTwo'}, function* () {
-        value2 = yield bp.request({name: "A", key: 1}, delay(100, 66));
+        value2 = yield bp.request({name: "A", key: 1}, delay(50));
+    });
+
+    testScenarios((enable) => {
+        enable(thread2());
+        enable(thread1()); 
+    }, ({event, thread}) => {
+        if(event('A', 1).isPending) {
+            expect(event('A').explain().pending).toBeDefined();
+        } else if(event('A').isPending) {
+            expect(thread.get('requestingThreadTwo')?.isCompleted).toBeTruthy();
+            done();
+        }
+    });
+});
+
+test("pending-events with the same name but different keys can be run in parallel", (done) => {
+    let value1: number, value2: number;
+    const thread1 = flow({name: 'requestingThreadOne'}, function* () {
+        value1 = yield bp.request({name: "A", key: 1}, () => delay(250));
+    });
+    const thread2 = flow({name: 'requestingThreadTwo'}, function* () {
+        value2 = yield bp.request({name: "A", key: 2}, () => delay(250));
     });
 
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({event, thread, actionLog}) => {
-        if(event('A').isPending && event('A', 1).isPending) {
-            expect(event('A').explain().pending?.threadId.name).toEqual('requestingThreadOne');
-            expect(event('A', 1).explain().pending?.threadId.name).toEqual('requestingThreadTwo');
-        } else if(thread.get('requestingThreadOne')?.isCompleted && thread.get('requestingThreadTwo')?.isCompleted) {
-            expect(value1).toBe(55);
-            expect(value2).toBe(66);
-            expect(actionLog.length).toEqual(4); // 2x request, 2x resolve
+    }, ({event, thread}) => {
+        if(event('A', 1).isPending && event('A', 2).isPending) {
+            expect(thread.get('requestingThreadOne')?.isCompleted).toBeFalsy();
+            expect(thread.get('requestingThreadTwo')?.isCompleted).toBeFalsy();
             done();
         }
     });

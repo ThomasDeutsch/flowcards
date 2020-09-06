@@ -1,14 +1,14 @@
-import { EventMap, FCEvent, EventKey, toEvent } from './event';
+import { EventMap, EventId, EventKey, toEvent } from './event-map';
 import { Bid, block, getMatchingBids, BidType, BidSubType } from './bid';
 import * as utils from './utils';
-import { isGuardPassed } from './guard';
+import { isGuardPassed, getGuardForWaits } from './guard';
 import { PendingEventInfo, BThreadId } from './bthread';
-import { EventDispatch, TriggerDispatch } from './event-dispatcher';
-import { GetCachedItem } from './update-loop';
+import { GetCachedItem, ActionDispatch } from './update-loop';
+import { ActionType } from './action';
 
 export interface EventContextResult {
     isPending: boolean;
-    dispatch?: TriggerDispatch;
+    dispatch?: (payload: any) => void;
     value: any;
     history?: any[];
     explain: (payload?: any) => ExplainResult;
@@ -30,7 +30,7 @@ type ExplainResult = {valid: EventInfo[]; invalid: EventInfo[]; blocked: EventIn
 export class EventContext {
     private _getEventCache: GetCachedItem;
 
-    private _explain(event: FCEvent, payload?: any, waits?: EventMap<Bid[]>, blocks?: EventMap<Bid[]>, allPending?: EventMap<PendingEventInfo>): ExplainResult {
+    private _explain(event: EventId, payload?: any, waits?: EventMap<Bid[]>, blocks?: EventMap<Bid[]>, allPending?: EventMap<PendingEventInfo>): ExplainResult {
         const infos: ExplainResult  = {valid: [], invalid: [], blocked: []};
         const waitsColl = utils.flattenShallow(waits?.getAllMatchingValues(event));
         if(waitsColl !== undefined) {
@@ -94,12 +94,18 @@ export class EventContext {
         this._getEventCache = getEventCache;
     }
 
-    public getContext(eventDispatch: EventDispatch, eventName: string, eventKey?: EventKey, waits?: EventMap<Bid[]>, blocks?: EventMap<Bid[]>, allPending?: EventMap<PendingEventInfo>): EventContextResult {
-        const event: FCEvent = { name: eventName, key: eventKey };
+    public getContext(actionDispatch: ActionDispatch, eventName: string, eventKey?: EventKey, waits?: EventMap<Bid[]>, blocks?: EventMap<Bid[]>, allPending?: EventMap<PendingEventInfo>): EventContextResult {
+        const event: EventId = { name: eventName, key: eventKey };
         const cache = this._getEventCache(event);
+        const matchingWaits = utils.flattenShallow(waits?.getAllMatchingValues(event));
         return {
             isPending: allPending?.get(event) !== undefined,
-            dispatch: eventDispatch(event),
+            dispatch: (matchingWaits?.length) ? (payload: any): true | undefined => {
+                const guard = getGuardForWaits(matchingWaits, event);
+                if(guard && !isGuardPassed(guard(payload))) return;
+                actionDispatch({index: null, type: ActionType.dispatched, event: event, payload: payload, bThreadId: {name: ""}});
+                return true;
+            } : undefined,
             value: cache?.value,
             history: cache?.history,
             explain: (payload?: any) => this._explain(event, payload, waits, blocks, allPending)

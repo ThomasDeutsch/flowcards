@@ -1,24 +1,24 @@
-// import * as bp from "../src/bid";
-// import { testScenarios } from './testutils';
-// import { BTContext } from '../src/index';
-// import { flow } from '../src/scenario';
+import * as bp from "../src/bid";
+import { testScenarios } from './testutils';
+import { BTContext } from '../src/index';
+import { flow } from '../src/scenario';
 
-// function delay(ms: number) {
-//     return new Promise(resolve => setTimeout(resolve, ms));
-// }
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-// test("on-bids can not be dispatched", () => {
+test("on-bids can not be dispatched", () => {
 
-//     const thread1 = flow(null, function* () {
-//         yield bp.on('A');
-//     });
+    const thread1 = flow(null, function* () {
+        yield bp.on('A');
+    });
 
-//     testScenarios((enable) => {
-//         enable(thread1());
-//     }, ({dispatch}) => {
-//         expect(dispatch('A')).toBeUndefined();
-//     });
-// });
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event}) => {
+        expect(event('A').dispatch).toBeUndefined();
+    });
+});
 
 // test("dispatch is always the same Object.", (done) => {
 //     let x: any;

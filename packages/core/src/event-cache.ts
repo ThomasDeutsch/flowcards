@@ -1,4 +1,4 @@
-import { EventMap, FCEvent } from './event';
+import { EventMap, EventId } from './event-map';
 
 export type EventCache = EventMap<CachedItem<any>>;
 
@@ -7,7 +7,7 @@ export interface CachedItem<T> {
     history: T[];
 }
 
-export function setEventCache<T>(eventCache: EventCache, event: FCEvent, payload?: T): void {
+export function setEventCache<T>(eventCache: EventCache, event: EventId, payload?: T): void {
     const events = eventCache.getAllMatchingEvents(event);
     if(!events) return;
     events.forEach(event => {

@@ -1,4 +1,4 @@
-import { EventKey, EventMap, FCEvent, toEvent } from './event';
+import { EventKey, EventMap, EventId, toEvent } from './event-map';
 import { combineGuards, getGuardedUnguardedBlocks, GuardFunction } from './guard';
 import * as utils from './utils';
 import { PendingEventInfo, BThreadId } from './bthread';
@@ -22,7 +22,7 @@ export interface Bid {
     type: BidType;
     subType: BidSubType;
     bThreadId: BThreadId;
-    event: FCEvent;
+    event: EventId;
     payload?: any;
     guard?: GuardFunction;
 }
@@ -87,7 +87,7 @@ export function getAllBids(allBThreadBids: BThreadBids[], allPending: EventMap<P
     const blocks = mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.block]));
     const [fixedBlocks, guardedBlocks] = getGuardedUnguardedBlocks(blocks);
     const fixedBlocksAndPending = fixedBlocks?.clone() || new EventMap<true>();
-    allPending.forEach(event => fixedBlocksAndPending.set(event, true));
+    allPending.forEach((event) => fixedBlocksAndPending.set(event, true));
     return {
         [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocksAndPending, guardedBlocks),
         [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks), // TODO: added fixed blocks and guarded blocks to waits! - recheck needed
@@ -96,7 +96,7 @@ export function getAllBids(allBThreadBids: BThreadBids[], allPending: EventMap<P
     };
 }
 
-export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] | undefined {
+export function getMatchingBids(bids?: EventMap<Bid[]>, event?: EventId): Bid[] | undefined {
     if(bids === undefined) return undefined
     const result = bids.getAllMatchingValues(event);
     if(result === undefined) return undefined;
@@ -106,7 +106,7 @@ export function getMatchingBids(bids?: EventMap<Bid[]>, event?: FCEvent): Bid[] 
 
 // bids user-API --------------------------------------------------------------------
 
-export function request(event: string | FCEvent, payload?: any): Bid {
+export function request(event: string | EventId, payload?: any): Bid {
     return {
         type: BidType.request,
         subType: BidSubType.none,
@@ -116,7 +116,7 @@ export function request(event: string | FCEvent, payload?: any): Bid {
     };
 }
 
-export function wait(event: string | FCEvent, guard?: GuardFunction): Bid {
+export function wait(event: string | EventId, guard?: GuardFunction): Bid {
     return { 
         type: BidType.wait,
         subType: BidSubType.none,
@@ -126,7 +126,7 @@ export function wait(event: string | FCEvent, guard?: GuardFunction): Bid {
     };
 }
 
-export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
+export function block(event: string | EventId, guard?: GuardFunction): Bid {
     return { 
         type: BidType.block,
         subType: BidSubType.none,
@@ -136,7 +136,7 @@ export function block(event: string | FCEvent, guard?: GuardFunction): Bid {
     };
 }
 
-export function set(event: string | FCEvent, payload?: any): Bid {
+export function set(event: string | EventId, payload?: any): Bid {
     return {
         type: BidType.request,
         subType: BidSubType.set,
@@ -146,7 +146,7 @@ export function set(event: string | FCEvent, payload?: any): Bid {
     };
 }
 
-export function extend(event: string | FCEvent, guard?: GuardFunction | null): Bid {
+export function extend(event: string | EventId, guard?: GuardFunction | null): Bid {
     return { 
         type: BidType.extend,
         subType: BidSubType.none, 
@@ -156,7 +156,7 @@ export function extend(event: string | FCEvent, guard?: GuardFunction | null): B
     };
 }
 
-export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
+export function on(event: string | EventId, guard?: GuardFunction): Bid {
     return { 
         type: BidType.wait,
         subType: BidSubType.on,
@@ -166,7 +166,7 @@ export function on(event: string | FCEvent, guard?: GuardFunction): Bid {
     };
 }
 
-export function onPending(event: string | FCEvent): Bid {
+export function onPending(event: string | EventId): Bid {
     return { 
         type: BidType.wait,
         subType: BidSubType.onPending,
@@ -175,7 +175,7 @@ export function onPending(event: string | FCEvent): Bid {
     };
 }
 
-export function trigger(event: string | FCEvent, payload?: any): Bid {
+export function trigger(event: string | EventId, payload?: any): Bid {
     return {
         type: BidType.request,
         subType: BidSubType.trigger,

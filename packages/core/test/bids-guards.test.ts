@@ -105,7 +105,10 @@ test("a block-guard will be combined with a other guards", () => {
         enable(waitingThread());
     }, ({event}) => {
         if(event('A').dispatch) {
-            expect(event('A').dispatch(1300)).toBeUndefined();
+            expect(event('A').dispatch).toBeDefined();
+            expect(event('A').explain(1001).blocked.length).toBe(1);
+            const wasDispatched = event('A').dispatch?.(1300);
+            expect(wasDispatched).toBeFalsy();
         }
     });
 });
@@ -124,9 +127,11 @@ test("a block-guard can be keyed", () => {
     testScenarios((enable) => {
         enable(blockingThread());
         enable(waitingThread());
-    }, ({dispatch}) => {
-        if(dispatch('A')) {
-            expect(dispatch('A', 1300)).toBeDefined();
+    }, ({event}) => {
+        if(event('A')?.dispatch) {
+            expect(event('A').dispatch).toBeDefined();
+            expect(event('A').explain(2000).blocked.length).toBeFalsy();
+            expect(event('A').explain(1001).blocked.length).toBeFalsy();
         }
     });
 });

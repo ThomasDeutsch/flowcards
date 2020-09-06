@@ -1,33 +1,33 @@
-// import * as bp from "../src/bid";
-// import { testScenarios } from "./testutils";
-// import { ActionType } from '../src/action';
-// import { flow } from '../src/scenario';
+import * as bp from "../src/bid";
+import { testScenarios } from "./testutils";
+import { ActionType } from '../src/action';
+import { flow } from '../src/scenario';
 
 
 
-// function delay(ms: number, value?: any) {
-//     return new Promise(resolve => setTimeout(() => resolve(value), ms));
-// }
+function delay(ms: number, value?: any) {
+    return new Promise(resolve => setTimeout(() => resolve(value), ms));
+}
 
-// test("a pending event can be requested by another thread", () => {
-//     const thread1 = flow({name: 'thread1'}, function* () {
-//         while (true) {
-//             yield bp.request("A", () => delay(1000));
-//         }
-//     });
+test("a pending event can not be requested by another thread", () => {
+    const thread1 = flow({name: 'thread1'}, function* () {
+        while (true) {
+            yield bp.request("A", () => delay(1000));
+        }
+    });
 
-//     const thread2 = flow({name: 'thread2'}, function* () {
-//         yield bp.request("A", "hey");
-//     });
+    const thread2 = flow({name: 'thread2'}, function* () {
+        yield bp.request("A", "hey");
+    });
 
-//     testScenarios((enable) => {
-//         enable(thread2());
-//         enable(thread1());
-//     }, ({pending, state}) => {
-//         expect(pending.has('A')).toBeTruthy();
-//         expect(state['thread2'].isCompleted).toBeTruthy();
-//     });
-// });
+    testScenarios((enable) => {
+        enable(thread2());
+        enable(thread1());
+    }, ({event, thread}) => {
+        expect(event('A').isPending).toBeTruthy();
+        expect(thread.get('thread2')?.isCompleted).toBeFalsy();
+    });
+});
 
 
 // test("a pending event can not be extended", () => {

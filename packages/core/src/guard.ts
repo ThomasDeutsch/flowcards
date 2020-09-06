@@ -1,5 +1,5 @@
 import { Bid } from './bid';
-import { EventMap, FCEvent } from './event';
+import { EventMap, EventId } from './event-map';
 import * as utils from './utils';
 import { PendingEventInfo } from './bthread';
 
@@ -12,7 +12,7 @@ export function isGuardPassed(guardResult: {isValid: boolean; details?: string} 
     return false;
 }
 
-export function getGuardForWaits(bids: Bid[] | undefined, event: FCEvent): GuardFunction | undefined {
+export function getGuardForWaits(bids: Bid[] | undefined, event: EventId): GuardFunction | undefined {
     if(!bids) return undefined;
     let guards: GuardFunction[] | undefined = bids.map(bid => bid.guard).filter(utils.notUndefined);
     if(event.key !== undefined) {

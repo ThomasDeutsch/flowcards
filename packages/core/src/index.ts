@@ -1,14 +1,12 @@
 import { Action } from './action';
-import { EventDispatch } from './event-dispatcher';
 import { ScenariosContext, StagingFunction, UpdateLoop } from './update-loop';
 
 export * from './scenario';
-export * from './event-dispatcher';
 export * from './bthread';
 export * from './update-loop';
 export * from './event-cache';
 export * from "./bid";
-export * from './event';
+export * from './event-map';
 export * from './logger';
 export * from './action';
 export * from './event-context';
@@ -16,7 +14,7 @@ export * from './extend-context';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 export type StartReplay = (actions: Action[]) => void;
 
-export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, EventDispatch, StartReplay] {
+export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, StartReplay] {
     const bufferedActions: Action[] = [];
     const bufferedReplayMap = new Map<number, Action>();
     const loop = new UpdateLoop(stagingFunction, 
@@ -51,5 +49,5 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
     }
     const initialScenarioContext = loop.runLoop();
     if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
-    return [initialScenarioContext, loop.eventDispatch, startReplay];
+    return [initialScenarioContext, startReplay];
 }

@@ -1,15 +1,14 @@
 import { Action, ActionType, getNextActionFromRequests } from './action';
-import { Bid, BidType, BThreadBids, getAllBids } from './bid';
+import { Bid, BidType, BThreadBids, getAllBids, BidSubType } from './bid';
 import { BThread, BThreadKey, BThreadState, GeneratorFn, BThreadInfo, PendingEventInfo, BThreadId } from './bthread';
-import { EventMap, FCEvent, toEvent, EventKey } from './event';
+import { EventMap, EventId, toEvent, EventKey } from './event-map';
 import { CachedItem, EventCache } from './event-cache';
-import { EventDispatch, setupEventDispatcher, EventDispatchUpdater } from './event-dispatcher';
 import { Logger } from './logger';
 import { advanceBThreads } from './advance-bthreads';
 import { EventContext, EventContextResult } from './event-context';
 import { BThreadMap } from './bthread-map';
 
-export type GetCachedItem = (event: FCEvent | string) => CachedItem<any> | undefined;
+export type GetCachedItem = (event: EventId | string) => CachedItem<any> | undefined;
 export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
 
@@ -53,7 +52,7 @@ function setupScaffolding(
         bThreadStateMap.set(bThreadId, bThread!.state);
         return bThread!.state;
     }
-    function getCached<T>(event: FCEvent | string): CachedItem<T> {
+    function getCached<T>(event: EventId | string): CachedItem<T> {
         event = toEvent(event);
         return eventCache.get(event)!;
     }
@@ -106,12 +105,9 @@ export class UpdateLoop {
     readonly eventCache: EventCache;
     readonly logger: Logger;
     readonly scaffold: () => ScaffoldingResult;
-    readonly updateEventDispatcher: EventDispatchUpdater;
     readonly getEventCache: GetCachedItem;
     readonly eventContext: EventContext;
-
     private _actionIndex = 0;
-    public eventDispatch: EventDispatch;
     public actionQueue: Action[] = [];
     public replayMap = new Map<number, Action>();
     public actionDispatch: ActionDispatch;
@@ -121,9 +117,8 @@ export class UpdateLoop {
         this.logger = new Logger();
         this.eventCache = new EventMap();
         this.scaffold = setupScaffolding(stagingFunction, this.bThreadMap, this.eventCache, actionDispatch);
-        [this.eventDispatch, this.updateEventDispatcher] = setupEventDispatcher(actionDispatch);
         this.actionDispatch = actionDispatch;
-        this.getEventCache = (event: FCEvent | string) => this.eventCache.get(toEvent(event));
+        this.getEventCache = (event: EventId | string) => this.eventCache.get(toEvent(event));
         this.eventContext = new EventContext(this.getEventCache);
     }
 
@@ -163,8 +158,8 @@ export class UpdateLoop {
             return this.runLoop();
         }
         // return to UI
-        this.updateEventDispatcher(allPending, bids[BidType.block], bids[BidType.wait]);
-        const getEvent = (eventName: string, eventKey?: string | number) => this.eventContext.getContext(this.eventDispatch, eventName, eventKey, bids[BidType.wait], bids[BidType.block], allPending)
+        const dispatchAbleWaits = bids.wait?.filter(bids => !bids.every(bid => bid.subType === BidSubType.on))
+        const getEvent = (eventName: string, eventKey?: string | number) => this.eventContext.getContext(this.actionDispatch, eventName, eventKey, dispatchAbleWaits, bids.block, allPending)
         return { 
             event: getEvent,
             thread: bThreadStateMap,

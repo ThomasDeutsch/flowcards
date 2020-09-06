@@ -10,23 +10,15 @@ export * from '@flowcards/core';
 export class Store {
   public context: Fc.ScenariosContext;
   private _startReplay: StartReplay;
-  private _eventDispatch: EventDispatch;
 
   constructor(stagingFunction: Fc.StagingFunction) {
-    [this.context, this._eventDispatch, this._startReplay] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
+    [this.context, this._startReplay] = Fc.scenarios(stagingFunction, (updatedContext: Fc.ScenariosContext) => {
       this.context = updatedContext;
     });
   }
-  dispatch = computedFn(function(this: Store, event:  Fc.FCEvent | string, payload: any) {
-    return this.context.dispatch(Fc.toEvent(event), payload);
-  });
-  event = computedFn(function(this: Store, event: Fc.FCEvent | string) {
-    return this.context.event(Fc.toEvent(event));
-  });
-  pending = this.context.pending;
-  blocks = this.context.blocks;
-  state = this.context.state;
-  log =  this.context.log
+  event = this.context.event;
+  actionLog = this.context.actionLog;
+  thread = this.context.thread;
   startReplay = this._startReplay;
 }
 
