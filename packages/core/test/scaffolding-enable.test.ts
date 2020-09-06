@@ -135,7 +135,7 @@ test("the section will be deleted if the thread completes", () => {
 });
 
 
-test("enable will return the current pending events and a isPending function", (done) => {
+test("enable will return the current pending events and a pending function", (done) => {
     const thread1 = flow({name: 'thread1'}, function* () {
         yield [bp.request("A", delay(100)), bp.request("B", delay(100))];
     });
@@ -145,7 +145,7 @@ test("enable will return the current pending events and a isPending function", (
     testScenarios((enable) => {
         enableReturn = enable(thread1());
     }, ({event}) => {
-        if(event('A').isPending && event('B').isPending) {
+        if(event('A').pending && event('B').pending) {
             expect(enableReturn.requests.has('A')).toBeFalsy();
             expect(enableReturn.requests.has('B')).toBeFalsy();
             done();
@@ -168,7 +168,7 @@ test("enable will return the current requesting events ( blocked and pending inc
         enableReturn = enable(thread1());
         enable(thread2());
     }, ({event}) => {
-        if(event('A').isPending) {
+        if(event('A').pending) {
             expect(enableReturn.requests.has('A')).toBeFalsy();
             expect(enableReturn.requests.has('B')).toBeTruthy();
             done();

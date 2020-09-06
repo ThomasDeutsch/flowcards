@@ -24,7 +24,7 @@ test("a pending event can not be requested by another thread", () => {
         enable(thread2());
         enable(thread1());
     }, ({event, thread}) => {
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').pending).toBeTruthy();
         expect(thread.get('thread2')?.isCompleted).toBeFalsy();
     });
 });

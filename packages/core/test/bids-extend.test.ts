@@ -29,7 +29,7 @@ test("requests can be extended", () => {
         setupCount++;
     }, ({event}) => {
         expect(progressedExtend).toBe(true);
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').pending).toBeTruthy();
         expect(progressedRequest).toBe(false);
         expect(setupCount).toEqual(2);
     }
@@ -73,7 +73,7 @@ test("if an extend is not applied, than the next extend will get the event", () 
         expect(waitCAdvanced).toBe(true);
         expect(waitDAdvanced).toBe(false);
         expect(requestAdvanced).toBe(false);
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').pending).toBeTruthy();
     });
 });
 
@@ -97,7 +97,7 @@ test("if an extended thread completed, without resolving or rejecting the event,
         enable(thread3());
         setupCount++;
     }, ({event}) => {
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').pending).toBeTruthy();
     }
  );
     expect(setupCount).toEqual(2);
@@ -130,7 +130,7 @@ test("extends will receive a value (like waits)", () => {
     }, ({event}) => {
         expect(thread1Advanced).toBe(false);
         expect(extendedValue.value).toBe(1000);
-        expect(event('A').isPending).toBe(true);
+        expect(event('A').pending).toBeTruthy();
     });
 });
 
@@ -197,7 +197,7 @@ test("an extend will create a pending event", () => {
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').pending).toBeTruthy();
     });
 });
 
@@ -217,7 +217,7 @@ test("an extend will wait for the pending-event to finish before it extends.", (
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').pending).toBeTruthy();
     });
 });
 
@@ -267,7 +267,7 @@ test("an extend will keep the event-pending if the BThread with the extend compl
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').pending).toBeTruthy();
         expect(requestingThreadProgressed).toBe(false);
     });
 });
@@ -329,7 +329,7 @@ test("an extend can be resolved in the same cycle", () => {
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').isPending).toBeFalsy();
+        expect(event('A').pending).toBeFalsy();
         expect(requestedValue).toEqual(2);
         expect(loopCount).toEqual(2); // 1: init, 2: request & extend (same loop)
     });

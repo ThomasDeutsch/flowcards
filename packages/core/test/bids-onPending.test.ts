@@ -18,7 +18,7 @@ test("an onPending-wait is progressed, when the event receives the pending state
         enable(thread1());
         enable(thread2());
     }, ({event}) => {
-        if(event('A').isPending) {
+        if(event('A').pending) {
             expect(thread2completed).toBeTruthy();
             done();
         }
@@ -42,7 +42,7 @@ test("an onPending for a keyed event is progressed when a no-key request for the
         enable(thread1());
         enable(thread2());
     }, ({event}) => {
-        if(event('A').isPending) {
+        if(event('A').pending) {
             expect(thread2completed).toBeTruthy();
             done();
         }

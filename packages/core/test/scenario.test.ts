@@ -83,7 +83,7 @@ test("pending will show what events are pending", (done) => {
         cache('count');
         enable(thread1());
     }, ({event}) => {
-        if(event('count').isPending) {
+        if(event('count').pending) {
             expect(event("count")).toBeDefined();
             done();
         }
