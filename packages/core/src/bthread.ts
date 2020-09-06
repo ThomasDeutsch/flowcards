@@ -1,7 +1,7 @@
 import { Action, ActionType } from './action';
 import { Bid, BidSubType, BidType, BThreadBids, getBidsForBThread } from './bid';
 import { EventMap, EventId, toEvent } from './event-map';
-import { EventCache, setEventCache } from './event-cache';
+import { setEventCache, CachedItem } from './event-cache';
 import { ActionDispatch } from './update-loop';
 import * as utils from './utils';
 import { ExtendContext } from './extend-context';
@@ -220,7 +220,7 @@ export class BThread {
         }
     }
     
-    public progressRequest(eventCache: EventCache, event: EventId, payload: any): void {
+    public progressRequest(eventCache: EventMap<CachedItem<any>>, event: EventId, payload: any): void {
         const bid = this._currentBids?.request?.get(event) || this._currentBids?.extend?.get(event);
         if(!bid) return;
         if(bid.subType === BidSubType.set) {

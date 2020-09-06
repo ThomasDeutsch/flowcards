@@ -90,7 +90,7 @@ export function getAllBids(allBThreadBids: BThreadBids[], allPending: EventMap<P
     allPending.forEach((event) => fixedBlocksAndPending.set(event, true));
     return {
         [BidType.request]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.request]), fixedBlocksAndPending, guardedBlocks),
-        [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks), // TODO: added fixed blocks and guarded blocks to waits! - recheck needed
+        [BidType.wait]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.wait]), fixedBlocks, guardedBlocks),
         [BidType.extend]: mergeMaps(allBThreadBids.map(bidsByType => bidsByType[BidType.extend]), fixedBlocks, guardedBlocks),
         [BidType.block]: blocks
     };

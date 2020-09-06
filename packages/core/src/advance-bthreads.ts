@@ -1,9 +1,10 @@
 import { Action, ActionType } from './action';
 import { AllBidsByType, Bid, BidSubType, BidType, getMatchingBids } from './bid';
 import { BThread } from './bthread';
-import { EventCache } from './event-cache';
 import * as utils from './utils';
 import { BThreadMap } from './bthread-map';
+import { EventMap } from './event-map';
+import { CachedItem } from './event-cache';
 
 // advance threads, based on selected action
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -47,7 +48,7 @@ function extendAction(allBids: AllBidsByType, bThreadMap: BThreadMap<BThread>, a
     }
 }
 
-export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventCache, allBids: AllBidsByType, action: Action): void {
+export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, allBids: AllBidsByType, action: Action): void {
     switch (action.type) {
         case ActionType.requested: {
             const bThread = bThreadMap.get(action.bThreadId);
