@@ -7,7 +7,7 @@ export * from './update-loop';
 export * from './event-cache';
 export * from "./bid";
 export * from './event-map';
-export * from './logger';
+export * from './action-log';
 export * from './action';
 export * from './event-context';
 export * from './extend-context';

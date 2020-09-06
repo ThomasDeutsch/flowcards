@@ -80,7 +80,7 @@ test("pending will show what events are pending", (done) => {
     });
 
     testScenarios((enable, cache) => {
-        cache('count');
+        cache({name: 'count'});
         enable(thread1());
     }, ({event}) => {
         if(event('count').pending) {

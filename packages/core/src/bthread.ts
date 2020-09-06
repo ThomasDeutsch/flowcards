@@ -6,6 +6,7 @@ import { ActionDispatch } from './update-loop';
 import * as utils from './utils';
 import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
+import { ActionLog } from './action-log';
 
 export type BTGen = Generator<Bid | (Bid | null)[] | null, void, any>;
 export type GeneratorFn = (props: any) => BTGen;
@@ -50,6 +51,7 @@ export class BThread {
     public readonly id: BThreadId;
     private readonly _dispatch: ActionDispatch;
     private readonly _generatorFn: GeneratorFn;
+    private readonly _actionLog: ActionLog;
     private _currentProps: Record<string, any>;
     private _thread: BTGen;
     private _currentBids?: BThreadBids;
@@ -68,7 +70,7 @@ export class BThread {
     };
     public get state() { return this._state; }
 
-    public constructor(id: BThreadId, info: BThreadInfo, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch) {
+    public constructor(id: BThreadId, info: BThreadInfo, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, actionLog: ActionLog) {
         this.id = id;
         this.idString = BThreadMap.toIdString(id);
         this.info = info;
@@ -76,6 +78,7 @@ export class BThread {
         this._generatorFn = generatorFn.bind(this._getBTContext());
         this._currentProps = props;
         this._thread = this._generatorFn(this._currentProps);
+        this._actionLog = actionLog
         this._processNextBid();
     }
 
@@ -121,6 +124,7 @@ export class BThread {
         }
         this._pendingRequests.clear();
         this._processNextBid(returnVal);
+        this._actionLog.logBThreadProgress(this.id, {...bid}, payload);
     }
 
 
@@ -148,6 +152,7 @@ export class BThread {
         this._pendingRequests.clear();
         this._pendingExtends.clear();
         this._processNextBid();
+        // TODO: reaction reset
     }
 
     public addPendingEvent(action: Action, isExtendPromise: boolean): void {

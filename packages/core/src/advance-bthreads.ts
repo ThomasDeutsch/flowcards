@@ -5,6 +5,7 @@ import * as utils from './utils';
 import { BThreadMap } from './bthread-map';
 import { EventMap } from './event-map';
 import { CachedItem } from './event-cache';
+import { ActionLog } from './action-log';
 
 // advance threads, based on selected action
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
