@@ -38,8 +38,8 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
                         withUpdate = true;
                     }
                     if(withUpdate) {
-                        if(updateCb !== undefined) updateCb(loop.runLoop());
-                        else loop.runLoop();
+                        if(updateCb !== undefined) updateCb(loop.setupContext());
+                        else loop.setupContext();
                     }
                 });
             }
@@ -47,7 +47,7 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
     const startReplay = (actions: Action[]) => {
        actions.forEach(action => loop.actionDispatch(action));
     }
-    const initialScenarioContext = loop.runLoop();
+    const initialScenarioContext = loop.setupContext();
     if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
     return [initialScenarioContext, startReplay];
 }

@@ -47,9 +47,9 @@ function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): voi
             if(a.payload) da.add(a.payload.event.name);
             loop.actionQueue.push(a);
         }
-        loop.runLoop();   
+        loop.setupContext();   
     });
-    loop.runLoop();
+    loop.setupContext();
 }
 
 test("if a request is cancelled, it will not trigger the same event-name after resolving - even if there are threads waiting for this event. ", done => {

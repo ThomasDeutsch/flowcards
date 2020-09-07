@@ -38,6 +38,11 @@ export function flattenShallow<T>(arr?: T[][]): T[] {
     return arr.reduce((acc, val) => acc.concat(val), []);
 }
 
+export function latest<T>(arr?: T[]): T | undefined {
+    if(!arr || arr.length === 0) return undefined;
+    return arr[arr.length-1];
+}
+
 // UUID ------------------------
 // taken from: https://stackoverflow.com/a/2117523/1433691
 // waiting for proposal: https://github.com/tc39/proposal-uuid

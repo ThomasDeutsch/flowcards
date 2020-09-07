@@ -131,8 +131,7 @@ export class UpdateLoop {
         return context;
     }
 
-    public runLoop(): ScenariosContext {
-        this._loopCount++;
+    public setupContext(): ScenariosContext {
         // setup
         if(this.replayMap.has(0)) this._startReplay();
         this._scaffold();
@@ -154,7 +153,8 @@ export class UpdateLoop {
         }
         if (action) { // use next action
             advanceBThreads(this._bThreadMap, this._eventCache, this._allBidsByType, action);
-            return this.runLoop();
+            this._loopCount++;
+            return this.setupContext();
         }
         // return to UI
         return { 

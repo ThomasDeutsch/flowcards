@@ -143,9 +143,9 @@ export class BThread {
     // --- public
 
     public resetOnPropsChange(nextProps: any): void {
-        const changedProps = utils.getChangedProps(this._currentProps, nextProps);
-        if (changedProps === undefined) return;
-        // TODO: reaction reset
+        const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
+        if (changedPropNames === undefined) return;
+        this._actionLog.logBThreadReset(this.id, changedPropNames);
         // reset
         this._pendingExtends = new EventMap();
         this._setCurrentBids();

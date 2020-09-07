@@ -22,9 +22,9 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
                 expect(action.event.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
-            loop.runLoop();
+            loop.setupContext();
         });
-        loop.runLoop();
+        loop.setupContext();
     };
 
     const thread1 = flow({name: 'thread1'}, function* () {
@@ -44,10 +44,10 @@ describe('dispatched action', () => {
         const loop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
                 loop.actionQueue.push(action);
-                loop.runLoop();
+                loop.setupContext();
             }
         });
-        loop.runLoop();
+        loop.setupContext();
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {
