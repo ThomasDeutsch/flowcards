@@ -95,7 +95,7 @@ export class EventContext {
     private _dispatch(payload: any): undefined | true | false {    
         const guard = getGuardForWaits(this._waitsNoOn, this._eventId);
         if(guard && !isGuardPassed(guard(payload))) return false;
-        this._actionDispatch({index: null, type: ActionType.dispatched, event: this._eventId, payload: payload, bThreadId: {name: ""}});
+        this._actionDispatch({loopIndex: null, type: ActionType.dispatched, event: this._eventId, payload: payload, bThreadId: {name: ""}});
         return true;
     }
 

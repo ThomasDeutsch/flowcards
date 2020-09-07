@@ -11,15 +11,15 @@ export enum ActionType {
 }
 
 export interface Action {
-    index: number | null;
+    loopIndex: number | null;
     type: ActionType;
     bThreadId: BThreadId;
     event: EventId;
     payload?: any;
-    resolveActionIndex?: number;
+    resolveLoopIndex?: number;
     resolve?: {
         isResolvedExtend: boolean;
-        requestedActionIndex: number;
+        requestLoopIndex: number;
         requestDuration: number;  
     };
 }
@@ -53,7 +53,7 @@ function getBid(bids?: Bid[], waitBids?: EventMap<Bid[]>): Bid | undefined {
 
 function getActionFromBid(bid: Bid) {
     const action = {
-        index: null,
+        loopIndex: null,
         type: ActionType.requested,
         bThreadId: bid.bThreadId,
         event: bid.event,

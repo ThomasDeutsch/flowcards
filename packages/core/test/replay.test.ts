@@ -20,10 +20,10 @@ test("a thread can be replayed", (done) => {
         }
     });
     replay([
-        {index: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'HEY'}},
-        {index: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: undefined},
-        {index: 2, type: ActionType.resolved, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: 1},
-        {index: 3, type: ActionType.dispatched, bThreadId: {name: 'thread1'}, event: {name: 'B'}, payload: 3}])
+        {loopIndex: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'HEY'}},
+        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: undefined},
+        {loopIndex: 2, type: ActionType.resolved, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: 1},
+        {loopIndex: 3, type: ActionType.dispatched, bThreadId: {name: 'thread1'}, event: {name: 'B'}, payload: 3}])
    
 });
 
@@ -42,8 +42,8 @@ test("if a request-replay has no payload, the original payload will be used", (d
         }
     });
     replay([
-        {index: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {index: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}}])
+        {loopIndex: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}}])
 });
 
 
@@ -68,8 +68,8 @@ test("a async request can be replayed", (done) => {
         }
     });
     replay([
-        {index: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {index: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveActionIndex: 2},
+        {loopIndex: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveLoopIndex: 2},
         // the index:2 action is missing ... this is where the resolve will be placed.
-        {index: 3, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent3'}}])
+        {loopIndex: 3, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent3'}}])
 });

@@ -8,7 +8,6 @@ import { advanceBThreads } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 
-
 export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
 
@@ -25,14 +24,14 @@ function setupScaffolding(
     dispatch: ActionDispatch,
     actionLog: ActionLog
 ): () => void {
-    const enabledIds = new Set<string>();
+    const enabledBThreadIds = new Set<string>();
     const destroyOnDisableThreadIds = new Set<string>();
     const cancelPendingOnDisableThreadIds = new Set<string>();
 
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
         const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
-        const bThreadIdString = BThreadMap.toIdString({name: bThreadInfo.name, key: bThreadInfo.key})
-        enabledIds.add(bThreadIdString);
+        const bThreadIdString = BThreadMap.toIdString(bThreadId);
+        enabledBThreadIds.add(bThreadIdString);
         let bThread = bThreadMap.get(bThreadId)
         if (bThread) {
             bThread.resetOnPropsChange(props);
@@ -40,12 +39,13 @@ function setupScaffolding(
             bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, generatorFn, props, dispatch, actionLog));
             if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadIdString);
             if(bThreadInfo.cancelPendingOnDisable) cancelPendingOnDisableThreadIds.add(bThreadIdString);
+            // log create
         }
-        bThread = bThreadMap.get(bThreadId);
-        if(bThread!.currentBids) bThreadBids.push(bThread!.currentBids);
-        pendingEventMap.merge(bThread!.state.pendingEvents);
-        bThreadStateMap.set(bThreadId, bThread!.state);
-        return bThread!.state;
+        bThread = bThreadMap.get(bThreadId)!;
+        if(bThread.currentBids) bThreadBids.push(bThread.currentBids);
+        pendingEventMap.merge(bThread.state.pendingEvents);
+        bThreadStateMap.set(bThreadId, bThread.state);
+        return bThread.state;
     }
     function getCached<T>(event: EventId | string): CachedItem<T> {
         event = toEvent(event);
@@ -54,25 +54,25 @@ function setupScaffolding(
     function run() {
         bThreadBids.length = 0;
         pendingEventMap.clear();
-        enabledIds.clear();
-        stagingFunction(enableBThread, getCached);
+        enabledBThreadIds.clear();
+        stagingFunction(enableBThread, getCached); // do the staging
         if(cancelPendingOnDisableThreadIds.size > 0) {
-            cancelPendingOnDisableThreadIds.forEach(idString => {
-                if(!enabledIds.has(idString)) {
-                    const bThreadId = BThreadMap.toThreadId(idString);
-                    bThreadMap.get(bThreadId)?.cancelPending();
+            cancelPendingOnDisableThreadIds.forEach(bThreadIdString => {
+                if(!enabledBThreadIds.has(bThreadIdString)) {
+                    bThreadMap.get(BThreadMap.toThreadId(bThreadIdString))?.cancelPending();
                 }
             });
         }
         if(destroyOnDisableThreadIds.size > 0) 
-            destroyOnDisableThreadIds.forEach(idString => {
-            if(!enabledIds.has(idString)) {
-                const bThreadId = BThreadMap.toThreadId(idString);
-                bThreadMap.get(bThreadId)?.destroy();
-                bThreadMap.delete(bThreadId);
-                bThreadStateMap.delete(bThreadId);
-                cancelPendingOnDisableThreadIds.delete(idString);
-                destroyOnDisableThreadIds.delete(idString);
+            destroyOnDisableThreadIds.forEach(bThreadIdString => {
+            if(!enabledBThreadIds.has(bThreadIdString)) {
+                bThreadMap.get(BThreadMap.toThreadId(bThreadIdString))?.destroy();
+                const bThradId = BThreadMap.toThreadId(bThreadIdString);
+                bThreadMap.delete(bThradId);
+                bThreadStateMap.delete(bThradId);
+                cancelPendingOnDisableThreadIds.delete(bThreadIdString);
+                destroyOnDisableThreadIds.delete(bThreadIdString);
+                // log delete
             }
         });
     }
@@ -91,7 +91,7 @@ export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
 
 export class UpdateLoop {
-    private _actionIndex = 0;
+    private _loopCount = 0;
     private _allBidsByType: AllBidsByType = {};
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
@@ -112,7 +112,7 @@ export class UpdateLoop {
     }
 
     private _startReplay() {
-        this._actionIndex = 0;
+        this._loopCount = 0;
         this.actionQueue.length = 0;
         this._bThreadMap.forEach(bThread => { 
             bThread.destroy();
@@ -127,11 +127,12 @@ export class UpdateLoop {
             context = new EventContext(this.actionDispatch, {name: eventName, key: eventKey});
             this._eventContexts.set({name: eventName, key: eventKey}, context);
         }
-        context?.update(this._allBidsByType, this._pendingEventMap, this._getCachedItem, this._actionIndex);
+        context?.update(this._allBidsByType, this._pendingEventMap, this._getCachedItem, this._loopCount);
         return context;
     }
 
     public runLoop(): ScenariosContext {
+        this._loopCount++;
         // setup
         if(this.replayMap.has(0)) this._startReplay();
         this._scaffold();
@@ -139,20 +140,19 @@ export class UpdateLoop {
         // get next action
         let action: Action | undefined;
         if(this.replayMap.size !== 0) {
-            action = this.replayMap.get(this._actionIndex);
-            this.replayMap.delete(this._actionIndex);
+            action = this.replayMap.get(this._loopCount);
+            this.replayMap.delete(this._loopCount);
             if(action?.type === ActionType.requested && action.payload === undefined) {
                 action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.event)?.payload;
             }
         } else {
             action = this.actionQueue.shift() || getNextActionFromRequests(this._allBidsByType.request, this._allBidsByType.wait);
             if(action) {
-                action.index = this._actionIndex;
+                action.loopIndex = this._loopCount;
                 this._actionLog.logAction(action);
             }
         }
         if (action) { // use next action
-            this._actionIndex++;
             advanceBThreads(this._bThreadMap, this._eventCache, this._allBidsByType, action);
             return this.runLoop();
         }

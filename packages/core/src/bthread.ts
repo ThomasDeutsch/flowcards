@@ -31,11 +31,13 @@ export interface BTContext {
 export interface PendingEventInfo {
     event: EventId;
     threadId: BThreadId;
-    actionIndex: number | null;
+    loopIndex: number | null;
     isExtend: boolean;
 }
 
 export interface BThreadState {
+    id: BThreadId;
+    info: BThreadInfo;
     section?: string;
     waits: EventMap<Bid>;
     blocks: EventMap<Bid>;
@@ -46,7 +48,6 @@ export interface BThreadState {
 }
 
 export class BThread {
-    public readonly info: BThreadInfo;
     public readonly idString: string;
     public readonly id: BThreadId;
     private readonly _dispatch: ActionDispatch;
@@ -59,21 +60,23 @@ export class BThread {
     private _nextBid?: any;
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _pendingExtends: EventMap<PendingEventInfo> = new EventMap();
-    private _state: BThreadState = {
-        section: undefined,
-        waits: this._currentBids?.[BidType.wait] || new EventMap(),
-        blocks: this._currentBids?.[BidType.block] || new EventMap(),
-        requests: this._currentBids?.[BidType.request] || new EventMap(),
-        extends: this._currentBids?.[BidType.extend] || new EventMap(),
-        pendingEvents: new EventMap(),
-        isCompleted: false
-    };
+    private _state: BThreadState;
     public get state() { return this._state; }
 
     public constructor(id: BThreadId, info: BThreadInfo, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, actionLog: ActionLog) {
         this.id = id;
+        this._state = {
+            id: id,
+            info: info,
+            section: undefined,
+            waits: this._currentBids?.[BidType.wait] || new EventMap(),
+            blocks: this._currentBids?.[BidType.block] || new EventMap(),
+            requests: this._currentBids?.[BidType.request] || new EventMap(),
+            extends: this._currentBids?.[BidType.extend] || new EventMap(),
+            pendingEvents: new EventMap(),
+            isCompleted: false
+        };
         this.idString = BThreadMap.toIdString(id);
-        this.info = info;
         this._dispatch = dispatch;
         this._generatorFn = generatorFn.bind(this._getBTContext());
         this._currentProps = props;
@@ -89,9 +92,9 @@ export class BThread {
             this._state.section = value;
         }
         return {
-            key: this.info.key,
+            key: this._state.info.key,
             section: section,
-            isPending: (event: string | EventId) => this._state.pendingEvents.has(toEvent(event))
+            isPending: (event: string | EventId) => this._state.pendingEvents.has(toEvent(event)),
         };
     }
 
@@ -142,6 +145,7 @@ export class BThread {
     public resetOnPropsChange(nextProps: any): void {
         const changedProps = utils.getChangedProps(this._currentProps, nextProps);
         if (changedProps === undefined) return;
+        // TODO: reaction reset
         // reset
         this._pendingExtends = new EventMap();
         this._setCurrentBids();
@@ -152,14 +156,14 @@ export class BThread {
         this._pendingRequests.clear();
         this._pendingExtends.clear();
         this._processNextBid();
-        // TODO: reaction reset
+        
     }
 
     public addPendingEvent(action: Action, isExtendPromise: boolean): void {
         const eventInfo: PendingEventInfo = {
             threadId: action.bThreadId,
             event: action.event,
-            actionIndex: action.index,
+            loopIndex: action.loopIndex,
             isExtend: isExtendPromise
         }    
         if(isExtendPromise) {
@@ -172,17 +176,17 @@ export class BThread {
         action.payload.then((data: any): void => {
             if(!this._thread) return; // was deleted
             const pendingEventInfo = this.state.pendingEvents.get(action.event);
-            if (pendingEventInfo?.actionIndex === action.index) {
+            if (pendingEventInfo?.loopIndex === action.loopIndex) {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
-                    index: action.resolveActionIndex || null, 
+                    loopIndex: action.resolveLoopIndex || null, 
                     type: ActionType.resolved,
                     bThreadId: this.id,
                     event: action.event,
                     payload: data,
                     resolve: {
                         isResolvedExtend: isExtendPromise,
-                        requestedActionIndex: action.index!,
+                        requestLoopIndex: action.loopIndex!,
                         requestDuration: requestDuration
                     }
                 });
@@ -190,17 +194,17 @@ export class BThread {
         }).catch((e: Error): void => {
             if(!this._thread) return; // was deleted
             const pendingEventInfo = this.state.pendingEvents.get(action.event);
-            if (pendingEventInfo?.actionIndex === action.index) {
+            if (pendingEventInfo?.loopIndex === action.loopIndex) {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
-                    index: action.resolveActionIndex || null,
+                    loopIndex: action.resolveLoopIndex || null,
                     type: ActionType.rejected,
                     bThreadId: this.id,
                     event: action.event,
                     payload: e,
                     resolve: {
                         isResolvedExtend: isExtendPromise,
-                        requestedActionIndex: action.index!,
+                        requestLoopIndex: action.loopIndex!,
                         requestDuration: requestDuration
                     }
                 });

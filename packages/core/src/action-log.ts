@@ -18,14 +18,10 @@ export class ActionLog {
     public enabledBThreadIds = new Map<number, string[]>();
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadProgressReaction>>();
 
-    private get _getCurrentActionIndex() {
-        return this.actions[this.actions.length-1].index!;
-    }
-
     public logAction(action: Action): void {
         this.actions.push({...action});
         if(action.resolve) {
-            this.actions[action.resolve.requestedActionIndex].resolveActionIndex = action.index!;
+            this.actions[action.resolve.requestLoopIndex].resolveLoopIndex = action.loopIndex!;
         }
     }
 
@@ -39,7 +35,7 @@ export class ActionLog {
             this.bThreadReactionHistory.set(bThreadId, new Map<number, BThreadProgressReaction>());
             currentHistory = this.bThreadReactionHistory.get(bThreadId);
         }
-        currentHistory!.set(this._getCurrentActionIndex, {type: BThreadReactionType.progress, selectedBid: bid, actualPayload: actualPayload});
+        currentHistory!.set(this.actions.length-1, {type: BThreadReactionType.progress, selectedBid: bid, actualPayload: actualPayload});
     }
 
     public resetLog(): void {

@@ -20,11 +20,11 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
     const loop = new UpdateLoop(stagingFunction, 
         (action: Action): void => {
             if(action) {
-                if(action.index === null) {
+                if(action.loopIndex === null) {
                     bufferedActions.push(action);
                 } else {  // is a replay action
-                    if(action.index === 0) loop.replayMap.clear();
-                    bufferedReplayMap.set(action.index, action);
+                    if(action.loopIndex === 0) loop.replayMap.clear();
+                    bufferedReplayMap.set(action.loopIndex, action);
                 }
                 Promise.resolve().then(() => {
                     let withUpdate = false;
