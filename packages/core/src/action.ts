@@ -5,7 +5,7 @@ import { BThreadId } from './bthread';
 
 export enum ActionType {
     requested = "requested",
-    dispatched = "dispatched",
+    ui = "ui",
     resolved = "resolved",
     rejected = "rejected"
 }
@@ -16,7 +16,7 @@ export interface Action {
     bThreadId: BThreadId;
     event: EventId;
     payload?: any;
-    resolveLoopIndex?: number;
+    resolveLoopIndex?: number | null;
     resolve?: {
         isResolvedExtend: boolean;
         requestLoopIndex: number;

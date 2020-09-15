@@ -1,12 +1,13 @@
-import { Action, ActionType, getNextActionFromRequests } from './action';
-import { BThreadBids, getAllBids, BidSubType, AllBidsByType } from './bid';
+import { Action, getNextActionFromRequests, ActionType } from './action';
+import { BThreadBids, getAllBids, AllBidsByType } from './bid';
 import { BThread, BThreadState, GeneratorFn, BThreadInfo, PendingEventInfo, BThreadId } from './bthread';
-import { EventMap, EventId, toEvent, EventKey } from './event-map';
+import { EventMap, EventId, toEvent } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
-import { ActionLog } from './action-log';
+import { ActionLog, SymbolGetValueFromBThread } from './action-log';
 import { advanceBThreads } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
+import * as utils from './utils';
 
 export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
@@ -23,7 +24,7 @@ function setupScaffolding(
     eventCache: EventMap<CachedItem<any>>,
     dispatch: ActionDispatch,
     actionLog: ActionLog
-): () => void {
+): (loopCount: number) => void {
     const enabledBThreadIds = new Set<string>();
     const destroyOnDisableThreadIds = new Set<string>();
     const cancelPendingOnDisableThreadIds = new Set<string>();
@@ -39,7 +40,6 @@ function setupScaffolding(
             bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, generatorFn, props, dispatch, actionLog));
             if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadIdString);
             if(bThreadInfo.cancelPendingOnDisable) cancelPendingOnDisableThreadIds.add(bThreadIdString);
-            // log create
         }
         bThread = bThreadMap.get(bThreadId)!;
         if(bThread.currentBids) bThreadBids.push(bThread.currentBids);
@@ -51,7 +51,7 @@ function setupScaffolding(
         event = toEvent(event);
         return eventCache.get(event)!;
     }
-    function run() {
+    function run(loopCount: number) {
         bThreadBids.length = 0;
         pendingEventMap.clear();
         enabledBThreadIds.clear();
@@ -75,6 +75,7 @@ function setupScaffolding(
                 // log delete
             }
         });
+        actionLog.logEnabledBThreadIds(loopCount, [...enabledBThreadIds])
     }
     return run;
 }
@@ -85,7 +86,7 @@ function setupScaffolding(
 export interface ScenariosContext {
     event: (eventName: string, eventKey?: string | number | undefined) => EventContext;
     thread: BThreadMap<BThreadState>;
-    actionLog: Action[];
+    log: ActionLog;
 }
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
@@ -98,7 +99,7 @@ export class UpdateLoop {
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _pendingEventMap = new EventMap<PendingEventInfo>();
     private readonly _actionLog = new ActionLog();
-    private readonly _scaffold: () => void;
+    private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<any>>();
     private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
     private readonly _eventContexts = new EventMap<EventContext>();
@@ -114,11 +115,10 @@ export class UpdateLoop {
     private _startReplay() {
         this._loopCount = 0;
         this.actionQueue.length = 0;
-        this._bThreadMap.forEach(bThread => { 
-            bThread.destroy();
-        });
+        this._bThreadMap.forEach(bThread => bThread.destroy());
         this._bThreadMap.clear();
         this._eventCache.clear();
+        this._actionLog.resetLog();
     }
 
     private _getEventContext = (eventName: string, eventKey?: string | number): EventContext => {
@@ -131,36 +131,41 @@ export class UpdateLoop {
         return context;
     }
 
-    public setupContext(): ScenariosContext {
-        // setup
+    public setupContext(isPaused?: boolean): ScenariosContext {
         if(this.replayMap.has(0)) this._startReplay();
-        this._scaffold();
+        this._scaffold(this._loopCount);
         this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
         // get next action
-        let action: Action | undefined;
+        let action: undefined | Action;
         if(this.replayMap.size !== 0) {
             action = this.replayMap.get(this._loopCount);
             this.replayMap.delete(this._loopCount);
-            if(action?.type === ActionType.requested && action.payload === undefined) {
+            if(action?.payload === SymbolGetValueFromBThread) {
                 action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.event)?.payload;
             }
-        } else {
+        } else if(isPaused !== true) {
             action = this.actionQueue.shift() || getNextActionFromRequests(this._allBidsByType.request, this._allBidsByType.wait);
-            if(action) {
-                action.loopIndex = this._loopCount;
-                this._actionLog.logAction(action);
-            }
+            if(action) action.loopIndex = this._loopCount;
         }
         if (action) { // use next action
+            if(action.type === ActionType.requested) {
+                if (typeof action.payload === "function") {
+                    action.payload = action.payload(this._eventCache.get(action.event)?.value);
+                }
+                if(utils.isThenable(action.payload) && action.resolveLoopIndex === undefined) {
+                    action.resolveLoopIndex = null;
+                }
+            }
+            this._actionLog.logAction(action);
             advanceBThreads(this._bThreadMap, this._eventCache, this._allBidsByType, action);
             this._loopCount++;
-            return this.setupContext();
+            return this.setupContext(isPaused);
         }
-        // return to UI
+        // return context to UI
         return { 
             event: this._getEventContext,
             thread: this._bThreadStateMap,
-            actionLog: this._actionLog.actions
+            log: this._actionLog
         }
     }
 }

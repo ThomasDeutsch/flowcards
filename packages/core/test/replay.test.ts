@@ -2,6 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { ActionType } from '../src/action';
 import { flow } from '../src/scenario';
+import { SymbolGetValueFromBThread } from '../src/action-log';
 
 test("a thread can be replayed", (done) => {
     let value1: number, value2: number;
@@ -20,10 +21,10 @@ test("a thread can be replayed", (done) => {
         }
     });
     replay([
-        {loopIndex: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'HEY'}},
-        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: undefined},
+        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'HEY'}},
+        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: SymbolGetValueFromBThread},
         {loopIndex: 2, type: ActionType.resolved, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: 1},
-        {loopIndex: 3, type: ActionType.dispatched, bThreadId: {name: 'thread1'}, event: {name: 'B'}, payload: 3}])
+        {loopIndex: 3, type: ActionType.ui, bThreadId: {name: 'thread1'}, event: {name: 'B'}, payload: 3}])
    
 });
 
@@ -42,8 +43,8 @@ test("if a request-replay has no payload, the original payload will be used", (d
         }
     });
     replay([
-        {loopIndex: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}}])
+        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, payload: SymbolGetValueFromBThread}])
 });
 
 
@@ -68,8 +69,29 @@ test("a async request can be replayed", (done) => {
         }
     });
     replay([
-        {loopIndex: 0, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveLoopIndex: 2},
+        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveLoopIndex: 2, payload: SymbolGetValueFromBThread},
         // the index:2 action is missing ... this is where the resolve will be placed.
-        {loopIndex: 3, type: ActionType.dispatched, bThreadId: {name: ''}, event: {name: 'replayEvent3'}}])
+        {loopIndex: 3, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent3'}}])
+});
+
+
+test("after a replay completes, the normal execution will resume", (done) => {
+    let value1: number;
+    const thread1 = flow({name: 'thread1'}, function* () {
+        yield bp.wait('replayEvent1');
+        yield bp.request('requestEvent1');
+        yield bp.request('requestEvent2');
+    });
+    const [context, replay] = testScenarios((enable) => {
+        enable(thread1());
+    }, ({thread}) => {
+        if(thread.get('thread1')?.isCompleted) {
+            expect(true).toEqual(true);
+            done();
+        }
+    });
+    replay([
+        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'requestEvent1'}}])
 });

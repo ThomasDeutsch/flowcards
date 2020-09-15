@@ -1,9 +1,7 @@
 
 import * as Fc from "@flowcards/core";
-import { computedFn } from "mobx-utils";
 import { observable, decorate } from "mobx";
 import { StartReplay } from '../../core/src/index';
-import { EventDispatch } from '../../core/src/event-dispatcher';
 
 export * from '@flowcards/core';
 
@@ -17,7 +15,7 @@ export class Store {
     });
   }
   event = this.context.event;
-  actionLog = this.context.actionLog;
+  actionLog = this.context.log;
   thread = this.context.thread;
   startReplay = this._startReplay;
 }

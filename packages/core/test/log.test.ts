@@ -1,8 +1,8 @@
-// import * as bp from "../src/bid";
-// import { testScenarios } from './testutils';
-// import { flow } from '../src/scenario';
-// import { delay } from './testutils';
-// import { BTContext } from '../src/bthread';
+import * as bp from "../src/bid";
+import { testScenarios } from './testutils';
+import { flow } from '../src/scenario';
+import { delay } from './testutils';
+import { BTContext } from '../src/bthread';
 
 // test("log will contain a list of executed actions (sorted)", () => {
 //     const flow1 = flow(

@@ -22,7 +22,7 @@ export interface BThreadInfo {
     description?: string;
 }
 
-export interface BTContext {
+export interface BThreadContext {
     key?: BThreadKey;
     section: (newValue: string) => void;
     isPending: (event: string | EventId) => boolean;
@@ -35,9 +35,8 @@ export interface PendingEventInfo {
     isExtend: boolean;
 }
 
-export interface BThreadState {
+export interface BThreadState extends BThreadInfo {
     id: BThreadId;
-    info: BThreadInfo;
     section?: string;
     waits: EventMap<Bid>;
     blocks: EventMap<Bid>;
@@ -67,7 +66,12 @@ export class BThread {
         this.id = id;
         this._state = {
             id: id,
-            info: info,
+            key: info.key,
+            name: info.name,
+            destroyOnDisable: info.destroyOnDisable,
+            cancelPendingOnDisable: info.cancelPendingOnDisable,
+            title: info.title,
+            description: info.description,
             section: undefined,
             waits: this._currentBids?.[BidType.wait] || new EventMap(),
             blocks: this._currentBids?.[BidType.block] || new EventMap(),
@@ -78,21 +82,22 @@ export class BThread {
         };
         this.idString = BThreadMap.toIdString(id);
         this._dispatch = dispatch;
-        this._generatorFn = generatorFn.bind(this._getBTContext());
+        this._generatorFn = generatorFn.bind(this._getBThreadContext());
         this._currentProps = props;
         this._thread = this._generatorFn(this._currentProps);
         this._actionLog = actionLog
         this._processNextBid();
+        this._actionLog.logBThreadInit(this.id, this._state, this._state.section)
     }
 
      // --- private
 
-     private _getBTContext(): BTContext {
+     private _getBThreadContext(): BThreadContext {
         const section = (value: string) => {
             this._state.section = value;
         }
         return {
-            key: this._state.info.key,
+            key: this._state.key,
             section: section,
             isPending: (event: string | EventId) => this._state.pendingEvents.has(toEvent(event)),
         };
@@ -108,7 +113,7 @@ export class BThread {
     }
 
     private _processNextBid(returnValue?: any): void {
-        const next = this._thread.next(returnValue);
+        const next = this._thread.next(returnValue); // progress BThread to next bid
         if (next.done) {
             this._state.isCompleted = true;
             delete this._state.section;
@@ -126,8 +131,10 @@ export class BThread {
             returnVal = this._currentBids && this._currentBids.withMultipleBids ? [bid.event, payload] : payload;
         }
         this._pendingRequests.clear();
+        const sectionBeforeProgression = this._state.section;
         this._processNextBid(returnVal);
-        this._actionLog.logBThreadProgress(this.id, {...bid}, payload);
+        const nextSection = (this._state.section && this._state.section !== sectionBeforeProgression) ? this._state.section : undefined;
+        this._actionLog.logBThreadProgress(this.id, {...bid}, this._state, nextSection);
     }
 
 
@@ -229,18 +236,18 @@ export class BThread {
         }
     }
     
-    public progressRequest(eventCache: EventMap<CachedItem<any>>, event: EventId, payload: any): void {
-        const bid = this._currentBids?.request?.get(event) || this._currentBids?.extend?.get(event);
+    public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
+        const bid = this._currentBids?.request?.get(action.event) || this._currentBids?.extend?.get(action.event);
         if(!bid) return;
         if(bid.subType === BidSubType.set) {
-            setEventCache(eventCache, event, payload);
+            setEventCache(eventCache, action.event, action.payload);
         }
-        this._progressBThread(bid, payload);
+        this._progressBThread(bid, action.payload);
     }
 
-    public progressWait(bid: Bid, payload: any): void {
-        if(!bid || bid.guard && !bid.guard(payload)) return;
-        this._progressBThread(bid, payload);
+    public progressWait(bid: Bid, action: Action): void {
+        if(!bid || bid.guard && !bid.guard(action.payload)) return;
+        this._progressBThread(bid, action.payload);
     }
 
     public progressExtend(action: Action, bid: Bid): ExtendContext | undefined {

@@ -1,7 +1,5 @@
 import { writable} from "svelte/store";
-import { StagingFunction, scenarios } from '@flowcards/core';
-import { StartReplay } from '../../core/src/index';
-import { ScenariosContext } from '../../core/src/update-loop';
+import { StagingFunction, scenarios, StartReplay, ScenariosContext } from '@flowcards/core';
 
 export * from '@flowcards/core';
 

@@ -244,7 +244,7 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
         enable(requestingThread());
         enable(extendingThread());
         enable(waitingThread());
-    }, ({event, actionLog}) => {
+    }, ({event}) => {
         if(event('fin').dispatch) {
             done();
         }  

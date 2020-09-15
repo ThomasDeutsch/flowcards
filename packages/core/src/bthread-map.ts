@@ -1,7 +1,7 @@
 import { BThreadId } from './bthread';
 
 
-export class BThreadMap<T> extends Map<BThreadId, T> {
+export class BThreadMap<T> {
     private _map: Map<string, T> = new Map();
 
     public static toIdString(bThreadId: BThreadId): string { 
@@ -31,6 +31,14 @@ export class BThreadMap<T> extends Map<BThreadId, T> {
 
     public delete(bThreadId: BThreadId): boolean {
         return this._map.delete(BThreadMap.toIdString(bThreadId));
+    }
+
+    public clear(): void {
+        return this._map.clear()
+    }
+
+    public forEach(callbackFn: (value: T, key: string, map: Map<string, T>) => void): void {
+        this._map.forEach(callbackFn);
     }
 
     public clone(): BThreadMap<T> {

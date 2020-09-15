@@ -1,7 +1,6 @@
 import { Bid } from './bid';
 import { EventMap, EventId } from './event-map';
 import * as utils from './utils';
-import { PendingEventInfo } from './bthread';
 
 export type GuardFunction = (payload: any) => {isValid: boolean; details?: string} | boolean
 

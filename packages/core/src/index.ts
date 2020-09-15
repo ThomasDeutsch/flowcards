@@ -5,17 +5,20 @@ export * from './scenario';
 export * from './bthread';
 export * from './update-loop';
 export * from './event-cache';
+export * from './event-context';
+export * from './event-map';
 export * from "./bid";
 export * from './event-map';
 export * from './action-log';
 export * from './action';
-export * from './event-context';
 export * from './extend-context';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-export type StartReplay = (actions: Action[]) => void;
+export type DispatchActions = (actions: Action[]) => void;
+export type PlayPause = { getIsPaused: () => boolean; toggle: () => void };
 
-export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, StartReplay] {
+export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, DispatchActions, PlayPause] {
     const bufferedActions: Action[] = [];
+    let isPaused = false;
     const bufferedReplayMap = new Map<number, Action>();
     const loop = new UpdateLoop(stagingFunction, 
         (action: Action): void => {
@@ -25,29 +28,39 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
                 } else {  // is a replay action
                     if(action.loopIndex === 0) loop.replayMap.clear();
                     bufferedReplayMap.set(action.loopIndex, action);
+                    console.log('gogo replay: ', isPaused);
                 }
-                Promise.resolve().then(() => {
-                    let withUpdate = false;
-                    if(bufferedActions.length !== 0) {
-                        bufferedActions.forEach(action => loop.actionQueue.push(action));
-                        bufferedActions.length = 0;
-                        withUpdate = true;
-                    } if(bufferedReplayMap.size !== 0) {
-                        bufferedReplayMap.forEach((action, key) => loop.replayMap.set(key, action));
-                        bufferedReplayMap.clear();
-                        withUpdate = true;
-                    }
-                    if(withUpdate) {
-                        if(updateCb !== undefined) updateCb(loop.setupContext());
-                        else loop.setupContext();
-                    }
-                });
+                clearBufferOnNextTick();
             }
     });
-    const startReplay = (actions: Action[]) => {
+    const clearBufferOnNextTick = (forceRefresh?: boolean) => {
+        Promise.resolve().then(() => {
+            let withUpdate = false;
+            if(bufferedReplayMap.size !== 0) {
+                bufferedActions.length = 0; // remove all buffered actions
+                bufferedReplayMap.forEach((action, key) => loop.replayMap.set(key, action));
+                bufferedReplayMap.clear();
+                withUpdate = true;
+            }
+            else if(bufferedActions.length !== 0 && !isPaused) {
+                bufferedActions.forEach(action => loop.actionQueue.push(action));
+                bufferedActions.length = 0;
+                withUpdate = true;
+            } 
+            if(withUpdate || forceRefresh) {
+                if(updateCb !== undefined) updateCb(loop.setupContext(isPaused));
+                else loop.setupContext(isPaused);
+            }
+        });
+    }
+    const togglePlayPause = () => { 
+        isPaused = !isPaused;
+        clearBufferOnNextTick(true);
+     };
+    const dispatchActions = (actions: Action[]) => {
        actions.forEach(action => loop.actionDispatch(action));
     }
-    const initialScenarioContext = loop.setupContext();
+    const initialScenarioContext = loop.setupContext(isPaused);
     if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
-    return [initialScenarioContext, startReplay];
+    return [initialScenarioContext, dispatchActions, { getIsPaused: () => isPaused, toggle: togglePlayPause }];
 }

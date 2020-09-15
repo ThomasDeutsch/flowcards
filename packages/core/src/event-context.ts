@@ -1,11 +1,11 @@
-import { EventMap, EventId, EventKey, toEvent } from './event-map';
-import { Bid, block, getMatchingBids, BidType, BidSubType, AllBidsByType } from './bid';
+import { EventMap, EventId } from './event-map';
+import { Bid, BidSubType, AllBidsByType } from './bid';
 import * as utils from './utils';
 import { isGuardPassed, getGuardForWaits } from './guard';
 import { PendingEventInfo, BThreadId } from './bthread';
 import { ActionDispatch } from './update-loop';
 import { ActionType } from './action';
-import { GetCachedItem, CachedItem } from './event-cache';
+import { GetCachedItem } from './event-cache';
 
 export interface EventInfo {
     bThreadId?: BThreadId;
@@ -93,15 +93,17 @@ export class EventContext {
     }
 
     private _dispatch(payload: any): undefined | true | false {    
-        const guard = getGuardForWaits(this._waitsNoOn, this._eventId);
+        const waits = this._waitsNoOn;
+        const eventId = this._eventId;
+        const guard = getGuardForWaits(waits, eventId);
         if(guard && !isGuardPassed(guard(payload))) return false;
-        this._actionDispatch({loopIndex: null, type: ActionType.dispatched, event: this._eventId, payload: payload, bThreadId: {name: ""}});
+        this._actionDispatch({loopIndex: null, type: ActionType.ui, event: this._eventId, payload: payload, bThreadId: {name: ""}});
         return true;
     }
 
     public get dispatch() {
         if(!this._waitsNoOn || this._waitsNoOn.length === 0) return undefined;
-        return this._dispatch;
+        return this._dispatch.bind(this);
     }
 
     constructor(actionDispatch: ActionDispatch, eventId: EventId) {
