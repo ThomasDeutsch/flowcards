@@ -25,6 +25,7 @@ export interface BThreadInfo {
 export interface BThreadContext {
     key?: BThreadKey;
     section: (newValue: string) => void;
+    clearSection: () => void;
     isPending: (event: string | EventId) => boolean;
 }
 
@@ -85,20 +86,25 @@ export class BThread {
         this._generatorFn = generatorFn.bind(this._getBThreadContext());
         this._currentProps = props;
         this._thread = this._generatorFn(this._currentProps);
-        this._actionLog = actionLog
+        this._actionLog = actionLog;
         this._processNextBid();
-        this._actionLog.logBThreadInit(this.id, this._state, this._state.section)
+        this._actionLog.logBThreadInit(this.id, this._state, this._state.section);
     }
 
      // --- private
 
      private _getBThreadContext(): BThreadContext {
-        const section = (value: string) => {
+        const section = (value?: string) => {
+            if(!value) this._state.section = undefined;
             this._state.section = value;
+        }
+        const removeSection = () => {
+            this._state.section = undefined;
         }
         return {
             key: this._state.key,
             section: section,
+            clearSection: removeSection,
             isPending: (event: string | EventId) => this._state.pendingEvents.has(toEvent(event)),
         };
     }
@@ -152,7 +158,6 @@ export class BThread {
     public resetOnPropsChange(nextProps: any): void {
         const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
         if (changedPropNames === undefined) return;
-        this._actionLog.logBThreadReset(this.id, changedPropNames);
         // reset
         this._pendingExtends = new EventMap();
         this._setCurrentBids();
@@ -162,7 +167,10 @@ export class BThread {
         this._thread = this._generatorFn(this._currentProps);
         this._pendingRequests.clear();
         this._pendingExtends.clear();
-        this._processNextBid();
+        const sectionBeforeProgression = this._state.section;
+        this._processNextBid(); // progress BThread
+        const nextSection = (this._state.section && this._state.section !== sectionBeforeProgression) ? this._state.section : undefined;
+        this._actionLog.logBThreadReset(this.id, changedPropNames, this._state, nextSection);
         
     }
 

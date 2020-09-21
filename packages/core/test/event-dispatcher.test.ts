@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
-import { BTContext } from '../src/index';
+import { BThreadContext } from '../src/index';
 import { flow } from '../src/scenario';
 
 function delay(ms: number) {
@@ -23,7 +23,7 @@ test("on-bids can not be dispatched", () => {
 // test("dispatch is always the same Object.", (done) => {
 //     let x: any;
 
-//     const thread1 = flow(null, function* (this: BTContext) {
+//     const thread1 = flow(null, function* (this: BThreadContext) {
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("A")];
 //         yield bp.wait("B");
 //     });
@@ -43,7 +43,7 @@ test("on-bids can not be dispatched", () => {
 //     let x: any;
 //     let y: any;
 
-//     const thread1 = flow(null, function* (this: BTContext) {
+//     const thread1 = flow(null, function* (this: BThreadContext) {
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Z")];
@@ -69,7 +69,7 @@ test("on-bids can not be dispatched", () => {
 //     let y: any;
 //     let firstDispatch: any;
 
-//     const thread1 = flow(null, function* (this: BTContext) {
+//     const thread1 = flow(null, function* (this: BThreadContext) {
 //         yield [bp.request("asyncRequest1", () => delay(100)), bp.wait("X"), bp.wait("A", (x: any) => x > 1)];
 //         yield [bp.request("asyncRequest2", () => delay(100)), bp.wait("Y"), bp.wait("A", (x: any) => x < 1)];
 //         yield [bp.wait("FIN"), bp.wait("A")];
@@ -95,7 +95,7 @@ test("on-bids can not be dispatched", () => {
 //     let x: any;
 //     let y: any;
 
-//     const thread1 = flow(null, function* (this: BTContext) {
+//     const thread1 = flow(null, function* (this: BThreadContext) {
 //         yield [bp.request("asyncRequest1", () => delay(100)), bp.wait("X"), bp.wait("A")];
 //         yield [bp.request("asyncRequest2", () => delay(100)), bp.wait("Y"), bp.wait("A")];
 //         yield [bp.wait("FIN"), bp.wait("A")];
@@ -120,7 +120,7 @@ test("on-bids can not be dispatched", () => {
 //     let x: any;
 //     let y: any;
 
-//     const thread1 = flow(null, function* (this: BTContext) {
+//     const thread1 = flow(null, function* (this: BThreadContext) {
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
 //         yield [bp.wait("FIN"), bp.wait("A")];
@@ -144,7 +144,7 @@ test("on-bids can not be dispatched", () => {
 //     let x: any;
 //     let y: any;
 
-//     const thread1 = flow(null, function* (this: BTContext) {
+//     const thread1 = flow(null, function* (this: BThreadContext) {
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
 //         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
 //     });

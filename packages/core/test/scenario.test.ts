@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
-import { StagingFunction, Action, UpdateLoop, BTContext } from '../src/index';
+import { StagingFunction, Action, UpdateLoop, BThreadContext } from '../src/index';
 import { flow } from '../src/scenario';
 
 function delay(ms: number) {
@@ -8,7 +8,7 @@ function delay(ms: number) {
 }
 
 test("testScenarios can be used without updateCb and logger", done => {
-    const thread1 = flow(null, function* (this: BTContext) {
+    const thread1 = flow(null, function* (this: BThreadContext) {
         yield bp.request("A", delay(10));
         expect(1).toEqual(1); // simple test if this point is reached.
         done();

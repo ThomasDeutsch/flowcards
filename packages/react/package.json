@@ -29,5 +29,9 @@
   "gitHead": "42eab8701d12e0e8169c462a10ffde7aa9fd2a31",
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@types/react": "^16.9.49",
+    "react": "^16.13.1"
   }
 }

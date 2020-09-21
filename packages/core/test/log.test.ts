@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
 import { flow } from '../src/scenario';
 import { delay } from './testutils';
-import { BTContext } from '../src/bthread';
+import { BThreadContext } from '../src/bthread';
 
 // test("log will contain a list of executed actions (sorted)", () => {
 //     const flow1 = flow(
@@ -10,7 +10,7 @@ import { BTContext } from '../src/bthread';
 //           id: "flow1",
 //           title: "user is able to select a product"
 //         },
-//         function*(this: BTContext) {
+//         function*(this: BThreadContext) {
 //           this.section("productList");
 //           const id = yield bp.wait("selectProduct");
 //           const item = yield bp.request("apiGetProductDetails", "testData");

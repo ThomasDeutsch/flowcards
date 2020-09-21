@@ -98,7 +98,7 @@ export class UpdateLoop {
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _pendingEventMap = new EventMap<PendingEventInfo>();
-    private readonly _actionLog = new ActionLog();
+    private readonly _actionLog: ActionLog;
     private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<any>>();
     private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
@@ -107,7 +107,8 @@ export class UpdateLoop {
     public readonly replayMap = new Map<number, Action>();
     public readonly actionDispatch: ActionDispatch;
 
-    constructor(stagingFunction: StagingFunction, actionDispatch: ActionDispatch) {
+    constructor(stagingFunction: StagingFunction, actionDispatch: ActionDispatch, actionLog: ActionLog) {
+        this._actionLog = actionLog;
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._pendingEventMap, this._bThreadStateMap, this._eventCache, actionDispatch, this._actionLog);
         this.actionDispatch = actionDispatch;
     }
@@ -145,9 +146,10 @@ export class UpdateLoop {
             }
         } else if(isPaused !== true) {
             action = this.actionQueue.shift() || getNextActionFromRequests(this._allBidsByType.request, this._allBidsByType.wait);
-            if(action) action.loopIndex = this._loopCount;
         }
         if (action) { // use next action
+            this._loopCount++;
+            if(action.loopIndex === null) action.loopIndex = this._loopCount;
             if(action.type === ActionType.requested) {
                 if (typeof action.payload === "function") {
                     action.payload = action.payload(this._eventCache.get(action.event)?.value);
@@ -158,7 +160,6 @@ export class UpdateLoop {
             }
             this._actionLog.logAction(action);
             advanceBThreads(this._bThreadMap, this._eventCache, this._allBidsByType, action);
-            this._loopCount++;
             return this.setupContext(isPaused);
         }
         // return context to UI

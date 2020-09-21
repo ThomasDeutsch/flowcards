@@ -1,4 +1,4 @@
-import { Action } from './action';
+import { Action, ActionType } from './action';
 import { Bid } from './bid';
 import { BThreadId } from './bthread';
 import { BThreadMap } from './bthread-map';
@@ -21,15 +21,17 @@ export interface BThreadInitReaction {
 export interface BThreadResetReaction {
     type: BThreadReactionType.reset;
     loopIndex: number;
+    nextState: BThreadState;
+    nextSection?: string;
     changedPropNames: string[];
 }
 
 export interface BThreadProgressReaction {
     type: BThreadReactionType.progress;
     loopIndex: number;
-    selectedBid: Bid | 'initial';
     nextState: BThreadState;
     nextSection?: string;
+    selectedBid: Bid;
 }
 
 
@@ -38,7 +40,7 @@ export type BThreadReaction = BThreadInitReaction | BThreadResetReaction | BThre
 export const SymbolGetValueFromBThread = Symbol('getValueFromBThread');
 
 export class ActionLog {
-    private _actions: Action[] = [];
+    private _actions: Action[] = [{type: ActionType.init, loopIndex: 0, event: {name: 'init'}, bThreadId: {name: 'init'}}];
     public get actions() {
         return this._actions;
     }
@@ -70,28 +72,6 @@ export class ActionLog {
         return bThreadReactions;
     }
 
-    public logBThreadProgress( bThreadId: BThreadId, bid: Bid | undefined, nextState: BThreadState, nextSection?: string) {
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.loopIndex!;
-        bThreadReactions!.set(currentLoopIndex, {
-            type: BThreadReactionType.progress,
-            loopIndex: currentLoopIndex,
-            selectedBid: bid || 'initial',
-            nextState: nextState,
-            nextSection: nextSection
-        });
-    }
-
-    public logBThreadReset(bThreadId: BThreadId, changedPropNames: string[]) {
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.loopIndex!;
-        bThreadReactions!.set(currentLoopIndex, {
-            type: BThreadReactionType.reset,
-            loopIndex: currentLoopIndex,
-            changedPropNames: changedPropNames
-        });
-    }
-
     public logBThreadInit(bThreadId: BThreadId, initialState: BThreadState, initialSection?: string) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const latestAction = utils.latest(this._actions)
@@ -101,6 +81,30 @@ export class ActionLog {
             loopIndex: currentLoopIndex,
             nextState: initialState,
             nextSection: initialSection
+        });
+    }
+
+    public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState, nextSection?: string) {
+        const bThreadReactions = this._getBThreadReactions(bThreadId);
+        const currentLoopIndex = utils.latest(this._actions)!.loopIndex!;
+        bThreadReactions!.set(currentLoopIndex, {
+            type: BThreadReactionType.progress,
+            loopIndex: currentLoopIndex,
+            selectedBid: bid,
+            nextState: nextState,
+            nextSection: nextSection
+        });
+    }
+
+    public logBThreadReset(bThreadId: BThreadId, changedPropNames: string[], nextState: BThreadState, nextSection?: string) {
+        const bThreadReactions = this._getBThreadReactions(bThreadId);
+        const currentLoopIndex = utils.latest(this._actions)!.loopIndex!;
+        bThreadReactions!.set(currentLoopIndex, {
+            type: BThreadReactionType.reset,
+            loopIndex: currentLoopIndex,
+            nextState: nextState,
+            nextSection: nextSection,
+            changedPropNames: changedPropNames,
         });
     }
 

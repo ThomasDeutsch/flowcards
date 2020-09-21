@@ -1,5 +1,6 @@
-import { Action } from './action';
+import { Action, ActionType } from './action';
 import { ScenariosContext, StagingFunction, UpdateLoop } from './update-loop';
+import { ActionLog } from './action-log';
 
 export * from './scenario';
 export * from './bthread';
@@ -13,11 +14,12 @@ export * from './action-log';
 export * from './action';
 export * from './extend-context';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-export type DispatchActions = (actions: Action[]) => void;
+export type DispatchActions = (actions: Action[] | null) => void;
 export type PlayPause = { getIsPaused: () => boolean; toggle: () => void };
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, DispatchActions, PlayPause] {
     const bufferedActions: Action[] = [];
+    const actionLog = new ActionLog();
     let isPaused = false;
     const bufferedReplayMap = new Map<number, Action>();
     const loop = new UpdateLoop(stagingFunction, 
@@ -32,7 +34,7 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
                 }
                 clearBufferOnNextTick();
             }
-    });
+    }, actionLog);
     const clearBufferOnNextTick = (forceRefresh?: boolean) => {
         Promise.resolve().then(() => {
             let withUpdate = false;
@@ -57,8 +59,11 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
         isPaused = !isPaused;
         clearBufferOnNextTick(true);
      };
-    const dispatchActions = (actions: Action[]) => {
-       actions.forEach(action => loop.actionDispatch(action));
+    const dispatchActions = (actions: Action[] | null) => {
+        if(actions === null) loop.setupContext(isPaused);
+        else {
+            actions.forEach(action => loop.actionDispatch(action));
+        }
     }
     const initialScenarioContext = loop.setupContext(isPaused);
     if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value

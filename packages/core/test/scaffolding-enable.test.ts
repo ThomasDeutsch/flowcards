@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
-import { BTContext, BThreadState } from '../src/bthread';
+import { BThreadContext, BThreadState } from '../src/bthread';
 import { flow } from '../src/scenario';
 
 test("a thread will accept an optional array of arguments", () => {
@@ -24,12 +24,12 @@ test("a thread will accept an optional array of arguments", () => {
 test("a thread will accept an optional key", () => {
     let receivedKeyA, receivedKeyB;
 
-    const thread = flow(null, function* (this: BTContext) {
+    const thread = flow(null, function* (this: BThreadContext) {
         receivedKeyA = this.key;
         yield bp.wait('A');
     });
 
-    const threadB = flow(null, function* (this: BTContext) {
+    const threadB = flow(null, function* (this: BThreadContext) {
         receivedKeyB = this.key;
         yield bp.wait('A');
     });
@@ -48,7 +48,7 @@ test("a thread will accept an optional key", () => {
 test("if no key is provided, the default key value is undefined", () => {
     let receivedKeyA;
 
-    const thread = flow(null, function* (this: BTContext) {
+    const thread = flow(null, function* (this: BThreadContext) {
         receivedKeyA = this.key;
         yield bp.wait('A');
     });
@@ -63,7 +63,7 @@ test("if no key is provided, the default key value is undefined", () => {
 test("enable will return the current thread waits", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BTContext) {
+    const thread = flow(null, function* (this: BThreadContext) {
         yield bp.wait('A');
     });
 
@@ -77,7 +77,7 @@ test("enable will return the current thread waits", () => {
 test("enable will return the current thread blocks", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BTContext) {
+    const thread = flow(null, function* (this: BThreadContext) {
         yield bp.block('A');
     });
 
@@ -91,7 +91,7 @@ test("enable will return the current thread blocks", () => {
 test("enable will return the current thread-section", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BTContext) {
+    const thread = flow(null, function* (this: BThreadContext) {
         this.section('my state value');
         yield bp.wait('A');
     });
@@ -106,7 +106,7 @@ test("enable will return the current thread-section", () => {
 test("enable will return the the state of completion", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BTContext) {
+    const thread = flow(null, function* (this: BThreadContext) {
         this.section('my state value');
         yield bp.request('A');
     });
@@ -121,7 +121,7 @@ test("enable will return the the state of completion", () => {
 test("the section will be deleted if the thread completes", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BTContext) {
+    const thread = flow(null, function* (this: BThreadContext) {
         this.section('my state value');
         yield bp.request('A');
     });

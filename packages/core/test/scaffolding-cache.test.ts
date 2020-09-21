@@ -1,6 +1,6 @@
 import * as bp from "../src/index";
 import { testScenarios } from './testutils';
-import { BTContext } from '../src/index';
+import { BThreadContext } from '../src/index';
 import { flow } from '../src/scenario';
 
 

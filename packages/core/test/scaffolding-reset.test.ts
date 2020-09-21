@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { BTContext, BThreadState } from '../src/bthread';
+import { BThreadContext, BThreadState } from '../src/bthread';
 import { flow } from '../src/scenario';
 
 
@@ -76,7 +76,7 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
     let initCount = 0;
     let receivedValue;
     
-    const threadA = flow(null, function* (this: BTContext) {
+    const threadA = flow(null, function* (this: BThreadContext) {
         this.section('foo');
         yield bp.request('A');
         yield bp.wait('B');

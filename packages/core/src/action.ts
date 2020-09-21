@@ -4,6 +4,7 @@ import { getGuardForWaits } from './guard';
 import { BThreadId } from './bthread';
 
 export enum ActionType {
+    init = "init",
     requested = "requested",
     ui = "ui",
     resolved = "resolved",

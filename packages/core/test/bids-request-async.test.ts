@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { flow } from '../src/scenario'
 import { delay } from './testutils';
-import { BTContext } from '../src/bthread';
+import { BThreadContext } from '../build/bthread';
 
 
 test("A promise can be requested and will create a pending-event", () => {
@@ -218,7 +218,7 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
 
 
 test("a thread in a pending-event state can place additional bids.", (done) => {
-    const thread1 = flow({name: 'requestingThread'}, function* (this: BTContext) {
+    const thread1 = flow({name: 'requestingThread'}, function* (this: BThreadContext) {
         yield [bp.request("A", () => delay(100)), bp.block('B', () => this.isPending('A'))];
     });
 
