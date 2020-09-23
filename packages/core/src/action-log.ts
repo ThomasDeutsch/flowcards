@@ -35,7 +35,6 @@ export interface BThreadProgressReaction {
 }
 
 export type BThreadReaction = BThreadInitReaction | BThreadResetReaction | BThreadProgressReaction;
-export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
 
 
 export class ActionLog {

@@ -11,14 +11,13 @@ import { ActionLog } from './action-log';
 export type BTGen = Generator<Bid | (Bid | null)[] | null, void, any>;
 export type GeneratorFn = (props: any) => BTGen;
 export type BThreadKey = string | number;
-export type BThreadId = {name: string; key?: BThreadKey};
+export type BThreadId = {id: string; key?: BThreadKey};
 
 export interface BThreadInfo {
-    name: string;
+    id: string;
     key?: BThreadKey;
     destroyOnDisable?: boolean;
     cancelPendingOnDisable?: boolean;
-    title?: string;
     description?: string;
 }
 
@@ -36,7 +35,7 @@ export interface PendingEventInfo {
     isExtend: boolean;
 }
 
-export interface BThreadState extends BThreadInfo {
+export interface BThreadState {
     id: BThreadId;
     section?: string;
     waits: EventMap<Bid>;
@@ -44,7 +43,10 @@ export interface BThreadState extends BThreadInfo {
     requests: EventMap<Bid>;
     extends: EventMap<Bid>;
     pendingEvents: EventMap<PendingEventInfo>;
+    destroyOnDisable?: boolean;
+    cancelPendingOnDisable?: boolean;
     isCompleted: boolean;
+    description?: string;
 }
 
 export class BThread {
@@ -67,11 +69,8 @@ export class BThread {
         this.id = id;
         this._state = {
             id: id,
-            key: info.key,
-            name: info.name,
             destroyOnDisable: info.destroyOnDisable,
             cancelPendingOnDisable: info.cancelPendingOnDisable,
-            title: info.title,
             description: info.description,
             section: undefined,
             waits: this._currentBids?.[BidType.wait] || new EventMap(),
@@ -102,7 +101,7 @@ export class BThread {
             this._state.section = undefined;
         }
         return {
-            key: this._state.key,
+            key: this._state.id.key,
             section: section,
             clearSection: removeSection,
             isPending: (event: string | EventId) => this._state.pendingEvents.has(toEvent(event)),

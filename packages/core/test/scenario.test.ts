@@ -92,11 +92,11 @@ test("pending will show what events are pending", (done) => {
 
 test("the bThreadState is returned by the scenarios function", () => {
 
-    const thread1 = flow({name: 'thread1', title: 'myThread1'}, function* () {
+    const thread1 = flow({id: 'thread1', title: 'myThread1'}, function* () {
         yield bp.request("eventOne");
     });
   
-    const thread2 = flow({name: 'thread2', title: 'myThread2'}, function* ({prop1: number, prop2: string}) {
+    const thread2 = flow({id: 'thread2', title: 'myThread2'}, function* ({prop1: number, prop2: string}) {
         yield bp.wait("eventTwo");
     })
   

@@ -10,13 +10,13 @@ function delay(ms: number, value?: any) {
 }
 
 test("a pending event can not be requested by another thread", () => {
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = flow({id: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
         }
     });
 
-    const thread2 = flow({name: 'thread2'}, function* () {
+    const thread2 = flow({id: 'thread2'}, function* () {
         yield bp.request("A", "hey");
     });
 
@@ -31,13 +31,13 @@ test("a pending event can not be requested by another thread", () => {
 
 
 // test("a pending event can not be extended", () => {
-//     const thread1 = flow({name: 'thread1'}, function* () {
+//     const thread1 = flow({id: 'thread1'}, function* () {
 //         while (true) {
 //             yield bp.request("A", () => delay(1000));
 //         }
 //     });
 
-//     const thread2 = flow({name: 'thread2'}, function* () {
+//     const thread2 = flow({id: 'thread2'}, function* () {
 //         yield bp.extend("A");
 //     });
 
@@ -51,7 +51,7 @@ test("a pending event can not be requested by another thread", () => {
 
 
 // test("a pending event resolves can not be blocked", done => {
-//     const thread1 = flow({name: 'thread1'}, function* () {
+//     const thread1 = flow({id: 'thread1'}, function* () {
 //         yield bp.request("A", () => delay(500));
 //         yield bp.wait("fin");
 //     });

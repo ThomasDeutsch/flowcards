@@ -5,12 +5,12 @@ export class BThreadMap<T> {
     private _map: Map<string, T> = new Map();
 
     public static toIdString(bThreadId: BThreadId): string { 
-        return bThreadId.key !== undefined ? `${bThreadId.name}__${bThreadId.key}` : bThreadId.name
+        return bThreadId.key !== undefined ? `${bThreadId.id}__${bThreadId.key}` : bThreadId.id
     }
 
     public static toThreadId(idString: string): BThreadId { 
         const [id, key] = idString.split('__');
-        return {name: id, key: key};
+        return {id: id, key: key};
     }
 
     public get(bThreadId: BThreadId | string): T | undefined{

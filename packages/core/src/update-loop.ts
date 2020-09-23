@@ -1,9 +1,9 @@
-import { Action, getNextActionFromRequests, ActionType } from './action';
+import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
 import { BThreadBids, getAllBids, AllBidsByType } from './bid';
 import { BThread, BThreadState, GeneratorFn, BThreadInfo, PendingEventInfo, BThreadId } from './bthread';
 import { EventMap, EventId, toEvent } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
-import { ActionLog, GET_VALUE_FROM_BTHREAD } from './action-log';
+import { ActionLog } from './action-log';
 import { advanceBThreads } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
@@ -14,7 +14,6 @@ export type ActionDispatch = (action: Action) => void;
 
 // enable, disable or delete bThreads
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
-
 function setupScaffolding(
     stagingFunction: StagingFunction,
     bThreadMap: BThreadMap<BThread>,
@@ -30,7 +29,7 @@ function setupScaffolding(
     const cancelPendingOnDisableThreadIds = new Set<string>();
 
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
-        const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
+        const bThreadId: BThreadId = {id: bThreadInfo.id, key: bThreadInfo.key};
         const bThreadIdString = BThreadMap.toIdString(bThreadId);
         enabledBThreadIds.add(bThreadIdString);
         let bThread = bThreadMap.get(bThreadId)

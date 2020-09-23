@@ -3,13 +3,14 @@ import { EventMap, EventId } from './event-map';
 import { getGuardForWaits } from './guard';
 import { BThreadId } from './bthread';
 
+export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
+
 export enum ActionType {
     requested = "requested",
     ui = "ui",
     resolved = "resolved",
     rejected = "rejected"
 }
-
 export interface Action {
     id: number | null;
     type: ActionType;
