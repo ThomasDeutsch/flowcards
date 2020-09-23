@@ -32,7 +32,7 @@ export interface BThreadContext {
 export interface PendingEventInfo {
     event: EventId;
     threadId: BThreadId;
-    loopIndex: number | null;
+    actionId: number | null;
     isExtend: boolean;
 }
 
@@ -178,7 +178,7 @@ export class BThread {
         const eventInfo: PendingEventInfo = {
             threadId: action.bThreadId,
             event: action.event,
-            loopIndex: action.loopIndex,
+            actionId: action.id,
             isExtend: isExtendPromise
         }    
         if(isExtendPromise) {
@@ -191,17 +191,17 @@ export class BThread {
         action.payload.then((data: any): void => {
             if(!this._thread) return; // was deleted
             const pendingEventInfo = this.state.pendingEvents.get(action.event);
-            if (pendingEventInfo?.loopIndex === action.loopIndex) {
+            if (pendingEventInfo?.actionId === action.id) {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
-                    loopIndex: action.resolveLoopIndex || null, 
+                    id: action.resolveLoopIndex || null, 
                     type: ActionType.resolved,
                     bThreadId: this.id,
                     event: action.event,
                     payload: data,
                     resolve: {
                         isResolvedExtend: isExtendPromise,
-                        requestLoopIndex: action.loopIndex!,
+                        requestLoopIndex: action.id!,
                         requestDuration: requestDuration
                     }
                 });
@@ -209,17 +209,17 @@ export class BThread {
         }).catch((e: Error): void => {
             if(!this._thread) return; // was deleted
             const pendingEventInfo = this.state.pendingEvents.get(action.event);
-            if (pendingEventInfo?.loopIndex === action.loopIndex) {
+            if (pendingEventInfo?.actionId === action.id) {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
-                    loopIndex: action.resolveLoopIndex || null,
+                    id: action.resolveLoopIndex || null,
                     type: ActionType.rejected,
                     bThreadId: this.id,
                     event: action.event,
                     payload: e,
                     resolve: {
                         isResolvedExtend: isExtendPromise,
-                        requestLoopIndex: action.loopIndex!,
+                        requestLoopIndex: action.id!,
                         requestDuration: requestDuration
                     }
                 });

@@ -21,11 +21,10 @@ test("a thread can be replayed", (done) => {
         }
     });
     replay([
-        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'HEY'}},
-        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: SymbolGetValueFromBThread},
-        {loopIndex: 2, type: ActionType.resolved, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: 1},
-        {loopIndex: 3, type: ActionType.ui, bThreadId: {name: 'thread1'}, event: {name: 'B'}, payload: 3}])
-   
+        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'HEY'}},
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: SymbolGetValueFromBThread},
+        {id: 2, type: ActionType.resolved, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: 1},
+        {id: 3, type: ActionType.ui, bThreadId: {name: 'thread1'}, event: {name: 'B'}, payload: 3}])
 });
 
 test("if a request-replay has no payload, the original payload will be used", (done) => {
@@ -43,8 +42,8 @@ test("if a request-replay has no payload, the original payload will be used", (d
         }
     });
     replay([
-        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, payload: SymbolGetValueFromBThread}])
+        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, payload: SymbolGetValueFromBThread}])
 });
 
 
@@ -69,10 +68,10 @@ test("a async request can be replayed", (done) => {
         }
     });
     replay([
-        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveLoopIndex: 2, payload: SymbolGetValueFromBThread},
+        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveLoopIndex: 2, payload: SymbolGetValueFromBThread},
         // the index:2 action is missing ... this is where the resolve will be placed.
-        {loopIndex: 3, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent3'}}])
+        {id: 3, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent3'}}])
 });
 
 
@@ -92,6 +91,6 @@ test("after a replay completes, the normal execution will resume", (done) => {
         }
     });
     replay([
-        {loopIndex: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {loopIndex: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'requestEvent1'}}])
+        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'requestEvent1'}}])
 });

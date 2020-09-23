@@ -24,7 +24,7 @@ function setupScaffolding(
     eventCache: EventMap<CachedItem<any>>,
     dispatch: ActionDispatch,
     actionLog: ActionLog
-): (loopCount: number) => void {
+): (currentActionId: number) => void {
     const enabledBThreadIds = new Set<string>();
     const destroyOnDisableThreadIds = new Set<string>();
     const cancelPendingOnDisableThreadIds = new Set<string>();
@@ -51,7 +51,7 @@ function setupScaffolding(
         event = toEvent(event);
         return eventCache.get(event)!;
     }
-    function run(loopCount: number) {
+    function scaffold(currentActionId: number) {
         bThreadBids.length = 0;
         pendingEventMap.clear();
         enabledBThreadIds.clear();
@@ -75,9 +75,9 @@ function setupScaffolding(
                 // log delete
             }
         });
-        actionLog.logEnabledBThreadIds(loopCount, [...enabledBThreadIds])
+        actionLog.logEnabledBThreadIds(currentActionId, [...enabledBThreadIds])
     }
-    return run;
+    return scaffold;
 }
 
 // update loop ( central construct )
@@ -92,7 +92,7 @@ export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
 
 export class UpdateLoop {
-    private _loopCount = 0;
+    private _currentActionId = 0;
     private _allBidsByType: AllBidsByType = {};
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
@@ -111,10 +111,12 @@ export class UpdateLoop {
         this._actionLog = actionLog;
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._pendingEventMap, this._bThreadStateMap, this._eventCache, actionDispatch, this._actionLog);
         this.actionDispatch = actionDispatch;
+        this._scaffold(this._currentActionId);
+        this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
     }
 
-    private _startReplay() {
-        this._loopCount = 0;
+    private _reset() {
+        this._currentActionId = 0;
         this.actionQueue.length = 0;
         this._bThreadMap.forEach(bThread => bThread.destroy());
         this._bThreadMap.clear();
@@ -128,28 +130,38 @@ export class UpdateLoop {
             context = new EventContext(this.actionDispatch, {name: eventName, key: eventKey});
             this._eventContexts.set({name: eventName, key: eventKey}, context);
         }
-        context?.update(this._allBidsByType, this._pendingEventMap, this._getCachedItem, this._loopCount);
+        context?.update(this._allBidsByType, this._pendingEventMap, this._getCachedItem, this._currentActionId);
         return context;
     }
 
-    public setupContext(isPaused?: boolean): ScenariosContext {
-        if(this.replayMap.has(0)) this._startReplay();
-        this._scaffold(this._loopCount);
-        this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
-        // get next action
-        let action: undefined | Action;
+    private _getNextReplayAction(actionId: number): Action | undefined {
         if(this.replayMap.size !== 0) {
-            action = this.replayMap.get(this._loopCount);
-            this.replayMap.delete(this._loopCount);
-            if(action?.payload === SymbolGetValueFromBThread) {
+            const action = this.replayMap.get(actionId);
+            if(action === undefined) return undefined;
+            this.replayMap.delete(actionId);
+            if(action.payload === SymbolGetValueFromBThread) {
                 action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.event)?.payload;
             }
-        } else if(isPaused !== true) {
-            action = this.actionQueue.shift() || getNextActionFromRequests(this._allBidsByType.request, this._allBidsByType.wait);
+            return action;
         }
-        if (action) { // use next action
-            this._loopCount++;
-            if(action.loopIndex === null) action.loopIndex = this._loopCount;
+        return undefined;
+    }
+
+    public setupContext(isPaused?: boolean): ScenariosContext {
+        let action: undefined | Action;
+        if(isPaused !== true) {
+            action = this._getNextReplayAction(this._currentActionId) || 
+                this.actionQueue.shift() || 
+                getNextActionFromRequests(this._allBidsByType.request, this._allBidsByType.wait);
+        }
+        if (action !== undefined) { // use next action
+            if(action.id === 0) {
+                this._reset();
+                this._scaffold(this._currentActionId);
+                this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
+            } else if(action.id === null) {
+                action.id = this._currentActionId;
+            }
             if(action.type === ActionType.requested) {
                 if (typeof action.payload === "function") {
                     action.payload = action.payload(this._eventCache.get(action.event)?.value);
@@ -160,6 +172,9 @@ export class UpdateLoop {
             }
             this._actionLog.logAction(action);
             advanceBThreads(this._bThreadMap, this._eventCache, this._allBidsByType, action);
+            this._scaffold(this._currentActionId);
+            this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
+            this._currentActionId++;
             return this.setupContext(isPaused);
         }
         // return context to UI

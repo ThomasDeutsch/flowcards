@@ -25,12 +25,13 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
     const loop = new UpdateLoop(stagingFunction, 
         (action: Action): void => {
             if(action) {
-                if(action.loopIndex === null) {
+                if(action.id === null) {
                     bufferedActions.push(action);
                 } else {  // is a replay action
-                    if(action.loopIndex === 0) loop.replayMap.clear();
-                    bufferedReplayMap.set(action.loopIndex, action);
-                    console.log('gogo replay: ', isPaused);
+                    if(action.id === 0) {
+                        loop.replayMap.clear();
+                    }
+                    bufferedReplayMap.set(action.id, action);
                 }
                 clearBufferOnNextTick();
             }
@@ -65,6 +66,7 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
             actions.forEach(action => loop.actionDispatch(action));
         }
     }
+
     const initialScenarioContext = loop.setupContext(isPaused);
     if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
     return [initialScenarioContext, dispatchActions, { getIsPaused: () => isPaused, toggle: togglePlayPause }];

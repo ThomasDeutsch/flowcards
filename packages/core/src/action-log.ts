@@ -13,14 +13,14 @@ export enum BThreadReactionType {
 
 export interface BThreadInitReaction {
     type: BThreadReactionType.init;
-    loopIndex: number;
+    actionId: number;
     nextState: BThreadState;
     nextSection?: string;
 }
 
 export interface BThreadResetReaction {
     type: BThreadReactionType.reset;
-    loopIndex: number;
+    actionId: number;
     nextState: BThreadState;
     nextSection?: string;
     changedPropNames: string[];
@@ -28,7 +28,7 @@ export interface BThreadResetReaction {
 
 export interface BThreadProgressReaction {
     type: BThreadReactionType.progress;
-    loopIndex: number;
+    actionId: number;
     nextState: BThreadState;
     nextSection?: string;
     selectedBid: Bid;
@@ -40,7 +40,7 @@ export type BThreadReaction = BThreadInitReaction | BThreadResetReaction | BThre
 export const SymbolGetValueFromBThread = Symbol('getValueFromBThread');
 
 export class ActionLog {
-    private _actions: Action[] = [{type: ActionType.init, loopIndex: 0, event: {name: 'init'}, bThreadId: {name: 'init'}}];
+    private _actions: Action[] = [];
     public get actions() {
         return this._actions;
     }
@@ -50,7 +50,7 @@ export class ActionLog {
     public logAction(action: Action): void {
         const a = {...action}
         if(action.resolve) {
-            this._actions[action.resolve.requestLoopIndex].resolveLoopIndex = action.loopIndex!;
+            this._actions[action.resolve.requestLoopIndex].resolveLoopIndex = action.id!;
         }
         if(action.resolveLoopIndex === null) {
             a.payload = undefined; // do not save the promise object 
@@ -75,10 +75,10 @@ export class ActionLog {
     public logBThreadInit(bThreadId: BThreadId, initialState: BThreadState, initialSection?: string) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const latestAction = utils.latest(this._actions)
-        const currentLoopIndex =  latestAction ? latestAction.loopIndex! : 0;
+        const currentLoopIndex =  latestAction ? latestAction.id! : 0;
         bThreadReactions!.set(currentLoopIndex, {
             type: BThreadReactionType.init,
-            loopIndex: currentLoopIndex,
+            actionId: currentLoopIndex,
             nextState: initialState,
             nextSection: initialSection
         });
@@ -86,10 +86,10 @@ export class ActionLog {
 
     public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState, nextSection?: string) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.loopIndex!;
+        const currentLoopIndex = utils.latest(this._actions)!.id!;
         bThreadReactions!.set(currentLoopIndex, {
             type: BThreadReactionType.progress,
-            loopIndex: currentLoopIndex,
+            actionId: currentLoopIndex,
             selectedBid: bid,
             nextState: nextState,
             nextSection: nextSection
@@ -98,10 +98,10 @@ export class ActionLog {
 
     public logBThreadReset(bThreadId: BThreadId, changedPropNames: string[], nextState: BThreadState, nextSection?: string) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.loopIndex!;
+        const currentLoopIndex = utils.latest(this._actions)!.id!;
         bThreadReactions!.set(currentLoopIndex, {
             type: BThreadReactionType.reset,
-            loopIndex: currentLoopIndex,
+            actionId: currentLoopIndex,
             nextState: nextState,
             nextSection: nextSection,
             changedPropNames: changedPropNames,
