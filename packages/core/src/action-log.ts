@@ -34,10 +34,9 @@ export interface BThreadProgressReaction {
     selectedBid: Bid;
 }
 
-
-
 export type BThreadReaction = BThreadInitReaction | BThreadResetReaction | BThreadProgressReaction;
-export const SymbolGetValueFromBThread = Symbol('getValueFromBThread');
+export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
+
 
 export class ActionLog {
     private _actions: Action[] = [];

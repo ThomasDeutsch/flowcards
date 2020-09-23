@@ -1,4 +1,4 @@
-import { Action, ActionType } from './action';
+import { Action } from './action';
 import { ScenariosContext, StagingFunction, UpdateLoop } from './update-loop';
 import { ActionLog } from './action-log';
 
@@ -13,8 +13,10 @@ export * from './event-map';
 export * from './action-log';
 export * from './action';
 export * from './extend-context';
+export const CONTEXT_CHANGED: unique symbol = Symbol('contextChanged');
+
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-export type DispatchActions = (actions: Action[] | null) => void;
+export type DispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => void;
 export type PlayPause = { getIsPaused: () => boolean; toggle: () => void };
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, DispatchActions, PlayPause] {
@@ -22,48 +24,65 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
     const actionLog = new ActionLog();
     let isPaused = false;
     const bufferedReplayMap = new Map<number, Action>();
-    const loop = new UpdateLoop(stagingFunction, 
-        (action: Action): void => {
-            if(action) {
-                if(action.id === null) {
-                    bufferedActions.push(action);
-                } else {  // is a replay action
-                    if(action.id === 0) {
-                        loop.replayMap.clear();
-                    }
-                    bufferedReplayMap.set(action.id, action);
-                }
-                clearBufferOnNextTick();
+
+    function placeBufferedAction(action?: Action): void {
+        if(action === undefined) return;
+        if(action.id === null) {
+            bufferedActions.push(action);
+        } else {  // is a replay action
+            if(action.id === 0) {
+                loop.replayMap.clear();
             }
-    }, actionLog);
+            bufferedReplayMap.set(action.id, action);
+        }
+    }
+
+    function internalDispatchSingleAction(action: Action): void {
+        placeBufferedAction(action);
+        clearBufferOnNextTick();
+    }
+
+    function dispatchMultipleActions(actions: Action[]): void {
+        actions.forEach(action => placeBufferedAction(action));
+        clearBufferOnNextTick();
+    }
+
+    const loop = new UpdateLoop(stagingFunction, internalDispatchSingleAction, actionLog);
+
     const clearBufferOnNextTick = (forceRefresh?: boolean) => {
-        Promise.resolve().then(() => {
+        Promise.resolve().then(() => { // next tick
             let withUpdate = false;
             if(bufferedReplayMap.size !== 0) {
-                bufferedActions.length = 0; // remove all buffered actions
-                bufferedReplayMap.forEach((action, key) => loop.replayMap.set(key, action));
+                bufferedActions.length = 0;
+                bufferedReplayMap.forEach((action, key) => loop.replayMap.set(key, action)); // transfer buffer to replay-Map
                 bufferedReplayMap.clear();
                 withUpdate = true;
             }
             else if(bufferedActions.length !== 0 && !isPaused) {
-                bufferedActions.forEach(action => loop.actionQueue.push(action));
+                bufferedActions.forEach(action => loop.actionQueue.push(action)); // transfer buffer to action-queue
                 bufferedActions.length = 0;
                 withUpdate = true;
             } 
             if(withUpdate || forceRefresh) {
-                if(updateCb !== undefined) updateCb(loop.setupContext(isPaused));
+                if(updateCb !== undefined) updateCb(loop.setupContext(isPaused)); // call update callback!
                 else loop.setupContext(isPaused);
             }
         });
     }
+
     const togglePlayPause = () => { 
         isPaused = !isPaused;
         clearBufferOnNextTick(true);
      };
-    const dispatchActions = (actions: Action[] | null) => {
-        if(actions === null) loop.setupContext(isPaused);
+
+    const dispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => {
+        if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
+            // TODO: add logging for context change!
+            loop.runScaffolding();
+            loop.setupContext(isPaused);
+        }
         else {
-            actions.forEach(action => loop.actionDispatch(action));
+            dispatchMultipleActions(actions);
         }
     }
 

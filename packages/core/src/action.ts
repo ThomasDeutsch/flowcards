@@ -24,8 +24,6 @@ export interface Action {
     };
 }
 
-
-
 function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
     if (!coll || coll.length === 0) return [undefined, undefined]
     if (coll.length === 1) return [coll[0], undefined];

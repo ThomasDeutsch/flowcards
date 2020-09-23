@@ -3,7 +3,7 @@ import { BThreadBids, getAllBids, AllBidsByType } from './bid';
 import { BThread, BThreadState, GeneratorFn, BThreadInfo, PendingEventInfo, BThreadId } from './bthread';
 import { EventMap, EventId, toEvent } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
-import { ActionLog, SymbolGetValueFromBThread } from './action-log';
+import { ActionLog, GET_VALUE_FROM_BTHREAD } from './action-log';
 import { advanceBThreads } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
@@ -72,7 +72,7 @@ function setupScaffolding(
                 bThreadStateMap.delete(bThradId);
                 cancelPendingOnDisableThreadIds.delete(bThreadIdString);
                 destroyOnDisableThreadIds.delete(bThreadIdString);
-                // log delete
+                //TODO: log delete
             }
         });
         actionLog.logEnabledBThreadIds(currentActionId, [...enabledBThreadIds])
@@ -80,7 +80,7 @@ function setupScaffolding(
     return scaffold;
 }
 
-// update loop ( central construct )
+// update loop
 // -----------------------------------------------------------------------------------
 
 export interface ScenariosContext {
@@ -111,8 +111,7 @@ export class UpdateLoop {
         this._actionLog = actionLog;
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._pendingEventMap, this._bThreadStateMap, this._eventCache, actionDispatch, this._actionLog);
         this.actionDispatch = actionDispatch;
-        this._scaffold(this._currentActionId);
-        this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
+        this.runScaffolding();
     }
 
     private _reset() {
@@ -126,7 +125,7 @@ export class UpdateLoop {
 
     private _getEventContext = (eventName: string, eventKey?: string | number): EventContext => {
         let context = this._eventContexts.get({name: eventName, key: eventKey});
-        if(!context) {
+        if(context === undefined) {
             context = new EventContext(this.actionDispatch, {name: eventName, key: eventKey});
             this._eventContexts.set({name: eventName, key: eventKey}, context);
         }
@@ -139,12 +138,17 @@ export class UpdateLoop {
             const action = this.replayMap.get(actionId);
             if(action === undefined) return undefined;
             this.replayMap.delete(actionId);
-            if(action.payload === SymbolGetValueFromBThread) {
+            if(action.payload === GET_VALUE_FROM_BTHREAD) {
                 action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.event)?.payload;
             }
             return action;
         }
         return undefined;
+    }
+
+    public runScaffolding() {
+        this._scaffold(this._currentActionId);
+        this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
     }
 
     public setupContext(isPaused?: boolean): ScenariosContext {
@@ -172,8 +176,7 @@ export class UpdateLoop {
             }
             this._actionLog.logAction(action);
             advanceBThreads(this._bThreadMap, this._eventCache, this._allBidsByType, action);
-            this._scaffold(this._currentActionId);
-            this._allBidsByType = getAllBids(this._bThreadBids, this._pendingEventMap);
+            this.runScaffolding();
             this._currentActionId++;
             return this.setupContext(isPaused);
         }

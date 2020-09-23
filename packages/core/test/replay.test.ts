@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { ActionType } from '../src/action';
 import { flow } from '../src/scenario';
-import { SymbolGetValueFromBThread } from '../src/action-log';
+import { GET_VALUE_FROM_BTHREAD } from '../src/action-log';
 
 test("a thread can be replayed", (done) => {
     let value1: number, value2: number;
@@ -22,7 +22,7 @@ test("a thread can be replayed", (done) => {
     });
     replay([
         {id: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'HEY'}},
-        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: SymbolGetValueFromBThread},
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: GET_VALUE_FROM_BTHREAD},
         {id: 2, type: ActionType.resolved, bThreadId: {name: 'thread1'}, event: {name: 'A'}, payload: 1},
         {id: 3, type: ActionType.ui, bThreadId: {name: 'thread1'}, event: {name: 'B'}, payload: 3}])
 });
@@ -43,7 +43,7 @@ test("if a request-replay has no payload, the original payload will be used", (d
     });
     replay([
         {id: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, payload: SymbolGetValueFromBThread}])
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, payload: GET_VALUE_FROM_BTHREAD}])
 });
 
 
@@ -69,7 +69,7 @@ test("a async request can be replayed", (done) => {
     });
     replay([
         {id: 0, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent1'}},
-        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveLoopIndex: 2, payload: SymbolGetValueFromBThread},
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, event: {name: 'replayEvent2'}, resolveLoopIndex: 2, payload: GET_VALUE_FROM_BTHREAD},
         // the index:2 action is missing ... this is where the resolve will be placed.
         {id: 3, type: ActionType.ui, bThreadId: {name: ''}, event: {name: 'replayEvent3'}}])
 });
