@@ -1,5 +1,5 @@
 import { EventMap, EventId } from './event-map';
-import { Bid, BidSubType, AllBidsByType } from './bid';
+import { Bid, BidSubType, AllBidsByType, BidType } from './bid';
 import * as utils from './utils';
 import { isGuardPassed, getGuardForWaits } from './guard';
 import { PendingEventInfo, BThreadId } from './bthread';
@@ -9,7 +9,9 @@ import { GetCachedItem } from './event-cache';
 
 export interface EventInfo {
     bThreadId?: BThreadId;
-    bid: Bid;
+    event?: EventId;
+    type?: BidType;
+    subType?: BidSubType;
     details?: any;
 }
 
@@ -17,7 +19,10 @@ function getResultDetails(result: boolean | { isValid: boolean; details?: string
     return (typeof result !== 'boolean') ? result.details : undefined;
 }
 
-type ExplainResult = {valid: EventInfo[]; invalid: EventInfo[]; blocked: EventInfo[] }
+export type ExplainResult = {
+    valid: EventInfo[]; 
+    invalid: EventInfo[];
+}
 
 export class EventContext {
     private _actionDispatch: ActionDispatch;
@@ -38,55 +43,69 @@ export class EventContext {
         return this._pending;
     }
 
-    private _lastUpdatedOnActionIndex = -1;
+    private _lastUpdatedOnActionId = -1;
     
     public explain(payload?: any): ExplainResult {
-        const infos: ExplainResult  = {valid: [], invalid: [], blocked: []};
-        this._waits?.forEach(bid => {
+        const infos: ExplainResult  = {valid: [], invalid: []};
+        if(!this._waits || this._waits.length === 0) {
+            infos.invalid.push({details: 'noWait'});
+        }
+        else {
+            this._waits.forEach(bid => {
+                const guardResult = bid.guard?.(payload);
+                if(bid.event.name === 'nyWaitBid1') {
+                    console.log('TEST!: ', guardResult, bid)
+                }
+                if(guardResult === undefined) {
+  
+                    infos.valid.push({
+                        bThreadId: bid.bThreadId,
+                        event: bid.event,
+                        type: bid.type,
+                        subType: bid.subType
+                    });
+                    return;
+                }
+                const isValid = isGuardPassed(guardResult);
+                const result = {
+                    bThreadId: bid.bThreadId,
+                    event: bid.event,
+                    type: bid.type,
+                    subType: bid.subType,
+                    details: getResultDetails(guardResult),
+                }
+                if(isValid) {
+                    infos.valid.push(result);
+                } 
+                else {
+                    infos.invalid.push(result);
+                }
+            });
+        }
+        this._blocks?.forEach(bid => {
             const guardResult = bid.guard?.(payload);
             if(guardResult === undefined) {
-                infos.valid.push({
-                    bThreadId: bid.bThreadId,
-                    bid: bid
-                });
-            }
-            else if(isGuardPassed(guardResult)) {
-                infos.valid.push({
-                    bThreadId: bid.bThreadId,
-                    details: getResultDetails(guardResult),
-                    bid: bid
-                });
-            }
-            else {
                 infos.invalid.push({
                     bThreadId: bid.bThreadId,
-                    details: getResultDetails(guardResult),
-                    bid: bid
-                });
-            }
-        });
-        this._blocks?.forEach(bid => {
-            const guard = bid.guard;
-            if(!guard) {
-                infos.blocked.push({
-                    bThreadId: bid.bThreadId,
-                    bid: bid
+                    event: bid.event,
+                    type: bid.type,
+                    subType: bid.subType,
+                    details: 'blocked'
                 });
                 return;
             }
-            const guardResult = guard(payload);
-            if(isGuardPassed(guardResult)) {
-                infos.blocked.push({
-                    bThreadId: bid.bThreadId,
-                    details: getResultDetails(guardResult),
-                    bid: bid
-                });
+            const isValid = isGuardPassed(guardResult);
+            const info = {
+                bThreadId: bid.bThreadId,
+                event: bid.event,
+                type: bid.type,
+                subType: bid.subType,
+                details: getResultDetails(guardResult)
+            }
+            if(isValid) {
+                infos.invalid.push(info);
             } else {
-                infos.valid.push({
-                    bThreadId: bid.bThreadId,
-                    details: getResultDetails(guardResult),
-                    bid: bid
-                });
+                infos.valid.push(info);
             }
         });
         return infos;
@@ -111,9 +130,9 @@ export class EventContext {
         this._eventId = eventId;
     }
 
-    public update(allBidsByType: AllBidsByType, pendingEventMap: EventMap<PendingEventInfo>, getCachedItem: GetCachedItem, actionIndex: number) {
-        if(this._lastUpdatedOnActionIndex === actionIndex) return;
-        this._lastUpdatedOnActionIndex = actionIndex;
+    public update(allBidsByType: AllBidsByType, pendingEventMap: EventMap<PendingEventInfo>, getCachedItem: GetCachedItem, actionId: number) {
+        if(this._lastUpdatedOnActionId === actionId) return;
+        this._lastUpdatedOnActionId = actionId;
         this._blocks = utils.flattenShallow(allBidsByType.block?.getExactMatchAndUnkeyedMatch(this._eventId));
         this._waits = utils.flattenShallow(allBidsByType?.wait?.getAllMatchingValues(this._eventId));
         this._waitsNoOn = this._waits?.filter(bid => bid.subType !== BidSubType.on);

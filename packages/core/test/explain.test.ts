@@ -1,26 +1,27 @@
-// import * as bp from "../src/bid";
-// import { testScenarios, delay } from './testutils';
-// import { flow } from "../src/scenario";
+import * as bp from "../src/bid";
+import { testScenarios, delay } from './testutils';
+import { flow } from "../src/scenario";
 
-// test("an extend can be resolved in the same cycle", () => {
+test("when a wait is blocked, the explain function will contain the guard-details", () => {
 
-//     const requestingThread = flow(null, function* () {
-//         const val: number = yield bp.wait("A");
-//     });
+    const waitingThread = flow({id: 'waitingThread'}, function* () {
+         yield bp.wait("nyWaitBid1");
+    });
 
-//     const blockingThread = flow(null, function* () {
-//         yield bp.block("A", (x: number) => {
-//             return x > 0 ? {isValid: true, details: "value is correct"} : {isValid: false, details: "value needs to be bigger than 0"};
-//         });
-//     });
+    const blockValuesSmallerThanOne = flow({id: 'blockThread'}, function* () {
+        yield bp.block("nyWaitBid1", (x: number) => {
+            return x < 1 ? {isValid: true, details: "value needs to be bigger than 0"} : {isValid: false, details: "value is bigger than one"};
+        });
+    });
 
-//     testScenarios((enable) => {
-//         enable(requestingThread());
-//         enable(blockingThread());
-//     }, ({explain}) => {
-//         expect(explain('A', 10)).toBe(true);
-//     });
-// });
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(blockValuesSmallerThanOne());
+    }, ({event}) => {
+        expect(event('nyWaitBid1').explain(1).invalid).toBe(8);
+        expect(event('nyWaitBid1').explain(10).valid).toBe(true);
+    });
+});
 
 
 // TODO: a block is expained!

@@ -17,7 +17,7 @@ test("A promise can be requested and will create a pending-event", () => {
             expect(event('A').pending).toBeTruthy();
             expect(event('A').value).toBeUndefined();
             expect(event('A').history.length).toBe(0);
-            expect(event('A').pending?.threadId.name).toEqual('requestingThread');
+            expect(event('A').pending?.threadId.id).toEqual('requestingThread');
         }
     });
 });
@@ -231,9 +231,9 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
         enable(thread2());
     }, ({event, thread}) => {
         if(event('A').pending) {
-            expect(event('B').explain().blocked.length > 0).toBeTruthy();
+            expect(event('B').explain().invalid.length > 0).toBeTruthy();
         } else if( thread.get('requestingThread')?.isCompleted) {
-            expect(event('B').explain().blocked.length === 0).toBeTruthy();
+            expect(event('B').explain().invalid.length).toBe(1);
             done();
         }
     });

@@ -7,7 +7,7 @@ export type GuardFunction = (payload: any) => {isValid: boolean; details?: strin
 export function isGuardPassed(guardResult: {isValid: boolean; details?: string} | boolean) {
     if(guardResult === true) return true;
     if(guardResult === false) return false;
-    if(guardResult?.isValid === true) return true;
+    if(guardResult.isValid === true) return true;
     return false;
 }
 
