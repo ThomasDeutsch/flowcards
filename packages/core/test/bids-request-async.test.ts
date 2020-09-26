@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { flow } from '../src/scenario'
 import { delay } from './testutils';
-import { BThreadContext } from '../build/bthread';
+import { BThreadContext } from "../src/bthread";
 
 
 test("A promise can be requested and will create a pending-event", () => {

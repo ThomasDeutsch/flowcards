@@ -1,9 +1,10 @@
 import { Action, ActionType } from './action';
-import { BidType, getMatchingBids, BidsByType, isBlocked} from './bid';
+import { BidType, getMatchingBids, BidsByType, isBlocked, hasValidMatch} from './bid';
 import { BThread } from './bthread';
 import { BThreadMap } from './bthread-map';
 import { EventMap } from './event-map';
 import { CachedItem } from './event-cache';
+import { isGuardPassed } from './guard';
 
 const EXTENDED_WITH_PROMISE: unique symbol = Symbol('extended with promise');
 
@@ -15,6 +16,7 @@ function progressWait(bidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, t
     if(matchingBids === undefined) return false;
     matchingBids.forEach(bid => {
         if(isBlocked(bidsByType, bid.event, action)) return;
+        if(bid.guard && !isGuardPassed(bid.guard(action.payload))) return;
         bThreadMap.get(bid.bThreadId)?.progressWait(bid, action);
     });
     return true;
@@ -43,8 +45,8 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
     switch (action.type) {
         case ActionType.requested: {
             const bThread = bThreadMap.get(action.bThreadId);
-            if(bThread === undefined) return;
-            const bid = bThread.currentBids?.request?.get(action.event);
+            if(bThread === undefined || action.bidType === undefined) return;
+            const bid = bThread.currentBids?.[action.bidType]?.get(action.event);
             if(bid === undefined) return;
             if(action.resolveLoopIndex !== undefined) {
                 bThread.addPendingEvent(action, false);

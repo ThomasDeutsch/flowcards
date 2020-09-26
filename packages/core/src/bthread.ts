@@ -197,6 +197,7 @@ export class BThread {
                     type: ActionType.resolved,
                     bThreadId: this.id,
                     event: action.event,
+                    bidType: action.bidType,
                     payload: data,
                     resolve: {
                         isResolvedExtend: isExtendPromise,
@@ -215,6 +216,7 @@ export class BThread {
                     type: ActionType.rejected,
                     bThreadId: this.id,
                     event: action.event,
+                    bidType: action.bidType,
                     payload: e,
                     resolve: {
                         isResolvedExtend: isExtendPromise,
@@ -244,21 +246,22 @@ export class BThread {
     }
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
-        const bid = this._currentBids?.request?.get(action.event) || this._currentBids?.extend?.get(action.event);
+        const bidType = action.bidType;
+        if(bidType === undefined) return;
+        const bid = this._currentBids?.[bidType]?.get(action.event)
         if(!bid) return;
-        if(bid.type === BidType.set) {
+        if(bidType === BidType.set) {
             setEventCache(eventCache, action.event, action.payload);
         }
         this._progressBThread(bid, action.payload);
     }
 
     public progressWait(bid: Bid, action: Action): void {
-        if(!bid || bid.guard && !bid.guard(action.payload)) return; //TODO: separate guard from wait!
         this._progressBThread(bid, action.payload);
     }
 
     public progressExtend(action: Action, bid: Bid): ExtendContext | undefined {
-        if(!bid || bid.guard && !bid.guard(action.payload)) return undefined;
+        if(!bid || bid.guard && !bid.guard(action.payload)) return undefined; //TODO: move up to advance-bthreads ?????
         const extendContext = new ExtendContext(action.payload);
         this._progressBThread(bid, extendContext);
         extendContext.createPromiseIfNotCompleted();

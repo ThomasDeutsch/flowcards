@@ -25,6 +25,7 @@ export interface Action {
         requestLoopIndex: number;
         requestDuration: number;  
     };
+    bidType?: BidType;
 }
 
 function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
@@ -41,7 +42,8 @@ function getActionFromBid(bid: Bid): Action {
         type: ActionType.requested,
         bThreadId: bid.bThreadId,
         event: bid.event,
-        payload: bid.payload
+        payload: bid.payload,
+        bidType: bid.type
     };
     return action;
 }

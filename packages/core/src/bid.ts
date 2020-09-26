@@ -68,14 +68,16 @@ export function bidsByType(allBThreadBids: BThreadBids[]): BidsByType {
     return bidsByType;
 }
 
-export function isBlocked(bidsByType: BidsByType, event: EventId, bidOrAction?: Bid | Action): boolean {
+type withPayload = {payload?: any};
+
+export function isBlocked(bidsByType: BidsByType, event: EventId, withPayload?: withPayload): boolean {
     if(bidsByType.block !== undefined) {
         if(bidsByType.block.has(event) || bidsByType.block?.has({name: event.name})) return true;
     }
-    if(bidOrAction && bidsByType.guardedBlock !== undefined) {
+    if(withPayload && bidsByType.guardedBlock !== undefined) {
         const blockBids = flattenShallow(bidsByType.guardedBlock.getExactMatchAndUnkeyedMatch(event));
         const guard = getGuardForBids(blockBids, event);
-        if(guard) return isGuardPassed(guard(bidOrAction.payload));
+        if(guard) return isGuardPassed(guard(withPayload.payload));
     }
     return false;
 }
@@ -91,14 +93,14 @@ export function getBidsForTypes(bidsByType: BidsByType, types: BidType[]): Bid[]
     return result;
 }
 
-export function hasValidMatch(bidsByType: BidsByType, bidType: BidType, event: EventId, bidOrAction?: Bid | Action): boolean {
+export function hasValidMatch(bidsByType: BidsByType, bidType: BidType, event: EventId, withPayload?: withPayload): boolean {
     const bidsMap = bidsByType[bidType]
     if(!bidsMap) return false;
     const bids = flattenShallow(bidsMap.getExactMatchAndUnkeyedMatch(event));
     if(bids === undefined || bids.length === 0) return false;
-    if(bidOrAction === undefined) return true;
+    if(withPayload === undefined) return true;
     const guard = getGuardForBids(bids, event);
-    if(guard) return isGuardPassed(guard(bidOrAction.payload));
+    if(guard) return isGuardPassed(guard(withPayload.payload));
     return true;
 }
 
