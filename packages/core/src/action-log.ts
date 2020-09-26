@@ -1,4 +1,4 @@
-import { Action, ActionType } from './action';
+import { Action } from './action';
 import { Bid } from './bid';
 import { BThreadId } from './bthread';
 import { BThreadMap } from './bthread-map';

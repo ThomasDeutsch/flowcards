@@ -1,7 +1,7 @@
 import { EventMap, EventId } from './event-map';
-import { Bid, BidSubType, AllBidsByType, BidType } from './bid';
+import { Bid, BidsByType, BidType, isBlocked } from './bid';
 import * as utils from './utils';
-import { isGuardPassed, getGuardForWaits } from './guard';
+import { isGuardPassed } from './guard';
 import { PendingEventInfo, BThreadId } from './bthread';
 import { ActionDispatch } from './update-loop';
 import { ActionType } from './action';
@@ -11,7 +11,6 @@ export interface EventInfo {
     bThreadId?: BThreadId;
     event?: EventId;
     type?: BidType;
-    subType?: BidSubType;
     details?: any;
 }
 
@@ -35,9 +34,8 @@ export class EventContext {
     public get history() {
         return this._history || [];
     }
-    private _blocks: Bid[] | undefined;
-    private _waits: Bid[] | undefined;
-    private _waitsNoOn: Bid[] | undefined;
+    private _bidsByType: BidsByType;
+    private _dispatchableWaits: Bid[] | undefined;
     private _pending: PendingEventInfo | undefined;
     public get pending() {
         return this._pending;
@@ -46,12 +44,14 @@ export class EventContext {
     private _lastUpdatedOnActionId = -1;
     
     public explain(payload?: any): ExplainResult {
+        const blocks = utils.flattenShallow(this._bidsByType.block?.getExactMatchAndUnkeyedMatch(this._eventId));
+        const waits = utils.flattenShallow(this._bidsByType?.wait?.getAllMatchingValues(this._eventId));
         const infos: ExplainResult  = {valid: [], invalid: []};
-        if(!this._waits || this._waits.length === 0) {
+        if(!waits || waits.length === 0) {
             infos.invalid.push({details: 'noWait'});
         }
         else {
-            this._waits.forEach(bid => {
+            waits.forEach(bid => {
                 const guardResult = bid.guard?.(payload);
                 if(bid.event.name === 'nyWaitBid1') {
                     console.log('TEST!: ', guardResult, bid)
@@ -61,8 +61,7 @@ export class EventContext {
                     infos.valid.push({
                         bThreadId: bid.bThreadId,
                         event: bid.event,
-                        type: bid.type,
-                        subType: bid.subType
+                        type: bid.type
                     });
                     return;
                 }
@@ -71,7 +70,6 @@ export class EventContext {
                     bThreadId: bid.bThreadId,
                     event: bid.event,
                     type: bid.type,
-                    subType: bid.subType,
                     details: getResultDetails(guardResult),
                 }
                 if(isValid) {
@@ -82,14 +80,14 @@ export class EventContext {
                 }
             });
         }
-        this._blocks?.forEach(bid => {
+        // TODO: add pending as invalid?
+        blocks.forEach(bid => {
             const guardResult = bid.guard?.(payload);
             if(guardResult === undefined) {
                 infos.invalid.push({
                     bThreadId: bid.bThreadId,
                     event: bid.event,
                     type: bid.type,
-                    subType: bid.subType,
                     details: 'blocked'
                 });
                 return;
@@ -99,7 +97,6 @@ export class EventContext {
                 bThreadId: bid.bThreadId,
                 event: bid.event,
                 type: bid.type,
-                subType: bid.subType,
                 details: getResultDetails(guardResult)
             }
             if(isValid) {
@@ -112,30 +109,31 @@ export class EventContext {
     }
 
     private _dispatch(payload: any): undefined | true | false {    
-        const waits = this._waitsNoOn;
-        const eventId = this._eventId;
-        const guard = getGuardForWaits(waits, eventId);
+        const guard = getGuardForWaits(this._dispatchableWaits, this._eventId); //TODO: also get guard from blocks!
         if(guard && !isGuardPassed(guard(payload))) return false;
         this._actionDispatch({id: null, type: ActionType.ui, event: this._eventId, payload: payload, bThreadId: {id: ""}});
         return true;
     }
 
-    public get dispatch() {
-        if(!this._waitsNoOn || this._waitsNoOn.length === 0) return undefined;
+    public get dispatch(): ActionDispatch | undefined {
+        if(!this._dispatchableWaits || this._dispatchableWaits.length === 0) return undefined;
         return this._dispatch.bind(this);
     }
 
     constructor(actionDispatch: ActionDispatch, eventId: EventId) {
         this._actionDispatch = actionDispatch;
         this._eventId = eventId;
+        this._bidsByType = {} as BidsByType;
     }
 
-    public update(allBidsByType: AllBidsByType, pendingEventMap: EventMap<PendingEventInfo>, getCachedItem: GetCachedItem, actionId: number) {
+    public update(bidsByType: BidsByType, pendingEventMap: EventMap<PendingEventInfo>, getCachedItem: GetCachedItem, actionId: number) {
         if(this._lastUpdatedOnActionId === actionId) return;
         this._lastUpdatedOnActionId = actionId;
-        this._blocks = utils.flattenShallow(allBidsByType.block?.getExactMatchAndUnkeyedMatch(this._eventId));
-        this._waits = utils.flattenShallow(allBidsByType?.wait?.getAllMatchingValues(this._eventId));
-        this._waitsNoOn = this._waits?.filter(bid => bid.subType !== BidSubType.on);
+        this._bidsByType = bidsByType;
+        // TODO: get dispatchable waits
+        // remove blocks
+        // 
+        this._dispatchableWaits = this._waits?.filter(bid => bid.subType !== BidSubType.on && !isBlocked(bidsByType, bid.event));
         this._pending = pendingEventMap.get(this._eventId);
         const cachedItem = getCachedItem(this._eventId);
         this._value = cachedItem?.value;

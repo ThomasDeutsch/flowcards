@@ -1,4 +1,5 @@
 import * as utils from './utils';
+import { notUndefined } from './utils';
 
 export type EventKey = string | number;
 type EventIteratorFunction<T> = (e: EventId, value: T) => any;
@@ -70,11 +71,14 @@ export class EventMap<T>  {
         }
     }
 
-    public getExactMatchAndUnkeyedMatch(event: EventId): T[] {
+    public getExactMatchAndUnkeyedMatch(event: EventId): T[] | undefined {
+        const noKeyResult = this.noKey.get(event.name)
         if(event.key === undefined) {
-            return [this.noKey.get(event.name)].filter(utils.notUndefined);
+            return (noKeyResult !== undefined) ? [noKeyResult] : undefined
         }
-        return [this.noKey.get(event.name), this.withKey.get(event.name)?.get(event.key)].filter(utils.notUndefined);
+        const withKeyResult = this.withKey.get(event.name)?.get(event.key);
+        if(withKeyResult === undefined && noKeyResult === undefined) return undefined;
+        return [noKeyResult, withKeyResult].filter(notUndefined);
     }
 
     public getAllMatchingValues(event?: EventId): T[] | undefined {
@@ -138,6 +142,12 @@ export class EventMap<T>  {
     public get allEvents(): EventId[] | undefined {
         const elements: EventId[] = [];
         this.forEach((event) => elements.push(event));
+        return elements.length > 0 ? elements : undefined;
+    }
+
+    public get allValues(): T[] | undefined {
+        const elements: T[] = [];
+        this.forEach((event, value) => elements.push(value));
         return elements.length > 0 ? elements : undefined;
     }
     

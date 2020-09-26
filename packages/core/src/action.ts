@@ -1,6 +1,7 @@
-import { Bid, BidSubType } from './bid';
-import { EventMap, EventId } from './event-map';
-import { getGuardForWaits } from './guard';
+import { Bid, BidsByType, isBlocked, BidType, getBidsForTypes, hasValidMatch } from './bid';
+import { EventId } from './event-map';
+import * as utils from './utils';
+
 import { BThreadId } from './bthread';
 
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
@@ -11,6 +12,7 @@ export enum ActionType {
     resolved = "resolved",
     rejected = "rejected"
 }
+
 export interface Action {
     id: number | null;
     type: ActionType;
@@ -25,34 +27,15 @@ export interface Action {
     };
 }
 
-function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
-    if (!coll || coll.length === 0) return [undefined, undefined]
-    if (coll.length === 1) return [coll[0], undefined];
-    const randomIndex = Math.floor(Math.random() * coll.length);
-    const value = coll.splice(randomIndex, 1)[0];
-    return [value, coll];
-}
-
-function getBid(bids?: Bid[], waitBids?: EventMap<Bid[]>): Bid | undefined {
-    if(!bids) return undefined;
-    const checkBids = [...bids];
-    while (checkBids.length > 0) {
-        const bid = checkBids.pop();
-        if(!bid) continue;
-        if(bid.subType === BidSubType.trigger) {
-            const waitsForEvent = waitBids?.get(bid.event);
-            if(waitsForEvent) {
-                const guard = getGuardForWaits(waitsForEvent, bid.event);
-                if(!guard || guard(bid.payload)) return bid;
-            }
-        } else {
-            return bid;
-        }
+function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
+    if(isBlocked(bidsByType, bid.event, bid)) return false
+    if(bid.type === BidType.trigger) {
+        return hasValidMatch(bidsByType, BidType.wait, bid.event, bid) || hasValidMatch(bidsByType, BidType.on, bid.event, bid);
     }
-    return undefined;
+    return true;
 }
 
-function getActionFromBid(bid: Bid) {
+function getActionFromBid(bid: Bid): Action {
     const action = {
         id: null,
         type: ActionType.requested,
@@ -63,18 +46,15 @@ function getActionFromBid(bid: Bid) {
     return action;
 }
 
-export function getNextActionFromRequests(requestBids?: EventMap<Bid[]>, waitBids?: EventMap<Bid[]>): Action | undefined {
-    if(!requestBids) return undefined;
-    const events = requestBids.allEvents;
-    if(!events) return undefined;
-    let [selectedEvent, rest] = getRandom(events);
-    while(selectedEvent) {
-        const bids = requestBids.get(selectedEvent);
-        const bid = getBid(bids, waitBids);
-        if(bid) {
-            return getActionFromBid(bid);
-        } 
-        [selectedEvent, rest] = getRandom(rest);
+export function getNextActionFromRequests(bidsByType: BidsByType): Action | undefined {
+    const bids = getBidsForTypes(bidsByType, [BidType.request, BidType.set, BidType.trigger]);
+    if(bids === undefined) return undefined;
+    let [selectedBid, rest] = utils.getRandom(bids);
+    while(selectedBid) {
+        if(isValidRequest(bidsByType, selectedBid)) {
+            return getActionFromBid(selectedBid);
+        }
+        [selectedBid, rest] = utils.getRandom(rest);
     }
     return undefined; 
 }

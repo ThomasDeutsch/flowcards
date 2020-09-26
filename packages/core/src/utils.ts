@@ -33,14 +33,22 @@ export function toArray<T>(x: T | T[]): T[] {
     return [x];
 }
 
-export function flattenShallow<T>(arr?: T[][]): T[] {
-    if(!arr) return [];
+export function flattenShallow<T>(arr?: T[][]): T[] | undefined {
+    if(!arr || arr.length === 0) return undefined;
     return arr.reduce((acc, val) => acc.concat(val), []);
 }
 
 export function latest<T>(arr?: T[]): T | undefined {
     if(!arr || arr.length === 0) return undefined;
     return arr[arr.length-1];
+}
+
+export function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
+    if (!coll || coll.length === 0) return [undefined, undefined]
+    if (coll.length === 1) return [coll[0], undefined];
+    const randomIndex = Math.floor(Math.random() * coll.length);
+    const value = coll.splice(randomIndex, 1)[0];
+    return [value, coll];
 }
 
 // UUID ------------------------

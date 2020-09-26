@@ -1,5 +1,5 @@
 import { Bid } from './bid';
-import { EventMap, EventId } from './event-map';
+import { EventId } from './event-map';
 import * as utils from './utils';
 
 export type GuardFunction = (payload: any) => {isValid: boolean; details?: string} | boolean
@@ -11,11 +11,11 @@ export function isGuardPassed(guardResult: {isValid: boolean; details?: string} 
     return false;
 }
 
-export function getGuardForWaits(bids: Bid[] | undefined, event: EventId): GuardFunction | undefined {
-    if(!bids) return undefined;
-    let guards: GuardFunction[] | undefined = bids.map(bid => bid.guard).filter(utils.notUndefined);
+export function getGuardForBids(bids: Bid[] | undefined, event: EventId): GuardFunction | undefined {
+    if(bids === undefined) return undefined;
+    let guards = bids.map(bid => bid.guard).filter(utils.notUndefined);
     if(event.key !== undefined) {
-        const g = getGuardForWaits(bids, {name: event.name}); // also get the guard from the no-key wait
+        const g = getGuardForBids(bids, {name: event.name}); // also get the guard from the no-key wait
         if(g) {
             guards = guards || [];
             guards.push(g);
@@ -27,28 +27,28 @@ export function getGuardForWaits(bids: Bid[] | undefined, event: EventId): Guard
 }
 
 
-export function getGuardedUnguardedBlocks(eventMap: EventMap<Bid[]> | undefined): [EventMap<true> | undefined, EventMap<GuardFunction> | undefined] {
-    if(eventMap === undefined) return [undefined, undefined];
-    const fixed: EventMap<true> = new EventMap();
-    const guarded = new EventMap<GuardFunction>();
-    eventMap.forEach((event, bids) => {
-        const guards = bids.map(bid => bid.guard).filter(utils.notUndefined);
-        if(guards.length !== bids.length) fixed.set(event, true);
-        else guarded.set(event, (payload: any) => ({isValid: guards.some(guard => isGuardPassed(guard(payload)))}));
-    });
-    return [fixed, guarded.size() > 0 ? guarded: undefined];
-}
+// export function getGuardedUnguardedBlocks(eventMap: EventMap<Bid[]> | undefined): [EventMap<true> | undefined, EventMap<GuardFunction> | undefined] {
+//     if(eventMap === undefined) return [undefined, undefined];
+//     const fixed: EventMap<true> = new EventMap();
+//     const guarded = new EventMap<GuardFunction>();
+//     eventMap.forEach((event, bids) => {
+//         const guards = bids.map(bid => bid.guard).filter(utils.notUndefined);
+//         if(guards.length !== bids.length) fixed.set(event, true);
+//         else guarded.set(event, (payload: any) => ({isValid: guards.some(guard => isGuardPassed(guard(payload)))}));
+//     });
+//     return [fixed, guarded.size() > 0 ? guarded: undefined];
+// }
 
 
-export function combineGuards(eventMap: EventMap<Bid[]>, guardedBlocks: EventMap<GuardFunction>): void {
-    guardedBlocks.forEach((event, blockGuard) => {
-        const bids = eventMap.get(event);
-        if(!bids) return;
-        const newBids = bids.map(bid => {
-            const oldGuard = bid.guard;
-            bid.guard = (payload: any) => ({isValid: (!oldGuard || isGuardPassed(oldGuard(payload))) && isGuardPassed(!blockGuard(payload))});
-            return bid;
-        })
-        eventMap.set(event, newBids); // mutate the eventMap
-    });
-}
+// export function combineGuards(eventMap: EventMap<Bid[]>, guardedBlocks: EventMap<GuardFunction>): void {
+//     guardedBlocks.forEach((event, blockGuard) => {
+//         const bids = eventMap.get(event);
+//         if(!bids) return;
+//         const newBids = bids.map(bid => {
+//             const oldGuard = bid.guard;
+//             bid.guard = (payload: any) => ({isValid: (!oldGuard || isGuardPassed(oldGuard(payload))) && isGuardPassed(!blockGuard(payload))});
+//             return bid;
+//         })
+//         eventMap.set(event, newBids); // mutate the eventMap
+//     });
+// }

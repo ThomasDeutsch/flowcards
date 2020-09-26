@@ -1,5 +1,5 @@
 import { Action, ActionType } from './action';
-import { Bid, BidSubType, BidType, BThreadBids, getBidsForBThread } from './bid';
+import { Bid, BidType, BThreadBids, getBidsForBThread } from './bid';
 import { EventMap, EventId, toEvent } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
 import { ActionDispatch } from './update-loop';
@@ -133,7 +133,7 @@ export class BThread {
     private _progressBThread(bid: Bid, payload: any, isReject = false): void {
         let returnVal;
         if(!isReject) {
-            returnVal = this._currentBids && this._currentBids.withMultipleBids ? [bid.event, payload] : payload;
+            returnVal = Array.isArray(this._nextBid) ? [bid.event, payload] : payload;
         }
         this._pendingRequests.clear();
         const sectionBeforeProgression = this._state.section;
@@ -159,7 +159,7 @@ export class BThread {
         if (changedPropNames === undefined) return;
         // reset
         this._pendingExtends = new EventMap();
-        this._setCurrentBids();
+        // this._setCurrentBids();
         this._currentProps = nextProps;
         this._state.isCompleted = false;
         delete this._state.section;
@@ -246,14 +246,14 @@ export class BThread {
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
         const bid = this._currentBids?.request?.get(action.event) || this._currentBids?.extend?.get(action.event);
         if(!bid) return;
-        if(bid.subType === BidSubType.set) {
+        if(bid.type === BidType.set) {
             setEventCache(eventCache, action.event, action.payload);
         }
         this._progressBThread(bid, action.payload);
     }
 
     public progressWait(bid: Bid, action: Action): void {
-        if(!bid || bid.guard && !bid.guard(action.payload)) return;
+        if(!bid || bid.guard && !bid.guard(action.payload)) return; //TODO: separate guard from wait!
         this._progressBThread(bid, action.payload);
     }
 
@@ -272,7 +272,5 @@ export class BThread {
 
     public destroy(): void {
         this.cancelPending();
-        delete this._state;
-        delete this._thread;
     }
 }
