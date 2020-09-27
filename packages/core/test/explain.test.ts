@@ -18,8 +18,8 @@ test("when a wait is blocked, the explain function will contain the guard-detail
         enable(waitingThread());
         enable(blockValuesSmallerThanOne());
     }, ({event}) => {
-        expect(event('nyWaitBid1').explain(1).invalid).toBe(8);
-        expect(event('nyWaitBid1').explain(10).valid).toBe(true);
+        expect(event('nyWaitBid1').validate(1).invalid).toBe(8);
+        expect(event('nyWaitBid1').validate(10).valid).toBe(true);
     });
 });
 

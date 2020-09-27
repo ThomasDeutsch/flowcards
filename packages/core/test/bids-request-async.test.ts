@@ -231,9 +231,9 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
         enable(thread2());
     }, ({event, thread}) => {
         if(event('A').pending) {
-            expect(event('B').explain().invalid.length > 0).toBeTruthy();
+            expect(event('B').validate().invalid.length > 0).toBeTruthy();
         } else if( thread.get('requestingThread')?.isCompleted) {
-            expect(event('B').explain().invalid.length).toBe(1);
+            expect(event('B').validate().invalid.length).toBe(1);
             done();
         }
     });
