@@ -29,7 +29,7 @@ export interface Action {
 }
 
 function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
-    if(isBlocked(bidsByType, bid.event, bid)) return false
+    if(isBlocked(bidsByType, bid.event, bid)) return false;
     if(bid.type === BidType.trigger) {
         return hasValidMatch(bidsByType, BidType.wait, bid.event, bid) || hasValidMatch(bidsByType, BidType.on, bid.event, bid);
     }

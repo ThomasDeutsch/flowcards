@@ -1,10 +1,10 @@
 import { Action, ActionType } from './action';
-import { BidType, getMatchingBids, BidsByType, isBlocked, hasValidMatch} from './bid';
+import { BidType, getMatchingBids, BidsByType, isBlocked} from './bid';
 import { BThread } from './bthread';
 import { BThreadMap } from './bthread-map';
 import { EventMap } from './event-map';
 import { CachedItem } from './event-cache';
-import { isGuardPassed } from './guard';
+import { isValid } from './validation';
 
 const EXTENDED_WITH_PROMISE: unique symbol = Symbol('extended with promise');
 
@@ -16,7 +16,7 @@ function progressWait(bidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, t
     if(matchingBids === undefined) return false;
     matchingBids.forEach(bid => {
         if(isBlocked(bidsByType, bid.event, action)) return;
-        if(bid.guard && !isGuardPassed(bid.guard(action.payload))) return;
+        if(bid.validate && !isValid(bid.validate(action.payload))) return;
         bThreadMap.get(bid.bThreadId)?.progressWait(bid, action);
     });
     return true;
@@ -28,6 +28,8 @@ function extendAction(bidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, a
     while(bids && bids.length > 0) {
         const bid = bids.pop(); // get last bid ( highest priority )
         if(bid === undefined) continue;
+        if(isBlocked(bidsByType, bid.event, action)) continue;
+        if(bid.validate && !isValid(bid.validate(action.payload))) continue;
         const extendContext = bThreadMap.get(bid.bThreadId)?.progressExtend(action, bid);
         if(extendContext === undefined) continue;
         if(extendContext.promise) {
@@ -44,6 +46,7 @@ function extendAction(bidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, a
 export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, bidsByType: BidsByType, action: Action): void {
     switch (action.type) {
         case ActionType.requested: {
+            // requested bid was checked (not blocked and valid payload)
             const bThread = bThreadMap.get(action.bThreadId);
             if(bThread === undefined || action.bidType === undefined) return;
             const bid = bThread.currentBids?.[action.bidType]?.get(action.event);

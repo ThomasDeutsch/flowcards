@@ -71,7 +71,6 @@ function setupScaffolding(
                 bThreadStateMap.delete(bThradId);
                 cancelPendingOnDisableThreadIds.delete(bThreadIdString);
                 destroyOnDisableThreadIds.delete(bThreadIdString);
-                //TODO: log delete
             }
         });
         actionLog.logEnabledBThreadIds(currentActionId, [...enabledBThreadIds])

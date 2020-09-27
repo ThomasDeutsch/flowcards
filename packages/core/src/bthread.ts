@@ -260,8 +260,7 @@ export class BThread {
         this._progressBThread(bid, action.payload);
     }
 
-    public progressExtend(action: Action, bid: Bid): ExtendContext | undefined {
-        if(!bid || bid.guard && !bid.guard(action.payload)) return undefined; //TODO: move up to advance-bthreads ?????
+    public progressExtend(action: Action, bid: Bid): ExtendContext {
         const extendContext = new ExtendContext(action.payload);
         this._progressBThread(bid, extendContext);
         extendContext.createPromiseIfNotCompleted();

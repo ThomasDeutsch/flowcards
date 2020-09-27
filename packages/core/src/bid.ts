@@ -1,9 +1,8 @@
 import { EventMap, EventId, toEvent } from './event-map';
-import { GuardFunction, getGuardForBids, isGuardPassed } from './guard';
+import { Validation, withValidPayload } from './validation';
 import * as utils from './utils';
 import { PendingEventInfo, BThreadId } from './bthread';
 import { flattenShallow } from './utils';
-import { Action } from './action';
 
 export enum BidType {
     request = "request",
@@ -22,7 +21,7 @@ export interface Bid {
     bThreadId: BThreadId;
     event: EventId;
     payload?: any;
-    guard?: GuardFunction;
+    validate?: Validation;
 }
 
 // bids from BThreads
@@ -76,8 +75,7 @@ export function isBlocked(bidsByType: BidsByType, event: EventId, withPayload?: 
     }
     if(withPayload && bidsByType.guardedBlock !== undefined) {
         const blockBids = flattenShallow(bidsByType.guardedBlock.getExactMatchAndUnkeyedMatch(event));
-        const guard = getGuardForBids(blockBids, event);
-        if(guard) return isGuardPassed(guard(withPayload.payload));
+        return withValidPayload(blockBids, withPayload.payload);
     }
     return false;
 }
@@ -94,14 +92,11 @@ export function getBidsForTypes(bidsByType: BidsByType, types: BidType[]): Bid[]
 }
 
 export function hasValidMatch(bidsByType: BidsByType, bidType: BidType, event: EventId, withPayload?: withPayload): boolean {
-    const bidsMap = bidsByType[bidType]
-    if(!bidsMap) return false;
-    const bids = flattenShallow(bidsMap.getExactMatchAndUnkeyedMatch(event));
-    if(bids === undefined || bids.length === 0) return false;
+    const bidsMap = bidsByType[bidType];
+    const bids = flattenShallow(bidsMap?.getExactMatchAndUnkeyedMatch(event));
+    if(bids === undefined) return false;
     if(withPayload === undefined) return true;
-    const guard = getGuardForBids(bids, event);
-    if(guard) return isGuardPassed(guard(withPayload.payload));
-    return true;
+    return withValidPayload(bids, withPayload.payload);
 }
 
 export function getMatchingBids(bidsByType: BidsByType, types: BidType[], event: EventId): Bid[] | undefined {
@@ -128,55 +123,11 @@ export function request(event: string | EventId, payload?: any): Bid {
     };
 }
 
-export function wait(event: string | EventId, guard?: GuardFunction): Bid {
-    return { 
-        type: BidType.wait,
-        event: toEvent(event), 
-        guard: guard,
-        bThreadId: {id: ""}
-    };
-}
-
-export function block(event: string | EventId, guard?: GuardFunction): Bid {
-    return { 
-        type: guard ? BidType.guardedBlock : BidType.block,
-        event: toEvent(event), 
-        guard: guard, 
-        bThreadId: {id: ""}
-    };
-}
-
 export function set(event: string | EventId, payload?: any): Bid {
     return {
         type: BidType.set,
         event: toEvent(event), 
         payload: payload,
-        bThreadId: {id: ""}
-    };
-}
-
-export function extend(event: string | EventId, guard?: GuardFunction | null): Bid {
-    return { 
-        type: BidType.extend,
-        event: toEvent(event), 
-        guard: guard !== null ? guard : undefined, 
-        bThreadId: {id: ""}
-    };
-}
-
-export function on(event: string | EventId, guard?: GuardFunction): Bid {
-    return { 
-        type: BidType.on,
-        event: toEvent(event), 
-        guard: guard,
-        bThreadId: {id: ""}
-    };
-}
-
-export function onPending(event: string | EventId): Bid {
-    return { 
-        type: BidType.onPending,
-        event: toEvent(event),
         bThreadId: {id: ""}
     };
 }
@@ -189,3 +140,48 @@ export function trigger(event: string | EventId, payload?: any): Bid {
         bThreadId: {id: ""}
     };
 }
+
+export function wait(event: string | EventId, validation?: Validation): Bid {
+    return { 
+        type: BidType.wait,
+        event: toEvent(event), 
+        validate: validation,
+        bThreadId: {id: ""}
+    };
+}
+
+export function on(event: string | EventId, validation?: Validation): Bid {
+    return { 
+        type: BidType.on,
+        event: toEvent(event), 
+        validate: validation,
+        bThreadId: {id: ""}
+    };
+}
+
+export function onPending(event: string | EventId): Bid {
+    return { 
+        type: BidType.onPending,
+        event: toEvent(event),
+        bThreadId: {id: ""}
+    };
+}
+
+export function block(event: string | EventId, validation?: Validation): Bid {
+    return { 
+        type: validation ? BidType.guardedBlock : BidType.block,
+        event: toEvent(event), 
+        validate: validation, 
+        bThreadId: {id: ""}
+    };
+}
+
+export function extend(event: string | EventId, validation?: Validation): Bid {
+    return { 
+        type: BidType.extend,
+        event: toEvent(event), 
+        validate: validation, 
+        bThreadId: {id: ""}
+    };
+}
+

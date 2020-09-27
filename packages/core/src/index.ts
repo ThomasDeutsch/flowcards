@@ -77,7 +77,6 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
 
     const dispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => {
         if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
-            // TODO: add logging for context change!
             loop.runScaffolding();
             loop.setupContext(isPaused);
         }

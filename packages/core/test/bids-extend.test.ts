@@ -334,3 +334,7 @@ test("an extend can be resolved in the same cycle", () => {
         expect(loopCount).toEqual(2); // 1: init, 2: request & extend (same loop)
     });
 });
+
+
+//TODO: extends with guards
+//TODO: blocked extends
