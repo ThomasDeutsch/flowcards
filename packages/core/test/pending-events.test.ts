@@ -24,7 +24,7 @@ test("a pending event is only local to a thread and can be requested by another 
         enable(thread2());
         enable(thread1());
     }, ({event, thread}) => {
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
         expect(thread.get('thread2')?.isCompleted).toBeTruthy();
     });
 });

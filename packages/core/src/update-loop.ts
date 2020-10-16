@@ -1,6 +1,6 @@
 import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
 import { BThreadBids, activeBidsByType, ActiveBidsByType } from './bid';
-import { BThread, BThreadState, GeneratorFn, BThreadInfo, PendingEventInfo, BThreadId } from './bthread';
+import { BThread, BThreadState, GeneratorFn, BThreadInfo, BThreadId } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
 import { ActionLog } from './action-log';
@@ -18,7 +18,6 @@ function setupScaffolding(
     stagingFunction: StagingFunction,
     bThreadMap: BThreadMap<BThread>,
     bThreadBids: BThreadBids[],
-    pendingEventMap: EventMap<PendingEventInfo>,
     bThreadStateMap: BThreadMap<BThreadState>,
     eventCache: EventMap<CachedItem<any>>,
     dispatch: ActionDispatch,
@@ -42,7 +41,6 @@ function setupScaffolding(
         }
         bThread = bThreadMap.get(bThreadId)!;
         if(bThread.currentBids) bThreadBids.push(bThread.currentBids);
-        pendingEventMap.merge(bThread.state.pendingEvents);
         bThreadStateMap.set(bThreadId, bThread.state);
         return bThread.state;
     }
@@ -52,7 +50,6 @@ function setupScaffolding(
     }
     function scaffold(currentActionId: number) {
         bThreadBids.length = 0;
-        pendingEventMap.clear();
         enabledBThreadIds.clear();
         stagingFunction(enableBThread, getCached); // do the staging
         if(cancelPendingOnDisableThreadIds.size > 0) {
@@ -95,7 +92,6 @@ export class UpdateLoop {
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
     private readonly _bThreadBids: BThreadBids[] = [];
-    private readonly _pendingEventMap = new EventMap<PendingEventInfo>();
     private readonly _actionLog: ActionLog;
     private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<any>>();
@@ -107,7 +103,7 @@ export class UpdateLoop {
 
     constructor(stagingFunction: StagingFunction, actionDispatch: ActionDispatch, actionLog: ActionLog) {
         this._actionLog = actionLog;
-        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._pendingEventMap, this._bThreadStateMap, this._eventCache, actionDispatch, this._actionLog);
+        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, actionDispatch, this._actionLog);
         this.actionDispatch = actionDispatch;
         this.runScaffolding();
     }
@@ -127,7 +123,7 @@ export class UpdateLoop {
             context = new EventContext(this.actionDispatch, {name: eventName, key: eventKey});
             this._eventContexts.set({name: eventName, key: eventKey}, context);
         }
-        context?.update(this._activeBidsByType, this._pendingEventMap, this._getCachedItem, this._currentActionId);
+        context?.update(this._activeBidsByType, this._getCachedItem, this._currentActionId);
         return context;
     }
 

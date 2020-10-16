@@ -68,4 +68,4 @@ import { BThreadContext } from '../src/bthread';
 
 
 // // add test for current.isCompleted
-// // add test for current.pendingEvents
+// // add test for current.isPendingEvents

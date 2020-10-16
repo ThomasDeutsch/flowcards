@@ -145,7 +145,7 @@ test("enable will return the current pending events and a pending function", (do
     testScenarios((enable) => {
         enableReturn = enable(thread1());
     }, ({event}) => {
-        if(event('A').pending && event('B').pending) {
+        if(event('A').isPending && event('B').isPending) {
             expect(enableReturn.requests.has('A')).toBeFalsy();
             expect(enableReturn.requests.has('B')).toBeFalsy();
             done();
@@ -168,7 +168,7 @@ test("enable will return the current requesting events ( blocked and pending inc
         enableReturn = enable(thread1());
         enable(thread2());
     }, ({event}) => {
-        if(event('A').pending) {
+        if(event('A').isPending) {
             expect(enableReturn.requests.has('A')).toBeFalsy();
             expect(enableReturn.requests.has('B')).toBeTruthy();
             done();

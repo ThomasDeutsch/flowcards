@@ -13,11 +13,11 @@ test("A promise can be requested and will create a pending-event", () => {
     testScenarios((enable) => {
         enable(thread1());
     }, ({event}) => {
-        if(event('A').pending) {
-            expect(event('A').pending).toBeTruthy();
+        if(event('A').isPending) {
+            expect(event('A').isPending).toBeTruthy();
             expect(event('A').value).toBeUndefined();
             expect(event('A').history.length).toBe(0);
-            expect(event('A').pending?.threadId.id).toEqual('requestingThread');
+            expect(event('A').isPending).toEqual(true);
         }
     });
 });
@@ -36,9 +36,9 @@ test("a pending event is different from another pending-event if the name OR key
         enable(thread2());
         enable(thread1()); 
     }, ({event, thread}) => {
-        if(event('A', 1).pending) {
-            expect(event('A').pending).toBeDefined();
-        } else if(event('A').pending) {
+        if(event('A', 1).isPending) {
+            expect(event('A').isPending).toBeDefined();
+        } else if(event('A').isPending) {
             expect(thread.get('requestingThreadTwo')?.isCompleted).toBeTruthy();
             done();
         }
@@ -57,7 +57,7 @@ test("pending-events with the same name but different keys can be run in paralle
         enable(thread1());
         enable(thread2());
     }, ({event, thread}) => {
-        if(event('A', 1).pending && event('A', 2).pending) {
+        if(event('A', 1).isPending && event('A', 2).isPending) {
             expect(thread.get('requestingThreadOne')?.isCompleted).toBeFalsy();
             expect(thread.get('requestingThreadTwo')?.isCompleted).toBeFalsy();
             done();
@@ -74,7 +74,7 @@ test("A promise-function can be requested and will create a pending-event", () =
     testScenarios((enable) => {
         enable(thread1());
     }, (({event}) => {
-        const isAPending = event('A').pending;
+        const isAPending = event('A').isPending;
         if(isAPending) {
             expect(isAPending).toBeTruthy();
             expect(event('A').dispatch).toBeUndefined();
@@ -154,7 +154,7 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
 
     testScenarios((enable) => {
         const t1 = enable(thread1());
-        if(t1.pendingEvents.has('A')) {
+        if(t1.pending.has('A')) {
             enable(thread2());
         }
     }, (({thread}) => {
@@ -178,7 +178,7 @@ test("given the cancelPendingOnDisable option, pending events will be canceled o
 
     testScenarios((enable) => {
         const t1 = enable(thread1());
-        if(t1.pendingEvents.has('A')) {
+        if(t1.pending.has('A')) {
             enable(thread2());
         }
     }, (({thread}) => {
@@ -202,7 +202,7 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
 
     testScenarios((enable) => {
         const t1 = enable(thread1());
-        if(t1.pendingEvents.has('A')) {
+        if(t1.pending.has('A')) {
             enable(thread2());
         }
     }, (({thread}) => {
@@ -227,10 +227,10 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
         enable(thread1());
         enable(thread2());
     }, ({event, thread}) => {
-        if(event('A').pending) {
-            expect(event('B').validate()).toBeTruthy();
+        if(event('A').isPending) {
+            expect(event('B').validate()).toBe('blocked');
         } else if( thread.get('requestingThread')?.isCompleted) {
-            expect(event('B').validate()).toBe(1);
+            expect(event('B').validate()).toBe('passed');
             done();
         }
     });

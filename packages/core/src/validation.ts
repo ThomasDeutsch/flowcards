@@ -5,7 +5,9 @@ export type Validation = (payload: any) => {isValid: boolean; details?: string} 
 
 export type ValidationResultType = 'passed' | 'blocked' | 'noWait';
 
-export function isValid(validationReturn: {isValid: boolean; details?: string} | boolean) {
+export function isValid(bid: Bid, payload?: any) {
+    if(!bid.validate) return true;
+    const validationReturn = bid.validate(payload);
     if(validationReturn === true) return true;
     if(validationReturn === false) return false;
     if(validationReturn.isValid === true) return true;
@@ -13,15 +15,14 @@ export function isValid(validationReturn: {isValid: boolean; details?: string} |
 }
 
 export function withValidPayload(bids: Bid[] | undefined, payload: any): boolean {
-    return (bids !== undefined) && bids.some(bid => !bid.validate || isValid(bid.validate(payload)))
+    return (bids !== undefined) && bids.some(bid => isValid(bid, payload))
 }
 
 export function validate(activeBidsByType: ActiveBidsByType, event: EventId, payload: any): ValidationResultType {
     const matchingBids = getMatchingBids(activeBidsByType, [BidType.wait], event);
     if(matchingBids === undefined) return 'noWait';
     const somePassed = matchingBids.some(bid => {
-        return !isBlocked(activeBidsByType, bid.eventId, {payload: payload}) &&
-            (!bid.validate || bid.validate && isValid(bid.validate(payload)));
+        return isValid(bid, payload) && !isBlocked(activeBidsByType, bid.eventId, {payload: payload});
     });
     return somePassed ? 'passed' : 'blocked';
 }

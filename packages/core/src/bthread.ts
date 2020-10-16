@@ -30,7 +30,7 @@ export interface BThreadContext {
 
 export interface PendingEventInfo {
     eventId: EventId;
-    threadId: BThreadId;
+    bThreadId: BThreadId;
     actionId: number | null;
     isExtend: boolean;
 }
@@ -42,7 +42,7 @@ export interface BThreadState {
     blocks: EventMap<Bid>;
     requests: EventMap<Bid>;
     extends: EventMap<Bid>;
-    pendingEvents: EventMap<PendingEventInfo>;
+    pending: EventMap<PendingEventInfo>;
     destroyOnDisable?: boolean;
     cancelPendingOnDisable?: boolean;
     isCompleted: boolean;
@@ -77,7 +77,7 @@ export class BThread {
             blocks: this._currentBids?.[BidType.block] || new EventMap(),
             requests: this._currentBids?.[BidType.request] || new EventMap(),
             extends: this._currentBids?.[BidType.extend] || new EventMap(),
-            pendingEvents: new EventMap(),
+            pending: new EventMap(),
             isCompleted: false
         };
         this.idString = BThreadMap.toIdString(id);
@@ -104,13 +104,13 @@ export class BThread {
             key: this._state.id.key,
             section: section,
             clearSection: removeSection,
-            isPending: (event: string | EventId) => this._state.pendingEvents.has(toEventId(event)),
+            isPending: (event: string | EventId) => this._state.pending.has(toEventId(event)),
         };
     }
 
     private _setCurrentBids() {
-        this._state.pendingEvents = this._pendingRequests.clone().merge(this._pendingExtends);
-        this._currentBids = getBidsForBThread(this.id, this._nextBid, this._state.pendingEvents);
+        this._state.pending = this._pendingRequests.clone().merge(this._pendingExtends);
+        this._currentBids = getBidsForBThread(this.id, this._nextBid, this._state.pending);
         this._state.waits = this._currentBids?.[BidType.wait] || new EventMap();
         this._state.blocks = this._currentBids?.[BidType.block] || new EventMap();
         this._state.requests = this._currentBids?.[BidType.request] || new EventMap();
@@ -175,7 +175,7 @@ export class BThread {
 
     public addPendingEvent(action: Action, isExtendPromise: boolean): void {
         const eventInfo: PendingEventInfo = {
-            threadId: action.bThreadId,
+            bThreadId: action.bThreadId,
             eventId: action.eventId,
             actionId: action.id,
             isExtend: isExtendPromise
@@ -189,7 +189,7 @@ export class BThread {
         const startTime = new Date().getTime();
         action.payload.then((data: any): void => {
             if(!this._thread) return; // was deleted
-            const pendingEventInfo = this.state.pendingEvents.get(action.eventId);
+            const pendingEventInfo = this.state.pending.get(action.eventId);
             if (pendingEventInfo?.actionId === action.id) {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
@@ -208,7 +208,7 @@ export class BThread {
             }
         }).catch((e: Error): void => {
             if(!this._thread) return; // was deleted
-            const pendingEventInfo = this.state.pendingEvents.get(action.eventId);
+            const pendingEventInfo = this.state.pending.get(action.eventId);
             if (pendingEventInfo?.actionId === action.id) {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({

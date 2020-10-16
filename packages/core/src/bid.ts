@@ -8,6 +8,7 @@ export enum BidType {
     request = "request",
     wait = "wait",
     block = "block",
+    pending = "pending",
     guardedBlock = "guardedBlock",
     extend = "extend",
     trigger = "trigger",
@@ -34,12 +35,18 @@ export interface ActiveBid extends Bid{
 export type BThreadBids = Record<BidType, EventMap<Bid>>;
 type BidOrBids =  Bid | undefined | (Bid | undefined)[];
 
-export function getBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pendingEvents: EventMap<PendingEventInfo>): BThreadBids | undefined {
-    if(!bidOrBids) return undefined;
-    const bidColl = utils.toArray(bidOrBids).filter(bid => bid !== undefined && bid !== null && !pendingEvents.has(bid.eventId));
+
+export function getBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pendingEvents: EventMap<PendingEventInfo>): BThreadBids {
+    let bidColl = utils.toArray(bidOrBids).filter(utils.notUndefined).filter(bid => !pendingEvents.has(bid.eventId));
+    const pendingBids: Bid[] | undefined = pendingEvents.allValues?.map(info => ({
+        type: BidType.pending,
+        bThreadId: info.bThreadId,
+        eventId: info.eventId
+    }));
+    bidColl = [...bidColl, ...(pendingBids || [])];
     const bids = {} as BThreadBids;
     if(bidColl.length === 0) return bids;
-    return bidColl.reduce((acc: BThreadBids, bid: Bid | undefined): BThreadBids => {
+    return bidColl.reduce((acc: BThreadBids, bid: Bid): BThreadBids => {
         if(bid !== undefined) {
             if(!acc[bid.type]) {
                 acc[bid.type] = new EventMap();
@@ -71,11 +78,14 @@ export function activeBidsByType(allBThreadBids: BThreadBids[]): ActiveBidsByTyp
     return activeBidsByType;
 }
 
-type withPayload = {payload?: any};
+type WithPayload = {payload?: any};
 
-export function isBlocked(bidsByType: ActiveBidsByType, event: EventId, withPayload?: withPayload): boolean {
+export function isBlocked(bidsByType: ActiveBidsByType, event: EventId, withPayload?: WithPayload): boolean {
     if(bidsByType.block !== undefined) {
-        if(bidsByType.block.has(event) || bidsByType.block?.has({name: event.name})) return true;
+        if(bidsByType.block.has(event) || bidsByType.block.has({name: event.name})) return true;
+    }
+    if(bidsByType.pending !== undefined) {
+        if(bidsByType.pending.has(event) || bidsByType.pending.has({name: event.name})) return true;
     }
     if(withPayload && bidsByType.guardedBlock !== undefined) {
         const blockBids = flattenShallow(bidsByType.guardedBlock.getExactMatchAndUnkeyedMatch(event));
@@ -96,7 +106,7 @@ export function getActiveBidsForSelectedTypes(bidsByType: ActiveBidsByType, type
     return result;
 }
 
-export function hasValidMatch(bidsByType: ActiveBidsByType, bidType: BidType, event: EventId, withPayload?: withPayload): boolean {
+export function hasValidMatch(bidsByType: ActiveBidsByType, bidType: BidType, event: EventId, withPayload?: WithPayload): boolean {
     const bidsMap = bidsByType[bidType];
     const bids = flattenShallow(bidsMap?.getExactMatchAndUnkeyedMatch(event));
     if(bids === undefined) return false;

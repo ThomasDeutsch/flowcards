@@ -16,7 +16,7 @@ function progressWait(activeBidsByType: ActiveBidsByType, bThreadMap: BThreadMap
     if(matchingBids === undefined) return false;
     matchingBids.forEach(bid => {
         if(isBlocked(activeBidsByType, bid.eventId, action)) return;
-        if(bid.validate && !isValid(bid.validate(action.payload))) return;
+        if(!isValid(bid, action.payload)) return;
         bThreadMap.get(bid.bThreadId)?.progressWait(bid, action);
     });
     return true;
@@ -29,7 +29,7 @@ function extendAction(activeBidsByType: ActiveBidsByType, bThreadMap: BThreadMap
         const bid = bids.pop(); // get last bid ( highest priority )
         if(bid === undefined) continue;
         if(isBlocked(activeBidsByType, bid.eventId, action)) continue;
-        if(bid.validate && !isValid(bid.validate(action.payload))) continue;
+        if(!isValid(bid, action.payload)) continue;
         const extendContext = bThreadMap.get(bid.bThreadId)?.progressExtend(action, bid);
         if(extendContext === undefined) continue;
         if(extendContext.promise) {

@@ -1,6 +1,6 @@
-import { EventMap, EventId } from './event-map';
+import { EventId } from './event-map';
 import { ActiveBidsByType, BidType, isBlocked, hasValidMatch } from './bid';
-import { PendingEventInfo, BThreadId } from './bthread';
+import { BThreadId } from './bthread';
 import { ActionDispatch } from './update-loop';
 import { ActionType } from './action';
 import { GetCachedItem, CachedItem } from './event-cache';
@@ -26,9 +26,9 @@ export class EventContext {
     }
     private _activeBidsByType: ActiveBidsByType;
     private _dispatchEnabled = false;
-    private _pending: PendingEventInfo | undefined;
-    public get pending() {
-        return this._pending;
+    private _isPending = false;
+    public get isPending() {
+        return this._isPending;
     }
 
     private _dispatch(payload: any): boolean {  
@@ -55,11 +55,11 @@ export class EventContext {
         this._activeBidsByType = {} as ActiveBidsByType;
     }
 
-    public update(activeBidsByType: ActiveBidsByType, pendingEventMap: EventMap<PendingEventInfo>, getCachedItem: GetCachedItem, actionId: number) {
+    public update(activeBidsByType: ActiveBidsByType, getCachedItem: GetCachedItem, actionId: number) {
         if(this._lastUpdatedOnActionId === actionId) return;
         this._lastUpdatedOnActionId = actionId;
         this._activeBidsByType = activeBidsByType;
-        this._pending = pendingEventMap.get(this._eventId);
+        this._isPending = activeBidsByType.pending?.has(this._eventId) === true;
         this._cachedItem = getCachedItem(this._eventId);
         this._dispatchEnabled = !isBlocked(this._activeBidsByType, this._eventId) && hasValidMatch(this._activeBidsByType, BidType.wait, this._eventId);
     }
