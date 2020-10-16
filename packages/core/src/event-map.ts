@@ -9,7 +9,7 @@ export interface EventId {
     key?: EventKey;
 }
 
-export function toEvent(e: string | EventId): EventId {
+export function toEventId(e: string | EventId): EventId {
     return (typeof e === 'string') ? {name: e} : e;
 }
 
@@ -89,7 +89,7 @@ export class EventMap<T>  {
     }
 
     public has(event: EventId | string): boolean {
-        event = toEvent(event);
+        event = toEventId(event);
         if(event.key === undefined) {
             return this.noKey.has(event.name);
         } else {

@@ -1,7 +1,7 @@
 import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
-import { BThreadBids, bidsByType, BidsByType } from './bid';
+import { BThreadBids, activeBidsByType, ActiveBidsByType } from './bid';
 import { BThread, BThreadState, GeneratorFn, BThreadInfo, PendingEventInfo, BThreadId } from './bthread';
-import { EventMap, EventId, toEvent } from './event-map';
+import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
 import { ActionLog } from './action-log';
 import { advanceBThreads } from './advance-bthreads';
@@ -47,7 +47,7 @@ function setupScaffolding(
         return bThread.state;
     }
     function getCached<T>(event: EventId | string): CachedItem<T> {
-        event = toEvent(event);
+        event = toEventId(event);
         return eventCache.get(event)!;
     }
     function scaffold(currentActionId: number) {
@@ -91,7 +91,7 @@ export type ReplayMap = Map<number, Action>;
 
 export class UpdateLoop {
     private _currentActionId = 0;
-    private _bidsByType = {} as BidsByType;
+    private _activeBidsByType = {} as ActiveBidsByType;
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
     private readonly _bThreadBids: BThreadBids[] = [];
@@ -127,7 +127,7 @@ export class UpdateLoop {
             context = new EventContext(this.actionDispatch, {name: eventName, key: eventKey});
             this._eventContexts.set({name: eventName, key: eventKey}, context);
         }
-        context?.update(this._bidsByType, this._pendingEventMap, this._getCachedItem, this._currentActionId);
+        context?.update(this._activeBidsByType, this._pendingEventMap, this._getCachedItem, this._currentActionId);
         return context;
     }
 
@@ -137,7 +137,7 @@ export class UpdateLoop {
             if(action === undefined) return undefined;
             this.replayMap.delete(actionId);
             if(action.payload === GET_VALUE_FROM_BTHREAD) {
-                action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.event)?.payload;
+                action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.eventId)?.payload;
             }
             return action;
         }
@@ -146,7 +146,7 @@ export class UpdateLoop {
 
     public runScaffolding() {
         this._scaffold(this._currentActionId);
-        this._bidsByType = bidsByType(this._bThreadBids);
+        this._activeBidsByType = activeBidsByType(this._bThreadBids);
     }
 
     public setupContext(isPaused?: boolean): ScenariosContext {
@@ -154,26 +154,25 @@ export class UpdateLoop {
         if(isPaused !== true) {
             action = this._getNextReplayAction(this._currentActionId) || 
                 this.actionQueue.shift() || 
-                getNextActionFromRequests(this._bidsByType);
+                getNextActionFromRequests(this._activeBidsByType);
         }
         if (action !== undefined) { // use next action
             if(action.id === 0) {
                 this._reset();
-                this._scaffold(this._currentActionId);
-                this._bidsByType = bidsByType(this._bThreadBids);
+                this.runScaffolding();
             } else if(action.id === null) {
                 action.id = this._currentActionId;
             }
             if(action.type === ActionType.requested) {
                 if (typeof action.payload === "function") {
-                    action.payload = action.payload(this._eventCache.get(action.event)?.value);
+                    action.payload = action.payload(this._eventCache.get(action.eventId)?.value);
                 }
                 if(utils.isThenable(action.payload) && action.resolveLoopIndex === undefined) {
                     action.resolveLoopIndex = null;
                 }
             }
             this._actionLog.logAction(action);
-            advanceBThreads(this._bThreadMap, this._eventCache, this._bidsByType, action);
+            advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
             this.runScaffolding();
             this._currentActionId++;
             return this.setupContext(isPaused);

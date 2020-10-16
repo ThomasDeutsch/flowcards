@@ -43,14 +43,6 @@ export function latest<T>(arr?: T[]): T | undefined {
     return arr[arr.length-1];
 }
 
-export function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
-    if (!coll || coll.length === 0) return [undefined, undefined]
-    if (coll.length === 1) return [coll[0], undefined];
-    const randomIndex = Math.floor(Math.random() * coll.length);
-    const value = coll.splice(randomIndex, 1)[0];
-    return [value, coll];
-}
-
 // UUID ------------------------
 // taken from: https://stackoverflow.com/a/2117523/1433691
 // waiting for proposal: https://github.com/tc39/proposal-uuid

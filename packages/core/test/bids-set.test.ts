@@ -45,7 +45,9 @@ test("if there are multiple sets at the same time, one will be requested first (
     testScenarios((enable) => {
         enable(threadLow());
         enable(threadHigh());
-    }, ({event}) => {
+    }, ({event, log}) => {
+        console.log('TEST: ', log.actions);
+        
         expect(event("count")?.value).toEqual(2);
     });
 });

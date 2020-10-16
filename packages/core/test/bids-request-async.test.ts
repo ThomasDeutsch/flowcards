@@ -24,13 +24,12 @@ test("A promise can be requested and will create a pending-event", () => {
 
 
 test("a pending event is different from another pending-event if the name OR key are not the same", (done) => {
-    let value1: number, value2: number;
     const thread1 = flow({id: 'requestingThreadOne'}, function* () {
         yield bp.onPending({name: 'A' });
-        value1 = yield bp.request("A", delay(100));
+        yield bp.request("A", delay(100));
     });
     const thread2 = flow({id: 'requestingThreadTwo'}, function* () {
-        value2 = yield bp.request({name: "A", key: 1}, delay(50));
+        yield bp.request({name: "A", key: 1}, delay(50));
     });
 
     testScenarios((enable) => {
@@ -47,12 +46,11 @@ test("a pending event is different from another pending-event if the name OR key
 });
 
 test("pending-events with the same name but different keys can be run in parallel", (done) => {
-    let value1: number, value2: number;
     const thread1 = flow({id: 'requestingThreadOne'}, function* () {
-        value1 = yield bp.request({name: "A", key: 1}, () => delay(250));
+        yield bp.request({name: "A", key: 1}, () => delay(250));
     });
     const thread2 = flow({id: 'requestingThreadTwo'}, function* () {
-        value2 = yield bp.request({name: "A", key: 2}, () => delay(250));
+        yield bp.request({name: "A", key: 2}, () => delay(250));
     });
 
     testScenarios((enable) => {
@@ -113,7 +111,6 @@ test("multiple async-requests can be run sequentially", (done) => {
 
 
 test("for multiple active promises in one yield, only one resolve will progress the BThread", (done) => {
-    let threadState: any = null;
     let progressed2 = false;
     let progressed3 = false;
     
@@ -132,7 +129,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
     });
 
     testScenarios((enable) => {
-        threadState = enable(thread1());
+        enable(thread1());
         enable(thread2());
         enable(thread3());
     }, ({thread}) => {
@@ -231,9 +228,9 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
         enable(thread2());
     }, ({event, thread}) => {
         if(event('A').pending) {
-            expect(event('B').validate().invalid.length > 0).toBeTruthy();
+            expect(event('B').validate()).toBeTruthy();
         } else if( thread.get('requestingThread')?.isCompleted) {
-            expect(event('B').validate().invalid.length).toBe(1);
+            expect(event('B').validate()).toBe(1);
             done();
         }
     });

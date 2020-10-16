@@ -2,6 +2,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { flow } from '../src/scenario';
+import { ValidationResultType } from '../src/validation';
 
 
 
@@ -130,10 +131,9 @@ test("a block-guard can be keyed", () => {
     }, ({event}) => {
         if(event('A')?.dispatch) {
             expect(event('A').dispatch).toBeDefined();
-            expect(event('A').validate(2000).invalid.length).toBeFalsy();
-            expect(event('A').validate(1001).invalid.length).toBeFalsy();
+            console.log('VALIDATE: ', event('A').validate(2000), event('A').validate(1))
+            expect(event('A').validate(2000)).toEqual('valid');
+            expect(event('A').validate(1001)).toEqual('valid');
         }
     });
 });
-
-// TODO: explain function will return an array of EventInfo

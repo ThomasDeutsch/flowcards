@@ -9,7 +9,7 @@ function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }
 
-test("a pending event can not be requested by another thread", () => {
+test("a pending event is only local to a thread and can be requested by another thread", () => {
     const thread1 = flow({id: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
@@ -25,7 +25,7 @@ test("a pending event can not be requested by another thread", () => {
         enable(thread1());
     }, ({event, thread}) => {
         expect(event('A').pending).toBeTruthy();
-        expect(thread.get('thread2')?.isCompleted).toBeFalsy();
+        expect(thread.get('thread2')?.isCompleted).toBeTruthy();
     });
 });
 

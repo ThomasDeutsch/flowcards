@@ -1,4 +1,4 @@
-import { Bid, BidsByType, isBlocked, BidType, getBidsForTypes, hasValidMatch } from './bid';
+import { Bid, ActiveBidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch } from './bid';
 import { EventId } from './event-map';
 import * as utils from './utils';
 
@@ -17,7 +17,7 @@ export interface Action {
     id: number | null;
     type: ActionType;
     bThreadId: BThreadId;
-    event: EventId;
+    eventId: EventId;
     payload?: any;
     resolveLoopIndex?: number | null;
     resolve?: {
@@ -28,10 +28,10 @@ export interface Action {
     bidType?: BidType;
 }
 
-function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
-    if(isBlocked(bidsByType, bid.event, bid)) return false;
+function isValidRequest(bidsByType: ActiveBidsByType, bid: Bid): boolean {
+    if(isBlocked(bidsByType, bid.eventId, bid)) return false;
     if(bid.type === BidType.trigger) {
-        return hasValidMatch(bidsByType, BidType.wait, bid.event, bid) || hasValidMatch(bidsByType, BidType.on, bid.event, bid);
+        return hasValidMatch(bidsByType, BidType.wait, bid.eventId, bid) || hasValidMatch(bidsByType, BidType.on, bid.eventId, bid);
     }
     return true;
 }
@@ -41,22 +41,22 @@ function getActionFromBid(bid: Bid): Action {
         id: null,
         type: ActionType.requested,
         bThreadId: bid.bThreadId,
-        event: bid.event,
+        eventId: bid.eventId,
         payload: bid.payload,
         bidType: bid.type
     };
     return action;
 }
 
-export function getNextActionFromRequests(bidsByType: BidsByType): Action | undefined {
-    const bids = getBidsForTypes(bidsByType, [BidType.request, BidType.set, BidType.trigger]);
+export function getNextActionFromRequests(activeBidsByType: ActiveBidsByType): Action | undefined {
+    const bids = getActiveBidsForSelectedTypes(activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);
     if(bids === undefined) return undefined;
-    let [selectedBid, rest] = utils.getRandom(bids);
-    while(selectedBid) {
-        if(isValidRequest(bidsByType, selectedBid)) {
-            return getActionFromBid(selectedBid);
+    let [nextBid, ...restBids] = bids;
+    while(nextBid) {
+        if(isValidRequest(activeBidsByType, nextBid)) {
+            return getActionFromBid(nextBid);
         }
-        [selectedBid, rest] = utils.getRandom(rest);
+        [nextBid, ...restBids] = restBids;
     }
     return undefined; 
 }
