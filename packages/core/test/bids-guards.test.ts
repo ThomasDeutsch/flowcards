@@ -131,7 +131,6 @@ test("a block-guard can be keyed", () => {
     }, ({event}) => {
         if(event('A')?.dispatch) {
             expect(event('A').dispatch).toBeDefined();
-            console.log('VALIDATE: ', event('A').validate(2000), event('A').validate(1))
             expect(event('A').validate(2000)).toEqual('valid');
             expect(event('A').validate(1001)).toEqual('valid');
         }

@@ -19,6 +19,9 @@ export class EventContext {
     private _cachedItem?: CachedItem<any>;
     private _lastUpdatedOnActionId = -1;
     public get value() {
+        if(this._eventId.name === 'testeventA') {
+            console.log('cacheditem: ', this._cachedItem)
+        }
         return this._cachedItem?.value;
     }
     public get history() {

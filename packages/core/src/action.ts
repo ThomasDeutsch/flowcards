@@ -19,7 +19,7 @@ export interface Action {
     bThreadId: BThreadId;
     eventId: EventId;
     payload?: any;
-    resolveLoopIndex?: number | null;
+    resolveLoopIndex?: number | null; // TODO: why not move this to "resolve" part of this interface?
     resolve?: {
         isResolvedExtend: boolean;
         requestLoopIndex: number;

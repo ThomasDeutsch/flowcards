@@ -171,31 +171,29 @@ test("if a request value is a function, it will only be called once.", () => {
     });
 });
 
-// THIS IS NOW RANDOM
-// A Request will only advance the requested thread and all waits/on
-// test("When there are multiple requests with the same event-name, the payload from the higher priority threads gets chosen", () => {
-//     let receivedValue: number;
+test("When there are multiple requests with the same event-name, the request with the higher priority will get selected first", () => {
+    let receivedValue: number;
 
-//     const requestThreadLower = flow(null, function* () {
-//         yield bp.request("A", 1);
-//     });
+    const requestThreadLower = flow(null, function* () {
+        yield bp.request("A", 1);
+    });
 
-//     const requestThreadHigher = flow(null, function* () {
-//         yield bp.request("A", 2);
-//     });
+    const requestThreadHigher = flow(null, function* () {
+        yield bp.request("A", 2);
+    });
 
-//     const receiveThread = flow(null, function* () {
-//         receivedValue = yield bp.wait("A");
-//     })
+    const receiveThread = flow(null, function* () {
+        receivedValue = yield bp.wait("A");
+    })
 
-//     testScenarios((enable) => {
-//         enable(requestThreadLower());
-//         enable(requestThreadHigher());
-//         enable(receiveThread());
-//     }, () => {
-//         expect(receivedValue).toBe(2);
-//     });
-// });
+    testScenarios((enable) => {
+        enable(requestThreadLower());
+        enable(requestThreadHigher()); // this thread has a higher priority, because it gets enabled later than the first one.
+        enable(receiveThread());
+    }, () => {
+        expect(receivedValue).toBe(2);
+    });
+});
 
 
 // BLOCK

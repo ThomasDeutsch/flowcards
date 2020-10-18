@@ -142,6 +142,17 @@ export class BThread {
         this._actionLog.logBThreadProgress(this.id, {...bid}, this._state, nextSection);
     }
 
+    private _cancelAllPendingRequests(action: Action): void {
+        const pending = this._pendingRequests.get(action.eventId);
+        if(pending?.actionId === action.id) {
+            // TODO: log cancelled requests. 
+            // as far as i can tell, this info should only be presented in logs, and is not relevant to anything else.
+            // const canceledRequests = this._pendingRequests.allValues?.map(info => info.actionId).filter(id => id !== pending.actionId);
+            // TODO: this._actionLog.logCancelledRequests(action.id, this.id, canceledRequests);
+            this._pendingRequests.clear();
+            this._pendingRequests.set(action.eventId, pending);
+        }
+    }
 
     private _deletePending(action: Action): boolean {
         if(action.resolve?.isResolvedExtend) {
@@ -188,9 +199,10 @@ export class BThread {
         this._setCurrentBids();
         const startTime = new Date().getTime();
         action.payload.then((data: any): void => {
-            if(!this._thread) return; // was deleted
-            const pendingEventInfo = this.state.pending.get(action.eventId);
+            if(!this._thread) return; // thread was deleted
+            const pendingEventInfo = isExtendPromise ? this._pendingExtends.get(action.eventId) : this._pendingRequests.get(action.eventId);
             if (pendingEventInfo?.actionId === action.id) {
+                if(!isExtendPromise) this._cancelAllPendingRequests(action);
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
                     id: action.resolveLoopIndex || null, 
@@ -248,7 +260,7 @@ export class BThread {
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
         const bidType = action.bidType;
         if(bidType === undefined) return;
-        const bid = this._currentBids?.[bidType]?.get(action.eventId)
+        const bid = this._currentBids?.[bidType]?.get(action.eventId);
         if(!bid) return;
         if(bidType === BidType.set) {
             setEventCache(eventCache, action.eventId, action.payload);

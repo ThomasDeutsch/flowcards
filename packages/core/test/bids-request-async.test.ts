@@ -24,12 +24,13 @@ test("A promise can be requested and will create a pending-event", () => {
 
 
 test("a pending event is different from another pending-event if the name OR key are not the same", (done) => {
+    const eventAOne = {name: "A", key: 1};
     const thread1 = flow({id: 'requestingThreadOne'}, function* () {
         yield bp.onPending({name: 'A' });
         yield bp.request("A", delay(100));
     });
     const thread2 = flow({id: 'requestingThreadTwo'}, function* () {
-        yield bp.request({name: "A", key: 1}, delay(50));
+        yield bp.request(eventAOne, delay(50));
     });
 
     testScenarios((enable) => {
@@ -115,16 +116,16 @@ test("for multiple active promises in one yield, only one resolve will progress 
     let progressed3 = false;
     
     const thread1 = flow({id: 'requestingThread'}, function* () {
-        yield [bp.request("HeyA", () => delay(1000)), bp.request("HeyB", () => delay(1000))];
+        yield [bp.request("HEYYA", () => delay(1000)), bp.request("HEYYB", () => delay(1000))];
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.wait('HeyA');
+        yield bp.wait('HEYYA');
         progressed2 = true;
     });
 
     const thread3 = flow(null, function* () {
-        yield bp.wait('HeyB');
+        yield bp.wait('HEYYB');
         progressed3 = true;
     });
 
@@ -132,8 +133,9 @@ test("for multiple active promises in one yield, only one resolve will progress 
         enable(thread1());
         enable(thread2());
         enable(thread3());
-    }, ({thread}) => {
+    }, ({thread, log}) => {
         if(thread.get('requestingThread')?.isCompleted) {
+            console.log('LOG: ', log.actions, progressed2, progressed3);
             expect(progressed2).not.toBe(progressed3);
             done();
         }

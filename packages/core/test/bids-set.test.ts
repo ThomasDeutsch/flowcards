@@ -17,7 +17,7 @@ test("a set is a request, that will be cached. ", () => {
 
 test("when a promise resolves, the cache gets updated", (done) => {
     const thread1 = flow(null, function* () {
-        yield bp.set("testEvent", delay(100, 'resolved value'));
+        yield bp.set("testeventA", delay(100, 'resolved value'));
         yield bp.wait('fin');
     });
 
@@ -25,7 +25,7 @@ test("when a promise resolves, the cache gets updated", (done) => {
         enable(thread1());
     }, ({event}) => {
         if(event('fin').dispatch) {
-            expect(event('testEvent')?.value).toEqual("resolved value");
+            expect(event('testeventA')?.value).toEqual("resolved value");
             done();
         }
     });
@@ -45,9 +45,7 @@ test("if there are multiple sets at the same time, one will be requested first (
     testScenarios((enable) => {
         enable(threadLow());
         enable(threadHigh());
-    }, ({event, log}) => {
-        console.log('TEST: ', log.actions);
-        
+    }, ({event}) => {
         expect(event("count")?.value).toEqual(2);
     });
 });
