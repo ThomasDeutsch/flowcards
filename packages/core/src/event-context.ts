@@ -19,9 +19,6 @@ export class EventContext {
     private _cachedItem?: CachedItem<any>;
     private _lastUpdatedOnActionId = -1;
     public get value() {
-        if(this._eventId.name === 'testeventA') {
-            console.log('cacheditem: ', this._cachedItem)
-        }
         return this._cachedItem?.value;
     }
     public get history() {
@@ -37,7 +34,7 @@ export class EventContext {
     private _dispatch(payload: any): boolean {  
         if(isBlocked(this._activeBidsByType, this._eventId, {payload: payload})) return false; 
         if(hasValidMatch(this._activeBidsByType, BidType.wait, this._eventId, {payload: payload})) {
-            this._actionDispatch({id: null, type: ActionType.ui, eventId: this._eventId, payload: payload, bThreadId: {id: ""}});
+            this._actionDispatch({id: null, type: ActionType.ui, eventId: this._eventId, payload: payload, bThreadId: {name: ""}});
             return true;
         }
         return false;
@@ -47,7 +44,7 @@ export class EventContext {
         return validate(this._activeBidsByType, this._eventId, payload);
     }
 
-    public get dispatch(): ((payload: any) => boolean) | undefined {
+    public get dispatch(): ((payload?: any) => boolean) | undefined {
         if(this._dispatchEnabled) return this._dispatch.bind(this);
         return undefined;
     }

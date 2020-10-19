@@ -136,7 +136,7 @@ test("the section will be deleted if the thread completes", () => {
 
 
 test("enable will return the current pending events and a pending function", (done) => {
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         yield [bp.request("A", delay(100)), bp.request("B", delay(100))];
     });
 
@@ -154,7 +154,7 @@ test("enable will return the current pending events and a pending function", (do
 });
 
 test("enable will return the current requesting events ( blocked and pending included )", (done) => {
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         yield [bp.request("A", delay(100)), bp.request("B")];
     });
 
@@ -181,19 +181,19 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
     let thread2init = 0;
     let thread1init = 0;
 
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("B");
         yield bp.request('X');
         yield bp.wait("FIN");
     });
 
-    const thread2 = flow({id: 'thread2', destroyOnDisable: true}, function*() {
+    const thread2 = flow({name: 'thread2', destroyOnDisable: true}, function*() {
         thread2init++
         yield bp.wait('B');
         yield bp.wait('C');
     })
 
-    const thread3 = flow({id: 'thread3', destroyOnDisable: false}, function*() {
+    const thread3 = flow({name: 'thread3', destroyOnDisable: false}, function*() {
         thread1init++
         yield bp.wait('B');
         yield bp.wait('C');

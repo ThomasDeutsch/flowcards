@@ -28,7 +28,7 @@ function setupScaffolding(
     const cancelPendingOnDisableThreadIds = new Set<string>();
 
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
-        const bThreadId: BThreadId = {id: bThreadInfo.id, key: bThreadInfo.key};
+        const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
         const bThreadIdString = BThreadMap.toIdString(bThreadId);
         enabledBThreadIds.add(bThreadIdString);
         let bThread = bThreadMap.get(bThreadId)
@@ -79,7 +79,7 @@ function setupScaffolding(
 // -----------------------------------------------------------------------------------
 
 export interface ScenariosContext {
-    event: (eventName: string, eventKey?: string | number | undefined) => EventContext;
+    event: (eventName: string | EventId) => EventContext;
     thread: BThreadMap<BThreadState>;
     log: ActionLog;
 }
@@ -101,8 +101,8 @@ export class UpdateLoop {
     public readonly replayMap = new Map<number, Action>();
     public readonly actionDispatch: ActionDispatch;
 
-    constructor(stagingFunction: StagingFunction, actionDispatch: ActionDispatch, actionLog: ActionLog) {
-        this._actionLog = actionLog;
+    constructor(stagingFunction: StagingFunction, actionDispatch: ActionDispatch) {
+        this._actionLog = new ActionLog();
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, actionDispatch, this._actionLog);
         this.actionDispatch = actionDispatch;
         this.runScaffolding();
@@ -117,11 +117,12 @@ export class UpdateLoop {
         this._actionLog.resetLog();
     }
 
-    private _getEventContext = (eventName: string, eventKey?: string | number): EventContext => {
-        let context = this._eventContexts.get({name: eventName, key: eventKey});
+    private _getEventContext = (event: string | EventId): EventContext => {
+        const eventId = toEventId(event);
+        let context = this._eventContexts.get(eventId);
         if(context === undefined) {
-            context = new EventContext(this.actionDispatch, {name: eventName, key: eventKey});
-            this._eventContexts.set({name: eventName, key: eventKey}, context);
+            context = new EventContext(this.actionDispatch, eventId);
+            this._eventContexts.set(eventId, context);
         }
         context?.update(this._activeBidsByType, this._getCachedItem, this._currentActionId);
         return context;
@@ -163,8 +164,8 @@ export class UpdateLoop {
                 if (typeof action.payload === "function") {
                     action.payload = action.payload(this._eventCache.get(action.eventId)?.value);
                 }
-                if(utils.isThenable(action.payload) && action.resolveLoopIndex === undefined) {
-                    action.resolveLoopIndex = null;
+                if(utils.isThenable(action.payload) && action.resolveActionId === undefined) {
+                    action.resolveActionId = null;
                 }
             }
             this._actionLog.logAction(action);

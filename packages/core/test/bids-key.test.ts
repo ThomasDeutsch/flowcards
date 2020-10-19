@@ -15,10 +15,10 @@ test("keys can be a string or a number", () => {
         enable(thread1());
         enable(thread2());
     }, ({event})=> {
-        expect(event('A', '1').dispatch).toBeDefined();
-        expect(event('A',  1).dispatch).toBeUndefined();
-        expect(event('A', 2).dispatch).toBeDefined();
-        expect(event('A', '2').dispatch).toBeUndefined();
+        expect(event({name: 'A', key: '1'}).dispatch).toBeDefined();
+        expect(event({name: 'A', key: 1}).dispatch).toBeUndefined();
+        expect(event({name: 'A', key: 2}).dispatch).toBeDefined();
+        expect(event({name: 'A', key: '2'}).dispatch).toBeUndefined();
     });
 });
 
@@ -144,8 +144,8 @@ test("an event cache vor an event will contain keyed values as well", () => {
         enable(thread1());
         enable(thread2());
     }, ({event})=> {
-        expect(event('A', "1")?.value).toEqual('a value for 1');
-        expect(event('A', 2)?.value).toEqual('a value for 2');
+        expect(event({name: 'A', key: '1'})?.value).toEqual('a value for 1');
+        expect(event({name: 'A', key: 2})?.value).toEqual('a value for 2');
     });
 });
 
@@ -165,8 +165,8 @@ test("if an event cache has keyed values, they will be replaced by a request wit
         enable(thread1());
         enable(thread2());
     }, ({event})=> {
-        expect(event('A', "1")?.value).toEqual('replacement value');
-        expect(event('A', 2)?.value).toEqual('replacement value');
+        expect(event({name: 'A', key: '1'})?.value).toEqual('replacement value');
+        expect(event({name: 'A', key: 2})?.value).toEqual('replacement value');
     });
 });
 

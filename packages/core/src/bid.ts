@@ -134,7 +134,7 @@ export function request(event: string | EventId, payload?: any): Bid {
         type: BidType.request,
         eventId: toEventId(event), 
         payload: payload, 
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 
@@ -143,7 +143,7 @@ export function set(event: string | EventId, payload?: any): Bid {
         type: BidType.set,
         eventId: toEventId(event), 
         payload: payload,
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 
@@ -152,7 +152,7 @@ export function trigger(event: string | EventId, payload?: any): Bid {
         type: BidType.trigger,
         eventId: toEventId(event), 
         payload: payload,
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 
@@ -161,7 +161,7 @@ export function wait(event: string | EventId, validation?: Validation): Bid {
         type: BidType.wait,
         eventId: toEventId(event), 
         validate: validation,
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 
@@ -170,7 +170,7 @@ export function on(event: string | EventId, validation?: Validation): Bid {
         type: BidType.on,
         eventId: toEventId(event), 
         validate: validation,
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 
@@ -178,7 +178,7 @@ export function onPending(event: string | EventId): Bid {
     return { 
         type: BidType.onPending,
         eventId: toEventId(event),
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 
@@ -187,7 +187,7 @@ export function block(event: string | EventId, validation?: Validation): Bid {
         type: validation ? BidType.guardedBlock : BidType.block,
         eventId: toEventId(event), 
         validate: validation, 
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 
@@ -196,7 +196,7 @@ export function extend(event: string | EventId, validation?: Validation): Bid {
         type: BidType.extend,
         eventId: toEventId(event), 
         validate: validation, 
-        bThreadId: {id: ""}
+        bThreadId: {name: ""}
     };
 }
 

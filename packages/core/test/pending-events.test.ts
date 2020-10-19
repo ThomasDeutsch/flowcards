@@ -9,13 +9,13 @@ function delay(ms: number, value?: any) {
 }
 
 test("a pending event can not be requested by another thread", () => {
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
         }
     });
 
-    const thread2 = flow({id: 'thread2'}, function* () {
+    const thread2 = flow({name: 'thread2'}, function* () {
         yield bp.request("A", "hey");
     });
 
@@ -30,13 +30,13 @@ test("a pending event can not be requested by another thread", () => {
 
 
 test("a pending event can not be extended", () => {
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
         }
     });
 
-    const thread2 = flow({id: 'thread2'}, function* () {
+    const thread2 = flow({name: 'thread2'}, function* () {
         yield bp.extend("A");
     });
 
@@ -50,7 +50,7 @@ test("a pending event can not be extended", () => {
 
 
 test("a pending event resolves can not be blocked", done => {
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("A", () => delay(500));
         yield bp.wait("fin");
     });
@@ -127,32 +127,41 @@ test("If one pending-event is resolved, other promises for this event are cancel
 
 
 
-function rejectedPromise(ms: number) {
-    return new Promise((_, reject) => setTimeout(() => reject(2), ms));
+function rejectedPromise(ms: number, errorMsg: string) {
+    return new Promise((_, reject) => setTimeout(() => reject(errorMsg), ms));
 }
 
 test("rejected pending events will not progress waiting BThreads", done => {
-    const thread1 = flow(null, function* () {
-        const val = yield bp.request("A", 1);
-        expect(val).toBe(1);
-        done();  
+    let thread1Progressed = false;
+    let wasCatched = false;
+    const thread1 = flow({name: 'waitingThread'}, function* () {
+        yield bp.wait("A"); 
+        thread1Progressed = true;
     });
 
-    const thread2 = flow(null, function* () {
+    const thread2 = flow({name: 'requestingThread'}, function* () {
         try{
-            yield bp.request("A", () => rejectedPromise(1));
+            yield bp.request("A", () => rejectedPromise(1, 'error message'));
         } catch(e) {
-            //no op
+            wasCatched = true;
+            expect(e.event.name).toBe('A');
+            expect(e.error).toBe('error message');
         }
     });
 
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
+    }, ({thread}) => {
+        if(thread.get({name: 'requestingThread'})?.isCompleted) {
+            expect(wasCatched).toBe(true);
+            expect(thread1Progressed).toBe(false);
+            done(); 
+        }
     });
 });
 
-test("if a pending event is rejected, the lower thread will use its request instead", done => {
+test("if a pending event is rejected, the lower-prio thread will use its request instead", done => {
     const thread1 = flow(null, function* () {
         const val = yield bp.request("A", 1);
         expect(val).toBe(1);
@@ -161,7 +170,7 @@ test("if a pending event is rejected, the lower thread will use its request inst
 
     const thread2 = flow(null, function* () {
         try{
-            yield bp.request("A", () => rejectedPromise(1));
+            yield bp.request("A", () => rejectedPromise(1, 'error details'));
         } catch(e) {
             //no op
         }

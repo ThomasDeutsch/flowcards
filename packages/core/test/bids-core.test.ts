@@ -9,7 +9,7 @@ import { flow } from '../src/scenario';
 test("a requested event that is not blocked will advance", () => {
     let hasAdvanced = false;
 
-    const requestingThread = flow({id: 'thread1'}, function*() {
+    const requestingThread = flow({name: 'thread1'}, function*() {
         yield bp.request("A");
         hasAdvanced = true;
     });
@@ -18,7 +18,7 @@ test("a requested event that is not blocked will advance", () => {
         enable(requestingThread());
     }, ({thread})=> {
         expect(hasAdvanced).toBe(true);
-        expect(thread.get({id: 'thread1'})?.isCompleted).toBe(true);
+        expect(thread.get({name: 'thread1'})?.isCompleted).toBe(true);
     });
 });
 
@@ -27,7 +27,7 @@ test("a requested event that is not blocked will advance", () => {
 test("a request will also advance waiting threads", () => {
     let requestProgressed: any, waitProgressed: any;
 
-    const requestingThread = flow({id: 'thread1'}, function*() {
+    const requestingThread = flow({name: 'thread1'}, function*() {
         yield bp.request("A");
         requestProgressed = true;
     });
@@ -48,13 +48,13 @@ test("a request will also advance waiting threads", () => {
 
 
 test("waits will return the value that has been requested", () => {
-    const requestThread = flow({id: 'requestThread'}, function* () {
+    const requestThread = flow({name: 'requestThread'}, function* () {
         yield bp.request("A", 1000);
     });
 
     let receivedValue: any = null;
 
-    const receiveThread = flow({id: 'receiveThread'}, function* () {
+    const receiveThread = flow({name: 'receiveThread'}, function* () {
         receivedValue = yield bp.wait("A");
     });
 

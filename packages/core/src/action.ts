@@ -1,6 +1,5 @@
 import { Bid, ActiveBidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch } from './bid';
 import { EventId } from './event-map';
-import * as utils from './utils';
 
 import { BThreadId } from './bthread';
 
@@ -19,7 +18,7 @@ export interface Action {
     bThreadId: BThreadId;
     eventId: EventId;
     payload?: any;
-    resolveLoopIndex?: number | null; // TODO: why not move this to "resolve" part of this interface?
+    resolveActionId?: number | null; 
     resolve?: {
         isResolvedExtend: boolean;
         requestLoopIndex: number;

@@ -12,12 +12,12 @@ test("requests can be extended", () => {
         progressedExtend = false,
         setupCount = 0;
 
-    const thread1 = flow({id: 'requesting thread'}, function* () {
+    const thread1 = flow({name: 'requesting thread'}, function* () {
         yield bp.request("A");
         progressedRequest = true;
     });
 
-    const thread3 = flow({id: 'extending thread'}, function* () {
+    const thread3 = flow({name: 'extending thread'}, function* () {
         yield bp.extend("A");
         progressedExtend = true;
         yield bp.wait('X');
@@ -223,18 +223,18 @@ test("an extend will wait for the pending-event to finish before it extends.", (
 
 
 test("an extend can be resolved. This will progress waits and requests", (done) => {
-    const requestingThread = flow({id: 'requestingThread'}, function* () {
+    const requestingThread = flow({name: 'requestingThread'}, function* () {
         const val = yield bp.request("A", delay(100, 'value'));
         expect(val).toBe('value extended');
     });
 
-    const extendingThread = flow({id: 'extendingThread'}, function* () {
+    const extendingThread = flow({name: 'extendingThread'}, function* () {
         const extend = yield bp.extend("A");
         expect(extend.value).toBe('value');
         extend.resolve(extend.value + " extended");
     });
 
-    const waitingThread = flow({id: 'waitingThread'}, function* () {
+    const waitingThread = flow({name: 'waitingThread'}, function* () {
         const val = yield bp.wait("A");
         expect(val).toBe('value extended');
         yield bp.wait('fin');

@@ -2,7 +2,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { flow } from '../src/scenario';
-import { ValidationResultType } from '../src/validation';
 
 
 
@@ -71,7 +70,6 @@ test("an extend is not applied, if the guard returns false.", () => {
 
 
 test("a block can be guarded", () => {
-
     const requestingThread = flow(null, function* () {
         let i = 0;
         while(i++ < 20) {

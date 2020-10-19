@@ -51,7 +51,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
             if(bThread === undefined || action.bidType === undefined) return;
             const bid = bThread.currentBids?.[action.bidType]?.get(action.eventId);
             if(bid === undefined) return;
-            if(action.resolveLoopIndex === null) {
+            if(action.resolveActionId === null) {
                 bThread.addPendingEvent(action, false);
                 progressWait(activeBidsByType, bThreadMap, [BidType.onPending], action);
                 return;
@@ -64,7 +64,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
         case ActionType.ui: {
             if(extendAction(activeBidsByType, bThreadMap, action) === EXTENDED_WITH_PROMISE) return;
             const isValidDispatch = progressWait(activeBidsByType, bThreadMap, [BidType.wait, BidType.on], action);
-            if(!isValidDispatch) console.warn(`no wait for action: ${action.eventId.name}` + (action.eventId.key !== undefined) ? ` with key ${action.eventId.key}` : '');
+            if(!isValidDispatch) console.warn(`no wait for action: ${action.eventId.name} ${action.eventId.key !== undefined ? action.eventId.key : ''}`);
             return;
         }
         case ActionType.resolved: {

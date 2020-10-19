@@ -7,12 +7,12 @@ test("a trigger is a request, that is only selected if another thread is waiting
     let hasAdvancedFirstTrigger = false;
     let hasAdvancedSecondTrigger = false;
 
-    const waitingThread = flow({id: 'waitingThread'}, function*() {
+    const waitingThread = flow({name: 'waitingThread'}, function*() {
         yield bp.wait("eventA");
         yield bp.wait("eventB");
     });
 
-    const requestingThread = flow({id: 'requestingThread'}, function*() {
+    const requestingThread = flow({name: 'requestingThread'}, function*() {
         yield bp.trigger("eventA");
         hasAdvancedFirstTrigger = true;
         yield bp.trigger("eventA");
@@ -32,16 +32,16 @@ test("a trigger is a request, that is only selected if another thread is waiting
 test("a trigger is a request, that can be blocked.", () => {
     let hasAdvancedTrigger = false;
 
-    const waitingThread = flow({id: 'waitingThread'}, function*() {
+    const waitingThread = flow({name: 'waitingThread'}, function*() {
         yield bp.wait("eventA");
     });
 
-    const requestingThread = flow({id: 'requestingThread'}, function*() {
+    const requestingThread = flow({name: 'requestingThread'}, function*() {
         yield bp.trigger("eventA");
         hasAdvancedTrigger = true;
     });
 
-    const blockingThread = flow({id: 'blockingThread'}, function*() {
+    const blockingThread = flow({name: 'blockingThread'}, function*() {
         yield bp.block('eventA');
     });
 
@@ -59,18 +59,18 @@ test("a trigger needs to fulfill the wait-guard validation.", () => {
     let hasAdvancedTrigger1 = false;
     let hasAdvancedTrigger2 = false;
 
-    const waitingThread = flow({id: 'waitingThread'}, function*() {
+    const waitingThread = flow({name: 'waitingThread'}, function*() {
         while(true) {
             yield bp.wait("eventA", (pl) => pl > 100);
         }
     });
 
-    const requestingThread1 = flow({id: 'requestingThread1'}, function*() {
+    const requestingThread1 = flow({name: 'requestingThread1'}, function*() {
         yield bp.trigger("eventA", 101);
         hasAdvancedTrigger1 = true;
     });
 
-    const requestingThread2 = flow({id: 'requestingThread2'}, function*() {
+    const requestingThread2 = flow({name: 'requestingThread2'}, function*() {
         yield bp.trigger("eventA", 0);
         hasAdvancedTrigger2 = true;
     });

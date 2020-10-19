@@ -19,7 +19,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
                 loop.actionQueue.push(action)
                 expect(action.type).toBe(ActionType.resolved);
                 expect(action.bThreadId.name).toBe('thread1');
-                expect(action.event.name).toBe('A');
+                expect(action.eventId.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
             loop.setupContext();
@@ -27,7 +27,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
         loop.setupContext();
     };
 
-    const thread1 = flow({id: 'thread1'}, function* () {
+    const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("A", delay(100));
         done();
     });
