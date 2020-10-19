@@ -56,7 +56,6 @@ test("a async request can be replayed", (done) => {
         yield bp.wait('replayEvent1');
         value1 = yield bp.request("replayEvent2", () => {
             eventReplayed = true;
-            console.log('REPLAYED!!!')
             return delay(100, 'YEAH');
         });
         yield bp.wait('replayEvent3');
@@ -64,7 +63,6 @@ test("a async request can be replayed", (done) => {
     const [context, replay] = testScenarios((enable) => {
         enable(thread1());
     }, ({thread, log}) => {
-        console.log('actions: ', log.actions)
         if(thread.get('thread1')?.isCompleted) {
             expect(value1).toEqual('YEAH');
             expect(eventReplayed).toBeTruthy();
@@ -73,7 +71,7 @@ test("a async request can be replayed", (done) => {
     });
     replay([
         {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
+        {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 2, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
         // the index:2 action is missing ... this is where the resolve will be placed.
         {id: 3, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent3'}}])
 });
