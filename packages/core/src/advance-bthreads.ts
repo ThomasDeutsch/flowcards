@@ -48,11 +48,9 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
         case ActionType.requested: {
             // requested bid was checked (not blocked and valid payload)
             const bThread = bThreadMap.get(action.bThreadId);
-            if(bThread === undefined || action.bidType === undefined) return;
-            const bid = bThread.currentBids?.[action.bidType]?.get(action.eventId);
-            if(bid === undefined) return;
-            if(action.resolveActionId === null) {
-                bThread.addPendingEvent(action, false);
+            if(bThread === undefined) return;
+            if(action.resolveActionId !== undefined) { // can be null or any number
+                bThread.addPendingEvent({...action}, false);
                 progressWait(activeBidsByType, bThreadMap, [BidType.onPending], action);
                 return;
             }

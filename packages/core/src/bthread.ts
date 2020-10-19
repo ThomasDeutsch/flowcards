@@ -261,7 +261,11 @@ export class BThread {
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
         const bidType = action.bidType;
-        if(bidType === undefined) return;
+        if(bidType === undefined) {
+            // console.warn('a request action needs to define a bidType. A bidType defines the type of bid that was selected for this requesting thread.
+            console.log(`${action.eventId.name + action.type} needs to have a bidType. Received: ${action.bidType}`)
+            return;
+        }
         const bid = this._currentBids?.[bidType]?.get(action.eventId);
         if(!bid) return;
         if(bidType === BidType.set) {
