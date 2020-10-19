@@ -1,6 +1,6 @@
-import { Bid, BidSubType } from './bid';
-import { EventMap, EventId } from './event-map';
-import { getGuardForWaits } from './guard';
+import { Bid, ActiveBidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch } from './bid';
+import { EventId } from './event-map';
+
 import { BThreadId } from './bthread';
 
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
@@ -11,70 +11,51 @@ export enum ActionType {
     resolved = "resolved",
     rejected = "rejected"
 }
+
 export interface Action {
     id: number | null;
     type: ActionType;
     bThreadId: BThreadId;
-    event: EventId;
+    eventId: EventId;
     payload?: any;
-    resolveLoopIndex?: number | null;
+    resolveActionId?: number | null; 
     resolve?: {
         isResolvedExtend: boolean;
         requestLoopIndex: number;
         requestDuration: number;  
     };
+    bidType?: BidType;
 }
 
-function getRandom<T>(coll: T[] | undefined): [T | undefined, T[] | undefined] {
-    if (!coll || coll.length === 0) return [undefined, undefined]
-    if (coll.length === 1) return [coll[0], undefined];
-    const randomIndex = Math.floor(Math.random() * coll.length);
-    const value = coll.splice(randomIndex, 1)[0];
-    return [value, coll];
-}
-
-function getBid(bids?: Bid[], waitBids?: EventMap<Bid[]>): Bid | undefined {
-    if(!bids) return undefined;
-    const checkBids = [...bids];
-    while (checkBids.length > 0) {
-        const bid = checkBids.pop();
-        if(!bid) continue;
-        if(bid.subType === BidSubType.trigger) {
-            const waitsForEvent = waitBids?.get(bid.event);
-            if(waitsForEvent) {
-                const guard = getGuardForWaits(waitsForEvent, bid.event);
-                if(!guard || guard(bid.payload)) return bid;
-            }
-        } else {
-            return bid;
-        }
+function isValidRequest(bidsByType: ActiveBidsByType, bid: Bid): boolean {
+    if(isBlocked(bidsByType, bid.eventId, bid)) return false;
+    if(bid.type === BidType.trigger) {
+        return hasValidMatch(bidsByType, BidType.wait, bid.eventId, bid) || hasValidMatch(bidsByType, BidType.on, bid.eventId, bid);
     }
-    return undefined;
+    return true;
 }
 
-function getActionFromBid(bid: Bid) {
+function getActionFromBid(bid: Bid): Action {
     const action = {
         id: null,
         type: ActionType.requested,
         bThreadId: bid.bThreadId,
-        event: bid.event,
-        payload: bid.payload
+        eventId: bid.eventId,
+        payload: bid.payload,
+        bidType: bid.type
     };
     return action;
 }
 
-export function getNextActionFromRequests(requestBids?: EventMap<Bid[]>, waitBids?: EventMap<Bid[]>): Action | undefined {
-    if(!requestBids) return undefined;
-    const events = requestBids.allEvents;
-    if(!events) return undefined;
-    let [selectedEvent, rest] = getRandom(events);
-    while(selectedEvent) {
-        const bids = requestBids.get(selectedEvent);
-        const bid = getBid(bids, waitBids);
-        if(bid) {
-            return getActionFromBid(bid);
-        } 
-        [selectedEvent, rest] = getRandom(rest);
+export function getNextActionFromRequests(activeBidsByType: ActiveBidsByType): Action | undefined {
+    const bids = getActiveBidsForSelectedTypes(activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);
+    if(bids === undefined) return undefined;
+    let [nextBid, ...restBids] = bids;
+    while(nextBid) {
+        if(isValidRequest(activeBidsByType, nextBid)) {
+            return getActionFromBid(nextBid);
+        }
+        [nextBid, ...restBids] = restBids;
     }
     return undefined; 
 }

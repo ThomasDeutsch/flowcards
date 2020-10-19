@@ -12,12 +12,12 @@ test("requests can be extended", () => {
         progressedExtend = false,
         setupCount = 0;
 
-    const thread1 = flow({id: 'requesting thread'}, function* () {
+    const thread1 = flow({name: 'requesting thread'}, function* () {
         yield bp.request("A");
         progressedRequest = true;
     });
 
-    const thread3 = flow({id: 'extending thread'}, function* () {
+    const thread3 = flow({name: 'extending thread'}, function* () {
         yield bp.extend("A");
         progressedExtend = true;
         yield bp.wait('X');
@@ -29,7 +29,7 @@ test("requests can be extended", () => {
         setupCount++;
     }, ({event}) => {
         expect(progressedExtend).toBe(true);
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
         expect(progressedRequest).toBe(false);
         expect(setupCount).toEqual(2);
     }
@@ -73,7 +73,7 @@ test("if an extend is not applied, than the next extend will get the event", () 
         expect(waitCAdvanced).toBe(true);
         expect(waitDAdvanced).toBe(false);
         expect(requestAdvanced).toBe(false);
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
     });
 });
 
@@ -97,7 +97,7 @@ test("if an extended thread completed, without resolving or rejecting the event,
         enable(thread3());
         setupCount++;
     }, ({event}) => {
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
     }
  );
     expect(setupCount).toEqual(2);
@@ -130,7 +130,7 @@ test("extends will receive a value (like waits)", () => {
     }, ({event}) => {
         expect(thread1Advanced).toBe(false);
         expect(extendedValue.value).toBe(1000);
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
     });
 });
 
@@ -197,7 +197,7 @@ test("an extend will create a pending event", () => {
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
     });
 });
 
@@ -217,24 +217,24 @@ test("an extend will wait for the pending-event to finish before it extends.", (
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
     });
 });
 
 
 test("an extend can be resolved. This will progress waits and requests", (done) => {
-    const requestingThread = flow({id: 'requestingThread'}, function* () {
+    const requestingThread = flow({name: 'requestingThread'}, function* () {
         const val = yield bp.request("A", delay(100, 'value'));
         expect(val).toBe('value extended');
     });
 
-    const extendingThread = flow({id: 'extendingThread'}, function* () {
+    const extendingThread = flow({name: 'extendingThread'}, function* () {
         const extend = yield bp.extend("A");
         expect(extend.value).toBe('value');
         extend.resolve(extend.value + " extended");
     });
 
-    const waitingThread = flow({id: 'waitingThread'}, function* () {
+    const waitingThread = flow({name: 'waitingThread'}, function* () {
         const val = yield bp.wait("A");
         expect(val).toBe('value extended');
         yield bp.wait('fin');
@@ -267,7 +267,7 @@ test("an extend will keep the event-pending if the BThread with the extend compl
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').pending).toBeTruthy();
+        expect(event('A').isPending).toBeTruthy();
         expect(requestingThreadProgressed).toBe(false);
     });
 });
@@ -329,8 +329,12 @@ test("an extend can be resolved in the same cycle", () => {
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').pending).toBeFalsy();
+        expect(event('A').isPending).toBeFalsy();
         expect(requestedValue).toEqual(2);
         expect(loopCount).toEqual(2); // 1: init, 2: request & extend (same loop)
     });
 });
+
+
+//TODO: extends with guards
+//TODO: blocked extends

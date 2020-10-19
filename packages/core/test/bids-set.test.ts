@@ -17,7 +17,7 @@ test("a set is a request, that will be cached. ", () => {
 
 test("when a promise resolves, the cache gets updated", (done) => {
     const thread1 = flow(null, function* () {
-        yield bp.set("testEvent", delay(100, 'resolved value'));
+        yield bp.set("testeventA", delay(100, 'resolved value'));
         yield bp.wait('fin');
     });
 
@@ -25,7 +25,7 @@ test("when a promise resolves, the cache gets updated", (done) => {
         enable(thread1());
     }, ({event}) => {
         if(event('fin').dispatch) {
-            expect(event('testEvent')?.value).toEqual("resolved value");
+            expect(event('testeventA')?.value).toEqual("resolved value");
             done();
         }
     });

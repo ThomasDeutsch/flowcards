@@ -1,12 +1,10 @@
 import * as bp from "../src/index";
 import { testScenarios } from './testutils';
-import { BThreadContext } from '../src/index';
 import { flow } from '../src/scenario';
 
 
 test("the cache function will return the history and the current value", () => {
-    let cachedVal: any;
-    
+   
     const thread1 = flow(null, function* () {
         yield bp.set('A', 'first');
         yield bp.set('A', 'second');

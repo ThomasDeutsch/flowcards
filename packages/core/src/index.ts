@@ -1,6 +1,5 @@
 import { Action } from './action';
 import { ScenariosContext, StagingFunction, UpdateLoop } from './update-loop';
-import { ActionLog } from './action-log';
 
 export * from './scenario';
 export * from './bthread';
@@ -21,7 +20,6 @@ export type PlayPause = { getIsPaused: () => boolean; toggle: () => void };
 
 export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, DispatchActions, PlayPause] {
     const bufferedActions: Action[] = [];
-    const actionLog = new ActionLog();
     let isPaused = false;
     const bufferedReplayMap = new Map<number, Action>();
 
@@ -47,7 +45,7 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
         clearBufferOnNextTick();
     }
 
-    const loop = new UpdateLoop(stagingFunction, internalDispatchSingleAction, actionLog);
+    const loop = new UpdateLoop(stagingFunction, internalDispatchSingleAction);
 
     const clearBufferOnNextTick = (forceRefresh?: boolean) => {
         Promise.resolve().then(() => { // next tick
@@ -77,7 +75,6 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
 
     const dispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => {
         if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
-            // TODO: add logging for context change!
             loop.runScaffolding();
             loop.setupContext(isPaused);
         }

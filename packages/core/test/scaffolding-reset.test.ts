@@ -12,7 +12,7 @@ test("a thread gets reset, when the arguments change", () => {
     });
 
     interface MyProps {waitingForB: boolean}
-    const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+    const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.wait('A');
     }); 
@@ -33,7 +33,7 @@ test("a thread gets reset, when the arguments change - 2", () => {
     });
 
     interface MyProps {waitingForB: boolean; waitingForX?: boolean}
-    const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+    const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.wait('A');
     }); 
@@ -55,7 +55,7 @@ test("a thread gets reset, when the arguments change - 3", () => {
     });
 
     interface MyProps {waitingForB: boolean; waitingForX?: boolean}
-    const threadB = flow({id: 'threadB'}, function* (props: MyProps) {
+    const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.wait('A');
     }); 

@@ -70,7 +70,6 @@ test("an extend is not applied, if the guard returns false.", () => {
 
 
 test("a block can be guarded", () => {
-
     const requestingThread = flow(null, function* () {
         let i = 0;
         while(i++ < 20) {
@@ -90,7 +89,7 @@ test("a block can be guarded", () => {
 });
 
 
-test("a block-guard will be combined with a other guards", () => {
+test("a block-guard will be combined with other guards", () => {
 
     const blockingThread = flow(null, function* () {
         yield bp.block("A", (pl: number) => pl < 1500);
@@ -106,7 +105,7 @@ test("a block-guard will be combined with a other guards", () => {
     }, ({event}) => {
         if(event('A').dispatch) {
             expect(event('A').dispatch).toBeDefined();
-            expect(event('A').explain(1001).invalid.length).toBe(2);
+            //expect(event('A').validate(1001).invalid.length).toBe(2);
             const wasDispatched = event('A').dispatch?.(1300);
             expect(wasDispatched).toBeFalsy();
         }
@@ -130,11 +129,8 @@ test("a block-guard can be keyed", () => {
     }, ({event}) => {
         if(event('A')?.dispatch) {
             expect(event('A').dispatch).toBeDefined();
-            expect(event('A').explain(2000).invalid.length).toBeFalsy();
-            expect(event('A').explain(1001).invalid.length).toBeFalsy();
+            expect(event('A').validate(2000)).toEqual('valid');
+            expect(event('A').validate(1001)).toEqual('valid');
         }
     });
 });
-
-
-// TODO: explain function will return an array of EventInfo

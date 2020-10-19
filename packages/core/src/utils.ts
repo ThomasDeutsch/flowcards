@@ -33,8 +33,8 @@ export function toArray<T>(x: T | T[]): T[] {
     return [x];
 }
 
-export function flattenShallow<T>(arr?: T[][]): T[] {
-    if(!arr) return [];
+export function flattenShallow<T>(arr?: T[][]): T[] | undefined {
+    if(!arr || arr.length === 0) return undefined;
     return arr.reduce((acc, val) => acc.concat(val), []);
 }
 

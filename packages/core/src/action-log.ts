@@ -1,4 +1,4 @@
-import { Action, ActionType } from './action';
+import { Action } from './action';
 import { Bid } from './bid';
 import { BThreadId } from './bthread';
 import { BThreadMap } from './bthread-map';
@@ -31,7 +31,7 @@ export interface BThreadProgressReaction {
     actionId: number;
     nextState: BThreadState;
     nextSection?: string;
-    selectedBid: Bid;
+    selectedBid: Bid | 'rejected';
 }
 
 export type BThreadReaction = BThreadInitReaction | BThreadResetReaction | BThreadProgressReaction;
@@ -48,9 +48,9 @@ export class ActionLog {
     public logAction(action: Action): void {
         const a = {...action}
         if(action.resolve) {
-            this._actions[action.resolve.requestLoopIndex].resolveLoopIndex = action.id!;
+            this._actions[action.resolve.requestLoopIndex].resolveActionId = action.id!;
         }
-        if(action.resolveLoopIndex === null) {
+        if(action.resolveActionId === null) {
             a.payload = undefined; // do not save the promise object 
         }
         this._actions.push(a);
@@ -82,7 +82,7 @@ export class ActionLog {
         });
     }
 
-    public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState, nextSection?: string) {
+    public logBThreadProgress( bThreadId: BThreadId, bid: Bid | 'rejected', nextState: BThreadState, nextSection?: string) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentLoopIndex = utils.latest(this._actions)!.id!;
         bThreadReactions!.set(currentLoopIndex, {
