@@ -62,7 +62,7 @@ test("a async request can be replayed", (done) => {
     });
     const [context, replay] = testScenarios((enable) => {
         enable(thread1());
-    }, ({thread, log}) => {
+    }, ({thread}) => {
         if(thread.get('thread1')?.isCompleted) {
             expect(value1).toEqual('YEAH');
             expect(eventReplayed).toBeTruthy();

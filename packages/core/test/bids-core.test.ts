@@ -289,3 +289,49 @@ test("a requested event with a key is blocked by a block with the same event-nam
     expect(progressedRequestThread1).toBe(true);
     expect(progressedRequestThread2).toBe(false);
 });
+
+
+test("a keyed wait will not progress on an event that is more general", () => {
+    let requestProgressed = false, waitProgressed = false;
+
+    const requestingThread = flow({name: 'thread1'}, function*() {
+        yield bp.request("A");
+        requestProgressed = true;
+    });
+
+    const waitingThread = flow(null, function*() {
+        yield [bp.wait({name: 'A', key: 1}), bp.wait({name: 'A', key: 2})];
+        waitProgressed = true;
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+        enable(waitingThread());
+    }, () => {
+        expect(requestProgressed).toBe(true);
+        expect(waitProgressed).toBe(false);
+    });
+});
+
+
+test("a wait without a key will react to keyed events with the same name", () => {
+    let requestProgressed: any, waitProgressed: any;
+
+    const requestingThread = flow({name: 'thread1'}, function*() {
+        yield bp.request({name: 'A', key: 1});
+        requestProgressed = true;
+    });
+
+    const waitingThread = flow(null, function*() {
+        yield bp.wait('A');
+        waitProgressed = true;
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+        enable(waitingThread());
+    }, () => {
+        expect(requestProgressed).toBe(true);
+        expect(waitProgressed).toBe(true);
+    });
+});

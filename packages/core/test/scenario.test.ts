@@ -19,26 +19,7 @@ test("testScenarios can be used without updateCb and logger", done => {
     });
 });
 
-test("there is be a dispatch-function for every waiting event", () => {
 
-    const thread1 = flow(null, function* () {
-        yield [bp.wait("eventOne"), bp.wait("eventTwo")];
-    })
-
-    const thread2 = flow(null, function* () {
-        yield bp.wait("eventThree");
-    })
-
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-    }, ({event}) => {
-        expect(event('eventOne').dispatch).toBeDefined();
-        expect(event('eventTwo').dispatch).toBeDefined();
-        expect(event('eventThree').dispatch).toBeDefined();
-
-    });
-});
 
 
 function loggerScenarios(stagingFunction: StagingFunction, da: Set<string>): void {

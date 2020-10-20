@@ -75,3 +75,58 @@ test("sets can be extended", () => {
 });
 
 
+test("the cache function will return the history and the current value", () => {
+   
+    const thread1 = flow(null, function* () {
+        yield bp.set('A', 'first');
+        yield bp.set('A', 'second');
+        yield bp.request('fin');
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event}) => {
+        expect(event('A')?.history?.length).toEqual(2);
+        expect(event('A')?.value).toEqual('second');
+    });
+});
+
+
+test("an event cache for an event will contain keyed values as well", () => {
+    const thread1 = flow(null, function* () {
+        yield bp.set({name: 'A', key: "1"}, 'a value for 1');
+    });
+
+    const thread2 = flow(null, function* () {
+        yield bp.set({name: 'A', key: 2}, 'a value for 2');
+    })
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({event})=> {
+        expect(event({name: 'A', key: '1'})?.value).toEqual('a value for 1');
+        expect(event({name: 'A', key: 2})?.value).toEqual('a value for 2');
+    });
+});
+
+
+test("if an event cache has keyed values, they will not be replaced by a request without key", () => {
+    const thread1 = flow(null, function* () {
+        yield bp.set({name: 'A', key: "1"}, 'a value for 1');
+    });
+
+    const thread2 = flow(null, function* () {
+        yield bp.wait({name: 'A', key: "1"});
+        yield bp.set({name: 'A', key: 2}, 'a value for 2');
+        yield bp.set('A', 'replacement value')
+    })
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({event})=> {
+        expect(event({name: 'A', key: '1'})?.value).toEqual('a value for 1');
+        expect(event({name: 'A', key: 2})?.value).toEqual('a value for 2');
+    });
+});

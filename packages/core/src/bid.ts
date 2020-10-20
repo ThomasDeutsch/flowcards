@@ -117,7 +117,7 @@ export function hasValidMatch(bidsByType: ActiveBidsByType, bidType: BidType, ev
 export function getMatchingBids(bidsByType: ActiveBidsByType, types: BidType[], event: EventId): Bid[] | undefined {
     const result = types.reduce((acc: Bid[], type: BidType) => {
         if(bidsByType[type] === undefined) return acc;
-        const matchingBids = bidsByType[type]!.getAllMatchingValues(event);
+        const matchingBids = bidsByType[type]!.getExactMatchAndUnkeyedMatch(event);
         if(matchingBids === undefined || matchingBids.length === 0) return acc;
         acc.push(...utils.flattenShallow(matchingBids)!);
         return acc;
