@@ -4,7 +4,7 @@ import { BThreadId } from './bthread';
 import { ActionDispatch } from './update-loop';
 import { ActionType } from './action';
 import { GetCachedItem, CachedItem } from './event-cache';
-import { validate, ValidationResultType } from './validation';
+import { validate, ValidateResult } from './validation';
 
 export interface EventInfo {
     bThreadId?: BThreadId;
@@ -40,7 +40,7 @@ export class EventContext {
         return false;
     }
 
-    public validate(payload?: any): ValidationResultType {
+    public validate(payload?: any): ValidateResult | undefined {
         return validate(this._activeBidsByType, this._eventId, payload);
     }
 

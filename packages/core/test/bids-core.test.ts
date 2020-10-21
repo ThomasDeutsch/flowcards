@@ -335,3 +335,19 @@ test("a wait without a key will react to keyed events with the same name", () =>
         expect(waitProgressed).toBe(true);
     });
 });
+
+test("if a thread has multiple requests, the first gets selected", () => {
+    let requestProgressed = false;
+
+    const requestingThread = flow({name: 'thread1'}, function*() {
+        const [event, type] = yield [bp.request({name: 'A', key: 1}), bp.request({name: 'A', key: 3}), bp.request({name: 'A', key: 4})];
+        expect(event.key).toEqual(1);
+        requestProgressed = true;
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+    }, () => {
+        expect(requestProgressed).toBe(true);
+    });
+});

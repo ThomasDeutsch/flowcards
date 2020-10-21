@@ -225,7 +225,7 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
         enable(thread2());
     }, ({event, thread}) => {
         if(event('A').isPending) {
-            expect(event('B').validate()).toBe('blocked');
+            expect(event('B').validate(1)?.isValid).toBe(false);
         } else if( thread.get('requestingThread')?.isCompleted) {
             expect(event('B').validate()).toBe('passed');
             done();

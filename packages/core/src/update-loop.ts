@@ -82,6 +82,7 @@ export interface ScenariosContext {
     event: (eventName: string | EventId) => EventContext;
     thread: BThreadMap<BThreadState>;
     log: ActionLog;
+    bids: ActiveBidsByType;
 }
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
@@ -178,7 +179,8 @@ export class UpdateLoop {
         return { 
             event: this._getEventContext,
             thread: this._bThreadStateMap,
-            log: this._actionLog
+            log: this._actionLog,
+            bids: this._activeBidsByType
         }
     }
 }
