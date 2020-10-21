@@ -1,5 +1,5 @@
 import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
-import { BThreadBids, activeBidsByType, ActiveBidsByType } from './bid';
+import { BThreadBids, activeBidsByType, BidsByType } from './bid';
 import { BThread, BThreadState, GeneratorFn, BThreadInfo, BThreadId } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
@@ -26,6 +26,7 @@ function setupScaffolding(
     const enabledBThreadIds = new Set<string>();
     const destroyOnDisableThreadIds = new Set<string>();
     const cancelPendingOnDisableThreadIds = new Set<string>();
+    let bThreadOrderIndex = 0;
 
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
         const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
@@ -35,7 +36,7 @@ function setupScaffolding(
         if (bThread) {
             bThread.resetOnPropsChange(props);
         } else {
-            bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, generatorFn, props, dispatch, actionLog));
+            bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, bThreadOrderIndex++, generatorFn, props, dispatch, actionLog));
             if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadIdString);
             if(bThreadInfo.cancelPendingOnDisable) cancelPendingOnDisableThreadIds.add(bThreadIdString);
         }
@@ -50,6 +51,7 @@ function setupScaffolding(
     }
     function scaffold(currentActionId: number) {
         bThreadBids.length = 0;
+        bThreadOrderIndex = 0;
         enabledBThreadIds.clear();
         stagingFunction(enableBThread, getCached); // do the staging
         if(cancelPendingOnDisableThreadIds.size > 0) {
@@ -63,9 +65,9 @@ function setupScaffolding(
             destroyOnDisableThreadIds.forEach(bThreadIdString => {
             if(!enabledBThreadIds.has(bThreadIdString)) {
                 bThreadMap.get(BThreadMap.toThreadId(bThreadIdString))?.destroy();
-                const bThradId = BThreadMap.toThreadId(bThreadIdString);
-                bThreadMap.delete(bThradId);
-                bThreadStateMap.delete(bThradId);
+                const bThreadId = BThreadMap.toThreadId(bThreadIdString);
+                bThreadMap.delete(bThreadId);
+                bThreadStateMap.delete(bThreadId);
                 cancelPendingOnDisableThreadIds.delete(bThreadIdString);
                 destroyOnDisableThreadIds.delete(bThreadIdString);
             }
@@ -82,13 +84,14 @@ export interface ScenariosContext {
     event: (eventName: string | EventId) => EventContext;
     thread: BThreadMap<BThreadState>;
     log: ActionLog;
+    bids: BidsByType;
 }
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
 
 export class UpdateLoop {
     private _currentActionId = 0;
-    private _activeBidsByType = {} as ActiveBidsByType;
+    private _activeBidsByType = {} as BidsByType;
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
     private readonly _bThreadBids: BThreadBids[] = [];
@@ -178,7 +181,8 @@ export class UpdateLoop {
         return { 
             event: this._getEventContext,
             thread: this._bThreadStateMap,
-            log: this._actionLog
+            log: this._actionLog,
+            bids: this._activeBidsByType
         }
     }
 }

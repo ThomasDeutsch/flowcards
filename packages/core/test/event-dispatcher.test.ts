@@ -97,3 +97,25 @@ test("a pending event can not be dispatched", () => {
         expect(event({name: 'A'}).dispatch).toBeUndefined();
     });
 });
+
+test("there is be a dispatch-function for every waiting event", () => {
+
+    const thread1 = flow(null, function* () {
+        yield [bp.wait("eventOne"), bp.wait("eventTwo")];
+    })
+
+    const thread2 = flow(null, function* () {
+        yield bp.wait("eventThree");
+    })
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({event}) => {
+        expect(event('eventOne').dispatch).toBeDefined();
+        expect(event('eventTwo').dispatch).toBeDefined();
+        expect(event('eventThree').dispatch).toBeDefined();
+        expect(event('XXY').dispatch).toBeUndefined();
+
+    });
+});

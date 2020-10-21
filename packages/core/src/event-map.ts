@@ -58,19 +58,18 @@ export class EventMap<T>  {
         }
     }
 
-    public getAllMatchingEvents(event?: EventId): EventId[] | undefined {
-        if(event === undefined) return undefined;
-        if(event.key === undefined) { // there was no key, so add all items with a key.
-            const keys = this.withKey.get(event.name)?.keys();
-            if(keys === undefined) return [event];
-            const keysColl = [...keys];
-            if(keysColl.length === 0) return [event];
-            return [...keysColl.map(key => ({name: event.name, key: key})), event];
-        } else { // there was a key, so only add the items without a key.
-            return [event, {name: event.name}];
-        }
-    }
-
+    // public getAllMatchingEvents(event?: EventId): EventId[] | undefined {
+    //     if(event === undefined) return undefined;
+    //     if(event.key === undefined) { // there was no key, so add all items with a key.
+    //         const keys = this.withKey.get(event.name)?.keys();
+    //         if(keys === undefined) return [event];
+    //         const keysColl = [...keys];
+    //         if(keysColl.length === 0) return [event];
+    //         return [...keysColl.map(key => ({name: event.name, key: key})), event];
+    //     } else { // there was a key, so only add the items without a key.
+    //         return [event, {name: event.name}];
+    //     }
+    // }
     public getExactMatchAndUnkeyedMatch(event: EventId): T[] | undefined {
         const noKeyResult = this.noKey.get(event.name)
         if(event.key === undefined) {
@@ -79,13 +78,6 @@ export class EventMap<T>  {
         const withKeyResult = this.withKey.get(event.name)?.get(event.key);
         if(withKeyResult === undefined && noKeyResult === undefined) return undefined;
         return [noKeyResult, withKeyResult].filter(notUndefined);
-    }
-
-    public getAllMatchingValues(event?: EventId): T[] | undefined {
-        const events = this.getAllMatchingEvents(event);
-        if(events === undefined) return undefined;
-        const result = events.map(event => this.get(event)).filter(utils.notUndefined);
-        return (result.length === 0) ? undefined : result;
     }
 
     public has(event: EventId | string): boolean {

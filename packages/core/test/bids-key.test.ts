@@ -42,7 +42,8 @@ test("an event with a key can be blocked.", () => {
     });
 
     const requestingThread = flow(null, function* () {
-        yield bp.request('A'); // request all A events
+        yield bp.request({name: 'A', key: 2});
+        yield bp.request({name: 'A', key: 1});
     });
 
     testScenarios((enable) => {
@@ -56,7 +57,7 @@ test("an event with a key can be blocked.", () => {
     });
 });
 
-test("a request without a key will advance all waiting threads ( with key or not )", () => {
+test("a request without a key will not advance waiting threads with a key", () => {
     let advancedWait1 = false;
     let advancedWait2 = false;
     let advancedWaitNoKey = false;
@@ -87,8 +88,8 @@ test("a request without a key will advance all waiting threads ( with key or not
         enable(requestThread());
     }, ()=> {
         expect(advancedWaitNoKey).toEqual(true);
-        expect(advancedWait1).toEqual(true);
-        expect(advancedWait2).toEqual(true);
+        expect(advancedWait1).toEqual(false);
+        expect(advancedWait2).toEqual(false);
     });
 });
 
@@ -129,45 +130,3 @@ test("a request with a key, will only advance the matching wait with the same ke
 
     });
 });
-
-
-test("an event cache vor an event will contain keyed values as well", () => {
-    const thread1 = flow(null, function* () {
-        yield bp.set({name: 'A', key: "1"}, 'a value for 1');
-    });
-
-    const thread2 = flow(null, function* () {
-        yield bp.set({name: 'A', key: 2}, 'a value for 2');
-    })
-
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-    }, ({event})=> {
-        expect(event({name: 'A', key: '1'})?.value).toEqual('a value for 1');
-        expect(event({name: 'A', key: 2})?.value).toEqual('a value for 2');
-    });
-});
-
-
-test("if an event cache has keyed values, they will be replaced by a request without key", () => {
-    const thread1 = flow(null, function* () {
-        yield bp.set({name: 'A', key: "1"}, 'a value for 1');
-    });
-
-    const thread2 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: "1"});
-        yield bp.set({name: 'A', key: 2}, 'a value for 2');
-        yield bp.set('A', 'replacement value')
-    })
-
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-    }, ({event})=> {
-        expect(event({name: 'A', key: '1'})?.value).toEqual('replacement value');
-        expect(event({name: 'A', key: 2})?.value).toEqual('replacement value');
-    });
-});
-
-// // TODO: Test the scenario: one event is requesting a keyed event, and there is a block for the same event without a key.
