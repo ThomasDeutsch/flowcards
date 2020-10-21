@@ -78,10 +78,10 @@ type WithPayload = {payload?: any};
 
 export function isBlocked(bidsByType: BidsByType, event: EventId, withPayload?: WithPayload): boolean {
     if(bidsByType.block !== undefined) {
-        if(bidsByType.block.has(event) || bidsByType.block.has({name: event.name})) return true;
+        if(bidsByType.block.hasMatching(event)) return true
     }
     if(bidsByType.pending !== undefined) {
-        if(bidsByType.pending.has(event) || bidsByType.pending.has({name: event.name})) return true;
+        if(bidsByType.pending.hasMatching(event)) return true;
     }
     if(withPayload && bidsByType.guardedBlock !== undefined) {
         const blockBids = flattenShallow(bidsByType.guardedBlock.getExactMatchAndUnkeyedMatch(event));

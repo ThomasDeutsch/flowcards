@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { ActionType, GET_VALUE_FROM_BTHREAD } from '../src/action';
 import { flow } from '../src/scenario';
-import { BidType, request } from '../src/bid';
+import { BidType } from '../src/bid';
 
 test("a thread can be replayed", (done) => {
     let value1: number, value2: number;
@@ -78,7 +78,6 @@ test("a async request can be replayed", (done) => {
 
 
 test("after a replay completes, the normal execution will resume", (done) => {
-    let value1: number;
     const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.wait('replayEvent1');
         yield bp.request('requestEvent1');

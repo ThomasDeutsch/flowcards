@@ -36,11 +36,12 @@ function setupScaffolding(
         if (bThread) {
             bThread.resetOnPropsChange(props);
         } else {
-            bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, bThreadOrderIndex++, generatorFn, props, dispatch, actionLog));
+            bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, generatorFn, props, dispatch, actionLog));
             if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadIdString);
             if(bThreadInfo.cancelPendingOnDisable) cancelPendingOnDisableThreadIds.add(bThreadIdString);
         }
         bThread = bThreadMap.get(bThreadId)!;
+        bThread.orderIndex = bThreadOrderIndex++;
         if(bThread.currentBids) bThreadBids.push(bThread.currentBids);
         bThreadStateMap.set(bThreadId, bThread.state);
         return bThread.state;

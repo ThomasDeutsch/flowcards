@@ -47,6 +47,7 @@ export interface BThreadState {
     cancelPendingOnDisable?: boolean;
     isCompleted: boolean;
     description?: string;
+    orderIndex: number;
 }
 
 export class BThread {
@@ -60,17 +61,17 @@ export class BThread {
     private _currentBids?: BThreadBids;
     public get currentBids() { return this._currentBids; }
     private _nextBid?: any;
-    private _orderIndex: number;
+    public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _pendingExtends: EventMap<PendingEventInfo> = new EventMap();
     private _state: BThreadState;
     public get state() { return this._state; }
 
-    public constructor(id: BThreadId, info: BThreadInfo, orderIndex: number, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, actionLog: ActionLog) {
+    public constructor(id: BThreadId, info: BThreadInfo, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, actionLog: ActionLog) {
         this.id = id;
-        this._orderIndex = orderIndex;
         this._state = {
             id: id,
+            orderIndex: 0,
             destroyOnDisable: info.destroyOnDisable,
             cancelPendingOnDisable: info.cancelPendingOnDisable,
             description: info.description,
@@ -265,7 +266,7 @@ export class BThread {
         const bidType = action.bidType;
         if(bidType === undefined) {
             // console.warn('a request action needs to define a bidType. A bidType defines the type of bid that was selected for this requesting thread.
-            console.log(`${action.eventId.name + action.type} needs to have a bidType. Received: ${action.bidType}`)
+            console.warn(`${action.eventId.name + action.type} needs to have a bidType. Received: ${action.bidType}`)
             return;
         }
         const bid = this._currentBids?.[bidType]?.get(action.eventId);

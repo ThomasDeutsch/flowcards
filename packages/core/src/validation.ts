@@ -15,10 +15,10 @@ export function isValid(bid: Bid, payload?: any): boolean {
 export type BidValidationResult = {isValid: boolean; bid: Bid; message?: string}
 
 export function getValidationResult(bid: Bid, payload?: any): BidValidationResult {
-    if(!bid.validate) return {isValid: true, bid: bid};
+    if(bid.validate === undefined) return {isValid: true, bid: bid, message: bid.eventId.description};
     const validationReturn = bid.validate(payload);
-    if(validationReturn === true) return {isValid: true, bid: bid};
-    if(validationReturn === false) return {isValid: false, bid: bid};
+    if(validationReturn === true) return {isValid: true, bid: bid, message: bid.eventId.description};
+    if(validationReturn === false) return {isValid: false, bid: bid, message: bid.eventId.description};
     if(validationReturn.isValid === true) return {isValid: true, bid: bid, message: validationReturn.message};
     return {isValid: false, bid: bid, message: validationReturn.message};
 }

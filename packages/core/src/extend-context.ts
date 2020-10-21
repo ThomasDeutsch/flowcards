@@ -1,4 +1,3 @@
-
 export class ExtendContext {
     private _isCompleted = false;
     public get isCompleted() { return this._isCompleted }

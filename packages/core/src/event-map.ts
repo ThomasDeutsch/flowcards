@@ -1,4 +1,3 @@
-import * as utils from './utils';
 import { notUndefined } from './utils';
 
 export type EventKey = string | number;
@@ -7,6 +6,7 @@ type EventIteratorFunction<T> = (e: EventId, value: T) => any;
 export interface EventId {
     name: string;
     key?: EventKey;
+    description?: string;
 }
 
 export function toEventId(e: string | EventId): EventId {
@@ -58,18 +58,6 @@ export class EventMap<T>  {
         }
     }
 
-    // public getAllMatchingEvents(event?: EventId): EventId[] | undefined {
-    //     if(event === undefined) return undefined;
-    //     if(event.key === undefined) { // there was no key, so add all items with a key.
-    //         const keys = this.withKey.get(event.name)?.keys();
-    //         if(keys === undefined) return [event];
-    //         const keysColl = [...keys];
-    //         if(keysColl.length === 0) return [event];
-    //         return [...keysColl.map(key => ({name: event.name, key: key})), event];
-    //     } else { // there was a key, so only add the items without a key.
-    //         return [event, {name: event.name}];
-    //     }
-    // }
     public getExactMatchAndUnkeyedMatch(event: EventId): T[] | undefined {
         const noKeyResult = this.noKey.get(event.name)
         if(event.key === undefined) {
@@ -89,10 +77,6 @@ export class EventMap<T>  {
         }
     }
 
-    public isEmpty(): boolean {
-        return (this.withKey.size === 0) && (this.noKey.size === 0);
-    }
-
     public deleteSingle(event: EventId): boolean {
         if(!this.has(event)) return false;
         if(event.key === undefined) {
@@ -103,19 +87,6 @@ export class EventMap<T>  {
             this.withKey.delete(event.name); // remove the map for this event-name if it is empty.
         }
         return hasDeletedKey;
-    }
-
-    public deleteMatching(a?: EventMap<any>): EventMap<T> {
-        if(!a) return this;
-        if(a.size() === 0) return this;
-        a.forEach((event) => {
-            if(event.key !== undefined) this.deleteSingle(event);
-            else {
-                this.noKey.delete(event.name);
-                this.withKey.delete(event.name);
-            }
-        });
-        return this;
     }
 
     public clear(): void {
@@ -131,27 +102,10 @@ export class EventMap<T>  {
         return clone;
     }
 
-    public get allEvents(): EventId[] | undefined {
-        const elements: EventId[] = [];
-        this.forEach((event) => elements.push(event));
-        return elements.length > 0 ? elements : undefined;
-    }
-
     public get allValues(): T[] | undefined {
         const elements: T[] = [];
         this.forEach((event, value) => elements.push(value));
         return elements.length > 0 ? elements : undefined;
-    }
-    
-    public intersection(a?: EventMap<any>): EventMap<T> {
-        if(a === undefined) {
-            this.clear();
-            return this;
-        }
-        this.forEach((event) => {
-            if(!a.has(event)) this.deleteSingle(event);
-        });
-        return this;
     }
 
     public merge(em: EventMap<T> | undefined): EventMap<T> {
@@ -164,13 +118,5 @@ export class EventMap<T>  {
 
     public hasMatching(event: EventId): boolean {
         return (this.has(event) || this.has({name: event.name})) === true;
-    }
-
-    public filter(filterFn: (t: T) => boolean): EventMap<T> {
-        const result = new EventMap<T>();
-        this.forEach((event, value) => {
-            if(filterFn(value)) result.set(event, value);
-        })
-        return result;
     }
 }

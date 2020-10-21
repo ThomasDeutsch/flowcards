@@ -4,7 +4,6 @@ import { BThreadContext } from '../src/index';
 import { flow } from '../src/scenario';
 
 test("on-bids can not be dispatched", () => {
-
     const thread1 = flow(null, function* () {
         yield bp.on('A');
     });
@@ -18,7 +17,6 @@ test("on-bids can not be dispatched", () => {
 
 
 test("multiple dispatches are batched", (done) => {
-
     const thread1 = flow(null, function* (this: BThreadContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
         yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
@@ -99,7 +97,6 @@ test("a pending event can not be dispatched", () => {
 });
 
 test("there is be a dispatch-function for every waiting event", () => {
-
     const thread1 = flow(null, function* () {
         yield [bp.wait("eventOne"), bp.wait("eventTwo")];
     })

@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { testScenarios, delay } from './testutils';
+import { testScenarios } from './testutils';
 import { flow } from '../src/scenario';
 
 test("the validate function will show the validation result for a wait", () => {
@@ -38,6 +38,7 @@ test("the validate function can show the validation details for a wait", () => {
     const waitingThread = flow(null, function* () {
         yield bp.wait({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
     });
+    
     testScenarios((enable) => {
         enable(waitingThread());
     }, ({event}) => {
@@ -64,7 +65,6 @@ test("the validate function will respect block-bids", () => {
         enable(blockingThread());
     }, ({event}) => {
         expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
-        console.log(event({name: 'A'}).validate(1001)?.required);
         expect(event({name: 'A'}).validate(1001)?.required[1][0].message).toEqual('value needs to be smaller than 2000');
         expect(event({name: 'A'}).validate(1001)?.required[1][0].isValid).toBe(false);
 
@@ -84,8 +84,24 @@ test("the validate function will respect on-bids as optional", () => {
         enable(blockingThread());
     }, ({event}) => {
         expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
-        console.log(event({name: 'A'}).validate(1001)?.required);
         expect(event({name: 'A'}).validate(1001)?.optional[0].message).toEqual('value needs to be smaller than 2000');
         expect(event({name: 'A'}).validate(1001)?.optional[0].isValid).toBe(true);
+    });
+});
+
+test("a event can have a description text that can be viewed in the validate result", () => {
+    const waitingThread = flow(null, function* () {
+        yield bp.wait({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
+    });
+    const blockingThread = flow(null, function* () {
+        yield bp.block({name: 'A', description: 'event A is not possible'});
+    });
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(blockingThread());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
+        expect(event({name: 'A'}).validate(1)?.required[1][0].message).toEqual('event A is not possible');
     });
 });

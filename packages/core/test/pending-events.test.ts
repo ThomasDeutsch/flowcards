@@ -1,6 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { flow } from '../src/scenario';
+import { ActionType } from '../src/action';
 
 
 
@@ -113,15 +114,21 @@ test("If one pending-event is resolved, other promises for this event are cancel
         done();
     });
 
-    const thread2 = flow(null, function* (): any  {
+    const thread2 = flow({name: 't2'}, function* (): any  {
         const [event] = yield [bp.wait('A'), bp.request("C", () => delay(400))];
         expect(event.name).toBe("C");
-        done();
+        
     })
 
     testScenarios((enable) => {
         enable(threadOne());
         enable(thread2());
+    }, ({log, thread}) => {
+        if(thread.get('t2')?.isCompleted) {
+            expect(log.actions.filter(a => a.type === ActionType.requested).length).toBe(3);
+            expect(log.actions.filter(a => a.type === ActionType.resolved).length).toBe(2); // 3 requested, but only 2 resolved because 1 got cancelled
+            done();
+        }
     });
 });
 
