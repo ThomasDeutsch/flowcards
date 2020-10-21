@@ -1,4 +1,4 @@
-import { Bid, ActiveBidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch } from './bid';
+import { Bid, BidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch, getNextBidAndRemaining } from './bid';
 import { EventId } from './event-map';
 
 import { BThreadId } from './bthread';
@@ -27,7 +27,7 @@ export interface Action {
     bidType?: BidType;
 }
 
-function isValidRequest(bidsByType: ActiveBidsByType, bid: Bid): boolean {
+function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
     if(isBlocked(bidsByType, bid.eventId, bid)) return false;
     if(bid.type === BidType.trigger) {
         return hasValidMatch(bidsByType, BidType.wait, bid.eventId, bid) || hasValidMatch(bidsByType, BidType.on, bid.eventId, bid);
@@ -47,15 +47,15 @@ function getActionFromBid(bid: Bid): Action {
     return action;
 }
 
-export function getNextActionFromRequests(activeBidsByType: ActiveBidsByType): Action | undefined {
+export function getNextActionFromRequests(activeBidsByType: BidsByType): Action | undefined {
     const bids = getActiveBidsForSelectedTypes(activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);
     if(bids === undefined) return undefined;
-    let [nextBid, ...restBids] = bids;
+    let [nextBid, restBids] = getNextBidAndRemaining(bids);
     while(nextBid) {
         if(isValidRequest(activeBidsByType, nextBid)) {
             return getActionFromBid(nextBid);
         }
-        [nextBid, ...restBids] = restBids;
+        [nextBid, restBids] = getNextBidAndRemaining(restBids);
     }
     return undefined; 
 }

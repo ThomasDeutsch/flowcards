@@ -60,13 +60,15 @@ export class BThread {
     private _currentBids?: BThreadBids;
     public get currentBids() { return this._currentBids; }
     private _nextBid?: any;
+    private _orderIndex: number;
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _pendingExtends: EventMap<PendingEventInfo> = new EventMap();
     private _state: BThreadState;
     public get state() { return this._state; }
 
-    public constructor(id: BThreadId, info: BThreadInfo, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, actionLog: ActionLog) {
+    public constructor(id: BThreadId, info: BThreadInfo, orderIndex: number, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, actionLog: ActionLog) {
         this.id = id;
+        this._orderIndex = orderIndex;
         this._state = {
             id: id,
             destroyOnDisable: info.destroyOnDisable,

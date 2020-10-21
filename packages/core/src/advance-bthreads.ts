@@ -1,5 +1,5 @@
 import { Action, ActionType } from './action';
-import { BidType, getMatchingBids, ActiveBidsByType, isBlocked} from './bid';
+import { BidType, getMatchingBids, BidsByType, isBlocked} from './bid';
 import { BThread } from './bthread';
 import { BThreadMap } from './bthread-map';
 import { EventMap } from './event-map';
@@ -11,7 +11,7 @@ const EXTENDED_WITH_PROMISE: unique symbol = Symbol('extended with promise');
 // advance threads, based on selected action
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-function progressWait(activeBidsByType: ActiveBidsByType, bThreadMap: BThreadMap<BThread>, types: BidType[], action: Action): boolean {
+function progressWait(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, types: BidType[], action: Action): boolean {
     const matchingBids = getMatchingBids(activeBidsByType, types, action.eventId);
     if(matchingBids === undefined) return false;
     matchingBids.forEach(bid => {
@@ -22,11 +22,11 @@ function progressWait(activeBidsByType: ActiveBidsByType, bThreadMap: BThreadMap
     return true;
 }
 
-function extendAction(activeBidsByType: ActiveBidsByType, bThreadMap: BThreadMap<BThread>, action: Action): undefined | typeof EXTENDED_WITH_PROMISE {
+function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, action: Action): undefined | typeof EXTENDED_WITH_PROMISE {
     const bids = getMatchingBids(activeBidsByType, [BidType.extend], action.eventId);
     if(!bids || bids.length === 0) return;
     while(bids && bids.length > 0) {
-        const bid = bids.pop(); // get last bid ( highest priority )
+        const bid = bids.shift(); // get bid with ( highest priority )
         if(bid === undefined) continue;
         if(isBlocked(activeBidsByType, bid.eventId, action)) continue;
         if(!isValid(bid, action.payload)) continue;
@@ -43,7 +43,7 @@ function extendAction(activeBidsByType: ActiveBidsByType, bThreadMap: BThreadMap
     }
 }
 
-export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: ActiveBidsByType, action: Action): void {
+export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): void {
     switch (action.type) {
         case ActionType.requested: {
             // requested bid was checked (not blocked and valid payload)

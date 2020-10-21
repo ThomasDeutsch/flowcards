@@ -10,11 +10,12 @@ test("the validate function will show the validation result for a wait", () => {
     testScenarios((enable) => {
         enable(waitingThread());
     }, ({event}) => {
-        expect(event({name: 'A'}).validate(1).isValid).toBe(true);
+        expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
+        expect(event({name: 'A'}).validate(1001)?.isValid).toBe(true);
     });
 });
 
-test("the validate function will respect all threads that are waiting for a specific event", () => {
+test("the validate the specific event, and not matching events", () => {
     const waitingThreadA = flow(null, function* () {
         yield bp.wait({name: 'A', key: 1}, (val) => val > 1000);
     });
@@ -22,33 +23,69 @@ test("the validate function will respect all threads that are waiting for a spec
         yield bp.wait({name: 'A'}, (val) => val > 100);
     });
 
-    // show what threads are progressing
-    // for every thread that has a wait or an on
-    // - for every wait, get the validation + all block validations
-    // - for every on, look if there is at least one wait + all block validations
     testScenarios((enable) => {
         enable(waitingThreadA());
         enable(waitingThreadB());
     }, ({event}) => {
-        // with a payload of 1
-        expect(event({name: 'A', key: 1}).validate(1)?.isValid).toBeFalsy();
-        expect(event({name: 'A'}).validate(1)?.passed.length).toBe(0);
-        expect(event({name: 'A'}).validate(1)?.failed.length).toBe(2);
+        expect(event({name: 'A', key: 1}).validate(1)?.isValid).toBe(false);
+        expect(event({name: 'A', key: 1}).validate(101)?.isValid).toBe(false);
+        expect(event({name: 'A'}).validate(101)?.isValid).toBe(true);
+        expect(event({name: 'A', key: 1}).validate(1001)?.isValid).toBe(true);
     });
 });
-
-
-// const x = {threadId: 'threadX', eventId: 'A', bidType: 'wait', message: 'x needs to be bigger than X' }
 
 test("the validate function can show the validation details for a wait", () => {
     const waitingThread = flow(null, function* () {
         yield bp.wait({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
     });
-
     testScenarios((enable) => {
         enable(waitingThread());
     }, ({event}) => {
-        expect(event({name: 'A'}).isPending).toBeTruthy();
-        expect(event({name: 'A'}).dispatch).toBeUndefined();
+        expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
+        expect(event({name: 'A'}).validate(1)?.required[0][0].message).toEqual('value needs to be bigger than 1000');
+        expect(event({name: 'A'}).validate(1)?.required[0][0].isValid).toEqual(false);
+        expect(event({name: 'A'}).validate(1001)?.isValid).toBe(true);
+        expect(event({name: 'A'}).validate(1001)?.required[0][0].message).toEqual('value needs to be bigger than 1000');
+        expect(event({name: 'A'}).validate(1001)?.required[0][0].isValid).toEqual(true);
+    });
+});
+
+
+test("the validate function will respect block-bids", () => {
+    const waitingThread = flow(null, function* () {
+        yield bp.wait({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
+    });
+    const blockingThread = flow(null, function* () {
+        yield bp.block({name: 'A'}, (val) => ({isValid: val < 2000, message: 'value needs to be smaller than 2000'}));
+    });
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(blockingThread());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
+        console.log(event({name: 'A'}).validate(1001)?.required);
+        expect(event({name: 'A'}).validate(1001)?.required[1][0].message).toEqual('value needs to be smaller than 2000');
+        expect(event({name: 'A'}).validate(1001)?.required[1][0].isValid).toBe(false);
+
+    });
+});
+
+test("the validate function will respect on-bids as optional", () => {
+    const waitingThread = flow(null, function* () {
+        yield bp.wait({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
+    });
+    const blockingThread = flow(null, function* () {
+        yield bp.on({name: 'A'}, (val) => ({isValid: val < 2000, message: 'value needs to be smaller than 2000'}));
+    });
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(blockingThread());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
+        console.log(event({name: 'A'}).validate(1001)?.required);
+        expect(event({name: 'A'}).validate(1001)?.optional[0].message).toEqual('value needs to be smaller than 2000');
+        expect(event({name: 'A'}).validate(1001)?.optional[0].isValid).toBe(true);
     });
 });
