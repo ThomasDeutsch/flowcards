@@ -208,30 +208,3 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
         }
     });
 });
-
-
-test("a resolve-action can be blocked", (done) => {
-    const thread1 = flow({name: 'requestingThread'}, function* (this: BThreadContext) {
-        yield bp.request("A", () => delay(100));
-    });
-
-    const thread2 = flow({name: 'waitingThread'}, function* () {
-        yield bp.onPending('A');
-        yield bp.block('A');
-    });
-
-    const thread3 = flow({name: 'timeoutThread'}, function* (this: BThreadContext) {
-        yield bp.request("X", () => delay(1000));
-    });
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-        enable(thread3())
-    }, ({thread}) => {
-        if(thread.get('timeoutThread')?.isCompleted) {
-            expect(thread.get('requestingThread')?.isCompleted).toBe(false);
-            expect(thread.get('waitingThread')?.isCompleted).toBe(false);
-            done();
-        }
-    });
-});
