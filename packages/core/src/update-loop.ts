@@ -25,7 +25,6 @@ function setupScaffolding(
 ): (currentActionId: number) => void {
     const enabledBThreadIds = new Set<string>();
     const destroyOnDisableThreadIds = new Set<string>();
-    const cancelPendingOnDisableThreadIds = new Set<string>();
     let bThreadOrderIndex = 0;
 
     function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
@@ -38,7 +37,6 @@ function setupScaffolding(
         } else {
             bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, generatorFn, props, dispatch, actionLog));
             if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadIdString);
-            if(bThreadInfo.cancelPendingOnDisable) cancelPendingOnDisableThreadIds.add(bThreadIdString);
         }
         bThread = bThreadMap.get(bThreadId)!;
         bThread.orderIndex = bThreadOrderIndex++;
@@ -55,21 +53,13 @@ function setupScaffolding(
         bThreadOrderIndex = 0;
         enabledBThreadIds.clear();
         stagingFunction(enableBThread, getCached); // do the staging
-        if(cancelPendingOnDisableThreadIds.size > 0) {
-            cancelPendingOnDisableThreadIds.forEach(bThreadIdString => {
-                if(!enabledBThreadIds.has(bThreadIdString)) {
-                    bThreadMap.get(BThreadMap.toThreadId(bThreadIdString))?.cancelPending();
-                }
-            });
-        }
         if(destroyOnDisableThreadIds.size > 0) 
             destroyOnDisableThreadIds.forEach(bThreadIdString => {
-            if(!enabledBThreadIds.has(bThreadIdString)) {
+            if(enabledBThreadIds.has(bThreadIdString) === false) {
                 bThreadMap.get(BThreadMap.toThreadId(bThreadIdString))?.destroy();
                 const bThreadId = BThreadMap.toThreadId(bThreadIdString);
                 bThreadMap.delete(bThreadId);
                 bThreadStateMap.delete(bThreadId);
-                cancelPendingOnDisableThreadIds.delete(bThreadIdString);
                 destroyOnDisableThreadIds.delete(bThreadIdString);
             }
         });
@@ -115,7 +105,7 @@ export class UpdateLoop {
     private _reset() {
         this._currentActionId = 0;
         this.actionQueue.length = 0;
-        this._bThreadMap.forEach(bThread => bThread.destroy());
+        this._bThreadMap.forEach(bThread => bThread.destroy(true));
         this._bThreadMap.clear();
         this._eventCache.clear();
         this._actionLog.resetLog();

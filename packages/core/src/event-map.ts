@@ -13,6 +13,10 @@ export function toEventId(e: string | EventId): EventId {
     return (typeof e === 'string') ? {name: e} : e;
 }
 
+export function sameEventId(a: EventId, b: EventId): boolean {
+    return (a.name === b.name) && (a.key === b.key);
+}
+
 export class EventMap<T>  {
     public noKey: Map<string, T>;
     public withKey: Map<string, Map<EventKey, T>>;

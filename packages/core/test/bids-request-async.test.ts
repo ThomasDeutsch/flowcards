@@ -162,30 +162,6 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
     }));
 });
 
-test("given the cancelPendingOnDisable option, pending events will be canceled on disable", (done) => {
-    const thread1 = flow({name: 'thread1'}, function* () {
-        yield bp.request("A", () => delay(100));
-        const [event] = yield [bp.wait('B'),  bp.request("X", () => delay(500))];
-        expect(event.name).toEqual('X');
-    });
-
-    const thread2 = flow({name: 'thread2', cancelPendingOnDisable: true}, function*() {
-        yield bp.request("B", () => delay(300));
-    });
-
-    testScenarios((enable) => {
-        const t1 = enable(thread1());
-        if(t1.pending.has('A')) {
-            enable(thread2());
-        }
-    }, (({thread}) => {
-        if(thread.get('thread1')?.isCompleted) {
-            expect(thread.get('thread2')?.isCompleted).toBeFalsy();
-            done();
-        }
-    }));
-});
-
 test("given the destoryOnDisable option, pending events will be canceled on destroy", (done) => {
     const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));
@@ -228,6 +204,33 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
             expect(event('B').validate(1)?.isValid).toBe(false);
         } else if( thread.get('requestingThread')?.isCompleted) {
             expect(event('B').validate()?.isValid).toBe(true);
+            done();
+        }
+    });
+});
+
+
+test("a resolve-action can be blocked", (done) => {
+    const thread1 = flow({name: 'requestingThread'}, function* (this: BThreadContext) {
+        yield bp.request("A", () => delay(100));
+    });
+
+    const thread2 = flow({name: 'waitingThread'}, function* () {
+        yield bp.onPending('A');
+        yield bp.block('A');
+    });
+
+    const thread3 = flow({name: 'timeoutThread'}, function* (this: BThreadContext) {
+        yield bp.request("X", () => delay(1000));
+    });
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+        enable(thread3())
+    }, ({thread}) => {
+        if(thread.get('timeoutThread')?.isCompleted) {
+            expect(thread.get('requestingThread')?.isCompleted).toBe(false);
+            expect(thread.get('waitingThread')?.isCompleted).toBe(false);
             done();
         }
     });

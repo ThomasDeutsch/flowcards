@@ -1,41 +1,59 @@
 import { Action } from './action';
 import { Bid } from './bid';
-import { BThreadId } from './bthread';
+import { BThreadId, PendingEventInfo } from './bthread';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadState } from './bthread';
+import { EventId } from '../build/event-map';
+import { EventMap } from './event-map';
 
 export enum BThreadReactionType {
+    init = 'init',
     progress = 'progress',
     reset = 'reset',
-    init = 'init'
+    exception = 'exception',
+    destroy = 'destroy'
 }
 
 export interface BThreadInitReaction {
     type: BThreadReactionType.init;
     actionId: number;
     nextState: BThreadState;
-    nextSection?: string;
+    hasNextSection: boolean;
 }
 
 export interface BThreadResetReaction {
     type: BThreadReactionType.reset;
     actionId: number;
     nextState: BThreadState;
-    nextSection?: string;
     changedPropNames: string[];
+    hasNextSection: boolean;
 }
 
 export interface BThreadProgressReaction {
     type: BThreadReactionType.progress;
     actionId: number;
     nextState: BThreadState;
-    nextSection?: string;
-    selectedBid: Bid | 'rejected';
+    bid: Bid;
+    hasNextSection: boolean;
 }
 
-export type BThreadReaction = BThreadInitReaction | BThreadResetReaction | BThreadProgressReaction;
+export interface BThreadExceptionReaction {
+    type: BThreadReactionType.exception;
+    actionId: number;
+    nextState: BThreadState;
+    eventId: EventId;
+    hasNextSection: boolean;
+}
 
+export interface BThreadDestroyReaction {
+    type: BThreadReactionType.destroy;
+    cancelledRequests: EventMap<PendingEventInfo>;
+    nextState?: BThreadState;
+}
+
+
+export type BThreadReaction = BThreadInitReaction | BThreadResetReaction | BThreadProgressReaction | BThreadExceptionReaction | BThreadDestroyReaction;
 
 export class ActionLog {
     private _actions: Action[] = [];
@@ -44,6 +62,15 @@ export class ActionLog {
     }
     public enabledBThreadIds = new Map<number, string[]>();
     public bThreadReactionHistory = new Map<string, Map<number, BThreadReaction>>();
+
+    private _getNextSection(bThreadReactions: Map<number, BThreadReaction>, nextState?: BThreadState) {
+        const latestActionId = utils.latest([...bThreadReactions.keys()]);
+        if(latestActionId && nextState) {
+            const currentSection = bThreadReactions.get(latestActionId)?.nextState?.section;
+            return currentSection !== nextState.section;
+        }
+        return nextState !== undefined ? true : false;
+    }
 
     public logAction(action: Action): void {
         const a = {...action}
@@ -70,7 +97,7 @@ export class ActionLog {
         return bThreadReactions;
     }
 
-    public logBThreadInit(bThreadId: BThreadId, initialState: BThreadState, initialSection?: string) {
+    public logBThreadInit(bThreadId: BThreadId, initialState: BThreadState) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const latestAction = utils.latest(this._actions)
         const currentLoopIndex =  latestAction ? latestAction.id! : 0;
@@ -78,31 +105,53 @@ export class ActionLog {
             type: BThreadReactionType.init,
             actionId: currentLoopIndex,
             nextState: initialState,
-            nextSection: initialSection
+            hasNextSection: this._getNextSection(bThreadReactions)
         });
     }
 
-    public logBThreadProgress( bThreadId: BThreadId, bid: Bid | 'rejected', nextState: BThreadState, nextSection?: string) {
+    public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentLoopIndex = utils.latest(this._actions)!.id!;
         bThreadReactions!.set(currentLoopIndex, {
             type: BThreadReactionType.progress,
             actionId: currentLoopIndex,
-            selectedBid: bid,
+            bid: bid,
             nextState: nextState,
-            nextSection: nextSection
+            hasNextSection: this._getNextSection(bThreadReactions, nextState)
         });
     }
 
-    public logBThreadReset(bThreadId: BThreadId, changedPropNames: string[], nextState: BThreadState, nextSection?: string) {
+    public logBThreadException( bThreadId: BThreadId, eventId: EventId, nextState: BThreadState) {
+        const bThreadReactions = this._getBThreadReactions(bThreadId);
+        const currentLoopIndex = utils.latest(this._actions)!.id!;
+        bThreadReactions!.set(currentLoopIndex, {
+            type: BThreadReactionType.exception,
+            actionId: currentLoopIndex,
+            eventId: eventId,
+            nextState: nextState,
+            hasNextSection: this._getNextSection(bThreadReactions, nextState)
+        });
+    }
+
+    public logBThreadReset(bThreadId: BThreadId, changedPropNames: string[], nextState: BThreadState) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentLoopIndex = utils.latest(this._actions)!.id!;
         bThreadReactions!.set(currentLoopIndex, {
             type: BThreadReactionType.reset,
             actionId: currentLoopIndex,
             nextState: nextState,
-            nextSection: nextSection,
             changedPropNames: changedPropNames,
+            hasNextSection: this._getNextSection(bThreadReactions, nextState)
+        });
+    }
+
+    public logBThreadDestroy(bThreadId: BThreadId, cancelledRequests: EventMap<PendingEventInfo>) {
+        const bThreadReactions = this._getBThreadReactions(bThreadId);
+        const currentLoopIndex = utils.latest(this._actions)!.id!;
+        bThreadReactions!.set(currentLoopIndex, {
+            type: BThreadReactionType.destroy,
+            cancelledRequests: cancelledRequests,
+            nextState: undefined
         });
     }
 

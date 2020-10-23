@@ -1,6 +1,6 @@
 import { Action, ActionType } from './action';
 import { Bid, BidType, BThreadBids, getBidsForBThread } from './bid';
-import { EventMap, EventId, toEventId } from './event-map';
+import { EventMap, EventId, toEventId, sameEventId } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
 import { ActionDispatch } from './update-loop';
 import * as utils from './utils';
@@ -17,7 +17,6 @@ export interface BThreadInfo {
     name: string;
     key?: BThreadKey;
     destroyOnDisable?: boolean;
-    cancelPendingOnDisable?: boolean;
     description?: string;
 }
 
@@ -44,10 +43,10 @@ export interface BThreadState {
     extends: EventMap<Bid>;
     pending: EventMap<PendingEventInfo>;
     destroyOnDisable?: boolean;
-    cancelPendingOnDisable?: boolean;
     isCompleted: boolean;
     description?: string;
     orderIndex: number;
+    cancelledPending: EventMap<PendingEventInfo>;
 }
 
 export class BThread {
@@ -73,7 +72,7 @@ export class BThread {
             id: id,
             orderIndex: 0,
             destroyOnDisable: info.destroyOnDisable,
-            cancelPendingOnDisable: info.cancelPendingOnDisable,
+            cancelledPending: new EventMap(),
             description: info.description,
             section: undefined,
             waits: this._currentBids?.[BidType.wait] || new EventMap(),
@@ -90,7 +89,7 @@ export class BThread {
         this._thread = this._generatorFn(this._currentProps);
         this._actionLog = actionLog;
         this._processNextBid();
-        this._actionLog.logBThreadInit(this.id, this._state, this._state.section);
+        this._actionLog.logBThreadInit(this.id, this._state);
     }
 
      // --- private
@@ -109,6 +108,16 @@ export class BThread {
             clearSection: removeSection,
             isPending: (event: string | EventId) => this._state.pending.has(toEventId(event)),
         };
+    }
+
+    private _cancelPendingRequests(eventId?: EventId) {
+        this._state.cancelledPending.clear();
+        this._pendingRequests.forEach((id, pendingEventInfo) => {
+            if(eventId === undefined || !sameEventId(eventId, id)) {
+                this._state.cancelledPending.set(id, pendingEventInfo);
+                this._pendingRequests.deleteSingle(id);
+            }
+        })
     }
 
     private _setCurrentBids() {
@@ -133,29 +142,13 @@ export class BThread {
         }
     }
 
-    private _progressBThread(bid: Bid | 'rejected', payload: any, isReject = false): void { 
-        // null will be passed as a bid, if a request is rejected
+    private _progressBThread(eventId: EventId, payload: any, isReject = false): void { 
         let returnVal;
         if(!isReject) {
-            returnVal = Array.isArray(this._nextBid) ? [bid === 'rejected' ? bid : bid.eventId, payload] : payload;
+            returnVal = Array.isArray(this._nextBid) ? [eventId, payload] : payload;
         }
         this._pendingRequests.clear();
-        const sectionBeforeProgression = this._state.section;
         this._processNextBid(returnVal);
-        const nextSection = (this._state.section && this._state.section !== sectionBeforeProgression) ? this._state.section : undefined;
-        this._actionLog.logBThreadProgress(this.id, bid, this._state, nextSection);
-    }
-
-    private _cancelAllPendingRequests(action: Action): void {
-        const pending = this._pendingRequests.get(action.eventId);
-        if(pending?.actionId === action.id) {
-            // TODO: log cancelled requests. 
-            // as far as i can tell, this info should only be presented in logs, and is not relevant to anything else.
-            // const canceledRequests = this._pendingRequests.allValues?.map(info => info.actionId).filter(id => id !== pending.actionId);
-            // TODO: this._actionLog.logCancelledRequests(action.id, this.id, canceledRequests);
-            this._pendingRequests.clear();
-            this._pendingRequests.set(action.eventId, pending);
-        }
     }
 
     private _deletePending(action: Action): boolean {
@@ -179,12 +172,10 @@ export class BThread {
         this._state.isCompleted = false;
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
-        this._pendingRequests.clear();
+        this._cancelPendingRequests();
         this._pendingExtends.clear();
-        const sectionBeforeProgression = this._state.section;
         this._processNextBid(); // progress BThread
-        const nextSection = (this._state.section && this._state.section !== sectionBeforeProgression) ? this._state.section : undefined;
-        this._actionLog.logBThreadReset(this.id, changedPropNames, this._state, nextSection);
+        this._actionLog.logBThreadReset(this.id, changedPropNames, this._state);
         
     }
 
@@ -208,7 +199,7 @@ export class BThread {
             if(pendingEventInfo === undefined || pendingEventInfo.actionId === null) return;
             if(pendingEventInfo.actionId !== action.id) return;
             if (pendingEventInfo.actionId === action.id) {
-                if(!isExtendPromise) this._cancelAllPendingRequests(action);
+                if(!isExtendPromise) this._cancelPendingRequests(pendingEventInfo.eventId);
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
                     id: action.resolveActionId || null, 
@@ -257,7 +248,9 @@ export class BThread {
         if(action.type !== ActionType.rejected || action.resolve?.isResolvedExtend) return;
         if(this._thread && this._thread.throw) {
             this._thread.throw({event: action.eventId, error: action.payload});
-            this._progressBThread('rejected', action.payload, true);
+            this._cancelPendingRequests(action.eventId);
+            this._progressBThread(action.eventId, action.payload, true);
+            this._actionLog.logBThreadException(this.id, action.eventId, this._state);
         }
     }
 
@@ -274,26 +267,29 @@ export class BThread {
         if(bidType === BidType.set) {
             setEventCache(eventCache, action.eventId, action.payload);
         }
-        this._progressBThread(bid, action.payload);
+        // this._cancelPendingRequests(); <- this is done by the promise .then function
+        this._progressBThread(bid.eventId, action.payload);
     }
 
     public progressWait(bid: Bid, action: Action): void {
-        this._progressBThread(bid, action.payload);
+        this._cancelPendingRequests(action.eventId);
+        this._progressBThread(bid.eventId, action.payload);
+        this._actionLog.logBThreadProgress(this.id, bid, this._state);
     }
 
     public progressExtend(action: Action, bid: Bid): ExtendContext {
         const extendContext = new ExtendContext(action.payload);
-        this._progressBThread(bid, extendContext);
+        this._cancelPendingRequests(action.eventId);
+        this._progressBThread(bid.eventId, extendContext);
+        this._actionLog.logBThreadProgress(this.id, bid, this._state);
         extendContext.createPromiseIfNotCompleted();
         return extendContext;
     }
 
-    public cancelPending() {
-        this._pendingRequests.clear();
+    public destroy(destroyOnReplay?: boolean): void {
         this._pendingExtends.clear();
-    }
-
-    public destroy(): void {
-        this.cancelPending();
+        this._cancelPendingRequests();
+        if(destroyOnReplay) return;
+        this._actionLog.logBThreadDestroy(this.id, this._state.cancelledPending)
     }
 }
