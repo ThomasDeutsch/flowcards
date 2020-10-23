@@ -203,21 +203,25 @@ test("an extend will create a pending event", () => {
 
 
 test("an extend will wait for the pending-event to finish before it extends.", (done) => {
-    const requestingThread = flow(null, function* () {
+    const requestingThread = flow({name: 'requestingThread'}, function* () {
         yield bp.request("A", delay(100, 'resolvedValue'));
     });
 
-    const extendingThread = flow(null, function* () {
+    const extendingThread = flow({name: 'extendingThread'}, function* () {
         const {value} = yield bp.extend("A");
         expect(value).toBe('resolvedValue');
-        done();
+        yield bp.request("V", delay(200, 'resolvedValue'));
     });
 
     testScenarios((enable) => {
         enable(requestingThread());
         enable(extendingThread());
-    }, ({event}) => {
-        expect(event('A').isPending).toBeTruthy();
+    }, ({event, thread}) => {
+        if(thread.get('extendingThread')?.isCompleted) {
+            expect(event('A').isPending).toBeTruthy();
+            expect(thread.get('requestingThread')?.isCompleted).toBeFalsy();
+            done();
+        }
     });
 });
 

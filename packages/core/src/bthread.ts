@@ -167,7 +167,6 @@ export class BThread {
         if (changedPropNames === undefined) return;
         // reset
         this._pendingExtends = new EventMap();
-        // this._setCurrentBids();
         this._currentProps = nextProps;
         this._state.isCompleted = false;
         delete this._state.section;
@@ -176,7 +175,6 @@ export class BThread {
         this._pendingExtends.clear();
         this._processNextBid(); // progress BThread
         this._actionLog.logBThreadReset(this.id, changedPropNames, this._state);
-        
     }
 
     public addPendingEvent(action: Action, isExtendPromise: boolean): void {
@@ -237,7 +235,6 @@ export class BThread {
         });
     }
 
-
     public resolvePending(action: Action): boolean {
         if(this._deletePending(action) === false) return false;
         this._setCurrentBids();
@@ -253,12 +250,10 @@ export class BThread {
             this._actionLog.logBThreadException(this.id, action.eventId, this._state);
         }
     }
-
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
         const bidType = action.bidType;
         if(bidType === undefined) {
-            // console.warn('a request action needs to define a bidType. A bidType defines the type of bid that was selected for this requesting thread.
             console.warn(`${action.eventId.name + action.type} needs to have a bidType. Received: ${action.bidType}`)
             return;
         }
