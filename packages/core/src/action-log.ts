@@ -4,8 +4,7 @@ import { BThreadId, PendingEventInfo } from './bthread';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadState } from './bthread';
-import { EventId } from '../build/event-map';
-import { EventMap } from './event-map';
+import { EventId, EventMap } from './event-map';
 
 export enum BThreadReactionType {
     init = 'init',
