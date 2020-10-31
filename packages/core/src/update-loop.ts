@@ -68,6 +68,7 @@ export class UpdateLoop {
 
     private _getNextReplayAction(actionId: number): Action | undefined {
         if(this.replayMap.size !== 0) {
+            if(this.replayMap.has(0)) actionId = 0;
             const action = this.replayMap.get(actionId);
             if(action === undefined) return undefined;
             this.replayMap.delete(actionId);
@@ -94,7 +95,6 @@ export class UpdateLoop {
         if (action !== undefined) { // use next action
             if(action.id === 0) {
                 this._reset();
-                console.log('ACTION 0', action)
                 this.runScaffolding();
             } else if(action.id === null) {
                 action.id = this._currentActionId;
