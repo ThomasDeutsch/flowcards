@@ -25,6 +25,10 @@ export class BThreadMap<T> {
         return this;
     }
 
+    public get size() {
+        return this._map.size;
+    }
+
     public has(bThreadId: BThreadId): boolean {
         return this._map.has(BThreadMap.toIdString(bThreadId));
     }

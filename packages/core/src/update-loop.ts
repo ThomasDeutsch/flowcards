@@ -1,72 +1,16 @@
 import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
 import { BThreadBids, activeBidsByType, BidsByType } from './bid';
-import { BThread, BThreadState, GeneratorFn, BThreadInfo, BThreadId } from './bthread';
+import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
-import { ActionLog } from './action-log';
+import { Logger } from './logger';
 import { advanceBThreads } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
+import { setupScaffolding, ActionDispatch, StagingFunction } from './scaffolding';
 
-export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
-export type ActionDispatch = (action: Action) => void;
 
-// enable, disable or delete bThreads
-// ---------------------------------------------------------------------------------------------------------------------------------------------------------
-function setupScaffolding(
-    stagingFunction: StagingFunction,
-    bThreadMap: BThreadMap<BThread>,
-    bThreadBids: BThreadBids[],
-    bThreadStateMap: BThreadMap<BThreadState>,
-    eventCache: EventMap<CachedItem<any>>,
-    dispatch: ActionDispatch,
-    actionLog: ActionLog
-): (currentActionId: number) => void {
-    const enabledBThreadIds = new Set<string>();
-    const destroyOnDisableThreadIds = new Set<string>();
-    let bThreadOrderIndex = 0;
-
-    function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
-        const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
-        const bThreadIdString = BThreadMap.toIdString(bThreadId);
-        enabledBThreadIds.add(bThreadIdString);
-        let bThread = bThreadMap.get(bThreadId)
-        if (bThread) {
-            bThread.resetOnPropsChange(props);
-        } else {
-            bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, generatorFn, props, dispatch, actionLog));
-            if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.add(bThreadIdString);
-        }
-        bThread = bThreadMap.get(bThreadId)!;
-        bThread.orderIndex = bThreadOrderIndex++;
-        if(bThread.currentBids) bThreadBids.push(bThread.currentBids);
-        bThreadStateMap.set(bThreadId, bThread.state);
-        return bThread.state;
-    }
-    function getCached<T>(event: EventId | string): CachedItem<T> {
-        event = toEventId(event);
-        return eventCache.get(event)!;
-    }
-    function scaffold(currentActionId: number) {
-        bThreadBids.length = 0;
-        bThreadOrderIndex = 0;
-        enabledBThreadIds.clear();
-        stagingFunction(enableBThread, getCached); // do the staging
-        if(destroyOnDisableThreadIds.size > 0) 
-            destroyOnDisableThreadIds.forEach(bThreadIdString => {
-            if(enabledBThreadIds.has(bThreadIdString) === false) {
-                bThreadMap.get(BThreadMap.toThreadId(bThreadIdString))?.destroy();
-                const bThreadId = BThreadMap.toThreadId(bThreadIdString);
-                bThreadMap.delete(bThreadId);
-                bThreadStateMap.delete(bThreadId);
-                destroyOnDisableThreadIds.delete(bThreadIdString);
-            }
-        });
-        actionLog.logEnabledBThreadIds(currentActionId, [...enabledBThreadIds])
-    }
-    return scaffold;
-}
 
 // update loop
 // -----------------------------------------------------------------------------------
@@ -74,7 +18,7 @@ function setupScaffolding(
 export interface ScenariosContext {
     event: (eventName: string | EventId) => EventContext;
     thread: BThreadMap<BThreadState>;
-    log: ActionLog;
+    log: Logger;
     bids: BidsByType;
 }
 export type UpdateLoopFunction = () => ScenariosContext;
@@ -86,7 +30,7 @@ export class UpdateLoop {
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
     private readonly _bThreadBids: BThreadBids[] = [];
-    private readonly _actionLog: ActionLog;
+    private readonly _logger: Logger;
     private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<any>>();
     private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
@@ -96,8 +40,8 @@ export class UpdateLoop {
     public readonly actionDispatch: ActionDispatch;
 
     constructor(stagingFunction: StagingFunction, actionDispatch: ActionDispatch) {
-        this._actionLog = new ActionLog();
-        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, actionDispatch, this._actionLog);
+        this._logger = new Logger();
+        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, actionDispatch, this._logger);
         this.actionDispatch = actionDispatch;
         this.runScaffolding();
     }
@@ -108,10 +52,10 @@ export class UpdateLoop {
         this._bThreadMap.forEach(bThread => bThread.destroy(true));
         this._bThreadMap.clear();
         this._eventCache.clear();
-        this._actionLog.resetLog();
+        this._logger.resetLog();
     }
 
-    private _getEventContext = (event: string | EventId): EventContext => {
+    private _getEventContext(event: string | EventId): EventContext {
         const eventId = toEventId(event);
         let context = this._eventContexts.get(eventId);
         if(context === undefined) {
@@ -150,6 +94,7 @@ export class UpdateLoop {
         if (action !== undefined) { // use next action
             if(action.id === 0) {
                 this._reset();
+                console.log('ACTION 0', action)
                 this.runScaffolding();
             } else if(action.id === null) {
                 action.id = this._currentActionId;
@@ -162,17 +107,17 @@ export class UpdateLoop {
                     action.resolveActionId = null;
                 }
             }
-            this._actionLog.logAction(action);
+            this._logger.logAction(action);
             advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-            this.runScaffolding();
             this._currentActionId++;
+            this.runScaffolding();
             return this.setupContext(isPaused);
         }
         // return context to UI
         return { 
-            event: this._getEventContext,
+            event: this._getEventContext.bind(this),
             thread: this._bThreadStateMap,
-            log: this._actionLog,
+            log: this._logger,
             bids: this._activeBidsByType
         }
     }

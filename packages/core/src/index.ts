@@ -1,5 +1,6 @@
 import { Action } from './action';
-import { ScenariosContext, StagingFunction, UpdateLoop } from './update-loop';
+import { ScenariosContext, UpdateLoop } from './update-loop';
+import { StagingFunction } from './scaffolding';
 
 export * from './scenario';
 export * from './bthread';
@@ -8,8 +9,9 @@ export * from './event-cache';
 export * from './event-context';
 export * from './event-map';
 export * from "./bid";
+export * from "./scaffolding";
 export * from './event-map';
-export * from './action-log';
+export * from './logger';
 export * from './action';
 export * from './extend-context';
 export const CONTEXT_CHANGED: unique symbol = Symbol('contextChanged');

@@ -36,6 +36,7 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
             action.payload = extendContext.promise;
             bThreadMap.get(action.bThreadId)?.addPendingEvent(action, true);
             progressWait(activeBidsByType, bThreadMap, [BidType.onPending], action);
+            action.type = ActionType.extended;
             return EXTENDED_WITH_PROMISE;
         } else {
             action.payload = extendContext.value;
