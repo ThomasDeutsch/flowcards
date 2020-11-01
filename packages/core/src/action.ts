@@ -8,7 +8,6 @@ export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread
 export enum ActionType {
     requested = "requested",
     ui = "ui",
-    extended = "extended",
     resolved = "resolved",
     rejected = "rejected"
 }

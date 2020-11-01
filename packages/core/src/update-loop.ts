@@ -111,6 +111,7 @@ export class UpdateLoop {
             advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
             this._currentActionId++;
             this.runScaffolding();
+            this._logger.logPending(this._activeBidsByType.pending);
             return this.setupContext(isPaused);
         }
         // return context to UI
