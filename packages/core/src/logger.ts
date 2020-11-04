@@ -150,7 +150,7 @@ export class Logger {
 
     public logPending(pending?: EventMap<Bid[]>): void {
         if(!pending) return;
-        this.pendingHistory.set(this._actionId, pending.clone());
+        this.pendingHistory.set(this._actionId-1, pending.clone());
     }
 
     public resetLog(): void {
