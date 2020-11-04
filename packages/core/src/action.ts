@@ -1,4 +1,4 @@
-import { Bid, BidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch, getNextBidAndRemaining } from './bid';
+import { Bid, BidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch, getNextBidAndRemaining, extend } from './bid';
 import { EventId } from './event-map';
 
 import { BThreadId } from './bthread';
@@ -9,7 +9,8 @@ export enum ActionType {
     requested = "requested",
     ui = "ui",
     resolved = "resolved",
-    rejected = "rejected"
+    rejected = "rejected",
+    extended = "extended"
 }
 
 export interface Action {

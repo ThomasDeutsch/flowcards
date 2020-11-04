@@ -138,8 +138,9 @@ export class BThread {
             delete this._currentBids;
         } else {
             this._nextBid = next.value;
-            this._setCurrentBids();
+            
         }
+        this._setCurrentBids();
     }
 
     private _progressBThread(eventId: EventId, payload: any, isReject = false): void { 
@@ -172,14 +173,13 @@ export class BThread {
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
         this._cancelPendingRequests();
-        this._pendingExtends.clear();
         this._processNextBid(); // progress BThread
         return true;
     }
 
     public addPendingEvent(action: Action, isExtendPromise: boolean): void {
         const eventInfo: PendingEventInfo = {
-            bThreadId: action.bThreadId,
+            bThreadId: action.bThreadId || this.id,
             eventId: action.eventId,
             actionId: action.id,
             isExtend: isExtendPromise
@@ -254,10 +254,7 @@ export class BThread {
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
         const bidType = action.bidType;
-        if(bidType === undefined) {
-            console.warn(`${action.eventId.name + action.type} needs to have a bidType. Received: ${action.bidType}`)
-            return;
-        }
+        if(bidType === undefined) return;
         const bid = this._currentBids?.[bidType]?.get(action.eventId);
         if(!bid) return;
         if(bidType === BidType.set) {

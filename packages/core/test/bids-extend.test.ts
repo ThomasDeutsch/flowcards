@@ -186,18 +186,19 @@ test("the last extend that is enabled has the highest priority", () => {
 
 test("an extend will create a pending event", () => {
     const requestingThread = flow(null, function* () {
-        yield bp.request("A", delay(100));
+        yield bp.request("A", 100); //not an async event
     });
 
     const extendingThread = flow(null, function* () {
-        yield bp.extend("A");
+        yield bp.extend("A"); // but this extend will make it async
+        yield bp.wait('fin');
     });
 
     testScenarios((enable) => {
         enable(requestingThread());
         enable(extendingThread());
     }, ({event}) => {
-        expect(event('A').isPending).toBeTruthy();
+        expect(event('A').isPending).toBe(true);
     });
 });
 
@@ -255,7 +256,7 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
     });
 });
 
-test("an extend will keep the event-pending if the BThread with the extend completes.", () => {
+test("an extend will keep the event-pending if the BThread with the extend completes.", (done) => {
     let requestingThreadProgressed = false;
     const requestingThread = flow(null, function* () {
         yield bp.request("A", 1);
@@ -273,6 +274,7 @@ test("an extend will keep the event-pending if the BThread with the extend compl
     }, ({event}) => {
         expect(event('A').isPending).toBeTruthy();
         expect(requestingThreadProgressed).toBe(false);
+        done();
     });
 });
 
@@ -342,3 +344,56 @@ test("an extend can be resolved in the same cycle", () => {
 
 //TODO: extends with guards
 //TODO: blocked extends
+
+
+test("a wait can be extended. during the extension, the event is pending", (done) => {
+    const waitingThread = flow(null, function* () {
+        yield bp.wait("AB");
+    });
+
+    const extendingThread = flow(null, function* () {
+        const x = yield bp.extend("AB");
+        yield bp.wait('fin');
+    });
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(extendingThread());
+    }, ({event, log}) => {
+        if(event('AB').dispatch !== undefined) event('AB')!.dispatch!();
+        else {
+            expect(event('AB').isPending).toBe(true);
+            done();
+        }
+
+    });
+});
+
+test("a wait can be extended. After resolving the extend, the wait will be continued", (done) => {
+    let timesEventADispatched = 0;
+
+    const waitingThread = flow(null, function* () {
+        const val = yield bp.wait("eventA");
+        expect(val).toBe(12);
+        expect(timesEventADispatched).toBe(1);
+        done();
+    });
+
+    const extendingThread = flow(null, function* () {
+        const x = yield bp.extend("eventA");
+        yield bp.request('ASYNC', () => delay(200));
+        x.resolve(12);
+    });
+
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(extendingThread());
+    }, ({event}) => {
+        if(event('eventA').dispatch !== undefined) {
+            event('eventA')!.dispatch!(10);
+            timesEventADispatched++;
+        }
+
+    });
+});
