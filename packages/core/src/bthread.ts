@@ -18,6 +18,7 @@ export interface BThreadInfo {
     key?: BThreadKey;
     destroyOnDisable?: boolean;
     description?: string;
+    autoRepeat?: boolean;
 }
 
 export interface BThreadContext {
@@ -46,6 +47,7 @@ export interface BThreadState {
     isCompleted: boolean;
     description?: string;
     orderIndex: number;
+    autoRepeat?: boolean;
     cancelledPending: EventMap<PendingEventInfo>;
 }
 
@@ -74,6 +76,7 @@ export class BThread {
             destroyOnDisable: info.destroyOnDisable,
             cancelledPending: new EventMap(),
             description: info.description,
+            autoRepeat: info.autoRepeat,
             section: undefined,
             waits: this._currentBids?.[BidType.wait] || new EventMap(),
             blocks: this._currentBids?.[BidType.block] || new EventMap(),
@@ -131,14 +134,17 @@ export class BThread {
 
     private _processNextBid(returnValue?: any): void {
         const next = this._thread.next(returnValue); // progress BThread to next bid
-        if (next.done) {
+        if (next.done && this._state.autoRepeat) {
+            this._resetBThread(this._currentProps);
+            //TODO: log thread autoRepeat
+            return;
+        } else if (next.done) {
             this._state.isCompleted = true;
             delete this._state.section;
             delete this._nextBid;
             delete this._currentBids;
         } else {
             this._nextBid = next.value;
-            
         }
         this._setCurrentBids();
     }
@@ -161,19 +167,22 @@ export class BThread {
         }
     }
 
-    // --- public
-
-    public resetOnPropsChange(nextProps: any): boolean {
-        const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
-        if (changedPropNames === undefined) return false;
-        // reset
+    private _resetBThread(props: any) {
         this._pendingExtends = new EventMap();
-        this._currentProps = nextProps;
+        this._currentProps = props;
         this._state.isCompleted = false;
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
         this._cancelPendingRequests();
         this._processNextBid(); // progress BThread
+    }
+
+    // --- public
+
+    public resetOnPropsChange(nextProps: any): boolean {
+        const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
+        if (changedPropNames === undefined) return false;
+        this._resetBThread(nextProps);
         return true;
     }
 
