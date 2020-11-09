@@ -15,7 +15,6 @@ export class Store {
   event = this.context.event;
   logger = this.context.log;
   thread = this.context.thread;
-  startReplay = this._startReplay;
 }
 
 decorate(Store, {
