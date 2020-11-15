@@ -1,10 +1,10 @@
 import { EventId } from './event-map';
 import { BidType, isBlocked, hasValidMatch, BidsByType } from './bid';
 import { BThreadId } from './bthread';
-import { ActionDispatch } from './update-loop';
 import { ActionType } from './action';
 import { GetCachedItem, CachedItem } from './event-cache';
 import { validate, ValidationResult } from './validation';
+import { ActionDispatch } from './scaffolding';
 
 export interface EventInfo {
     bThreadId?: BThreadId;
@@ -15,7 +15,7 @@ export interface EventInfo {
 
 export class EventContext {
     private _actionDispatch: ActionDispatch;
-    private _eventId: EventId;
+    public readonly eventId: EventId;
     private _cachedItem?: CachedItem<any>;
     private _lastUpdatedOnActionId = -1;
     public get value() {
@@ -32,16 +32,16 @@ export class EventContext {
     }
 
     private _dispatch(payload: any): boolean {  
-        if(isBlocked(this._activeBidsByType, this._eventId, {payload: payload})) return false; 
-        if(hasValidMatch(this._activeBidsByType, BidType.askFor, this._eventId, {payload: payload})) {
-            this._actionDispatch({id: null, type: ActionType.ui, eventId: this._eventId, payload: payload, bThreadId: {name: ""}});
+        if(isBlocked(this._activeBidsByType, this.eventId, {payload: payload})) return false; 
+        if(hasValidMatch(this._activeBidsByType, BidType.askFor, this.eventId, {payload: payload})) {
+            this._actionDispatch({id: null, type: ActionType.ui, eventId: this.eventId, payload: payload, bThreadId: {name: ""}});
             return true;
         }
         return false;
     }
 
-    public validate(payload?: any): ValidationResult | undefined {
-        return validate(this._activeBidsByType, this._eventId, payload);
+    public validate(payload?: any): ValidationResult {
+        return validate(this._activeBidsByType, this.eventId, payload);
     }
 
     public get dispatch(): ((payload?: any) => boolean) | undefined {
@@ -51,7 +51,7 @@ export class EventContext {
 
     constructor(actionDispatch: ActionDispatch, eventId: EventId) {
         this._actionDispatch = actionDispatch;
-        this._eventId = eventId;
+        this.eventId = eventId;
         this._activeBidsByType = {} as BidsByType;
     }
 
@@ -59,8 +59,8 @@ export class EventContext {
         if(this._lastUpdatedOnActionId === actionId) return;
         this._lastUpdatedOnActionId = actionId;
         this._activeBidsByType = activeBidsByType;
-        this._isPending = activeBidsByType.pending?.has(this._eventId) === true;
-        this._cachedItem = getCachedItem(this._eventId);
-        this._dispatchEnabled = !isBlocked(this._activeBidsByType, this._eventId) && hasValidMatch(this._activeBidsByType, BidType.askFor, this._eventId);
+        this._isPending = activeBidsByType.pending?.has(this.eventId) === true;
+        this._cachedItem = getCachedItem(this.eventId);
+        this._dispatchEnabled = !isBlocked(this._activeBidsByType, this.eventId) && hasValidMatch(this._activeBidsByType, BidType.askFor, this.eventId);
     }
 }

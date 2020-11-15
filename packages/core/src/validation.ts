@@ -33,17 +33,18 @@ export interface ValidationResult {
     optional: BidValidationResult[];
 }
 
-export function validate(activeBidsByType: BidsByType, event: EventId, payload: any): ValidationResult | undefined {
+export function validate(activeBidsByType: BidsByType, event: EventId, payload: any): ValidationResult {
     const bids = activeBidsByType[BidType.askFor]?.get(event);
-    if(bids === undefined) return undefined;
-    const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
-    const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);
-    const ons = getMatchingBids(activeBidsByType, [BidType.on], event);
     const validationResult: ValidationResult = {
         isValid: false,
         required: [[]],
         optional: []
     }
+    if(bids === undefined) return validationResult;
+    const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
+    const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);
+    const ons = getMatchingBids(activeBidsByType, [BidType.on], event);
+
     bids.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         validationResult.required[0].push(bidValidationResult);

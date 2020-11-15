@@ -73,3 +73,20 @@ test("the bThreadState is returned by the scenarios function", () => {
         expect(thread.get('thread2')?.orderIndex).toBe(1);
     });
   });
+
+
+  test("a flow can be auto-repeated", () => {
+    let nrRepeats = 0;
+
+    const thread1 = flow({name: 'thread1', autoRepeat: true}, function* () {
+        if(nrRepeats < 4) yield bp.request("eventOne");
+        else yield bp.wait('fin');
+        nrRepeats++;
+    });
+  
+    testScenarios((enable) => {
+        enable(thread1());
+    }, () => {
+        expect(nrRepeats).toBe(4);
+    });
+  });

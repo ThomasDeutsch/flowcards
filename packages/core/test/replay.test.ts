@@ -93,5 +93,6 @@ test("after a replay completes, the normal execution will resume", (done) => {
     });
     replay([
         {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
         {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}])
 });

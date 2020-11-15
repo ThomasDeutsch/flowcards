@@ -6,7 +6,8 @@ export function flow<T extends GeneratorFn>(info: BThreadInfo | null, gen: T): (
         name: info?.name || uuidv4(),
         description: info?.description,
         key: info?.key,
-        destroyOnDisable: info?.destroyOnDisable || false
+        destroyOnDisable: info?.destroyOnDisable || false,
+        autoRepeat: info?.autoRepeat
     };
     return (generatorProps?: Parameters<T>[0], key?: BThreadKey): [BThreadInfo, GeneratorFn, Parameters<T>[0]] => {
         i.key = key;

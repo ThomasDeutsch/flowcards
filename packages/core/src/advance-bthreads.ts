@@ -26,7 +26,7 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
     const bids = getMatchingBids(activeBidsByType, [BidType.extend], action.eventId);
     if(!bids || bids.length === 0) return;
     while(bids && bids.length > 0) {
-        const bid = bids.shift(); // get bid with ( highest priority )
+        const bid = bids.shift(); // get bid with highest priority
         if(bid === undefined) continue;
         if(isBlocked(activeBidsByType, bid.eventId, action)) continue;
         if(!isValid(bid, action.payload)) continue;
@@ -34,8 +34,10 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
         if(extendContext === undefined) continue;
         if(extendContext.promise) {
             action.payload = extendContext.promise;
-            bThreadMap.get(action.bThreadId)?.addPendingEvent(action, true);
+            const bThreadId = action.bThreadId.name ? action.bThreadId : bid.bThreadId;
+            bThreadMap.get(bThreadId)?.addPendingEvent(action, true);
             progressWait(activeBidsByType, bThreadMap, [BidType.onPending], action);
+            action.type = ActionType.extended;
             return EXTENDED_WITH_PROMISE;
         } else {
             action.payload = extendContext.value;

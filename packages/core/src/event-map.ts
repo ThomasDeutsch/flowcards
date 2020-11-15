@@ -10,7 +10,7 @@ export interface EventId {
 }
 
 export function toEventId(e: string | EventId): EventId {
-    return (typeof e === 'string') ? {name: e} : e;
+    return (typeof e === 'string') ? {name: e} : {...e};
 }
 
 export function sameEventId(a: EventId, b: EventId): boolean {
