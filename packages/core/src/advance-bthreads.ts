@@ -55,12 +55,12 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
             }
             if(extendAction(activeBidsByType, bThreadMap, action) === EXTENDED_WITH_PROMISE) return;
             bThread.progressRequest(eventCache, action);
-            progressWait(activeBidsByType, bThreadMap, [BidType.wait, BidType.on], action);
+            progressWait(activeBidsByType, bThreadMap, [BidType.askFor, BidType.on], action);
             return;
         }
         case ActionType.ui: {
             if(extendAction(activeBidsByType, bThreadMap, action) === EXTENDED_WITH_PROMISE) return;
-            progressWait(activeBidsByType, bThreadMap, [BidType.wait, BidType.on], action);
+            progressWait(activeBidsByType, bThreadMap, [BidType.askFor, BidType.on], action);
             return;
         }
         case ActionType.resolved: {
@@ -70,7 +70,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
             activeBidsByType.pending?.deleteSingle(action.eventId);
             if(extendAction(activeBidsByType, bThreadMap, action) === EXTENDED_WITH_PROMISE) return;
             bThread.progressRequest(eventCache, action);
-            progressWait(activeBidsByType, bThreadMap, [BidType.wait, BidType.on], action);
+            progressWait(activeBidsByType, bThreadMap, [BidType.askFor, BidType.on], action);
             return;
         }
         case ActionType.rejected: {

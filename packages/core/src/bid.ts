@@ -6,7 +6,7 @@ import { flattenShallow } from './utils';
 
 export enum BidType {
     request = "request",
-    wait = "wait",
+    askFor = "askFor",
     block = "block",
     pending = "pending",
     guardedBlock = "guardedBlock",
@@ -156,9 +156,9 @@ export function trigger(event: string | EventId, payload?: any): Bid {
     };
 }
 
-export function wait(event: string | EventId, validation?: Validation): Bid {
+export function askFor(event: string | EventId, validation?: Validation): Bid {
     return { 
-        type: BidType.wait,
+        type: BidType.askFor,
         eventId: toEventId(event), 
         validate: validation,
         bThreadId: {name: ""}

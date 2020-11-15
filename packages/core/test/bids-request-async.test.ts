@@ -116,12 +116,12 @@ test("for multiple active promises in one yield, only one resolve will progress 
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.wait('HEYYA');
+        yield bp.askFor('HEYYA');
         progressed2 = true;
     });
 
     const thread3 = flow(null, function* () {
-        yield bp.wait('HEYYB');
+        yield bp.askFor('HEYYB');
         progressed3 = true;
     });
 
@@ -141,7 +141,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
 test("if a thread gets disabled, before the pending-event resolves, the pending-event resolve will still be dispatched", (done) => {
     const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));
-        const [event] = yield [bp.wait('B'),  bp.request("X", () => delay(500))];
+        const [event] = yield [bp.askFor('B'),  bp.request("X", () => delay(500))];
         expect(event.name).toEqual('B');
     });
 
@@ -165,7 +165,7 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
 test("given the destoryOnDisable option, pending events will be canceled on destroy", (done) => {
     const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));
-        const [event] = yield [bp.wait('B'),  bp.request("X", () => delay(500))];
+        const [event] = yield [bp.askFor('B'),  bp.request("X", () => delay(500))];
         expect(event.name).toEqual('X');
     });
 
@@ -193,7 +193,7 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
     });
 
     const thread2 = flow({name: 'waitingThread'}, function* () {
-        yield bp.wait('B');
+        yield bp.askFor('B');
     });
 
     testScenarios((enable) => {

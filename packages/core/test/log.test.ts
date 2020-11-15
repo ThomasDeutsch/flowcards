@@ -12,11 +12,11 @@ test("log will contain a list of executed actions (sorted)", () => {
         },
         function*(this: BThreadContext) {
           this.section("productList");
-          const id = yield bp.wait("selectProduct");
+          const id = yield bp.askFor("selectProduct");
           const item = yield bp.request("apiGetProductDetails", "testData");
           yield bp.set({ name: "productDetails", key: id }, item);
           this.section("productDetails");
-          yield bp.wait("acceptAGB");
+          yield bp.askFor("acceptAGB");
           this.section("new Section");
           yield bp.set("agbAccepted", "true");
         }

@@ -18,7 +18,7 @@ test("a set is a request, that will be cached. ", () => {
 test("when a promise resolves, the cache gets updated", (done) => {
     const thread1 = flow(null, function* () {
         yield bp.set("testeventA", delay(100, 'resolved value'));
-        yield bp.wait('fin');
+        yield bp.askFor('fin');
     });
 
     testScenarios((enable) => {
@@ -55,7 +55,7 @@ test("sets can be extended", () => {
 
     const thread = flow(null, function* () {
         yield bp.set("count", 2);
-        yield bp.wait('fin');
+        yield bp.askFor('fin');
     });
 
     const thread2 = flow(null, function* () {
@@ -117,7 +117,7 @@ test("if an event cache has keyed values, they will not be replaced by a request
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: "1"});
+        yield bp.askFor({name: 'A', key: "1"});
         yield bp.set({name: 'A', key: 2}, 'a value for 2');
         yield bp.set('A', 'replacement value')
     })

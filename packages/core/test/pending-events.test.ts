@@ -53,7 +53,7 @@ test("a pending event can not be extended", () => {
 test("a pending event resolves can not be blocked", done => {
     const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("A", () => delay(500));
-        yield bp.wait("fin");
+        yield bp.askFor("fin");
     });
 
     const thread2 = flow(null, function* () {
@@ -80,7 +80,7 @@ test("pending events can not be dispatched", done => {
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.wait("A");
+        yield bp.askFor("A");
     });
 
     testScenarios((enable) => {
@@ -115,7 +115,7 @@ test("If one pending-event is resolved, other promises for this event are cancel
     });
 
     const thread2 = flow({name: 't2'}, function* (): any  {
-        const [event] = yield [bp.wait('A'), bp.request("C", () => delay(400))];
+        const [event] = yield [bp.askFor('A'), bp.request("C", () => delay(400))];
         expect(event.name).toBe("C");
         
     })
@@ -142,7 +142,7 @@ test("rejected pending events will not progress waiting BThreads", done => {
     let thread1Progressed = false;
     let wasCatched = false;
     const thread1 = flow({name: 'waitingThread'}, function* () {
-        yield bp.wait("A"); 
+        yield bp.askFor("A"); 
         thread1Progressed = true;
     });
 
@@ -196,8 +196,8 @@ test("if a threads waits for an already existing pending-event, it will also pro
 
     const thread2 = flow(null, function* () {
         yield bp.request("Y", () => delay(100));
-        yield bp.wait("A");
-        yield bp.wait('fin');
+        yield bp.askFor("A");
+        yield bp.askFor('fin');
     });
 
     testScenarios((enable) => {

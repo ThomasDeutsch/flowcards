@@ -20,7 +20,7 @@ test("requests can be extended", () => {
     const thread3 = flow({name: 'extending thread'}, function* () {
         yield bp.extend("A");
         progressedExtend = true;
-        yield bp.wait('X');
+        yield bp.askFor('X');
     })
 
     testScenarios((enable) => {
@@ -49,7 +49,7 @@ test("if an extend is not applied, than the next extend will get the event", () 
     });
 
     const waitThread = flow(null, function* () {
-        yield bp.wait("A", (pl: number) => pl === 1000);
+        yield bp.askFor("A", (pl: number) => pl === 1000);
         waitBAdvanced = true;
     });
 
@@ -116,7 +116,7 @@ test("extends will receive a value (like waits)", () => {
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.wait("A");
+        yield bp.askFor("A");
     });
 
     const thread3 = flow(null, function* () {
@@ -239,9 +239,9 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
     });
 
     const waitingThread = flow({name: 'waitingThread'}, function* () {
-        const val = yield bp.wait("A");
+        const val = yield bp.askFor("A");
         expect(val).toBe('value extended');
-        yield bp.wait('fin');
+        yield bp.askFor('fin');
     });
 
     testScenarios((enable) => {
@@ -297,9 +297,9 @@ test("multiple extends will resolve after another. After all extends complete, t
     });
 
     const waitingThread = flow(null, function* () {
-        const val = yield bp.wait("A");
+        const val = yield bp.askFor("A");
         expect(val).toBe('super extend1 extend2');
-        yield bp.wait('fin');
+        yield bp.askFor('fin');
     });
     
     testScenarios((enable) => {

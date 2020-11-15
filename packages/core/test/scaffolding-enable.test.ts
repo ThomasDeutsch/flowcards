@@ -9,7 +9,7 @@ test("a thread will accept an optional array of arguments", () => {
 
     const thread = flow(null, function* (props: MyProps) {
         receivedArgs = [props.a, props.b, props.c];
-        yield bp.wait('event');
+        yield bp.askFor('event');
     })
 
     testScenarios((enable) => {
@@ -26,12 +26,12 @@ test("a thread will accept an optional key", () => {
 
     const thread = flow(null, function* (this: BThreadContext) {
         receivedKeyA = this.key;
-        yield bp.wait('A');
+        yield bp.askFor('A');
     });
 
     const threadB = flow(null, function* (this: BThreadContext) {
         receivedKeyB = this.key;
-        yield bp.wait('A');
+        yield bp.askFor('A');
     });
 
     testScenarios((enable) => {
@@ -50,7 +50,7 @@ test("if no key is provided, the default key value is undefined", () => {
 
     const thread = flow(null, function* (this: BThreadContext) {
         receivedKeyA = this.key;
-        yield bp.wait('A');
+        yield bp.askFor('A');
     });
 
     testScenarios((enable) => {
@@ -64,12 +64,12 @@ test("enable will return the current thread waits", () => {
     let threadState: BThreadState;
 
     const thread = flow(null, function* (this: BThreadContext) {
-        yield bp.wait('A');
+        yield bp.askFor('A');
     });
 
     testScenarios((enable) => {
         threadState = enable(thread());
-        expect(threadState?.waits.has('A')).toBe(true);
+        expect(threadState?.bids?.askFor.has('A')).toBe(true);
     });
 });
 
@@ -83,7 +83,7 @@ test("enable will return the current thread blocks", () => {
 
     testScenarios((enable) => {
         threadState = enable(thread());
-        expect(threadState?.blocks.has('A')).toBe(true);
+        expect(threadState?.bids?.block?.has('A')).toBe(true);
     });
 });
 
@@ -93,7 +93,7 @@ test("enable will return the current thread-section", () => {
 
     const thread = flow(null, function* (this: BThreadContext) {
         this.section('my state value');
-        yield bp.wait('A');
+        yield bp.askFor('A');
     });
 
     testScenarios((enable) => {
@@ -146,8 +146,8 @@ test("enable will return the current pending events and a pending function", (do
         enableReturn = enable(thread1());
     }, ({event}) => {
         if(event('A').isPending && event('B').isPending) {
-            expect(enableReturn.requests.has('A')).toBeFalsy();
-            expect(enableReturn.requests.has('B')).toBeFalsy();
+            expect(enableReturn.bids?.request?.has('A')).toBeFalsy();
+            expect(enableReturn.bids?.request?.has('B')).toBeFalsy();
             done();
         }
     });
@@ -169,8 +169,8 @@ test("enable will return the current requesting events ( blocked and pending inc
         enable(thread2());
     }, ({event}) => {
         if(event('A').isPending) {
-            expect(enableReturn.requests.has('A')).toBeFalsy();
-            expect(enableReturn.requests.has('B')).toBeTruthy();
+            expect(enableReturn.bids?.request?.has('A')).toBeFalsy();
+            expect(enableReturn.bids?.request?.has('B')).toBeTruthy();
             done();
         }
     });
@@ -184,24 +184,24 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
     const thread1 = flow({name: 'thread1'}, function* () {
         yield bp.request("B");
         yield bp.request('X');
-        yield bp.wait("FIN");
+        yield bp.askFor("FIN");
     });
 
     const thread2 = flow({name: 'thread2', destroyOnDisable: true}, function*() {
         thread2init++
-        yield bp.wait('B');
-        yield bp.wait('C');
+        yield bp.askFor('B');
+        yield bp.askFor('C');
     })
 
     const thread3 = flow({name: 'thread3', destroyOnDisable: false}, function*() {
         thread1init++
-        yield bp.wait('B');
-        yield bp.wait('C');
+        yield bp.askFor('B');
+        yield bp.askFor('C');
     })
 
     testScenarios((enable) => {
         const enableReturn = enable(thread1());
-        if(enableReturn.requests?.has('B') || enableReturn.waits?.has('FIN')) {
+        if(enableReturn.bids?.request?.has('B') || enableReturn.bids?.askFor?.has('FIN')) {
             enable(thread2());
             enable(thread3());
         }
@@ -209,8 +209,8 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
         if(event('B').dispatch) {
             expect(thread1init).toBe(1);
             expect(thread2init).toBe(2);
-            expect(thread.get('thread3')?.waits?.has('C')).toBeTruthy();
-            expect(thread.get('thread2')?.waits?.has('B')).toBeTruthy();
+            expect(thread.get('thread3')?.bids?.askFor?.has('C')).toBeTruthy();
+            expect(thread.get('thread2')?.bids?.askFor?.has('B')).toBeTruthy();
             done();
         }
     });

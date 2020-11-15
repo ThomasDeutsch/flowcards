@@ -16,12 +16,12 @@ test("a wait is not advanced, if the guard returns false", () => {
     });
 
     const threadB = flow(null, function* () {
-        yield bp.wait("A", (pl: number) => pl !== 1000);
+        yield bp.askFor("A", (pl: number) => pl !== 1000);
         waitBAdvanced = true;
     })
 
     const threadC = flow(null, function* () {
-        yield bp.wait("A", (pl: number) => pl === 1000);
+        yield bp.askFor("A", (pl: number) => pl === 1000);
         waitCAdvanced = true;
     });
 
@@ -48,7 +48,7 @@ test("an extend is not applied, if the guard returns false.", () => {
     });
 
     const threadB = flow(null, function* () {
-        yield bp.wait("A", (pl: number) => pl === 1000);
+        yield bp.askFor("A", (pl: number) => pl === 1000);
         waitAdvanced = true;
     });
 
@@ -96,7 +96,7 @@ test("a block-guard will be combined with other guards", () => {
     });
 
     const waitingThread = flow(null, function* () {
-        yield bp.wait("A", (pl: number) => pl > 1000);
+        yield bp.askFor("A", (pl: number) => pl > 1000);
     });
 
     testScenarios((enable) => {
@@ -120,7 +120,7 @@ test("a block-guard can be keyed", () => {
     })
 
     const waitingThread = flow(null, function* () {
-        yield bp.wait({name: 'A', key: 2}, (pl: number) => pl > 1000);
+        yield bp.askFor({name: 'A', key: 2}, (pl: number) => pl > 1000);
     })
 
     testScenarios((enable) => {

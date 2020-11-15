@@ -33,7 +33,7 @@ export class EventContext {
 
     private _dispatch(payload: any): boolean {  
         if(isBlocked(this._activeBidsByType, this._eventId, {payload: payload})) return false; 
-        if(hasValidMatch(this._activeBidsByType, BidType.wait, this._eventId, {payload: payload})) {
+        if(hasValidMatch(this._activeBidsByType, BidType.askFor, this._eventId, {payload: payload})) {
             this._actionDispatch({id: null, type: ActionType.ui, eventId: this._eventId, payload: payload, bThreadId: {name: ""}});
             return true;
         }
@@ -61,6 +61,6 @@ export class EventContext {
         this._activeBidsByType = activeBidsByType;
         this._isPending = activeBidsByType.pending?.has(this._eventId) === true;
         this._cachedItem = getCachedItem(this._eventId);
-        this._dispatchEnabled = !isBlocked(this._activeBidsByType, this._eventId) && hasValidMatch(this._activeBidsByType, BidType.wait, this._eventId);
+        this._dispatchEnabled = !isBlocked(this._activeBidsByType, this._eventId) && hasValidMatch(this._activeBidsByType, BidType.askFor, this._eventId);
     }
 }

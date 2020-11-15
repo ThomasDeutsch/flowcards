@@ -34,7 +34,7 @@ export interface ValidationResult {
 }
 
 export function validate(activeBidsByType: BidsByType, event: EventId, payload: any): ValidationResult | undefined {
-    const bids = activeBidsByType[BidType.wait]?.get(event);
+    const bids = activeBidsByType[BidType.askFor]?.get(event);
     if(bids === undefined) return undefined;
     const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
     const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);

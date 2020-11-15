@@ -18,8 +18,8 @@ test("on-bids can not be dispatched", () => {
 
 test("multiple dispatches are batched", (done) => {
     const thread1 = flow(null, function* (this: BThreadContext) {
-        yield [bp.request("asyncRequest", () => delay(100)), bp.wait("X"), bp.wait("A")];
-        yield [bp.request("asyncRequest", () => delay(100)), bp.wait("Y"), bp.wait("A")];
+        yield [bp.request("asyncRequest", () => delay(100)), bp.askFor("X"), bp.askFor("A")];
+        yield [bp.request("asyncRequest", () => delay(100)), bp.askFor("Y"), bp.askFor("A")];
     });
 
     const [{event}] = testScenarios((enable) => {
@@ -37,7 +37,7 @@ test("a keyed event is blocked by a no-key block, and can not be dispatched", ()
     let progressedRequestThread = false;
 
     const waitingThread = flow(null, function* () {
-        yield bp.wait({name: 'AX', key: 1});
+        yield bp.askFor({name: 'AX', key: 1});
         progressedRequestThread = true;
     })
 
@@ -59,7 +59,7 @@ test("a dispatch is defined, if a keyed event is not blocked", () => {
     let progressedRequestThread = false;
 
     const waitingThread = flow(null, function* () {
-        yield [bp.wait({name: 'AX', key: 1}), bp.wait({name: 'AX', key: 2})];
+        yield [bp.askFor({name: 'AX', key: 1}), bp.askFor({name: 'AX', key: 2})];
         progressedRequestThread = true;
     })
 
@@ -80,7 +80,7 @@ test("a dispatch is defined, if a keyed event is not blocked", () => {
 
 test("a pending event can not be dispatched", () => {
     const waitingThread = flow(null, function* () {
-        yield bp.wait({name: 'A'});
+        yield bp.askFor({name: 'A'});
     })
 
     const requestingThread = flow(null, function* () {
@@ -98,11 +98,11 @@ test("a pending event can not be dispatched", () => {
 
 test("there is be a dispatch-function for every waiting event", () => {
     const thread1 = flow(null, function* () {
-        yield [bp.wait("eventOne"), bp.wait("eventTwo")];
+        yield [bp.askFor("eventOne"), bp.askFor("eventTwo")];
     })
 
     const thread2 = flow(null, function* () {
-        yield bp.wait("eventThree");
+        yield bp.askFor("eventThree");
     })
 
     testScenarios((enable) => {

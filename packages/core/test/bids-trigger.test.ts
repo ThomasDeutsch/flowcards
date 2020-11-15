@@ -8,8 +8,8 @@ test("a trigger is a request, that is only selected if another thread is waiting
     let hasAdvancedSecondTrigger = false;
 
     const waitingThread = flow({name: 'waitingThread'}, function*() {
-        yield bp.wait("eventA");
-        yield bp.wait("eventB");
+        yield bp.askFor("eventA");
+        yield bp.askFor("eventB");
     });
 
     const requestingThread = flow({name: 'requestingThread'}, function*() {
@@ -33,7 +33,7 @@ test("a trigger is a request, that can be blocked.", () => {
     let hasAdvancedTrigger = false;
 
     const waitingThread = flow({name: 'waitingThread'}, function*() {
-        yield bp.wait("eventA");
+        yield bp.askFor("eventA");
     });
 
     const requestingThread = flow({name: 'requestingThread'}, function*() {
@@ -61,7 +61,7 @@ test("a trigger needs to fulfill the wait-guard validation.", () => {
 
     const waitingThread = flow({name: 'waitingThread'}, function*() {
         while(true) {
-            yield bp.wait("eventA", (pl) => pl > 100);
+            yield bp.askFor("eventA", (pl) => pl > 100);
         }
     });
 

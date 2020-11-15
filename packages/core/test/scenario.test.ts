@@ -43,7 +43,7 @@ test("the bThreadState is returned by the scenarios function", () => {
     });
   
     const thread2 = flow({name: 'thread2'}, function* ({prop1: number, prop2: string}) {
-        yield bp.wait("eventTwo");
+        yield bp.askFor("eventTwo");
     })
   
     testScenarios((enable) => {
@@ -62,7 +62,7 @@ test("the bThreadState is returned by the scenarios function", () => {
     });
   
     const thread2 = flow({name: 'thread2'}, function* () {
-        yield bp.wait("eventTwo");
+        yield bp.askFor("eventTwo");
     })
   
     testScenarios((enable) => {

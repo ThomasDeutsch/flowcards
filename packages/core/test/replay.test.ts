@@ -7,10 +7,10 @@ import { BidType } from '../src/bid';
 test("a thread can be replayed", (done) => {
     let value1: number, value2: number;
     const thread1 = flow({name: 'thread1'}, function* () {
-        yield bp.wait('HEY');
+        yield bp.askFor('HEY');
         value1 = yield bp.request("requestingEventA", () => delay(2000, 5));
         expect(value1).toBe(1); // not 5, because the replay-resolve value is 1
-        value2 = yield bp.wait("B");
+        value2 = yield bp.askFor("B");
     });
     const [_, replay] = testScenarios((enable) => {
         enable(thread1());
@@ -32,7 +32,7 @@ test("a thread can be replayed", (done) => {
 test("if a request-replay has a GET_VALUE_FROM_BTHREAD symbol as payload, the b-threads payload will be used", (done) => {
     let value1: number;
     const thread1 = flow({name: 'thread1'}, function* () {
-        yield bp.wait('replayEvent1');
+        yield bp.askFor('replayEvent1');
         value1 = yield bp.request("replayEvent2", 5);
     });
     const [context, replay] = testScenarios((enable) => {
@@ -53,12 +53,12 @@ test("a async request can be replayed", (done) => {
     let value1: number;
     let eventReplayed = false;
     const thread1 = flow({name: 'thread1'}, function* () {
-        yield bp.wait('replayEvent1');
+        yield bp.askFor('replayEvent1');
         value1 = yield bp.request("replayEvent2", () => {
             eventReplayed = true;
             return delay(100, 'YEAH');
         });
-        yield bp.wait('replayEvent3');
+        yield bp.askFor('replayEvent3');
     });
     const [context, replay] = testScenarios((enable) => {
         enable(thread1());
@@ -79,7 +79,7 @@ test("a async request can be replayed", (done) => {
 
 test("after a replay completes, the normal execution will resume", (done) => {
     const thread1 = flow({name: 'thread1'}, function* () {
-        yield bp.wait('replayEvent1');
+        yield bp.askFor('replayEvent1');
         yield bp.request('requestEvent1');
         yield bp.request('requestEvent2');
     });

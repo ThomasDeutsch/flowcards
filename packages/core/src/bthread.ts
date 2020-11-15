@@ -37,10 +37,7 @@ export interface PendingEventInfo {
 export interface BThreadState {
     id: BThreadId;
     section?: string;
-    waits: EventMap<Bid>;
-    blocks: EventMap<Bid>;
-    requests: EventMap<Bid>;
-    extends: EventMap<Bid>;
+    bids?: Record<BidType, EventMap<Bid>>;
     pending: EventMap<PendingEventInfo>;
     destroyOnDisable?: boolean;
     isCompleted: boolean;
@@ -75,10 +72,6 @@ export class BThread {
             cancelledPending: new EventMap(),
             description: info.description,
             section: undefined,
-            waits: this._currentBids?.[BidType.wait] || new EventMap(),
-            blocks: this._currentBids?.[BidType.block] || new EventMap(),
-            requests: this._currentBids?.[BidType.request] || new EventMap(),
-            extends: this._currentBids?.[BidType.extend] || new EventMap(),
             pending: new EventMap(),
             isCompleted: false
         };
@@ -123,10 +116,7 @@ export class BThread {
     private _setCurrentBids() {
         this._state.pending = this._pendingRequests.clone().merge(this._pendingExtends);
         this._currentBids = getBidsForBThread(this.id, this._nextBid, this._state.pending);
-        this._state.waits = this._currentBids?.[BidType.wait] || new EventMap();
-        this._state.blocks = this._currentBids?.[BidType.block] || new EventMap();
-        this._state.requests = this._currentBids?.[BidType.request] || new EventMap();
-        this._state.extends = this._currentBids?.[BidType.extend] || new EventMap();
+        this._state.bids = this._currentBids;
     }
 
     private _processNextBid(returnValue?: any): void {

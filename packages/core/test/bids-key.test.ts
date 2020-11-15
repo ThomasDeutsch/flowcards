@@ -4,11 +4,11 @@ import { flow } from "../src/scenario";
 
 test("keys can be a string or a number", () => {
     const thread1 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: "1"});
+        yield bp.askFor({name: 'A', key: "1"});
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: 2});
+        yield bp.askFor({name: 'A', key: 2});
     });
 
     testScenarios((enable) => {
@@ -28,12 +28,12 @@ test("an event with a key can be blocked.", () => {
     let advancedKey2 = false;
 
     const thread1 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: 1});
+        yield bp.askFor({name: 'A', key: 1});
         advancedKey1 = true;
     });
 
     const thread2 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: 2});
+        yield bp.askFor({name: 'A', key: 2});
         advancedKey2 = true;
     });
 
@@ -63,17 +63,17 @@ test("a request without a key will not advance waiting threads with a key", () =
     let advancedWaitNoKey = false;
 
     const waitThreadWithKey1= flow(null, function* () {
-        yield bp.wait({name: 'A', key: 1});
+        yield bp.askFor({name: 'A', key: 1});
         advancedWait1 = true;
     });
 
     const waitThreadWithKey2 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: 2});
+        yield bp.askFor({name: 'A', key: 2});
         advancedWait2 = true;
     });
 
     const waitThreadWithoutKey = flow(null, function* () {
-        yield bp.wait({name: 'A'});
+        yield bp.askFor({name: 'A'});
         advancedWaitNoKey = true;
     });
 
@@ -100,17 +100,17 @@ test("a request with a key, will only advance the matching wait with the same ke
     let advancedWaitNoKey = false;
 
     const waitThreadWithKey1 = flow(null, function* () {
-        yield bp.wait({name: 'A', key: 1});
+        yield bp.askFor({name: 'A', key: 1});
         advancedWait1 = true;
     });
 
     const waitThreadWithKey2= flow(null, function* () {
-        yield bp.wait({name: 'A', key: 2});
+        yield bp.askFor({name: 'A', key: 2});
         advancedWait2 = true;
     });
 
     const waitThreadWithoutKey = flow(null, function* () {
-        yield bp.wait({name: 'A'});
+        yield bp.askFor({name: 'A'});
         advancedWaitNoKey = true;
     });
 
