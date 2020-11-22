@@ -220,7 +220,7 @@ test("an extend will create a pending event", () => {
 
     const extendingThread = flow(null, function* () {
         yield bp.extend("A"); // but this extend will make it async
-        yield bp.wait('fin');
+        yield bp.askFor('fin');
     });
 
     testScenarios((enable) => {
@@ -397,12 +397,12 @@ test("an extend can have an optional validation-function", () => {
 
 test("a wait can be extended. during the extension, the event is pending", (done) => {
     const waitingThread = flow(null, function* () {
-        yield bp.wait("AB");
+        yield bp.askFor("AB");
     });
 
     const extendingThread = flow(null, function* () {
         const x = yield bp.extend("AB");
-        yield bp.wait('fin');
+        yield bp.askFor('fin');
     });
 
     testScenarios((enable) => {
@@ -422,7 +422,7 @@ test("a wait can be extended. After resolving the extend, the wait will be conti
     let timesEventADispatched = 0;
 
     const waitingThread = flow(null, function* () {
-        const val = yield bp.wait("eventA");
+        const val = yield bp.askFor("eventA");
         expect(val).toBe(12);
         expect(timesEventADispatched).toBe(1);
         done();

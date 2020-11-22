@@ -80,7 +80,7 @@ test("the bThreadState is returned by the scenarios function", () => {
 
     const thread1 = flow({name: 'thread1', autoRepeat: true}, function* () {
         if(nrRepeats < 4) yield bp.request("eventOne");
-        else yield bp.wait('fin');
+        else yield bp.askFor('fin');
         nrRepeats++;
     });
   

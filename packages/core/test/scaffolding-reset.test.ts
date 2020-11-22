@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { BThreadContext, BThreadState } from '../src/bthread';
+import { BThreadContext } from '../src/bthread';
 import { flow } from '../src/scenario';
 
 
@@ -11,7 +11,7 @@ test("a thread gets reset, when the arguments change", () => {
         yield bp.askFor('fin');
     });
 
-    interface MyProps {waitingForB: boolean}
+    interface MyProps {waitingForB?: boolean}
     const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.askFor('A');
@@ -40,7 +40,7 @@ test("a thread gets reset, when the arguments change - 2", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        const test: MyProps = state.bids.askFor.has('B') ? {waitingForB: state.bids?.askFor?.has('B')} : {waitingForB: false, waitingForX: false};
+        const test: MyProps = state.bids?.askFor.has('B') ? {waitingForB: state.bids?.askFor?.has('B')} : {waitingForB: false, waitingForX: false};
         enable(threadB(test));
     }, () => {
         expect(initCount).toBe(2);    
