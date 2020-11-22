@@ -3,9 +3,9 @@ import { testScenarios, delay } from './testutils';
 import { BThreadContext } from '../src/index';
 import { flow } from '../src/scenario';
 
-test("on-bids can not be dispatched", () => {
+test("waitFor-bids can not be dispatched", () => {
     const thread1 = flow(null, function* () {
-        yield bp.on('A');
+        yield bp.waitFor('A');
     });
 
     testScenarios((enable) => {

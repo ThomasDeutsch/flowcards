@@ -13,7 +13,7 @@ export enum BidType {
     extend = "extend",
     trigger = "trigger",
     set = "set",
-    on = "on",
+    waitFor = "waitFor",
     onPending = "onPending"
 }
 
@@ -165,9 +165,9 @@ export function askFor(event: string | EventId, validation?: Validation): Bid {
     };
 }
 
-export function on(event: string | EventId, validation?: Validation): Bid {
+export function waitFor(event: string | EventId, validation?: Validation): Bid {
     return { 
-        type: BidType.on,
+        type: BidType.waitFor,
         eventId: toEventId(event), 
         validate: validation,
         bThreadId: {name: ""}

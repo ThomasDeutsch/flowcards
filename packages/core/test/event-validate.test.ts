@@ -71,12 +71,12 @@ test("the validate function will respect block-bids", () => {
     });
 });
 
-test("the validate function will respect on-bids as optional", () => {
+test("the validate function will respect waitFor-bids as optional", () => {
     const waitingThread = flow(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
     });
     const blockingThread = flow(null, function* () {
-        yield bp.on({name: 'A'}, (val) => ({isValid: val < 2000, message: 'value needs to be smaller than 2000'}));
+        yield bp.waitFor({name: 'A'}, (val) => ({isValid: val < 2000, message: 'value needs to be smaller than 2000'}));
     });
 
     testScenarios((enable) => {

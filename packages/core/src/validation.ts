@@ -43,7 +43,7 @@ export function validate(activeBidsByType: BidsByType, event: EventId, payload: 
     if(bids === undefined) return validationResult;
     const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
     const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);
-    const ons = getMatchingBids(activeBidsByType, [BidType.on], event);
+    const ons = getMatchingBids(activeBidsByType, [BidType.waitFor], event);
 
     bids.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
