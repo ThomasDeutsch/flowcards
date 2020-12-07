@@ -10,7 +10,7 @@ export enum BThreadReactionType {
     init = 'init',
     newPending = 'newPending',
     progress = 'progress',
-    exception = 'exception'
+    error = 'error'
 }
 
 export interface BThreadInitReaction {
@@ -37,7 +37,7 @@ export interface BThreadProgressReaction {
 }
 
 export interface BThreadExceptionReaction {
-    type: BThreadReactionType.exception;
+    type: BThreadReactionType.error;
     actionId: number;
     nextState: BThreadState;
     eventId: EventId;
@@ -140,7 +140,7 @@ export class Logger {
         const currentLoopIndex = utils.latest(this._actions)!.id!;
         const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
         bThreadReactions.set(currentLoopIndex, {
-            type: BThreadReactionType.exception,
+            type: BThreadReactionType.error,
             actionId: currentLoopIndex,
             eventId: eventId,
             nextState: {...nextState},
