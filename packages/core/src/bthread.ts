@@ -5,7 +5,7 @@ import { setEventCache, CachedItem } from './event-cache';
 import * as utils from './utils';
 import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
-import { Logger } from './logger';
+import { Logger, ScaffoldingResultType } from './logger';
 import { ActionDispatch } from './scaffolding';
 
 export type BTGen = Generator<Bid | (Bid | null)[] | null, void, any>;
@@ -45,6 +45,7 @@ export interface BThreadState {
     description?: string;
     orderIndex: number;
     autoRepeat?: boolean;
+    completeCount: number;
     cancelledPending: EventMap<PendingEventInfo>;
 }
 
@@ -74,6 +75,7 @@ export class BThread {
             cancelledPending: new EventMap(),
             description: info.description,
             autoRepeat: info.autoRepeat,
+            completeCount: 0,
             section: undefined,
             pending: new EventMap(),
             isCompleted: false
@@ -85,7 +87,6 @@ export class BThread {
         this._thread = this._generatorFn(this._currentProps);
         this._logger = logger;
         this._processNextBid();
-        this._logger.logBThreadInit(this.id, this._state);
     }
 
      // --- private
@@ -126,10 +127,11 @@ export class BThread {
         const next = this._thread.next(returnValue); // progress BThread to next bid
         if (next.done && this._state.autoRepeat) {
             this._resetBThread(this._currentProps);
-            //TODO: log thread autoRepeat
+            this._state.completeCount++;
             return;
         } else if (next.done) {
             this._state.isCompleted = true;
+            this._state.completeCount++;
             delete this._state.section;
             delete this._nextBid;
             delete this._currentBids;
@@ -172,6 +174,7 @@ export class BThread {
     public resetOnPropsChange(nextProps: any): boolean {
         const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
         if (changedPropNames === undefined) return false;
+        this._state.completeCount = 0;
         this._resetBThread(nextProps);
         return true;
     }
@@ -282,6 +285,7 @@ export class BThread {
     public destroy(destroyOnReplay?: boolean): void {
         this._pendingExtends.clear();
         this._cancelPendingRequests();
+        this._logger.logScaffoldingResult(ScaffoldingResultType.destroyed, this.id);
         if(destroyOnReplay) return;
     }
 }

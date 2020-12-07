@@ -99,17 +99,6 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logBThreadInit( bThreadId: BThreadId, nextState: BThreadState) {
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)?.id || 0;
-        bThreadReactions.set(currentLoopIndex, {
-            type: BThreadReactionType.init,
-            actionId: currentLoopIndex,
-            nextState: {...nextState},
-            hasNextSection: nextState.section !== undefined
-        });
-    }
-
     public logBThreadNewPending( bThreadId: BThreadId, bid: Bid, nextState: BThreadState) {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentLoopIndex = utils.latest(this._actions)?.id || 0;
