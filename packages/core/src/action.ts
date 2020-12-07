@@ -1,4 +1,4 @@
-import { Bid, BidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch, getNextBidAndRemaining, extend } from './bid';
+import { Bid, BidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch, getNextBidAndRemaining } from './bid';
 import { EventId } from './event-map';
 
 import { BThreadId } from './bthread';
@@ -6,11 +6,10 @@ import { BThreadId } from './bthread';
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
 
 export enum ActionType {
-    requested = "requested",
+    request = "request",
     ui = "ui",
-    resolved = "resolved",
-    rejected = "rejected",
-    extended = "extended"
+    resolve = "resolve",
+    reject = "reject"
 }
 
 export interface Action {
@@ -39,7 +38,7 @@ function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
 function getActionFromBid(bid: Bid): Action {
     const action = {
         id: null,
-        type: ActionType.requested,
+        type: ActionType.request,
         bThreadId: bid.bThreadId,
         eventId: bid.eventId,
         payload: bid.payload,

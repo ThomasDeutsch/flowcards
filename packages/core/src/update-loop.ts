@@ -99,7 +99,7 @@ export class UpdateLoop {
             } else if(action.id === null) {
                 action.id = this._currentActionId;
             }
-            if(action.type === ActionType.requested) {
+            if(action.type === ActionType.request) {
                 if (typeof action.payload === "function") {
                     action.payload = action.payload(this._eventCache.get(action.eventId)?.value);
                 }

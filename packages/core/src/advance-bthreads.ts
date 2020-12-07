@@ -37,7 +37,6 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
             const bThreadId = action.bThreadId.name ? action.bThreadId : bid.bThreadId;
             bThreadMap.get(bThreadId)?.addPendingEvent(action, true);
             progressWait(activeBidsByType, bThreadMap, [BidType.onPending], action);
-            action.type = ActionType.extended;
             return EXTENDED_WITH_PROMISE;
         } else {
             action.payload = extendContext.value;
@@ -47,7 +46,7 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
 
 export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): void {
     switch (action.type) {
-        case ActionType.requested: {
+        case ActionType.request: {
             const bThread = bThreadMap.get(action.bThreadId);
             if(bThread === undefined) return;
             if(action.resolveActionId !== undefined) {
@@ -65,7 +64,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
             progressWait(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
             return;
         }
-        case ActionType.resolved: {
+        case ActionType.resolve: {
             const bThread = bThreadMap.get(action.bThreadId);
             if(bThread === undefined) return;
             if(bThread.resolvePending(action) === false) return;
@@ -75,7 +74,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
             progressWait(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
             return;
         }
-        case ActionType.rejected: {
+        case ActionType.reject: {
             const bThread = bThreadMap.get(action.bThreadId);
             if(bThread) {
                 bThread.rejectPending(action);

@@ -201,7 +201,7 @@ export class BThread {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
                     id: action.resolveActionId || null, 
-                    type: ActionType.resolved,
+                    type: ActionType.resolve,
                     bThreadId: this.id,
                     eventId: action.eventId,
                     bidType: action.bidType,
@@ -220,7 +220,7 @@ export class BThread {
                 const requestDuration = new Date().getTime() - startTime;
                 this._dispatch({
                     id: action.resolveActionId || null,
-                    type: ActionType.rejected,
+                    type: ActionType.reject,
                     bThreadId: this.id,
                     eventId: action.eventId,
                     bidType: action.bidType,
@@ -242,7 +242,7 @@ export class BThread {
     }
 
     public rejectPending(action: Action): void {
-        if(action.type !== ActionType.rejected || action.resolve?.isResolvedExtend) return;
+        if(action.type !== ActionType.reject || action.resolve?.isResolvedExtend) return;
         if(this._thread && this._thread.throw) {
             this._thread.throw({event: action.eventId, error: action.payload});
             this._cancelPendingRequests(action.eventId);
