@@ -3,6 +3,7 @@ import { EventId } from './event-map';
 
 export type Validation = (payload: any) => {isValid: boolean; message?: string} | boolean
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function isValid(bid: Bid, payload?: any): boolean {
     if(!bid.validate) return true;
     const validationReturn = bid.validate(payload);
@@ -33,6 +34,7 @@ export interface ValidationResult {
     optional: BidValidationResult[];
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function validate(activeBidsByType: BidsByType, event: EventId, payload: any): ValidationResult {
     const bids = activeBidsByType[BidType.askFor]?.get(event);
     const validationResult: ValidationResult = {

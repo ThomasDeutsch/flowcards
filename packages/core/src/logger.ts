@@ -60,7 +60,7 @@ export class Logger {
         this._actionId = id;
     }
     private _actions: Action[] = [];
-    public get actions() { return this._actions; }
+    public get actions(): Action[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
     public pendingHistory = new Map<number, EventMap<Bid[]>>();
@@ -99,7 +99,7 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logBThreadNewPending( bThreadId: BThreadId, bid: Bid, nextState: BThreadState) {
+    public logBThreadNewPending( bThreadId: BThreadId, bid: Bid, nextState: BThreadState): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentLoopIndex = utils.latest(this._actions)?.id || 0;
         bThreadReactions.set(currentLoopIndex, {
@@ -111,7 +111,7 @@ export class Logger {
         });
     }
 
-    public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState) {
+    public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentLoopIndex = utils.latest(this._actions)!.id!;
         const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
@@ -124,7 +124,7 @@ export class Logger {
         });
     }
 
-    public logBThreadException( bThreadId: BThreadId, eventId: EventId, nextState: BThreadState) {
+    public logBThreadException( bThreadId: BThreadId, eventId: EventId, nextState: BThreadState): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentLoopIndex = utils.latest(this._actions)!.id!;
         const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);

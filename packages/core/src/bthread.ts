@@ -58,13 +58,13 @@ export class BThread {
     private _currentProps: Record<string, any>;
     private _thread: BTGen;
     private _currentBids?: BThreadBids;
-    public get currentBids() { return this._currentBids; }
+    public get currentBids(): BThreadBids | undefined { return this._currentBids; }
     private _nextBid?: any;
     public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _pendingExtends: EventMap<PendingEventInfo> = new EventMap();
     private _state: BThreadState;
-    public get state() { return this._state; }
+    public get state(): BThreadState { return this._state; }
 
     public constructor(id: BThreadId, info: BThreadInfo, orderIndex: number, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, logger: Logger) {
         this.id = id;
@@ -170,7 +170,7 @@ export class BThread {
     }
 
     // --- public
-
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     public resetOnPropsChange(nextProps: any): boolean {
         const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
         if (changedPropNames === undefined) return false;

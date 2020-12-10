@@ -80,7 +80,7 @@ export class UpdateLoop {
         return undefined;
     }
 
-    public runScaffolding() {
+    public runScaffolding(): void {
         this._scaffold(this._currentActionId);
         this._activeBidsByType = activeBidsByType(this._bThreadBids);
     }

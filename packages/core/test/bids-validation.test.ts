@@ -73,8 +73,8 @@ test("a block can be guarded", (done) => {
     const requestingThread = flow(null, function* () {
         let i = 0;
         while(i++ < 20) {
-            const [_, val] = yield [bp.request("A", 1000), bp.request("A", 2000)];
-            expect(val).toEqual(2000);
+            const val = yield [bp.request("A", 1000), bp.request("A", 2000)];
+            expect(val[1]).toEqual(2000);
             done();
         }
     });
@@ -93,7 +93,7 @@ test("a block can be guarded", (done) => {
 test("a block-guard will be combined with other guards", (done) => {
 
     const blockingThread = flow(null, function* () {
-        yield bp.block("A", (pl) => pl < 1500);
+        yield bp.block("A", (pl: number) => pl < 1500);
     });
 
     const waitingThread = flow(null, function* () {

@@ -1,5 +1,5 @@
 module.exports = {
-  root: true,
+  root: false,
   parser: '@typescript-eslint/parser',
   "rules": {
     "@typescript-eslint/explicit-function-return-type": "off",
