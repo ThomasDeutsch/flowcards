@@ -67,7 +67,7 @@ export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCal
                 if(updateCb !== undefined) updateCb(loop.setupContext(isPaused)); // call update callback!
                 else loop.setupContext(isPaused);
             }
-        });
+        }).catch(error => console.error(error));
     }
 
     const togglePlayPause = () => { 

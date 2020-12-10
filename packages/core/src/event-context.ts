@@ -1,33 +1,26 @@
 import { EventId } from './event-map';
 import { BidType, isBlocked, hasValidMatch, BidsByType } from './bid';
-import { BThreadId } from './bthread';
 import { ActionType } from './action';
 import { GetCachedItem, CachedItem } from './event-cache';
 import { validate, ValidationResult } from './validation';
 import { ActionDispatch } from './scaffolding';
 
-export interface EventInfo {
-    bThreadId?: BThreadId;
-    event?: EventId;
-    type?: BidType;
-    details?: any;
-}
 
 export class EventContext {
     private _actionDispatch: ActionDispatch;
     public readonly eventId: EventId;
-    private _cachedItem?: CachedItem<any>;
+    private _cachedItem?: CachedItem<unknown>;
     private _lastUpdatedOnActionId = -1;
-    public get value() {
+    public get value(): unknown {
         return this._cachedItem?.value;
     }
-    public get history() {
-        return this._cachedItem?.history|| [];
+    public get history(): unknown[] {
+        return this._cachedItem?.history || [];
     }
     private _activeBidsByType: BidsByType;
     private _dispatchEnabled = false;
     private _isPending = false;
-    public get isPending() {
+    public get isPending(): boolean {
         return this._isPending;
     }
 
@@ -40,7 +33,7 @@ export class EventContext {
         return false;
     }
 
-    public validate(payload?: any): ValidationResult {
+    public validate(payload?: unknown): ValidationResult {
         return validate(this._activeBidsByType, this.eventId, payload);
     }
 
@@ -55,7 +48,7 @@ export class EventContext {
         this._activeBidsByType = {} as BidsByType;
     }
 
-    public update(activeBidsByType: BidsByType, getCachedItem: GetCachedItem, actionId: number) {
+    public update(activeBidsByType: BidsByType, getCachedItem: GetCachedItem, actionId: number): void {
         if(this._lastUpdatedOnActionId === actionId) return;
         this._lastUpdatedOnActionId = actionId;
         this._activeBidsByType = activeBidsByType;

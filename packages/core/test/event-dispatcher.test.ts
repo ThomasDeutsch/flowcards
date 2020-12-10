@@ -3,6 +3,33 @@ import { testScenarios, delay } from './testutils';
 import { BThreadContext } from '../src/index';
 import { flow } from '../src/scenario';
 
+
+test("askFor-bids can be dispatched", () => {
+    const thread1 = flow(null, function* () {
+        yield bp.askFor('A');
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event}) => {
+        expect(event('A').dispatch).toBeDefined();
+    });
+});
+
+test("askFor-bids with a key can not be dispatched by the same event-name but without a key.", () => {
+    const thread1 = flow(null, function* () {
+        yield bp.askFor({name: 'A', key: 1});
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event}) => {
+        expect(event('A').dispatch).toBeUndefined();
+        expect(event({name: 'A', key: 1}).dispatch).toBeDefined();
+        expect(event({name: 'A', key: 2}).dispatch).toBeUndefined();
+    });
+});
+
 test("waitFor-bids can not be dispatched", () => {
     const thread1 = flow(null, function* () {
         yield bp.waitFor('A');
@@ -28,7 +55,7 @@ test("multiple dispatches are batched", (done) => {
     expect(event('X').dispatch).toBeDefined();
     event('X').dispatch?.();
     expect(event('X').dispatch).toBeDefined();
-    event('X')?.dispatch?.();
+    event('X').dispatch?.();
     done();
 });
 
@@ -78,7 +105,7 @@ test("a dispatch is defined, if a keyed event is not blocked", () => {
     expect(progressedRequestThread).toBe(false);
 });
 
-test("a pending event can not be dispatched", () => {
+test("a pending event can not be dispatched", (done) => {
     const waitingThread = flow(null, function* () {
         yield bp.askFor({name: 'A'});
     })
@@ -91,8 +118,12 @@ test("a pending event can not be dispatched", () => {
         enable(waitingThread());
         enable(requestingThread());
     }, ({event}) => {
-        expect(event({name: 'A'}).isPending).toBeTruthy();
-        expect(event({name: 'A'}).dispatch).toBeUndefined();
+        if(event('A')?.isPending) {
+            expect(event({name: 'A'}).isPending).toBeTruthy();
+            expect(event({name: 'A'}).dispatch).toBeUndefined();
+        } else {
+            done();
+        }
     });
 });
 
@@ -113,6 +144,5 @@ test("there is be a dispatch-function for every waiting event", () => {
         expect(event('eventTwo').dispatch).toBeDefined();
         expect(event('eventThree').dispatch).toBeDefined();
         expect(event('XXY').dispatch).toBeUndefined();
-
     });
 });

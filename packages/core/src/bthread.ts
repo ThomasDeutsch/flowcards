@@ -262,7 +262,6 @@ export class BThread {
         if(bidType === BidType.set) {
             setEventCache(eventCache, action.eventId, action.payload);
         }
-        // this._cancelPendingRequests(); <- this is done by the promise .then function
         this._progressBThread(bid.eventId, action.payload);
         this._logger.logBThreadProgress(this.id, bid, this._state);
     }

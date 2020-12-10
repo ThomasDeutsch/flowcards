@@ -10,7 +10,7 @@ function rejectedDelay(ms: number) {
 }
 
 function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms)).then(() => 'data');
+    return new Promise((resolve) => setTimeout(resolve, ms)).then(() => 'data').catch(error => console.error(error));
 }
 
 test("when a promise is resolved, it will dispatch an Action.", done => {

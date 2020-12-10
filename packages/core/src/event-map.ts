@@ -48,7 +48,7 @@ export class EventMap<T>  {
         if(event.key === undefined) {
             this.noKey.set(event.name, value);
         } else {
-            if(!this.withKey.has(event.name)) this.withKey.set(event.name, new Map());
+            if(!this.withKey.has(event.name)) this.withKey.set(event.name, new Map<EventKey, T>());
             this.withKey.get(event.name)?.set(event.key, value);
         }
         return this;

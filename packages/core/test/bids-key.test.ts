@@ -57,7 +57,7 @@ test("an event with a key can be blocked.", () => {
     });
 });
 
-test("a request without a key will not advance waiting threads with a key", () => {
+test("a request without a key will not advance asking threads with a key", () => {
     let advancedWait1 = false;
     let advancedWait2 = false;
     let advancedWaitNoKey = false;

@@ -1,6 +1,5 @@
 import * as bp from "../src/bid";
-import { testScenarios, delay } from './testutils';
-import { BThreadContext } from '../src/index';
+import { testScenarios } from './testutils';
 import { flow } from '../src/scenario';
 
 test("a bthread-state will have an completed count of 0", () => {
@@ -19,7 +18,6 @@ test("a bthread-state will have an completed count of 0", () => {
 test("every complete will increase the completeCount", () => {
     const countClicks = flow({name: 'countClicks', autoRepeat: true}, function* () {
         yield bp.waitFor('click');
-        console.log('comp1')
     });
 
     const clicker = flow(null, function* () {

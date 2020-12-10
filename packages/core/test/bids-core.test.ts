@@ -256,7 +256,7 @@ test("a requested event with a key is blocked by a block for the same event that
     })
 
     const blockingThread = flow(null, function* () {
-        yield bp.block("AX");
+        yield bp.block("AX"); // block all AX-events
     })
 
     testScenarios((enable) => {
@@ -340,7 +340,7 @@ test("if a thread has multiple requests, the first gets selected", () => {
     let requestProgressed = false;
 
     const requestingThread = flow({name: 'thread1'}, function*() {
-        const [event, type] = yield [bp.request({name: 'A', key: 1}), bp.request({name: 'A', key: 3}), bp.request({name: 'A', key: 4})];
+        const [event] = yield [bp.request({name: 'A', key: 1}), bp.request({name: 'A', key: 3}), bp.request({name: 'A', key: 4})];
         expect(event.key).toEqual(1);
         requestProgressed = true;
     });

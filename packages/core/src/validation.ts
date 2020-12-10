@@ -14,7 +14,7 @@ export function isValid(bid: Bid, payload?: any): boolean {
 
 export type BidValidationResult = {isValid: boolean; bid: Bid; message?: string}
 
-export function getValidationResult(bid: Bid, payload?: any): BidValidationResult {
+export function getValidationResult(bid: Bid, payload?: unknown): BidValidationResult {
     if(bid.validate === undefined) return {isValid: true, bid: bid, message: bid.eventId.description};
     const validationReturn = bid.validate(payload);
     if(validationReturn === true) return {isValid: true, bid: bid, message: bid.eventId.description};
@@ -23,7 +23,7 @@ export function getValidationResult(bid: Bid, payload?: any): BidValidationResul
     return {isValid: false, bid: bid, message: validationReturn.message};
 }
 
-export function withValidPayload(bids: Bid[] | undefined, payload: any): boolean {
+export function withValidPayload(bids: Bid[] | undefined, payload: unknown): boolean {
     return (bids !== undefined) && bids.some(bid => isValid(bid, payload))
 }
 
@@ -43,7 +43,7 @@ export function validate(activeBidsByType: BidsByType, event: EventId, payload: 
     if(bids === undefined) return validationResult;
     const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
     const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);
-    const ons = getMatchingBids(activeBidsByType, [BidType.waitFor], event);
+    const waits = getMatchingBids(activeBidsByType, [BidType.waitFor], event);
 
     bids.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
@@ -59,7 +59,7 @@ export function validate(activeBidsByType: BidsByType, event: EventId, payload: 
         bidValidationResult.isValid = !bidValidationResult.isValid; // reverse isValid because a passed block is a restriction.
         validationResult.required.push([bidValidationResult]);
     });
-    ons?.forEach(bid => {
+    waits?.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         validationResult.optional.push(bidValidationResult);
     });

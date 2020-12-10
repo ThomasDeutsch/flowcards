@@ -16,12 +16,12 @@ test("a wait is not advanced, if the guard returns false", () => {
     });
 
     const threadB = flow(null, function* () {
-        yield bp.askFor("A", (pl: number) => pl !== 1000);
+        yield bp.askFor("A", (pl) => pl !== 1000);
         waitBAdvanced = true;
     })
 
     const threadC = flow(null, function* () {
-        yield bp.askFor("A", (pl: number) => pl === 1000);
+        yield bp.askFor("A", (pl) => pl === 1000);
         waitCAdvanced = true;
     });
 
@@ -48,12 +48,12 @@ test("an extend is not applied, if the guard returns false.", () => {
     });
 
     const threadB = flow(null, function* () {
-        yield bp.askFor("A", (pl: number) => pl === 1000);
+        yield bp.askFor("A", (pl) => pl === 1000);
         waitAdvanced = true;
     });
 
     const threadC = flow(null, function* () {
-        yield bp.extend("A", (pl: number) => pl !== 1000);
+        yield bp.extend("A", (pl) => pl !== 1000);
         extendAdvanced = true;
     });
 
@@ -69,17 +69,18 @@ test("an extend is not applied, if the guard returns false.", () => {
 });
 
 
-test("a block can be guarded", () => {
+test("a block can be guarded", (done) => {
     const requestingThread = flow(null, function* () {
         let i = 0;
         while(i++ < 20) {
             const [_, val] = yield [bp.request("A", 1000), bp.request("A", 2000)];
             expect(val).toEqual(2000);
+            done();
         }
     });
 
     const blockingThread = flow(null, function* () {
-        yield bp.block("A", (pl: number) => pl === 1000);
+        yield bp.block("A", (pl) => pl === 1000);
     })
 
     testScenarios((enable) => {
@@ -89,14 +90,14 @@ test("a block can be guarded", () => {
 });
 
 
-test("a block-guard will be combined with other guards", () => {
+test("a block-guard will be combined with other guards", (done) => {
 
     const blockingThread = flow(null, function* () {
-        yield bp.block("A", (pl: number) => pl < 1500);
+        yield bp.block("A", (pl) => pl < 1500);
     });
 
     const waitingThread = flow(null, function* () {
-        yield bp.askFor("A", (pl: number) => pl > 1000);
+        yield bp.askFor("A", (pl) => pl > 1000);
     });
 
     testScenarios((enable) => {
@@ -105,32 +106,32 @@ test("a block-guard will be combined with other guards", () => {
     }, ({event}) => {
         if(event('A').dispatch) {
             expect(event('A').dispatch).toBeDefined();
-            //expect(event('A').validate(1001).invalid.length).toBe(2);
             const wasDispatched = event('A').dispatch?.(1300);
             expect(wasDispatched).toBeFalsy();
+            done();
         }
     });
 });
 
 
-test("a block-guard can be keyed", () => {
+test("a block-guard can be keyed", (done) => {
 
     const blockingThread = flow(null, function* () {
-        yield bp.block({name: 'A', key: 1}, (pl: number) => pl < 1500);
+        yield bp.block({name: 'A', key: 2}, (pl) => pl < 1500);
     })
 
     const waitingThread = flow(null, function* () {
-        yield bp.askFor({name: 'A', key: 2}, (pl: number) => pl > 1000);
+        yield bp.askFor({name: 'A', key: 2}, (pl) => pl > 1000);
     })
 
     testScenarios((enable) => {
         enable(blockingThread());
         enable(waitingThread());
     }, ({event}) => {
-        if(event('A')?.dispatch) {
-            expect(event('A').dispatch).toBeDefined();
-            expect(event('A').validate(2000)).toEqual('valid');
-            expect(event('A').validate(1001)).toEqual('valid');
+        if(event({name: 'A', key: 2})?.dispatch) {
+            expect(event({name: 'A', key: 2}).validate(2000).isValid).toBe(true);
+            expect(event({name: 'A', key: 2}).validate(1000).isValid).toBe(false);
+            done();
         }
     });
 });

@@ -129,7 +129,7 @@ export function getNextBidAndRemaining(bids: Bid[]): [Bid, Bid[]] {
 
 // bids user-API --------------------------------------------------------------------
 
-export function request(event: string | EventId, payload?: any): Bid {
+export function request(event: string | EventId, payload?: unknown): Bid {
     return {
         type: BidType.request,
         eventId: toEventId(event), 
@@ -138,7 +138,7 @@ export function request(event: string | EventId, payload?: any): Bid {
     };
 }
 
-export function set(event: string | EventId, payload?: any): Bid {
+export function set(event: string | EventId, payload?: unknown): Bid {
     return {
         type: BidType.set,
         eventId: toEventId(event), 
@@ -147,7 +147,7 @@ export function set(event: string | EventId, payload?: any): Bid {
     };
 }
 
-export function trigger(event: string | EventId, payload?: any): Bid {
+export function trigger(event: string | EventId, payload?: unknown): Bid {
     return {
         type: BidType.trigger,
         eventId: toEventId(event), 
