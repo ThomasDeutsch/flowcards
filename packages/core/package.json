@@ -15,11 +15,10 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "npm run build"
+    "build": "tsc -p tsconfig.build.json"
   },
   "license": "MIT",
-  "gitHead": "42eab8701d12e0e8169c462a10ffde7aa9fd2a31",
+  "gitHead": "61054bc59f60a85200725d3a2ecda70d92fa3dcc",
   "publishConfig": {
     "access": "public"
   }
