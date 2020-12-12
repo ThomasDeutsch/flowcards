@@ -1,4 +1,5 @@
 ## @flowcards/core
+Scenario based programming for JavaScript/TypeScript
 
 The flowcards core package has one main `scenarios` function.<br/>
 It will create an update-loop and make the initial setup call.<br/>
