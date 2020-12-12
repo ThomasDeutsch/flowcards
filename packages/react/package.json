@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/react",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -18,7 +18,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@flowcards/core": "^0.14.0"
+    "@flowcards/core": "^0.14.1"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0",
