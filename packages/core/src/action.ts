@@ -35,6 +35,7 @@ function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
     return true;
 }
 
+
 function getActionFromBid(bid: Bid): Action {
     const action = {
         id: null,

@@ -1,5 +1,2 @@
 - Typing of CachedItem
-- Typing of bid returns.
-- add details to validation result
-- add logging for context change
-- add logging for bThrad delete
+- Typing of bid returns
