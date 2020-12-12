@@ -12,9 +12,6 @@ export class Store {
       this.context = updatedContext;
     });
   }
-  event = this.context.event;
-  logger = this.context.log;
-  thread = this.context.thread;
 }
 
 decorate(Store, {
