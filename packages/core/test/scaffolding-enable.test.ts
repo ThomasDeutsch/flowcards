@@ -29,14 +29,16 @@ test("a thread will accept an optional key", () => {
         yield bp.askFor('A');
     });
 
-    const threadB = scenario(null, function* (this: BThreadContext) {
+    const threadB = scenario({id: 'thread2'}, function* (this: BThreadContext) {
         receivedKeyB = this.key;
         yield bp.askFor('A');
     });
 
     testScenarios((enable) => {
-        enable(thread(undefined, 0));
-        enable(threadB(undefined, 'foo'));
+        enable(thread(undefined), 0);
+        enable(threadB(undefined),'foo');
+    }, ({thread}) => {
+        expect(thread.get({name: 'thread2', key: 'foo'})?.id.key).toBe('foo'); // BThreadState will contain the BThreadKey
     });
 
     expect(receivedKeyA).toBe(0); 

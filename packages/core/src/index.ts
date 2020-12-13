@@ -1,6 +1,6 @@
 import { Action } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
-import { StagingFunction, ActionDispatch } from './scaffolding';
+import { StagingFunction } from './scaffolding';
 
 export * from './scenario';
 export * from './bthread';

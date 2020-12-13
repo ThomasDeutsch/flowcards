@@ -7,7 +7,7 @@ import { BThreadContext } from '../src/bthread';
 test("log will contain a list of executed actions (sorted)", () => {
     const flow1 = scenario(
         {
-          name: "flow1",
+          id: "flow1",
           description: "user is able to select a product"
         },
         function*(this: BThreadContext) {
@@ -24,7 +24,7 @@ test("log will contain a list of executed actions (sorted)", () => {
       
       const flow2 = scenario(
         {
-          name: "flow2",
+          id: "flow2",
           description: "count actions"
         },
         function*() {

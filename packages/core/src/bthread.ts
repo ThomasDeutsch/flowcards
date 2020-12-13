@@ -7,19 +7,10 @@ import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
 import { ActionDispatch } from './scaffolding';
+import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
 
-export type BTGen = Generator<Bid | (Bid | null)[] | null, void, any>;
-export type GeneratorFn = (props: any) => BTGen;
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
-
-export interface ScenarioInfo {
-    id: string;
-    key?: BThreadKey;
-    destroyOnDisable?: boolean;
-    description?: string;
-    autoRepeat?: boolean;
-}
 
 export interface BThreadContext {
     key?: BThreadKey;
@@ -54,10 +45,10 @@ export class BThread {
     public readonly idString: string;
     public readonly id: BThreadId;
     private readonly _dispatch: ActionDispatch;
-    private readonly _generatorFn: GeneratorFn;
+    private readonly _generatorFunction: BThreadGeneratorFunction;
     private readonly _logger: Logger;
     private _currentProps: Record<string, any>;
-    private _thread: BTGen;
+    private _thread: BThreadGenerator;
     private _currentBids?: BThreadBids;
     public get currentBids() { return this._currentBids; }
     private _nextBid?: any;
@@ -67,15 +58,15 @@ export class BThread {
     private _state: BThreadState;
     public get state() { return this._state; }
 
-    public constructor(id: BThreadId, info: Omit<ScenarioInfo, 'id'>, orderIndex: number, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, logger: Logger) {
+    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: Record<string, any>, dispatch: ActionDispatch, logger: Logger) {
         this.id = id;
         this._state = {
             id: id,
             orderIndex: orderIndex,
-            destroyOnDisable: info.destroyOnDisable,
+            destroyOnDisable: scenarioInfo.destroyOnDisable,
             cancelledPending: new EventMap(),
-            description: info.description,
-            isAutoRepeat: info.autoRepeat,
+            description: scenarioInfo.description,
+            isAutoRepeat: scenarioInfo.autoRepeat,
             completeCount: 0,
             section: undefined,
             pending: new EventMap(),
@@ -84,9 +75,9 @@ export class BThread {
         };
         this.idString = BThreadMap.toIdString(id);
         this._dispatch = dispatch;
-        this._generatorFn = generatorFn.bind(this._getBThreadContext());
+        this._generatorFunction = generatorFunction.bind(this._getBThreadContext());
         this._currentProps = props;
-        this._thread = this._generatorFn(this._currentProps);
+        this._thread = this._generatorFunction(this._currentProps);
         this._logger = logger;
         this._processNextBid();
     }
@@ -168,7 +159,7 @@ export class BThread {
         this._state.isCompleted = false;
         this._state.progressionCount = -1;
         delete this._state.section;
-        this._thread = this._generatorFn(this._currentProps);
+        this._thread = this._generatorFunction(this._currentProps);
         this._cancelPendingRequests();
         this._processNextBid(); // progress BThread
     }

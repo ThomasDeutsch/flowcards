@@ -6,7 +6,7 @@ import { BThreadContext } from "../src/bthread";
 
 
 test("A promise can be requested and will create a pending-event", () => {
-    const thread1 = scenario({id: 'requestingThread', key: 1}, function* () {
+    const thread1 = scenario({id: 'requestingThread'}, function* () {
         yield bp.request("A", delay(100));
     });
 
@@ -129,7 +129,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
         enable(thread1());
         enable(thread2());
         enable(thread3());
-    }, ({thread, log}) => {
+    }, ({thread}) => {
         if(thread.get('requestingThread')?.isCompleted) {
             expect(progressed2).not.toBe(progressed3);
             done();
