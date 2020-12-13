@@ -5,7 +5,7 @@ import { delay } from './testutils';
 import { BThreadContext } from "../src/bthread";
 
 
-test("A promise can be requested and will create a pending-event", () => {
+test("A promise can be requested and will create a pending-event", (done) => {
     const thread1 = scenario({id: 'requestingThread'}, function* () {
         yield bp.request("A", delay(100));
     });
@@ -18,6 +18,7 @@ test("A promise can be requested and will create a pending-event", () => {
             expect(event('A').value).toBeUndefined();
             expect(event('A').history.length).toBe(0);
             expect(event('A').isPending).toEqual(true);
+            done();
         }
     });
 });
@@ -67,7 +68,7 @@ test("pending-events with the same name but different keys can be run in paralle
 });
 
 
-test("A promise-function can be requested and will create a pending-event", () => {
+test("A promise-function can be requested and will create a pending-event", (done) => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));
     });
@@ -79,6 +80,7 @@ test("A promise-function can be requested and will create a pending-event", () =
         if(isAPending) {
             expect(isAPending).toBeTruthy();
             expect(event('A').dispatch).toBeUndefined();
+            done();
         }
     }));
 });

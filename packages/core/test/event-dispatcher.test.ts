@@ -78,21 +78,23 @@ test("a dispatch is defined, if a keyed event is not blocked", (done) => {
     expect(progressedRequestThread).toBe(false);
 });
 
-test("a pending event can not be dispatched", () => {
+test("a pending event can not be dispatched", (done) => {
     const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'});
     })
 
     const requestingThread = scenario(null, function* () {
         yield bp.request({name: 'A'}, () => delay(1000));
+        done();
     })
 
     testScenarios((enable) => {
         enable(waitingThread());
         enable(requestingThread());
     }, ({event}) => {
-        expect(event({name: 'A'}).isPending).toBeTruthy();
-        expect(event({name: 'A'}).dispatch).toBeUndefined();
+        if(event({name: 'A'}).isPending) {
+            expect(event({name: 'A'}).dispatch).toBeUndefined();
+        }
     });
 });
 

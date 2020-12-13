@@ -18,16 +18,16 @@ export class EventContext {
     public readonly eventId: EventId;
     private _cachedItem?: CachedItem<any>;
     private _lastUpdatedOnActionId = -1;
-    public get value() {
+    public get value(): any {
         return this._cachedItem?.value;
     }
-    public get history() {
+    public get history(): any[] {
         return this._cachedItem?.history|| [];
     }
     private _activeBidsByType: BidsByType;
     private _dispatchEnabled = false;
     private _isPending = false;
-    public get isPending() {
+    public get isPending(): boolean {
         return this._isPending;
     }
 
@@ -55,7 +55,7 @@ export class EventContext {
         this._activeBidsByType = {} as BidsByType;
     }
 
-    public update(activeBidsByType: BidsByType, getCachedItem: GetCachedItem, actionId: number) {
+    public update(activeBidsByType: BidsByType, getCachedItem: GetCachedItem, actionId: number): void {
         if(this._lastUpdatedOnActionId === actionId) return;
         this._lastUpdatedOnActionId = actionId;
         this._activeBidsByType = activeBidsByType;

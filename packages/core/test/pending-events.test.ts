@@ -9,7 +9,7 @@ function delay(ms: number, value?: any) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }
 
-test("a pending event can not be requested by another thread", () => {
+test("a pending event can not be requested by another thread", (done) => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
@@ -26,11 +26,12 @@ test("a pending event can not be requested by another thread", () => {
     }, ({event, thread}) => {
         expect(event('A').isPending).toBeTruthy();
         expect(thread.get('thread2')?.isCompleted).toBeFalsy();
+        done();
     });
 });
 
 
-test("a pending event can not be extended", () => {
+test("a pending event can not be extended", (done) => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         while (true) {
             yield bp.request("A", () => delay(1000));
@@ -46,6 +47,7 @@ test("a pending event can not be extended", () => {
         enable(thread2());
     }, ({event}) => {
         expect(event('A').isPending).toBeTruthy();
+        done();
     });
 });
 

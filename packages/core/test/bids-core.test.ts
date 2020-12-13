@@ -2,13 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { EventId } from "../src/event-map";
 import { scenario } from '../src/scenario';
-import { BThreadId, ScenariosContext } from "../src";
 
-function threadIsCompleted(context: ScenariosContext, threadId: BThreadId | string) {
-    const state = context.thread.get(threadId);
-    expect(state).toBeDefined();
-    expect(state?.isCompleted).toBe(true);
-}
 
 // REQUESTS & WAITS
 //-------------------------------------------------------------------------
@@ -20,9 +14,10 @@ test("a requested event that is not blocked will advance", () => {
     testScenarios((enable) => {
         enable(requestingThread());
     }, ({thread})=> {
-        const thread1 = thread.get({name: 'thread1'});
-
-        expect(thread1?.progressionCount).toBe(1);
+        const state = thread.get({name: 'thread1'});
+        expect(state).toBeDefined();
+        expect(state?.isCompleted).toBe(true);
+        expect(state?.progressionCount).toBe(1);
     });
 });
 

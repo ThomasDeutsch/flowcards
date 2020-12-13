@@ -19,7 +19,6 @@ test("a bthread-state will have an completed count of 0", () => {
 test("every complete will increase the completeCount", () => {
     const countClicks = scenario({id: 'countClicks', autoRepeat: true}, function* () {
         yield bp.waitFor('click');
-        console.log('comp1')
     });
 
     const clicker = scenario(null, function* () {

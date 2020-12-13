@@ -41,25 +41,24 @@ export function validate(activeBidsByType: BidsByType, event: EventId, payload: 
         optional: []
     }
     if(bids === undefined) return validationResult;
-    const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
-    const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);
-    const ons = getMatchingBids(activeBidsByType, [BidType.waitFor], event);
-
     bids.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         validationResult.required[0].push(bidValidationResult);
     });
+    const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
     blocks?.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         bidValidationResult.isValid = !bidValidationResult.isValid; // reverse isValid because a passed block is a restriction.
         validationResult.required.push([bidValidationResult]);
     });
+    const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);
     guardedBlocks?.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         bidValidationResult.isValid = !bidValidationResult.isValid; // reverse isValid because a passed block is a restriction.
         validationResult.required.push([bidValidationResult]);
     });
-    ons?.forEach(bid => {
+    const waitFors = getMatchingBids(activeBidsByType, [BidType.waitFor], event);
+    waitFors?.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         validationResult.optional.push(bidValidationResult);
     });

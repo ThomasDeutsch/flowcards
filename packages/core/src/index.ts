@@ -65,7 +65,7 @@ export class Scenarios {
                 if(this._updateCb !== undefined) this._updateCb(this._loop.setupContext(this._isPaused)); // call update callback!
                 else this._loop.setupContext(this._isPaused);
             }
-        });
+        }).catch(error => console.log('error: ', error));
     }
 
     private _dispatchSingleAction(action: Action): void {

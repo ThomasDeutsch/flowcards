@@ -11,17 +11,17 @@ export interface ScenarioInfo {
     autoRepeat?: boolean;
 }
 
-export type Scenario = [ScenarioInfo, BThreadGeneratorFunction, Parameters<BThreadGeneratorFunction>[0]]
-export type CreateScenario = (generatorProps?: Parameters<BThreadGeneratorFunction>[0]) => Scenario;
+export type Scenario<T extends BThreadGeneratorFunction> = [ScenarioInfo, T, Parameters<T>[0]]
+export type CreateScenario<T extends BThreadGeneratorFunction> = (generatorProps?: Parameters<T>[0]) => Scenario<T>;
 
-export function scenario(info: ScenarioInfo | null, generatorFunction: BThreadGeneratorFunction): CreateScenario {
+export function scenario<T extends BThreadGeneratorFunction>(info: ScenarioInfo | null, generatorFunction: T): CreateScenario<T> {
     const scenarioInfo: ScenarioInfo = {
         id: info?.id || uuidv4(),
         description: info?.description,
         destroyOnDisable: info?.destroyOnDisable,
         autoRepeat: info?.autoRepeat
     };
-    return (generatorProps?: Parameters<BThreadGeneratorFunction>[0]) => {
+    return (generatorProps?: Parameters<T>[0]) => {
         return [scenarioInfo, generatorFunction, generatorProps]
     }
 }

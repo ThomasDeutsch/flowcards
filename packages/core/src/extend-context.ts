@@ -1,10 +1,10 @@
 export class ExtendContext {
     private _isCompleted = false;
-    public get isCompleted() { return this._isCompleted }
+    public get isCompleted(): boolean { return this._isCompleted }
     private _value: any;
-    public get value() { return this._value }
+    public get value(): any { return this._value }
     private _promise?: Promise<unknown>;
-    public get promise() { return this._promise }
+    public get promise(): Promise<unknown> | undefined { return this._promise }
     private _resolveFn?: (value?: unknown) => void;
     private _rejectFn?: (reason?: any) => void;
 
@@ -12,20 +12,20 @@ export class ExtendContext {
         this._value = payload;
     }
 
-    public resolve(value?: unknown) { 
+    public resolve(value?: unknown): void { 
         delete this._promise;
         this._isCompleted = true; 
         this._resolveFn?.(value);
         this._value = value;
     }
 
-    public reject(reason: any) { 
+    public reject(reason: any): void { 
         delete this._promise;
         this._isCompleted = true; 
         this._rejectFn?.(reason)
     }
 
-    public createPromiseIfNotCompleted() {
+    public createPromiseIfNotCompleted(): void {
         if(this.isCompleted) return
         this._promise = new Promise((resolve, reject) => {
             this._resolveFn = resolve;

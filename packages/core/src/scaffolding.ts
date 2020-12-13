@@ -5,9 +5,9 @@ import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadMap } from './bthread-map';
-import { Scenario } from './scenario';
+import { BThreadGeneratorFunction, Scenario } from './scenario';
 
-export type StagingFunction = (enable: (scenario: Scenario, key?: BThreadKey) => BThreadState, cached: GetCachedItem) => void;
+export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
 
 // enable, disable or delete bThreads
@@ -25,7 +25,7 @@ export function setupScaffolding(
     const destroyOnDisableThreadIds = new BThreadMap<BThreadId>();
     let bThreadOrderIndex = 0;
 
-    function enableBThread([scenarioInfo, generatorFunction, props]: Scenario, key?: BThreadKey): BThreadState {
+    function enableBThread([scenarioInfo, generatorFunction, props]: Scenario<BThreadGeneratorFunction>, key?: BThreadKey): BThreadState {
         const bThreadId: BThreadId = {name: scenarioInfo.id, key: key};
         enabledBThreadIds.set(bThreadId, bThreadId);
         let bThread = bThreadMap.get(bThreadId)

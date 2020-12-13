@@ -11,6 +11,7 @@ import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scen
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
+type BThreadProps = Record<string, any>;
 
 export interface BThreadContext {
     key?: BThreadKey;
@@ -47,18 +48,18 @@ export class BThread {
     private readonly _dispatch: ActionDispatch;
     private readonly _generatorFunction: BThreadGeneratorFunction;
     private readonly _logger: Logger;
-    private _currentProps: Record<string, any>;
+    private _currentProps: BThreadProps;
     private _thread: BThreadGenerator;
     private _currentBids?: BThreadBids;
-    public get currentBids() { return this._currentBids; }
+    public get currentBids(): BThreadBids | undefined { return this._currentBids; }
     private _nextBid?: any;
     public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _pendingExtends: EventMap<PendingEventInfo> = new EventMap();
     private _state: BThreadState;
-    public get state() { return this._state; }
+    public get state(): BThreadState { return this._state; }
 
-    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: Record<string, any>, dispatch: ActionDispatch, logger: Logger) {
+    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, dispatch: ActionDispatch, logger: Logger) {
         this.id = id;
         this._state = {
             id: id,
@@ -153,7 +154,7 @@ export class BThread {
         }
     }
 
-    private _resetBThread(props: any) {
+    private _resetBThread(props: BThreadProps) {
         this._pendingExtends = new EventMap();
         this._currentProps = props;
         this._state.isCompleted = false;
@@ -166,7 +167,7 @@ export class BThread {
 
     // --- public
 
-    public resetOnPropsChange(nextProps: any): boolean {
+    public resetOnPropsChange(nextProps: BThreadProps): boolean {
         const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
         if (changedPropNames === undefined) return false;
         this._state.completeCount = 0;
