@@ -1,6 +1,6 @@
 import { Action } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
-import { StagingFunction } from './scaffolding';
+import { StagingFunction, ActionDispatch } from './scaffolding';
 
 export * from './scenario';
 export * from './bthread';
@@ -18,74 +18,76 @@ export const CONTEXT_CHANGED: unique symbol = Symbol('contextChanged');
 
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 export type DispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => void;
-export type PlayPause = { getIsPaused: () => boolean; toggle: () => void };
 
-export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, DispatchActions, PlayPause] {
-    const bufferedActions: Action[] = [];
-    let isPaused = false;
-    const bufferedReplayMap = new Map<number, Action>();
+export class Scenarios {
+    private _bufferedActions: Action[] = [];
+    private _isPaused = false;
+    public get isPaused(): boolean { return this._isPaused }
+    private _bufferedReplayMap = new Map<number, Action>();
+    private _loop: UpdateLoop;
+    private _updateCb?: UpdateCallback;
+    public initialScenariosContext: ScenariosContext;
 
-    function placeBufferedAction(action?: Action): void {
+    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false) {
+        this._loop = new UpdateLoop(stagingFunction, this._dispatchSingleAction.bind(this));
+        this.initialScenariosContext = this._loop.setupContext(this._isPaused);
+        this._updateCb = updateCb;
+        if(this._updateCb !== undefined && updateInitial) this._updateCb(this.initialScenariosContext); // callback with initial value
+    }
+
+    private _placeBufferedAction(action?: Action): void {
         if(action === undefined) return;
         if(action.id === null) {
-            bufferedActions.push(action);
+            this._bufferedActions.push(action);
         } else {  // is a replay action
             if(action.id === 0) {
-                loop.replayMap.clear();
+                this._loop.replayMap.clear();
             }
-            bufferedReplayMap.set(action.id, action);
+            this._bufferedReplayMap.set(action.id, action);
         }
     }
 
-    function internalDispatchSingleAction(action: Action): void {
-        placeBufferedAction(action);
-        clearBufferOnNextTick();
-    }
-
-    function dispatchMultipleActions(actions: Action[]): void {
-        actions.forEach(action => placeBufferedAction(action));
-        clearBufferOnNextTick();
-    }
-
-    const loop = new UpdateLoop(stagingFunction, internalDispatchSingleAction);
-
-    const clearBufferOnNextTick = (forceRefresh?: boolean) => {
+    private _clearBufferOnNextTick = (forceRefresh?: boolean) => {
         Promise.resolve().then(() => { // next tick
             let withUpdate = false;
-            if(bufferedReplayMap.size !== 0) {
-                bufferedActions.length = 0;
-                bufferedReplayMap.forEach((action, key) => loop.replayMap.set(key, action)); // transfer buffer to replay-Map
-                bufferedReplayMap.clear();
+            if(this._bufferedReplayMap.size !== 0) {
+                this._bufferedActions.length = 0;
+                this._bufferedReplayMap.forEach((action, key) => this._loop.replayMap.set(key, action)); // transfer buffer to replay-Map
+                this._bufferedReplayMap.clear();
                 withUpdate = true;
             }
-            else if(bufferedActions.length !== 0 && !isPaused) {
-                bufferedActions.forEach(action => loop.actionQueue.push(action)); // transfer buffer to action-queue
-                bufferedActions.length = 0;
+            else if(this._bufferedActions.length !== 0 && !this._isPaused) {
+                this._bufferedActions.forEach(action => this._loop.actionQueue.push(action)); // transfer buffer to action-queue
+                this._bufferedActions.length = 0;
                 withUpdate = true;
             } 
             if(withUpdate || forceRefresh) {
-                if(updateCb !== undefined) updateCb(loop.setupContext(isPaused)); // call update callback!
-                else loop.setupContext(isPaused);
+                if(this._updateCb !== undefined) this._updateCb(this._loop.setupContext(this._isPaused)); // call update callback!
+                else this._loop.setupContext(this._isPaused);
             }
         });
     }
 
-    const togglePlayPause = () => { 
-        isPaused = !isPaused;
-        clearBufferOnNextTick(true);
-     };
-
-    const dispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => {
-        if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
-            loop.runScaffolding();
-            loop.setupContext(isPaused);
-        }
-        else {
-            dispatchMultipleActions(actions);
-        }
+    private _dispatchSingleAction(action: Action): void {
+        this._placeBufferedAction(action);
+        this._clearBufferOnNextTick();
     }
 
-    const initialScenarioContext = loop.setupContext(isPaused);
-    if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
-    return [initialScenarioContext, dispatchActions, { getIsPaused: () => isPaused, toggle: togglePlayPause }];
+    private _dispatchMultipleActions(actions: Action[]): void {
+        actions.forEach(action => this._placeBufferedAction(action));
+        this._clearBufferOnNextTick();
+        
+    }
+
+    private _dispatchActions(actions: Action[] | typeof CONTEXT_CHANGED): void {
+        if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
+            this._loop.runScaffolding();
+            this._loop.setupContext(this._isPaused);
+        }
+        else {
+            this._dispatchMultipleActions(actions);
+        }
+    }
+    
+    public get dispatchActions(): DispatchActions { return this._dispatchActions.bind(this) }
 }

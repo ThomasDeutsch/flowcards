@@ -44,8 +44,9 @@ export interface BThreadState {
     isCompleted: boolean;
     description?: string;
     orderIndex: number;
-    autoRepeat?: boolean;
+    isAutoRepeat?: boolean;
     completeCount: number;
+    progressionCount: number;
     cancelledPending: EventMap<PendingEventInfo>;
 }
 
@@ -74,11 +75,12 @@ export class BThread {
             destroyOnDisable: info.destroyOnDisable,
             cancelledPending: new EventMap(),
             description: info.description,
-            autoRepeat: info.autoRepeat,
+            isAutoRepeat: info.autoRepeat,
             completeCount: 0,
             section: undefined,
             pending: new EventMap(),
-            isCompleted: false
+            isCompleted: false,
+            progressionCount: -1 // not counting the initial progression
         };
         this.idString = BThreadMap.toIdString(id);
         this._dispatch = dispatch;
@@ -125,7 +127,8 @@ export class BThread {
 
     private _processNextBid(returnValue?: any): void {
         const next = this._thread.next(returnValue); // progress BThread to next bid
-        if (next.done && this._state.autoRepeat) {
+        this._state.progressionCount++;
+        if (next.done && this._state.isAutoRepeat) {
             this._resetBThread(this._currentProps);
             this._state.completeCount++;
             return;
@@ -163,6 +166,7 @@ export class BThread {
         this._pendingExtends = new EventMap();
         this._currentProps = props;
         this._state.isCompleted = false;
+        this._state.progressionCount = -1;
         delete this._state.section;
         this._thread = this._generatorFn(this._currentProps);
         this._cancelPendingRequests();

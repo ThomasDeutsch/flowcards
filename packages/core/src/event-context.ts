@@ -45,7 +45,7 @@ export class EventContext {
     }
 
     public get dispatch(): ((payload?: any) => boolean) | undefined {
-        if(this._dispatchEnabled) return this._dispatch.bind(this);
+        if(this._dispatchEnabled) return this._dispatch;
         return undefined;
     }
 

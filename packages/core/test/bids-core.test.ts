@@ -7,18 +7,17 @@ import { flow } from '../src/scenario';
 // REQUESTS & WAITS
 //-------------------------------------------------------------------------
 test("a requested event that is not blocked will advance", () => {
-    let hasAdvanced = false;
-
     const requestingThread = flow({name: 'thread1'}, function*() {
         yield bp.request("A");
-        hasAdvanced = true;
     });
 
     testScenarios((enable) => {
         enable(requestingThread());
     }, ({thread})=> {
-        expect(hasAdvanced).toBe(true);
-        expect(thread.get({name: 'thread1'})?.isCompleted).toBe(true);
+        const thread1 = thread.get({name: 'thread1'});
+        expect(thread1).toBeDefined();
+        expect(thread1?.isCompleted).toBe(true);
+        expect(thread1?.progressionCount).toBe(1);
     });
 });
 

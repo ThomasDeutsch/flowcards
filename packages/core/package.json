@@ -13,8 +13,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "jest --detectOpenHandles",
+    "test:watch": "jest --watch --detectOpenHandles",
     "build": "tsc -p tsconfig.build.json"
   },
   "license": "MIT",

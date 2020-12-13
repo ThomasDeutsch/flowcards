@@ -80,7 +80,7 @@ export class UpdateLoop {
         return undefined;
     }
 
-    public runScaffolding() {
+    public runScaffolding(): void {
         this._scaffold(this._currentActionId);
         this._activeBidsByType = activeBidsByType(this._bThreadBids);
     }
@@ -91,6 +91,7 @@ export class UpdateLoop {
             action = this._getNextReplayAction(this._currentActionId) || 
                 this.actionQueue.shift() || 
                 getNextActionFromRequests(this._activeBidsByType);
+            // if test then run test, based on context, 
         }
         if (action !== undefined) { // use next action
             if(action.id === 0) {

@@ -55,7 +55,7 @@ test("a keyed event is blocked by a no-key block, and can not be dispatched", ()
 });
 
 
-test("a dispatch is defined, if a keyed event is not blocked", () => {
+test("a dispatch is defined, if a keyed event is not blocked", (done) => {
     let progressedRequestThread = false;
 
     const waitingThread = flow(null, function* () {
@@ -73,7 +73,7 @@ test("a dispatch is defined, if a keyed event is not blocked", () => {
     }, ({event}) => {
         expect(event({name: 'AX', key: 1}).dispatch).toBeUndefined();
         expect(event({name: 'AX', key: 2}).dispatch).toBeDefined();
-
+        done();
     });
     expect(progressedRequestThread).toBe(false);
 });
