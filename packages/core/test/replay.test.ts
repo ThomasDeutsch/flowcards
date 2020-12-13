@@ -1,12 +1,12 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { ActionType, GET_VALUE_FROM_BTHREAD } from '../src/action';
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 import { BidType } from '../src/bid';
 
 test("a thread can be replayed", (done) => {
     let value1: number, value2: number;
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.askFor('HEY');
         value1 = yield bp.request("requestingEventA", () => delay(2000, 5));
         expect(value1).toBe(1); // not 5, because the replay-resolve value is 1
@@ -31,7 +31,7 @@ test("a thread can be replayed", (done) => {
 
 test("if a request-replay has a GET_VALUE_FROM_BTHREAD symbol as payload, the b-threads payload will be used", (done) => {
     let value1: number;
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.askFor('replayEvent1');
         value1 = yield bp.request("replayEvent2", 5);
     });
@@ -52,7 +52,7 @@ test("if a request-replay has a GET_VALUE_FROM_BTHREAD symbol as payload, the b-
 test("a async request can be replayed", (done) => {
     let value1: number;
     let eventReplayed = false;
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.askFor('replayEvent1');
         value1 = yield bp.request("replayEvent2", () => {
             eventReplayed = true;
@@ -78,7 +78,7 @@ test("a async request can be replayed", (done) => {
 
 
 test("after a replay completes, the normal execution will resume", (done) => {
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.askFor('replayEvent1');
         yield bp.request('requestEvent1');
         yield bp.request('requestEvent2');

@@ -1,12 +1,12 @@
 import { Action } from './action';
 import { BThreadBids } from './bid';
-import { BThread, BThreadState, GeneratorFn, BThreadInfo, BThreadId } from './bthread';
+import { BThread, BThreadState, GeneratorFn, ScenarioInfo, BThreadId } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadMap } from './bthread-map';
 
-export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
+export type StagingFunction = (enable: ([bThreadInfo, generatorFn, props]: [ScenarioInfo, GeneratorFn, any]) => BThreadState, cached: GetCachedItem) => void;
 export type ActionDispatch = (action: Action) => void;
 
 // enable, disable or delete bThreads
@@ -24,8 +24,8 @@ export function setupScaffolding(
     const destroyOnDisableThreadIds = new BThreadMap<BThreadId>();
     let bThreadOrderIndex = 0;
 
-    function enableBThread([bThreadInfo, generatorFn, props]: [BThreadInfo, GeneratorFn, any]): BThreadState {
-        const bThreadId: BThreadId = {name: bThreadInfo.name, key: bThreadInfo.key};
+    function enableBThread([scenarioInfo, generatorFn, props]: [ScenarioInfo, GeneratorFn, any]): BThreadState {
+        const bThreadId: BThreadId = {name: scenarioInfo.id, key: scenarioInfo.key};
         enabledBThreadIds.set(bThreadId, bThreadId);
         let bThread = bThreadMap.get(bThreadId)
         if (bThread) {
@@ -34,8 +34,8 @@ export function setupScaffolding(
             if(wasReset) logger.logScaffoldingResult(ScaffoldingResultType.reset, bThreadId);
             else logger.logScaffoldingResult(ScaffoldingResultType.enabled, bThreadId);
         } else {
-            bThreadMap.set(bThreadId, new BThread(bThreadId, bThreadInfo, bThreadOrderIndex, generatorFn, props, dispatch, logger));
-            if(bThreadInfo.destroyOnDisable) destroyOnDisableThreadIds.set(bThreadId, bThreadId);
+            bThreadMap.set(bThreadId, new BThread(bThreadId, scenarioInfo, bThreadOrderIndex, generatorFn, props, dispatch, logger));
+            if(scenarioInfo.destroyOnDisable) destroyOnDisableThreadIds.set(bThreadId, bThreadId);
             logger.logScaffoldingResult(ScaffoldingResultType.init, bThreadId);
         }
         bThread = bThreadMap.get(bThreadId)!;

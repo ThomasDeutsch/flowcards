@@ -1,13 +1,13 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { BThreadContext, BThreadState } from '../src/bthread';
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 
 test("a thread will accept an optional array of arguments", () => {
     let receivedArgs = ["", "", ""];
     interface MyProps {a: string; b: string; c: string}
 
-    const thread = flow(null, function* (props: MyProps) {
+    const thread = scenario(null, function* (props: MyProps) {
         receivedArgs = [props.a, props.b, props.c];
         yield bp.askFor('event');
     })
@@ -24,12 +24,12 @@ test("a thread will accept an optional array of arguments", () => {
 test("a thread will accept an optional key", () => {
     let receivedKeyA, receivedKeyB;
 
-    const thread = flow(null, function* (this: BThreadContext) {
+    const thread = scenario(null, function* (this: BThreadContext) {
         receivedKeyA = this.key;
         yield bp.askFor('A');
     });
 
-    const threadB = flow(null, function* (this: BThreadContext) {
+    const threadB = scenario(null, function* (this: BThreadContext) {
         receivedKeyB = this.key;
         yield bp.askFor('A');
     });
@@ -48,7 +48,7 @@ test("a thread will accept an optional key", () => {
 test("if no key is provided, the default key value is undefined", () => {
     let receivedKeyA;
 
-    const thread = flow(null, function* (this: BThreadContext) {
+    const thread = scenario(null, function* (this: BThreadContext) {
         receivedKeyA = this.key;
         yield bp.askFor('A');
     });
@@ -63,7 +63,7 @@ test("if no key is provided, the default key value is undefined", () => {
 test("enable will return the current thread waits", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BThreadContext) {
+    const thread = scenario(null, function* (this: BThreadContext) {
         yield bp.askFor('A');
     });
 
@@ -77,7 +77,7 @@ test("enable will return the current thread waits", () => {
 test("enable will return the current thread blocks", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BThreadContext) {
+    const thread = scenario(null, function* (this: BThreadContext) {
         yield bp.block('A');
     });
 
@@ -91,7 +91,7 @@ test("enable will return the current thread blocks", () => {
 test("enable will return the current thread-section", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BThreadContext) {
+    const thread = scenario(null, function* (this: BThreadContext) {
         this.section('my state value');
         yield bp.askFor('A');
     });
@@ -106,7 +106,7 @@ test("enable will return the current thread-section", () => {
 test("enable will return the the state of completion", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BThreadContext) {
+    const thread = scenario(null, function* (this: BThreadContext) {
         this.section('my state value');
         yield bp.request('A');
     });
@@ -121,7 +121,7 @@ test("enable will return the the state of completion", () => {
 test("the section will be deleted if the thread completes", () => {
     let threadState: BThreadState;
 
-    const thread = flow(null, function* (this: BThreadContext) {
+    const thread = scenario(null, function* (this: BThreadContext) {
         this.section('my state value');
         yield bp.request('A');
     });
@@ -136,7 +136,7 @@ test("the section will be deleted if the thread completes", () => {
 
 
 test("enable will return the current pending events and a pending function", (done) => {
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield [bp.request("A", delay(100)), bp.request("B", delay(100))];
     });
 
@@ -154,11 +154,11 @@ test("enable will return the current pending events and a pending function", (do
 });
 
 test("enable will return the current requesting events ( blocked and pending included )", (done) => {
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield [bp.request("A", delay(100)), bp.request("B")];
     });
 
-    const thread2 = flow(null, function*() {
+    const thread2 = scenario(null, function*() {
         yield bp.block('B');
     })
 
@@ -181,19 +181,19 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
     let thread2init = 0;
     let thread1init = 0;
 
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.request("B");
         yield bp.request('X');
         yield bp.askFor("FIN");
     });
 
-    const thread2 = flow({name: 'thread2', destroyOnDisable: true}, function*() {
+    const thread2 = scenario({id: 'thread2', destroyOnDisable: true}, function*() {
         thread2init++
         yield bp.askFor('B');
         yield bp.askFor('C');
     })
 
-    const thread3 = flow({name: 'thread3', destroyOnDisable: false}, function*() {
+    const thread3 = scenario({id: 'thread3', destroyOnDisable: false}, function*() {
         thread1init++
         yield bp.askFor('B');
         yield bp.askFor('C');

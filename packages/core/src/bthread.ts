@@ -13,8 +13,8 @@ export type GeneratorFn = (props: any) => BTGen;
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
 
-export interface BThreadInfo {
-    name: string;
+export interface ScenarioInfo {
+    id: string;
     key?: BThreadKey;
     destroyOnDisable?: boolean;
     description?: string;
@@ -67,7 +67,7 @@ export class BThread {
     private _state: BThreadState;
     public get state() { return this._state; }
 
-    public constructor(id: BThreadId, info: BThreadInfo, orderIndex: number, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, logger: Logger) {
+    public constructor(id: BThreadId, info: Omit<ScenarioInfo, 'id'>, orderIndex: number, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, logger: Logger) {
         this.id = id;
         this._state = {
             id: id,

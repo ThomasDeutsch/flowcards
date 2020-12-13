@@ -1,10 +1,10 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { BThreadContext } from '../src/index';
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 
 test("waitFor-bids can not be dispatched", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.waitFor('A');
     });
 
@@ -17,7 +17,7 @@ test("waitFor-bids can not be dispatched", () => {
 
 
 test("multiple dispatches are batched", (done) => {
-    const thread1 = flow(null, function* (this: BThreadContext) {
+    const thread1 = scenario(null, function* (this: BThreadContext) {
         yield [bp.request("asyncRequest", () => delay(100)), bp.askFor("X"), bp.askFor("A")];
         yield [bp.request("asyncRequest", () => delay(100)), bp.askFor("Y"), bp.askFor("A")];
     });
@@ -36,12 +36,12 @@ test("multiple dispatches are batched", (done) => {
 test("a keyed event is blocked by a no-key block, and can not be dispatched", () => {
     let progressedRequestThread = false;
 
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'AX', key: 1});
         progressedRequestThread = true;
     })
 
-    const blockingThread = flow(null, function* () {
+    const blockingThread = scenario(null, function* () {
         yield bp.block("AX");
     })
 
@@ -58,12 +58,12 @@ test("a keyed event is blocked by a no-key block, and can not be dispatched", ()
 test("a dispatch is defined, if a keyed event is not blocked", (done) => {
     let progressedRequestThread = false;
 
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield [bp.askFor({name: 'AX', key: 1}), bp.askFor({name: 'AX', key: 2})];
         progressedRequestThread = true;
     })
 
-    const blockingThread = flow(null, function* () {
+    const blockingThread = scenario(null, function* () {
         yield bp.block({name: 'AX', key: 1});
     })
 
@@ -79,11 +79,11 @@ test("a dispatch is defined, if a keyed event is not blocked", (done) => {
 });
 
 test("a pending event can not be dispatched", () => {
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'});
     })
 
-    const requestingThread = flow(null, function* () {
+    const requestingThread = scenario(null, function* () {
         yield bp.request({name: 'A'}, () => delay(1000));
     })
 
@@ -97,11 +97,11 @@ test("a pending event can not be dispatched", () => {
 });
 
 test("there is be a dispatch-function for every waiting event", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield [bp.askFor("eventOne"), bp.askFor("eventTwo")];
     })
 
-    const thread2 = flow(null, function* () {
+    const thread2 = scenario(null, function* () {
         yield bp.askFor("eventThree");
     })
 

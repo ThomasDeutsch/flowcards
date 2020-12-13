@@ -1,9 +1,9 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 
 test("the validate function will show the validation result for a wait", () => {
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => val > 1000);
     })
 
@@ -16,10 +16,10 @@ test("the validate function will show the validation result for a wait", () => {
 });
 
 test("the validate the specific event, and not matching events", () => {
-    const waitingThreadA = flow(null, function* () {
+    const waitingThreadA = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 1}, (val) => val > 1000);
     });
-    const waitingThreadB = flow(null, function* () {
+    const waitingThreadB = scenario(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => val > 100);
     });
 
@@ -35,7 +35,7 @@ test("the validate the specific event, and not matching events", () => {
 });
 
 test("the validate function can show the validation details for a wait", () => {
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
     });
     
@@ -53,10 +53,10 @@ test("the validate function can show the validation details for a wait", () => {
 
 
 test("the validate function will respect block-bids", () => {
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
     });
-    const blockingThread = flow(null, function* () {
+    const blockingThread = scenario(null, function* () {
         yield bp.block({name: 'A'}, (val) => ({isValid: val < 2000, message: 'value needs to be smaller than 2000'}));
     });
 
@@ -72,10 +72,10 @@ test("the validate function will respect block-bids", () => {
 });
 
 test("the validate function will respect waitFor-bids as optional", () => {
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
     });
-    const blockingThread = flow(null, function* () {
+    const blockingThread = scenario(null, function* () {
         yield bp.waitFor({name: 'A'}, (val) => ({isValid: val < 2000, message: 'value needs to be smaller than 2000'}));
     });
 
@@ -90,10 +90,10 @@ test("the validate function will respect waitFor-bids as optional", () => {
 });
 
 test("a event can have a description text that can be viewed in the validate result", () => {
-    const waitingThread = flow(null, function* () {
+    const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => ({isValid: val > 1000, message: 'value needs to be bigger than 1000'}));
     });
-    const blockingThread = flow(null, function* () {
+    const blockingThread = scenario(null, function* () {
         yield bp.block({name: 'A', description: 'event A is not possible'});
     });
 

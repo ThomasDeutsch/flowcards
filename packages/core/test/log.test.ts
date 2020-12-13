@@ -1,11 +1,11 @@
 import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 import { delay } from './testutils';
 import { BThreadContext } from '../src/bthread';
 
 test("log will contain a list of executed actions (sorted)", () => {
-    const flow1 = flow(
+    const flow1 = scenario(
         {
           name: "flow1",
           description: "user is able to select a product"
@@ -22,7 +22,7 @@ test("log will contain a list of executed actions (sorted)", () => {
         }
       );
       
-      const flow2 = flow(
+      const flow2 = scenario(
         {
           name: "flow2",
           description: "count actions"
@@ -47,7 +47,7 @@ test("log will contain a list of executed actions (sorted)", () => {
 
 test("the actions in a log will contain info, if and when the promise got resolved.", (done) => {
 
-  const thread1 = flow({name: 'thread1', description: 'myThread1'}, function* () {
+  const thread1 = scenario({id: 'thread1', description: 'myThread1'}, function* () {
       yield bp.request('asyncRequest', () => delay(10, 'value'));
       yield bp.request('request2');
   });

@@ -1,9 +1,9 @@
 import * as bp from "../src/index";
 import { testScenarios, delay } from "./testutils";
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 
 test("a set is a request, that will be cached. ", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.set("count", 2);
     })
 
@@ -16,7 +16,7 @@ test("a set is a request, that will be cached. ", () => {
 });
 
 test("when a promise resolves, the cache gets updated", (done) => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.set("testeventA", delay(100, 'resolved value'));
         yield bp.askFor('fin');
     });
@@ -34,11 +34,11 @@ test("when a promise resolves, the cache gets updated", (done) => {
 
 test("if there are multiple sets at the same time, one will be requested first (the higher priority one).", () => {
 
-    const threadLow = flow(null, function* () {
+    const threadLow = scenario(null, function* () {
         yield bp.set("count", 2);
     });
 
-    const threadHigh = flow(null, function* () {
+    const threadHigh = scenario(null, function* () {
         yield bp.set("count", 1000);
     });
 
@@ -53,12 +53,12 @@ test("if there are multiple sets at the same time, one will be requested first (
 
 test("sets can be extended", () => {
 
-    const thread = flow(null, function* () {
+    const thread = scenario(null, function* () {
         yield bp.set("count", 2);
         yield bp.askFor('fin');
     });
 
-    const thread2 = flow(null, function* () {
+    const thread2 = scenario(null, function* () {
         const extend = yield bp.extend("count");
         extend.resolve(extend.value + 2);
     });
@@ -77,7 +77,7 @@ test("sets can be extended", () => {
 
 test("the cache function will return the history and the current value", () => {
    
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.set('A', 'first');
         yield bp.set('A', 'second');
         yield bp.request('fin');
@@ -93,11 +93,11 @@ test("the cache function will return the history and the current value", () => {
 
 
 test("an event cache for an event will contain keyed values as well", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.set({name: 'A', key: "1"}, 'a value for 1');
     });
 
-    const thread2 = flow(null, function* () {
+    const thread2 = scenario(null, function* () {
         yield bp.set({name: 'A', key: 2}, 'a value for 2');
     })
 
@@ -112,11 +112,11 @@ test("an event cache for an event will contain keyed values as well", () => {
 
 
 test("if an event cache has keyed values, they will not be replaced by a request without key", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.set({name: 'A', key: "1"}, 'a value for 1');
     });
 
-    const thread2 = flow(null, function* () {
+    const thread2 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: "1"});
         yield bp.set({name: 'A', key: 2}, 'a value for 2');
         yield bp.set('A', 'replacement value')

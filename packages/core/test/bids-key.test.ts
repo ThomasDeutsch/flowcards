@@ -1,13 +1,13 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { flow } from "../src/scenario";
+import { scenario } from "../src/scenario";
 
 test("keys can be a string or a number", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: "1"});
     });
 
-    const thread2 = flow(null, function* () {
+    const thread2 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 2});
     });
 
@@ -27,21 +27,21 @@ test("an event with a key can be blocked.", () => {
     let advancedKey1 = false;
     let advancedKey2 = false;
 
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 1});
         advancedKey1 = true;
     });
 
-    const thread2 = flow(null, function* () {
+    const thread2 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 2});
         advancedKey2 = true;
     });
 
-    const blockingThread = flow(null, function* () {
+    const blockingThread = scenario(null, function* () {
         yield bp.block({name: 'A', key: 1});
     });
 
-    const requestingThread = flow(null, function* () {
+    const requestingThread = scenario(null, function* () {
         yield bp.request({name: 'A', key: 2});
         yield bp.request({name: 'A', key: 1});
     });
@@ -62,22 +62,22 @@ test("a request without a key will not advance waiting threads with a key", () =
     let advancedWait2 = false;
     let advancedWaitNoKey = false;
 
-    const waitThreadWithKey1= flow(null, function* () {
+    const waitThreadWithKey1= scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 1});
         advancedWait1 = true;
     });
 
-    const waitThreadWithKey2 = flow(null, function* () {
+    const waitThreadWithKey2 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 2});
         advancedWait2 = true;
     });
 
-    const waitThreadWithoutKey = flow(null, function* () {
+    const waitThreadWithoutKey = scenario(null, function* () {
         yield bp.askFor({name: 'A'});
         advancedWaitNoKey = true;
     });
 
-    const requestThread = flow(null, function* () {
+    const requestThread = scenario(null, function* () {
         yield bp.request('A');
     });
 
@@ -99,22 +99,22 @@ test("a request with a key, will only advance the matching wait with the same ke
     let advancedWait2 = false;
     let advancedWaitNoKey = false;
 
-    const waitThreadWithKey1 = flow(null, function* () {
+    const waitThreadWithKey1 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 1});
         advancedWait1 = true;
     });
 
-    const waitThreadWithKey2= flow(null, function* () {
+    const waitThreadWithKey2= scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 2});
         advancedWait2 = true;
     });
 
-    const waitThreadWithoutKey = flow(null, function* () {
+    const waitThreadWithoutKey = scenario(null, function* () {
         yield bp.askFor({name: 'A'});
         advancedWaitNoKey = true;
     });
 
-    const requestThread = flow(null, function* () {
+    const requestThread = scenario(null, function* () {
         yield bp.request({name: 'A', key: 1});
     });
 
