@@ -6,8 +6,8 @@ import * as utils from './utils';
 import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
-import { ActionDispatch } from './scaffolding';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
+import { SingleActionDispatch } from '.';
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
@@ -45,7 +45,7 @@ export interface BThreadState {
 export class BThread {
     public readonly idString: string;
     public readonly id: BThreadId;
-    private readonly _dispatch: ActionDispatch;
+    private readonly _singleActionDispatch: SingleActionDispatch;
     private readonly _generatorFunction: BThreadGeneratorFunction;
     private readonly _logger: Logger;
     private _currentProps: BThreadProps;
@@ -59,7 +59,7 @@ export class BThread {
     private _state: BThreadState;
     public get state(): BThreadState { return this._state; }
 
-    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, dispatch: ActionDispatch, logger: Logger) {
+    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, singleActionDispatch: SingleActionDispatch, logger: Logger) {
         this.id = id;
         this._state = {
             id: id,
@@ -75,7 +75,7 @@ export class BThread {
             progressionCount: -1 // not counting the initial progression
         };
         this.idString = BThreadMap.toIdString(id);
-        this._dispatch = dispatch;
+        this._singleActionDispatch = singleActionDispatch;
         this._generatorFunction = generatorFunction.bind(this._getBThreadContext());
         this._currentProps = props;
         this._thread = this._generatorFunction(this._currentProps);
@@ -198,7 +198,7 @@ export class BThread {
             if (pendingEventInfo.actionId === action.id) {
                 if(!isExtendPromise) this._cancelPendingRequests(pendingEventInfo.eventId);
                 const requestDuration = new Date().getTime() - startTime;
-                this._dispatch({
+                this._singleActionDispatch({
                     id: action.resolveActionId || null, 
                     type: ActionType.resolve,
                     bThreadId: this.id,
@@ -217,7 +217,7 @@ export class BThread {
             const pendingEventInfo = this.state.pending.get(action.eventId);
             if (pendingEventInfo?.actionId === action.id) {
                 const requestDuration = new Date().getTime() - startTime;
-                this._dispatch({
+                this._singleActionDispatch({
                     id: action.resolveActionId || null,
                     type: ActionType.reject,
                     bThreadId: this.id,

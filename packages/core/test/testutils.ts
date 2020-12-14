@@ -1,8 +1,8 @@
 import { ScenariosContext } from '../src/update-loop';
-import { Scenarios, Dispatch, UpdateCallback } from '../src/index';
+import { Scenarios, ScenariosDispatch, UpdateCallback } from '../src/index';
 import { StagingFunction } from '../src/scaffolding';
 
-export function testScenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback): [ScenariosContext, Dispatch] {
+export function testScenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback): [ScenariosContext, ScenariosDispatch] {
     const s = new Scenarios(stagingFunction, updateCb, true);
     return [s.initialScenariosContext, s.dispatch];
 }

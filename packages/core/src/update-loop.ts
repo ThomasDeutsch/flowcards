@@ -8,7 +8,9 @@ import { advanceBThreads } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
-import { setupScaffolding, ActionDispatch, StagingFunction } from './scaffolding';
+import { setupScaffolding, StagingFunction } from './scaffolding';
+import { SingleActionDispatch } from '.';
+import { ScenariosContextTest } from './index';
 
 
 
@@ -20,6 +22,10 @@ export interface ScenariosContext {
     thread: BThreadMap<BThreadState>;
     log: Logger;
     bids: BidsByType;
+    debug: {
+        isReplay: boolean;
+        isPaused: boolean
+    }
 }
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
@@ -36,14 +42,16 @@ export class UpdateLoop {
     private readonly _eventCache = new EventMap<CachedItem<any>>();
     private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
     private readonly _eventContexts = new EventMap<EventContext>();
+    private readonly _singleActionDispatch: SingleActionDispatch;
     public readonly actionQueue: Action[] = [];
     public readonly replayMap = new Map<number, Action>();
-    public readonly actionDispatch: ActionDispatch;
+    public readonly beforeActionTest = new Map<number, ScenariosContextTest>();
+    
 
-    constructor(stagingFunction: StagingFunction, actionDispatch: ActionDispatch) {
+    constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch) {
         this._logger = new Logger();
-        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, actionDispatch, this._logger);
-        this.actionDispatch = actionDispatch;
+        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, singleActionDispatch, this._logger);
+        this._singleActionDispatch = singleActionDispatch;
         this.runScaffolding();
     }
 
@@ -60,7 +68,7 @@ export class UpdateLoop {
         const eventId = toEventId(event);
         let context = this._eventContexts.get(eventId);
         if(context === undefined) {
-            context = new EventContext(this.actionDispatch, eventId);
+            context = new EventContext(this._singleActionDispatch, eventId);
             this._eventContexts.set(eventId, context);
         }
         context?.update(this._activeBidsByType, this._getCachedItem, this._currentActionId);
@@ -86,22 +94,21 @@ export class UpdateLoop {
         this._activeBidsByType = activeBidsByType(this._bThreadBids);
     }
 
+    public startReplay(): ScenariosContext {
+        this._reset();
+        this.runScaffolding();
+        return this.setupContext();
+    }
+
     public setupContext(): ScenariosContext {
         let action: undefined | Action;
-        let isReplay = false;
         if(this.isPaused !== true) {
-            action = this._getNextReplayAction(this._currentActionId);
-            if(action) {
-                isReplay = true;
-            } else {
-                action = this.actionQueue.shift() || getNextActionFromRequests(this._activeBidsByType);
-            }
+            action = this._getNextReplayAction(this._currentActionId)
+                || this.actionQueue.shift() || 
+                getNextActionFromRequests(this._activeBidsByType);
         }
         if (action !== undefined) { // use next action
-            if(action.id === 0) {
-                this._reset();
-                this.runScaffolding();
-            } else if(action.id === null) {
+            if(action.id === null) {
                 action.id = this._currentActionId;
             }
             if(action.type === ActionType.request) {
@@ -125,7 +132,11 @@ export class UpdateLoop {
             event: this._getEventContext.bind(this),
             thread: this._bThreadStateMap,
             log: this._logger,
-            bids: this._activeBidsByType
+            bids: this._activeBidsByType,
+            debug: {
+                isReplay: this.replayMap.size > 0,
+                isPaused: this.isPaused
+            }
         }
     }
 }

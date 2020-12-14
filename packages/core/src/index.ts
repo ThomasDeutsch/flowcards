@@ -1,4 +1,4 @@
-import { Action } from './action';
+import { Action, ActionType } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 
@@ -15,81 +15,82 @@ export * from './logger';
 export * from './action';
 export * from './extend-context';
 
-export const CONTEXT_CHANGED: unique symbol = Symbol('contextChanged');
-export const PLAY_PAUSE: unique symbol = Symbol('playPause');
-
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-export type Dispatch = (actions: Action[] | typeof CONTEXT_CHANGED | typeof PLAY_PAUSE) => void;
+export type SingleActionDispatch = (action: Action) => void;
+export type ScenariosDispatch = (action: ScenariosAction) => void;
+export interface ScenariosContextTest {
+    testFunctionId: string;
+}
+
+export interface ActionWithId extends Action {
+    id: number;
+}
+
+export interface ScenariosAction {
+    type: 'replay' | 'playPause' | 'contextChange';
+    items?: ActionWithId[];
+}
 
 export class Scenarios {
     private _bufferedActions: Action[] = [];
     private _bufferedReplayMap = new Map<number, Action>();
-    private _loop: UpdateLoop;
+    private _updateLoop: UpdateLoop;
     private _updateCb?: UpdateCallback;
     public initialScenariosContext: ScenariosContext;
 
+    private _singleActionDispatch(action: Action) {
+        if(action.type === ActionType.ui) { // dispatching a ui action will resume a paused update-loop
+            this._updateLoop.isPaused = false;
+        }
+        this._bufferedActions.push(action);
+        this._clearBufferOnNextTick();
+    }
+
     constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false) {
-        this._loop = new UpdateLoop(stagingFunction, this._dispatchSingleAction.bind(this));
-        this.initialScenariosContext = this._loop.setupContext();
+        this._updateLoop = new UpdateLoop(stagingFunction, this._singleActionDispatch.bind(this));
+        this.initialScenariosContext = this._updateLoop.setupContext();
         this._updateCb = updateCb;
         if(this._updateCb !== undefined && updateInitial) this._updateCb(this.initialScenariosContext); // callback with initial value
     }
 
-    private _placeBufferedAction(action?: Action): void {
-        if(action === undefined) return;
-        if(action.id === null) {
-            this._bufferedActions.push(action);
-        } else {  // is a replay action
-            if(action.id === 0) {
-                this._loop.replayMap.clear();
-            }
-            this._bufferedReplayMap.set(action.id, action);
-        }
-    }
-
-    private _clearBufferOnNextTick = (forceRefresh?: boolean) => {
+    private _clearBufferOnNextTick = () => {
         Promise.resolve().then(() => { // next tick
-            let withUpdate = false;
             if(this._bufferedReplayMap.size > 0) {
-                this._bufferedActions.length = 0; // a new replay - cancel all buffered actions
-                this._bufferedReplayMap.forEach((action, key) => this._loop.replayMap.set(key, action)); // transfer buffer to replay-Map
+                this._updateLoop.replayMap.clear();
+                this._bufferedReplayMap.forEach((actionOrTest, key) => this._updateLoop.replayMap.set(key, actionOrTest)); // transfer buffer to replay-Map
                 this._bufferedReplayMap.clear();
-                withUpdate = true;
+                if(this._updateCb) this._updateCb(this._updateLoop.startReplay());
+                else this._updateLoop.startReplay();
             }
-            else if(this._bufferedActions.length > 0) {
-                this._bufferedActions.forEach(action => this._loop.actionQueue.push(action)); // transfer buffer to action-queue
+            if(this._bufferedActions.length > 0) {
+                this._bufferedActions.forEach(action => this._updateLoop.actionQueue.push(action)); // transfer buffer to action-queue
                 this._bufferedActions.length = 0;
-                withUpdate = true;
+                if(this._updateCb) this._updateCb(this._updateLoop.setupContext()); // call update callback!
+                else this._updateLoop.setupContext();
             } 
-            if(withUpdate || forceRefresh) {
-                if(this._updateCb !== undefined) this._updateCb(this._loop.setupContext()); // call update callback!
-                else this._loop.setupContext();
-            }
         }).catch(error => console.error(error));
     }
 
-    private _dispatchSingleAction(action: Action): void {
-        this._placeBufferedAction(action);
-        this._clearBufferOnNextTick();
-    }
-
-    private _dispatchMultipleActions(actions: Action[]): void {
-        actions.forEach(action => this._placeBufferedAction(action));
-        this._clearBufferOnNextTick();
-        
-    }
-
-    private _dispatch(actions: Action[] | typeof CONTEXT_CHANGED | typeof PLAY_PAUSE): void {
-        if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
-            this._loop.runScaffolding();
-            this._loop.setupContext();
-        } else if(actions === PLAY_PAUSE) {
-            this._loop.isPaused = !this._loop.isPaused;
-        }
-        else {
-            this._dispatchMultipleActions(actions);
+    private _dispatch(scenariosAction: ScenariosAction): void {
+        switch(scenariosAction.type) {
+            case 'contextChange': {
+                this._updateLoop.runScaffolding();
+                this._updateLoop.setupContext();
+                break;
+            }
+            case 'playPause': {
+                this._updateLoop.isPaused = !this._updateLoop.isPaused;
+                this._updateLoop.setupContext();
+                break;
+            }
+            case 'replay': {
+                this._bufferedActions.length = 0; // cancel all buffered actions
+                this._updateLoop.actionQueue.length = 0; // cancel all queued actions
+                scenariosAction.items?.forEach(action => this._bufferedReplayMap.set(action.id, action));
+                this._clearBufferOnNextTick();
+            }
         }
     }
     
-    public get dispatch(): Dispatch { return this._dispatch.bind(this) }
+    public get dispatch(): ScenariosDispatch { return this._dispatch.bind(this) }
 }

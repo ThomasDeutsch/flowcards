@@ -12,7 +12,7 @@ test("a thread can be replayed", (done) => {
         expect(value1).toBe(1); // not 5, because the replay-resolve value is 1
         value2 = yield bp.askFor("B");
     });
-    const [_, replay] = testScenarios((enable) => {
+    const [_, dispatch] = testScenarios((enable) => {
         enable(thread1());
     }, ({thread}) => {
         if(thread.get('thread1')?.isCompleted) {
@@ -21,11 +21,15 @@ test("a thread can be replayed", (done) => {
             done();
         }
     });
-    replay([
-        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'HEY'}},
-        {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: () => delay(100, 1)},
-        {id: 2, type: ActionType.resolve, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: 1},
-        {id: 3, type: ActionType.ui, bThreadId: {name: 'thread1'}, eventId: {name: 'B'}, payload: 3}])
+    dispatch({
+        type: 'replay',
+        items: [
+            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'HEY'}},
+            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: () => delay(100, 1)},
+            {id: 2, type: ActionType.resolve, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: 1},
+            {id: 3, type: ActionType.ui, bThreadId: {name: 'thread1'}, eventId: {name: 'B'}, payload: 3}
+        ]
+    });
 });
 
 
@@ -35,7 +39,7 @@ test("if a request-replay has a GET_VALUE_FROM_BTHREAD symbol as payload, the b-
         yield bp.askFor('replayEvent1');
         value1 = yield bp.request("replayEvent2", 5);
     });
-    const [context, replay] = testScenarios((enable) => {
+    const [context, dispatch] = testScenarios((enable) => {
         enable(thread1());
     }, ({thread}) => {
         if(thread.get('thread1')?.isCompleted) {
@@ -43,9 +47,13 @@ test("if a request-replay has a GET_VALUE_FROM_BTHREAD symbol as payload, the b-
             done();
         }
     });
-    replay([
-        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-        {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request}])
+    dispatch({
+        type: 'replay',
+        items: [
+            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request}
+        ]
+    });  
 });
 
 
@@ -69,11 +77,15 @@ test("a async request can be replayed", (done) => {
             done();
         }
     });
-    replay([
-        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-        {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 2, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
-        // the index:2 action is missing ... this is where the resolve will be placed.
-        {id: 3, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent3'}}])
+    replay({
+        type: 'replay',
+        items: [
+            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 2, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
+            // the index:2 action is missing ... this is where the resolve will be placed.
+            {id: 3, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent3'}}
+        ]
+    });
 });
 
 
@@ -83,7 +95,7 @@ test("after a replay completes, the normal execution will resume", (done) => {
         yield bp.request('requestEvent1');
         yield bp.request('requestEvent2');
     });
-    const [context, replay] = testScenarios((enable) => {
+    const [context, dispatch] = testScenarios((enable) => {
         enable(thread1());
     }, ({thread}) => {
         if(thread.get('thread1')?.isCompleted) {
@@ -91,8 +103,12 @@ test("after a replay completes, the normal execution will resume", (done) => {
             done();
         }
     });
-    replay([
-        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-        {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-        {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}])
+    dispatch({
+        type: 'replay',
+        items: [
+            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
+        ]
+    });
 });
