@@ -14,15 +14,15 @@ export * from './event-map';
 export * from './logger';
 export * from './action';
 export * from './extend-context';
+
 export const CONTEXT_CHANGED: unique symbol = Symbol('contextChanged');
+export const PLAY_PAUSE: unique symbol = Symbol('playPause');
 
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-export type DispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => void;
+export type Dispatch = (actions: Action[] | typeof CONTEXT_CHANGED | typeof PLAY_PAUSE) => void;
 
 export class Scenarios {
     private _bufferedActions: Action[] = [];
-    private _isPaused = false;
-    public get isPaused(): boolean { return this._isPaused }
     private _bufferedReplayMap = new Map<number, Action>();
     private _loop: UpdateLoop;
     private _updateCb?: UpdateCallback;
@@ -30,7 +30,7 @@ export class Scenarios {
 
     constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false) {
         this._loop = new UpdateLoop(stagingFunction, this._dispatchSingleAction.bind(this));
-        this.initialScenariosContext = this._loop.setupContext(this._isPaused);
+        this.initialScenariosContext = this._loop.setupContext();
         this._updateCb = updateCb;
         if(this._updateCb !== undefined && updateInitial) this._updateCb(this.initialScenariosContext); // callback with initial value
     }
@@ -50,22 +50,22 @@ export class Scenarios {
     private _clearBufferOnNextTick = (forceRefresh?: boolean) => {
         Promise.resolve().then(() => { // next tick
             let withUpdate = false;
-            if(this._bufferedReplayMap.size !== 0) {
-                this._bufferedActions.length = 0;
+            if(this._bufferedReplayMap.size > 0) {
+                this._bufferedActions.length = 0; // a new replay - cancel all buffered actions
                 this._bufferedReplayMap.forEach((action, key) => this._loop.replayMap.set(key, action)); // transfer buffer to replay-Map
                 this._bufferedReplayMap.clear();
                 withUpdate = true;
             }
-            else if(this._bufferedActions.length !== 0 && !this._isPaused) {
+            else if(this._bufferedActions.length > 0) {
                 this._bufferedActions.forEach(action => this._loop.actionQueue.push(action)); // transfer buffer to action-queue
                 this._bufferedActions.length = 0;
                 withUpdate = true;
             } 
             if(withUpdate || forceRefresh) {
-                if(this._updateCb !== undefined) this._updateCb(this._loop.setupContext(this._isPaused)); // call update callback!
-                else this._loop.setupContext(this._isPaused);
+                if(this._updateCb !== undefined) this._updateCb(this._loop.setupContext()); // call update callback!
+                else this._loop.setupContext();
             }
-        }).catch(error => console.log('error: ', error));
+        }).catch(error => console.error(error));
     }
 
     private _dispatchSingleAction(action: Action): void {
@@ -79,15 +79,17 @@ export class Scenarios {
         
     }
 
-    private _dispatchActions(actions: Action[] | typeof CONTEXT_CHANGED): void {
+    private _dispatch(actions: Action[] | typeof CONTEXT_CHANGED | typeof PLAY_PAUSE): void {
         if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
             this._loop.runScaffolding();
-            this._loop.setupContext(this._isPaused);
+            this._loop.setupContext();
+        } else if(actions === PLAY_PAUSE) {
+            this._loop.isPaused = !this._loop.isPaused;
         }
         else {
             this._dispatchMultipleActions(actions);
         }
     }
     
-    public get dispatchActions(): DispatchActions { return this._dispatchActions.bind(this) }
+    public get dispatch(): Dispatch { return this._dispatch.bind(this) }
 }

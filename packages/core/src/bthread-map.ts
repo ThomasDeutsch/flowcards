@@ -25,7 +25,7 @@ export class BThreadMap<T> {
         return this;
     }
 
-    public get size() {
+    public get size(): number {
         return this._map.size;
     }
 

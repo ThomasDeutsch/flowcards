@@ -26,6 +26,7 @@ export type ReplayMap = Map<number, Action>;
 
 export class UpdateLoop {
     private _currentActionId = 0;
+    public isPaused = false;
     private _activeBidsByType = {} as BidsByType;
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
@@ -85,13 +86,16 @@ export class UpdateLoop {
         this._activeBidsByType = activeBidsByType(this._bThreadBids);
     }
 
-    public setupContext(isPaused?: boolean): ScenariosContext {
+    public setupContext(): ScenariosContext {
         let action: undefined | Action;
-        if(isPaused !== true) {
-            action = this._getNextReplayAction(this._currentActionId) || 
-                this.actionQueue.shift() || 
-                getNextActionFromRequests(this._activeBidsByType);
-            // if test then run test, based on context, 
+        let isReplay = false;
+        if(this.isPaused !== true) {
+            action = this._getNextReplayAction(this._currentActionId);
+            if(action) {
+                isReplay = true;
+            } else {
+                action = this.actionQueue.shift() || getNextActionFromRequests(this._activeBidsByType);
+            }
         }
         if (action !== undefined) { // use next action
             if(action.id === 0) {
@@ -109,11 +113,12 @@ export class UpdateLoop {
                 }
             }
             this._logger.logAction(action);
-            advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+            const actionResult = advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+            this._logger.logActionResult(actionResult);
             this._currentActionId++;
             this.runScaffolding();
             this._logger.logPending(this._activeBidsByType.pending);
-            return this.setupContext(isPaused);
+            return this.setupContext();
         }
         // return context to UI
         return { 

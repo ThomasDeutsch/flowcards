@@ -249,6 +249,12 @@ export class BThread {
             this._logger.logBThreadException(this.id, action.eventId, this._state);
         }
     }
+
+    public hasActiveBid(action: Action): boolean {
+        const bid = this._currentBids?.[action.bidType!]?.get(action.eventId);
+        if(!bid) return false;
+        return true;
+    }
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
         const bidType = action.bidType;
