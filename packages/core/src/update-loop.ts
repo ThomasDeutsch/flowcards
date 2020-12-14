@@ -9,7 +9,7 @@ import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { SingleActionDispatch } from '.';
+import { ScenariosDispatch, SingleActionDispatch } from '.';
 import { ScenariosContextTest } from './index';
 
 
@@ -23,7 +23,7 @@ export interface ScenariosContext {
     log: Logger;
     bids: BidsByType;
     debug: {
-        isReplay: boolean;
+        inReplay: boolean;
         isPaused: boolean
     }
 }
@@ -52,7 +52,7 @@ export class UpdateLoop {
         this._logger = new Logger();
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, singleActionDispatch, this._logger);
         this._singleActionDispatch = singleActionDispatch;
-        this.runScaffolding();
+        // this.runScaffolding();
     }
 
     private _reset() {
@@ -89,20 +89,26 @@ export class UpdateLoop {
         return undefined;
     }
 
-    public runScaffolding(): void {
+    public runScaffolding(): ScenariosContext {
         this._scaffold(this._currentActionId);
         this._activeBidsByType = activeBidsByType(this._bThreadBids);
+        return this._setupContext();
     }
 
     public startReplay(): ScenariosContext {
         this._reset();
-        this.runScaffolding();
-        return this.setupContext();
+        return this.runScaffolding();
     }
 
-    public setupContext(): ScenariosContext {
+    public togglePaused(): ScenariosContext {
+        this.isPaused = !this.isPaused;
+        return this.runScaffolding();
+    }
+
+    private _setupContext(): ScenariosContext {
         let action: undefined | Action;
-        if(this.isPaused !== true) {
+        if(this.beforeActionTest)
+        if(this.isPaused === false) {
             action = this._getNextReplayAction(this._currentActionId)
                 || this.actionQueue.shift() || 
                 getNextActionFromRequests(this._activeBidsByType);
@@ -123,9 +129,8 @@ export class UpdateLoop {
             const actionResult = advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
             this._logger.logActionResult(actionResult);
             this._currentActionId++;
-            this.runScaffolding();
             this._logger.logPending(this._activeBidsByType.pending);
-            return this.setupContext();
+            return this.runScaffolding();
         }
         // return context to UI
         return { 
@@ -134,7 +139,7 @@ export class UpdateLoop {
             log: this._logger,
             bids: this._activeBidsByType,
             debug: {
-                isReplay: this.replayMap.size > 0,
+                inReplay: this.replayMap.size > 0,
                 isPaused: this.isPaused
             }
         }

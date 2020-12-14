@@ -23,9 +23,9 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
                 expect(action.eventId.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
-            loop.setupContext();
+            loop.runScaffolding();
         });
-        loop.setupContext();
+        loop.runScaffolding();
     };
 
     const thread1 = scenario({id: 'thread1'}, function* () {
@@ -45,10 +45,10 @@ describe('dispatched action', () => {
         const loop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
                 loop.actionQueue.push(action);
-                loop.setupContext();
             }
+            loop.runScaffolding();
         });
-        loop.setupContext();
+        loop.runScaffolding();
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {

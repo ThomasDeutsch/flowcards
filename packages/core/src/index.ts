@@ -39,18 +39,24 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
 
     private _singleActionDispatch(action: Action) {
-        if(action.type === ActionType.ui) { // dispatching a ui action will resume a paused update-loop
+        if(this._updateLoop.isPaused && action.type === ActionType.ui) { // dispatching a ui action will resume a paused update-loop
             this._updateLoop.isPaused = false;
+            this._bufferedActions.unshift(action);
+        } else {
+            this._bufferedActions.push(action);
         }
-        this._bufferedActions.push(action);
         this._clearBufferOnNextTick();
     }
 
-    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false) {
+    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false) {
         this._updateLoop = new UpdateLoop(stagingFunction, this._singleActionDispatch.bind(this));
-        this.initialScenariosContext = this._updateLoop.setupContext();
+        this.initialScenariosContext = this._updateLoop.runScaffolding();
         this._updateCb = updateCb;
-        if(this._updateCb !== undefined && updateInitial) this._updateCb(this.initialScenariosContext); // callback with initial value
+        if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
+    }
+
+    private _maybeCallUpdateCb(context: ScenariosContext) {
+        if(this._updateCb) this._updateCb(context); // call update callback!
     }
 
     private _clearBufferOnNextTick = () => {
@@ -59,14 +65,12 @@ export class Scenarios {
                 this._updateLoop.replayMap.clear();
                 this._bufferedReplayMap.forEach((actionOrTest, key) => this._updateLoop.replayMap.set(key, actionOrTest)); // transfer buffer to replay-Map
                 this._bufferedReplayMap.clear();
-                if(this._updateCb) this._updateCb(this._updateLoop.startReplay());
-                else this._updateLoop.startReplay();
+                this._maybeCallUpdateCb(this._updateLoop.startReplay());
             }
             if(this._bufferedActions.length > 0) {
                 this._bufferedActions.forEach(action => this._updateLoop.actionQueue.push(action)); // transfer buffer to action-queue
                 this._bufferedActions.length = 0;
-                if(this._updateCb) this._updateCb(this._updateLoop.setupContext()); // call update callback!
-                else this._updateLoop.setupContext();
+                this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
             } 
         }).catch(error => console.error(error));
     }
@@ -74,13 +78,11 @@ export class Scenarios {
     private _dispatch(scenariosAction: ScenariosAction): void {
         switch(scenariosAction.type) {
             case 'contextChange': {
-                this._updateLoop.runScaffolding();
-                this._updateLoop.setupContext();
+                this._maybeCallUpdateCb(this._updateLoop.runScaffolding());
                 break;
             }
             case 'playPause': {
-                this._updateLoop.isPaused = !this._updateLoop.isPaused;
-                this._updateLoop.setupContext();
+                this._maybeCallUpdateCb(this._updateLoop.togglePaused());
                 break;
             }
             case 'replay': {
