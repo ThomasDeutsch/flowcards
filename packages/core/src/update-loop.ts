@@ -9,8 +9,7 @@ import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { ScenariosDispatch, SingleActionDispatch } from '.';
-import { ScenariosContextTest } from './index';
+import { ContextTest, SingleActionDispatch, ScenariosReplayAction } from './index';
 
 
 
@@ -24,7 +23,8 @@ export interface ScenariosContext {
     bids: BidsByType;
     debug: {
         inReplay: boolean;
-        isPaused: boolean
+        isPaused: boolean;
+        testResults: Map<number, any>;  // TODO: replace any with a defined type
     }
 }
 export type UpdateLoopFunction = () => ScenariosContext;
@@ -32,7 +32,6 @@ export type ReplayMap = Map<number, Action>;
 
 export class UpdateLoop {
     private _currentActionId = 0;
-    public isPaused = false;
     private _activeBidsByType = {} as BidsByType;
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
@@ -43,16 +42,15 @@ export class UpdateLoop {
     private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
     private readonly _eventContexts = new EventMap<EventContext>();
     private readonly _singleActionDispatch: SingleActionDispatch;
-    public readonly actionQueue: Action[] = [];
-    public readonly replayMap = new Map<number, Action>();
-    public readonly beforeActionTest = new Map<number, ScenariosContextTest>();
+    private readonly _contextTests = new Map<number, ContextTest[]>();
+    private readonly _testResults = new Map<number, any[]>();
+    private readonly _replayMap = new Map<number, Action>();
     
 
     constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch) {
         this._logger = new Logger();
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, singleActionDispatch, this._logger);
         this._singleActionDispatch = singleActionDispatch;
-        // this.runScaffolding();
     }
 
     private _reset() {
@@ -76,11 +74,11 @@ export class UpdateLoop {
     }
 
     private _getNextReplayAction(actionId: number): Action | undefined {
-        if(this.replayMap.size !== 0) {
-            if(this.replayMap.has(0)) actionId = 0;
-            const action = this.replayMap.get(actionId);
+        if(this._replayMap.size !== 0) {
+            if(this._replayMap.has(0)) actionId = 0;
+            const action = this._replayMap.get(actionId);
             if(action === undefined) return undefined;
-            this.replayMap.delete(actionId);
+            this._replayMap.delete(actionId);
             if(action.payload === GET_VALUE_FROM_BTHREAD) {
                 action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.eventId)?.payload;
             }
@@ -89,25 +87,35 @@ export class UpdateLoop {
         return undefined;
     }
 
-    public runScaffolding(): ScenariosContext {
-        this._scaffold(this._currentActionId);
-        this._activeBidsByType = activeBidsByType(this._bThreadBids);
-        return this._setupContext();
+    private _getContext(): ScenariosContext {
+        return { 
+            event: this._getEventContext.bind(this),
+            thread: this._bThreadStateMap,
+            log: this._logger,
+            bids: this._activeBidsByType,
+            debug: {
+                inReplay: this._replayMap.size > 0,
+                isPaused: this.isPaused,
+                testResults: this._testResults
+            }
+        }
     }
 
-    public startReplay(): ScenariosContext {
-        this._reset();
-        return this.runScaffolding();
-    }
-
-    public togglePaused(): ScenariosContext {
-        this.isPaused = !this.isPaused;
-        return this.runScaffolding();
+    private _runTests(): void {
+        const tests = this._contextTests.get(this._currentActionId);
+        if(tests === undefined || tests.length === 0) return;
+        try {
+            tests.forEach(scenarioTest => scenarioTest(this._getContext()));
+        } catch(error) {
+            this.isPaused = true;
+            this._testResults.set(this._currentActionId, error);
+            console.log('ERROR_UPDATER: ', error);
+        }
     }
 
     private _setupContext(): ScenariosContext {
         let action: undefined | Action;
-        if(this.beforeActionTest)
+        this._runTests();
         if(this.isPaused === false) {
             action = this._getNextReplayAction(this._currentActionId)
                 || this.actionQueue.shift() || 
@@ -132,16 +140,36 @@ export class UpdateLoop {
             this._logger.logPending(this._activeBidsByType.pending);
             return this.runScaffolding();
         }
-        // return context to UI
-        return { 
-            event: this._getEventContext.bind(this),
-            thread: this._bThreadStateMap,
-            log: this._logger,
-            bids: this._activeBidsByType,
-            debug: {
-                inReplay: this.replayMap.size > 0,
-                isPaused: this.isPaused
-            }
-        }
+        return this._getContext();
+    }
+
+    // public ----------------------------------------------------------------------
+    public isPaused = false;
+    public readonly actionQueue: Action[] = []; // TODO: check if it would be a good idea to make this private
+
+
+    public setContextTests(testMap?: Map<number, ContextTest[]>): void {
+        this._contextTests.clear();
+        testMap?.forEach((tests, actionId) => this._contextTests.set(actionId, tests));
+    }
+
+    public runScaffolding(): ScenariosContext {
+        this._scaffold(this._currentActionId);
+        this._activeBidsByType = activeBidsByType(this._bThreadBids);
+        return this._setupContext();
+    }
+
+    public startReplay(replayAction: ScenariosReplayAction): ScenariosContext {
+        this._replayMap.clear();
+        this._testResults.clear();
+        replayAction.actions.forEach(action => this._replayMap.set(action.id, action));
+        replayAction.tests?.forEach((tests, actionId) => this._contextTests.set(actionId, [...tests]));
+        this._reset();
+        return this.runScaffolding();
+    }
+
+    public togglePaused(): ScenariosContext {
+        this.isPaused = !this.isPaused;
+        return this.runScaffolding();
     }
 }

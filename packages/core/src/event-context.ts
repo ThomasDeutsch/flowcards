@@ -4,7 +4,7 @@ import { BThreadId } from './bthread';
 import { ActionType } from './action';
 import { GetCachedItem, CachedItem } from './event-cache';
 import { validate, ValidationResult } from './validation';
-import { ActionDispatch } from './scaffolding';
+import { SingleActionDispatch } from './index';
 
 export interface EventInfo {
     bThreadId?: BThreadId;
@@ -14,7 +14,7 @@ export interface EventInfo {
 }
 
 export class EventContext {
-    private _actionDispatch: ActionDispatch;
+    private _singleActionDispatch: SingleActionDispatch;
     public readonly eventId: EventId;
     private _cachedItem?: CachedItem<any>;
     private _lastUpdatedOnActionId = -1;
@@ -34,7 +34,7 @@ export class EventContext {
     private _dispatch(payload: any): boolean {  
         if(isBlocked(this._activeBidsByType, this.eventId, {payload: payload})) return false; 
         if(hasValidMatch(this._activeBidsByType, BidType.askFor, this.eventId, {payload: payload})) {
-            this._actionDispatch({id: null, type: ActionType.ui, eventId: this.eventId, payload: payload, bThreadId: {name: ""}});
+            this._singleActionDispatch({id: null, type: ActionType.ui, eventId: this.eventId, payload: payload, bThreadId: {name: ""}});
             return true;
         }
         return false;
@@ -49,8 +49,8 @@ export class EventContext {
         return undefined;
     }
 
-    constructor(actionDispatch: ActionDispatch, eventId: EventId) {
-        this._actionDispatch = actionDispatch;
+    constructor(singleActionDispatch: SingleActionDispatch, eventId: EventId) {
+        this._singleActionDispatch = singleActionDispatch;
         this.eventId = eventId;
         this._activeBidsByType = {} as BidsByType;
     }

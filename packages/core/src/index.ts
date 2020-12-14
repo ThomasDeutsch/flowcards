@@ -18,9 +18,7 @@ export * from './extend-context';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 export type SingleActionDispatch = (action: Action) => void;
 export type ScenariosDispatch = (action: ScenariosAction) => void;
-export interface ScenariosContextTest {
-    testFunctionId: string;
-}
+export type ContextTest = (context: ScenariosContext) => boolean;
 
 export interface ActionWithId extends Action {
     id: number;
@@ -28,12 +26,18 @@ export interface ActionWithId extends Action {
 
 export interface ScenariosAction {
     type: 'replay' | 'playPause' | 'contextChange';
-    items?: ActionWithId[];
+    actions?: ActionWithId[];
+    tests?: Map<number, ContextTest[]>;
+}
+
+export interface ScenariosReplayAction extends ScenariosAction {
+    type: 'replay';
+    actions: ActionWithId[];
 }
 
 export class Scenarios {
     private _bufferedActions: Action[] = [];
-    private _bufferedReplayMap = new Map<number, Action>();
+    private _latestReplayAction?: ScenariosReplayAction;
     private _updateLoop: UpdateLoop;
     private _updateCb?: UpdateCallback;
     public initialScenariosContext: ScenariosContext;
@@ -61,11 +65,10 @@ export class Scenarios {
 
     private _clearBufferOnNextTick = () => {
         Promise.resolve().then(() => { // next tick
-            if(this._bufferedReplayMap.size > 0) {
-                this._updateLoop.replayMap.clear();
-                this._bufferedReplayMap.forEach((actionOrTest, key) => this._updateLoop.replayMap.set(key, actionOrTest)); // transfer buffer to replay-Map
-                this._bufferedReplayMap.clear();
-                this._maybeCallUpdateCb(this._updateLoop.startReplay());
+            if(this._latestReplayAction) {
+                const actionCopy = {...this._latestReplayAction};
+                delete this._latestReplayAction;
+                this._maybeCallUpdateCb(this._updateLoop.startReplay(actionCopy));
             }
             if(this._bufferedActions.length > 0) {
                 this._bufferedActions.forEach(action => this._updateLoop.actionQueue.push(action)); // transfer buffer to action-queue
@@ -86,9 +89,12 @@ export class Scenarios {
                 break;
             }
             case 'replay': {
+                if(scenariosAction.actions === undefined || scenariosAction.actions.length === 0) {
+                    console.warn('replay was dispatched without replay actions - replay was aborted');
+                    return;
+                }
                 this._bufferedActions.length = 0; // cancel all buffered actions
-                this._updateLoop.actionQueue.length = 0; // cancel all queued actions
-                scenariosAction.items?.forEach(action => this._bufferedReplayMap.set(action.id, action));
+                this._latestReplayAction = {...scenariosAction} as ScenariosReplayAction;
                 this._clearBufferOnNextTick();
             }
         }
