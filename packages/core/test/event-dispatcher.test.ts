@@ -3,6 +3,33 @@ import { testScenarios, delay } from './testutils';
 import { BThreadContext } from '../src/index';
 import { scenario } from '../src/scenario';
 
+
+test("an askFor bid can be dispatched", (done) => {
+    const asking = scenario(null, function* () {
+        yield bp.askFor('A');
+    })
+
+    testScenarios((enable) => {
+        enable(asking());
+    }, ({event}) => {
+        expect(event('A').dispatch).toBeDefined();
+        done();
+    });
+});
+
+test("an askFor bid can be dispatched with the corresponding key", (done) => {
+    const asking = scenario(null, function* () {
+        yield bp.askFor({name: 'AX', key: 1});
+    })
+
+    testScenarios((enable) => {
+        enable(asking());
+    }, ({event}) => {
+        expect(event({name: 'AX', key: 1}).dispatch).toBeDefined();
+        done();
+    });
+});
+
 test("waitFor-bids can not be dispatched", () => {
     const thread1 = scenario(null, function* () {
         yield bp.waitFor('A');
@@ -117,43 +144,5 @@ test("there is be a dispatch-function for every askingFor event", () => {
         expect(event('eventThree').dispatch).toBeDefined();
         expect(event('XXY').dispatch).toBeUndefined();
 
-    });
-});
-
-test("an askFor bid can be dispatched with or without the corresponding key", (done) => {
-    const asking = scenario(null, function* () {
-        yield bp.askFor({name: 'AX', key: 1});
-    })
-
-    testScenarios((enable) => {
-        enable(asking());
-    }, ({event}) => {
-        expect(event('AX').dispatch).toBeDefined();
-        done();
-    });
-});
-
-
-test("all askFor bids are advanced by a dispatch without a key.", (done) => {
-    const asking1 = scenario({id: 'asking1'}, function* () {
-        yield bp.askFor({name: 'AX', key: 1});
-    });
-
-    const asking2 = scenario({id: 'asking2'}, function* () {
-        yield bp.askFor({name: 'AX', key: 2});
-    })
-
-    testScenarios((enable) => {
-        enable(asking1());
-        enable(asking2());
-    }, ({thread, event}) => {
-        if(event('AX').validate().isValid) {
-            event('AX').dispatch?.();
-        } else {
-            expect(thread.get('asking1')?.isCompleted).toBe(true);
-            expect(thread.get('asking2')?.isCompleted).toBe(true);
-            expect(event('AX').dispatch).toBeDefined();
-            done();
-        }
     });
 });

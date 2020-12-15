@@ -33,9 +33,6 @@ test("a validation will include the keyed events.", () => {
         expect(event({name: 'A', key: 2}).validate(1)?.isValid).toBe(false);
         expect(event({name: 'A', key: 2}).validate(101)?.isValid).toBe(true);
         expect(event({name: 'A', key: 2}).validate(1001)?.isValid).toBe(true);
-        expect(event({name: 'A'}).validate(1)?.isValid).toBe(false);
-        expect(event({name: 'A'}).validate(101)?.isValid).toBe(true);
-        expect(event({name: 'A'}).validate(1001)?.isValid).toBe(true);
     });
 });
 
@@ -51,13 +48,9 @@ test("a validation will tell what bThreads are progressing", () => {
         enable(asking1());
         enable(asking2());
     }, ({event}) => {
-        expect(event({name: 'A'}).validate(1)?.progressing.length).toBe(0);
-        expect(event({name: 'A'}).validate(101)?.progressing.length).toBe(1);
-        expect(event({name: 'A'}).validate(101)?.progressing[0].name).toBe('asking1');
-        expect(event({name: 'A'}).validate(101)?.progressing[1].name).toBeUndefined();
-        expect(event({name: 'A'}).validate(1001)?.progressing.length).toBe(2);
-        expect(event({name: 'A'}).validate(1001)?.progressing[0].name).toBe('asking1');
-        expect(event({name: 'A'}).validate(1001)?.progressing[1].name).toBe('asking2');
+        expect(event({name: 'A', key: 1}).validate(1)?.progressing.length).toBe(0);
+        expect(event({name: 'A', key: 1}).validate(101)?.progressing.length).toBe(1);
+        expect(event({name: 'A', key: 1}).validate(101)?.progressing[0].name).toBe('asking1');
     });
 });
 

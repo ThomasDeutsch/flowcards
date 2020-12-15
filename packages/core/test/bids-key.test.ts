@@ -93,7 +93,8 @@ test("all events with a key can be blocked by a block without a key", () => {
 });
 
 
-test("a request without a key will advance waiting threads with a key", () => {
+test("a request without a key will not advance waiting threads with a key", () => {
+    // if you want the threads to also react to the none-key event, then add a waitFor for this none-key event.
     let advancedWait1 = false;
     let advancedWait2 = false;
 
@@ -116,13 +117,14 @@ test("a request without a key will advance waiting threads with a key", () => {
         enable(waitThreadWithKey2());
         enable(requestThread());
     }, ()=> {
-        expect(advancedWait1).toEqual(true);
-        expect(advancedWait2).toEqual(true);
+        expect(advancedWait1).toEqual(false);
+        expect(advancedWait2).toEqual(false);
     });
 });
 
 
-test("an request without a key will advance extends with a key", () => {
+test("an request without a key will not advance extends with a key", () => {
+    // hint: if you want to also advance this extend, then add a second extend without the key.
     let advancedExtend = false;
 
     const extending = scenario(null, function* () {
@@ -138,7 +140,7 @@ test("an request without a key will advance extends with a key", () => {
         enable(extending());
         enable(requesting());
     }, ()=> {
-        expect(advancedExtend).toEqual(true);
+        expect(advancedExtend).toEqual(false);
     });
 });
 
