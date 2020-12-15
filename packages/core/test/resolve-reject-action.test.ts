@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { Action, ActionType } from '../src/action';
 import { UpdateLoop } from '../src/update-loop';
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 import { StagingFunction } from '../src/scaffolding';
 
 
@@ -23,12 +23,12 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
                 expect(action.eventId.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
-            loop.setupContext();
+            loop.runScaffolding();
         });
-        loop.setupContext();
+        loop.runScaffolding();
     };
 
-    const thread1 = flow({name: 'thread1'}, function* () {
+    const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.request("A", delay(100));
         done();
     });
@@ -45,14 +45,14 @@ describe('dispatched action', () => {
         const loop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
                 loop.actionQueue.push(action);
-                loop.setupContext();
             }
+            loop.runScaffolding();
         });
-        loop.setupContext();
+        loop.runScaffolding();
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {
-        const thread1 = flow(null, function* () {
+        const thread1 = scenario(null, function* () {
             let catched = false;
             try {
                 yield bp.request("A", rejectedDelay(1));

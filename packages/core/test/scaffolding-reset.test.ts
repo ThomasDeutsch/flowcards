@@ -1,18 +1,18 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { BThreadContext } from '../src/bthread';
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 
 
 test("a thread gets reset, when the arguments change", () => {
     let initCount = 0;
-    const threadA = flow(null, function* () {
+    const threadA = scenario(null, function* () {
         yield [bp.request('A'), bp.askFor('B')];
         yield bp.askFor('fin');
     });
 
     interface MyProps {waitingForB?: boolean}
-    const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
+    const threadB = scenario({id: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.askFor('A');
     }); 
@@ -27,13 +27,13 @@ test("a thread gets reset, when the arguments change", () => {
 
 test("a thread gets reset, when the arguments change - 2", () => {
     let initCount = 0;
-    const threadA = flow(null, function* () {
+    const threadA = scenario(null, function* () {
         yield [bp.request('A'), bp.askFor('B')];
         yield bp.askFor('fin');
     });
 
     interface MyProps {waitingForB: boolean; waitingForX?: boolean}
-    const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
+    const threadB = scenario({id: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.askFor('A');
     }); 
@@ -49,13 +49,13 @@ test("a thread gets reset, when the arguments change - 2", () => {
 
 test("a thread gets reset, when the arguments change - 3", () => {
     let initCount = 0;
-    const threadA = flow(null, function* () {
+    const threadA = scenario(null, function* () {
         yield [bp.request('A'), bp.askFor('B')];
         yield bp.askFor('fin');
     });
 
     interface MyProps {waitingForB: boolean; waitingForX?: boolean}
-    const threadB = flow({name: 'threadB'}, function* (props: MyProps) {
+    const threadB = scenario({id: 'threadB'}, function* (props: MyProps) {
         initCount++;
         yield bp.askFor('A');
     }); 
@@ -76,13 +76,13 @@ test("a state from another thread is a fixed Ref-Object. Passing this Object wil
     let initCount = 0;
     let receivedValue;
     
-    const threadA = flow(null, function* (this: BThreadContext) {
+    const threadA = scenario(null, function* (this: BThreadContext) {
         this.section('foo');
         yield bp.request('A');
         yield bp.askFor('B');
     });
 
-    const threadB = flow(null, function* ({stateFromThreadA}) {
+    const threadB = scenario(null, function* ({stateFromThreadA}) {
         initCount++;
         yield bp.askFor('A');
         receivedValue = stateFromThreadA.section;

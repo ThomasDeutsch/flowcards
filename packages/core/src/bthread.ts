@@ -6,20 +6,12 @@ import * as utils from './utils';
 import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
-import { ActionDispatch } from './scaffolding';
+import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
+import { SingleActionDispatch } from '.';
 
-export type BTGen = Generator<Bid | (Bid | null)[] | null, void, any>;
-export type GeneratorFn = (props: any) => BTGen;
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
-
-export interface BThreadInfo {
-    name: string;
-    key?: BThreadKey;
-    destroyOnDisable?: boolean;
-    description?: string;
-    autoRepeat?: boolean;
-}
+type BThreadProps = Record<string, any>;
 
 export interface BThreadContext {
     key?: BThreadKey;
@@ -44,19 +36,20 @@ export interface BThreadState {
     isCompleted: boolean;
     description?: string;
     orderIndex: number;
-    autoRepeat?: boolean;
+    isAutoRepeat?: boolean;
     completeCount: number;
+    progressionCount: number;
     cancelledPending: EventMap<PendingEventInfo>;
 }
 
 export class BThread {
     public readonly idString: string;
     public readonly id: BThreadId;
-    private readonly _dispatch: ActionDispatch;
-    private readonly _generatorFn: GeneratorFn;
+    private readonly _singleActionDispatch: SingleActionDispatch;
+    private readonly _generatorFunction: BThreadGeneratorFunction;
     private readonly _logger: Logger;
-    private _currentProps: Record<string, any>;
-    private _thread: BTGen;
+    private _currentProps: BThreadProps;
+    private _thread: BThreadGenerator;
     private _currentBids?: BThreadBids;
     public get currentBids(): BThreadBids | undefined { return this._currentBids; }
     private _nextBid?: any;
@@ -66,25 +59,26 @@ export class BThread {
     private _state: BThreadState;
     public get state(): BThreadState { return this._state; }
 
-    public constructor(id: BThreadId, info: BThreadInfo, orderIndex: number, generatorFn: GeneratorFn, props: Record<string, any>, dispatch: ActionDispatch, logger: Logger) {
+    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, singleActionDispatch: SingleActionDispatch, logger: Logger) {
         this.id = id;
         this._state = {
             id: id,
             orderIndex: orderIndex,
-            destroyOnDisable: info.destroyOnDisable,
+            destroyOnDisable: scenarioInfo.destroyOnDisable,
             cancelledPending: new EventMap(),
-            description: info.description,
-            autoRepeat: info.autoRepeat,
+            description: scenarioInfo.description,
+            isAutoRepeat: scenarioInfo.autoRepeat,
             completeCount: 0,
             section: undefined,
             pending: new EventMap(),
-            isCompleted: false
+            isCompleted: false,
+            progressionCount: -1 // not counting the initial progression
         };
         this.idString = BThreadMap.toIdString(id);
-        this._dispatch = dispatch;
-        this._generatorFn = generatorFn.bind(this._getBThreadContext());
+        this._singleActionDispatch = singleActionDispatch;
+        this._generatorFunction = generatorFunction.bind(this._getBThreadContext());
         this._currentProps = props;
-        this._thread = this._generatorFn(this._currentProps);
+        this._thread = this._generatorFunction(this._currentProps);
         this._logger = logger;
         this._processNextBid();
     }
@@ -125,7 +119,8 @@ export class BThread {
 
     private _processNextBid(returnValue?: any): void {
         const next = this._thread.next(returnValue); // progress BThread to next bid
-        if (next.done && this._state.autoRepeat) {
+        this._state.progressionCount++;
+        if (next.done && this._state.isAutoRepeat) {
             this._resetBThread(this._currentProps);
             this._state.completeCount++;
             return;
@@ -159,19 +154,20 @@ export class BThread {
         }
     }
 
-    private _resetBThread(props: any) {
+    private _resetBThread(props: BThreadProps) {
         this._pendingExtends = new EventMap();
         this._currentProps = props;
         this._state.isCompleted = false;
+        this._state.progressionCount = -1;
         delete this._state.section;
-        this._thread = this._generatorFn(this._currentProps);
+        this._thread = this._generatorFunction(this._currentProps);
         this._cancelPendingRequests();
         this._processNextBid(); // progress BThread
     }
 
     // --- public
-    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    public resetOnPropsChange(nextProps: any): boolean {
+
+    public resetOnPropsChange(nextProps: BThreadProps): boolean {
         const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
         if (changedPropNames === undefined) return false;
         this._state.completeCount = 0;
@@ -202,7 +198,7 @@ export class BThread {
             if (pendingEventInfo.actionId === action.id) {
                 if(!isExtendPromise) this._cancelPendingRequests(pendingEventInfo.eventId);
                 const requestDuration = new Date().getTime() - startTime;
-                this._dispatch({
+                this._singleActionDispatch({
                     id: action.resolveActionId || null, 
                     type: ActionType.resolve,
                     bThreadId: this.id,
@@ -221,7 +217,7 @@ export class BThread {
             const pendingEventInfo = this.state.pending.get(action.eventId);
             if (pendingEventInfo?.actionId === action.id) {
                 const requestDuration = new Date().getTime() - startTime;
-                this._dispatch({
+                this._singleActionDispatch({
                     id: action.resolveActionId || null,
                     type: ActionType.reject,
                     bThreadId: this.id,
@@ -252,6 +248,12 @@ export class BThread {
             this._progressBThread(action.eventId, action.payload, true);
             this._logger.logBThreadException(this.id, action.eventId, this._state);
         }
+    }
+
+    public hasActiveBid(action: Action): boolean {
+        const bid = this._currentBids?.[action.bidType!]?.get(action.eventId);
+        if(!bid) return false;
+        return true;
     }
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {

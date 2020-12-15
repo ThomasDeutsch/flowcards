@@ -1,16 +1,19 @@
 import { useState, useRef, useMemo } from "react";
-import { StagingFunction, ScenariosContext, scenarios, DispatchActions, PlayPause, CONTEXT_CHANGED } from "@flowcards/core";
+import { StagingFunction, ScenariosContext, ScenariosDispatch } from "@flowcards/core";
+import { Scenarios } from '../../core/src/index';
 
 export * from '@flowcards/core';
 
-export function useScenarios(stagingFunction: StagingFunction, dependencies: any[]): [ScenariosContext, DispatchActions, PlayPause] {
+export function useScenarios(stagingFunction: StagingFunction, dependencies: any[]): [ScenariosContext, ScenariosDispatch] {
     const [state, setState] = useState<ScenariosContext>();
-    const ref = useRef<[ScenariosContext, DispatchActions, PlayPause] | null>(null);
-    if(ref.current === null) {
-        ref.current = scenarios(stagingFunction, (a: ScenariosContext): void => { setState(a) })
-    }
+    const ref = useRef<Scenarios | null>(null);
     useMemo(() => {
-        if(ref.current) ref.current[1](CONTEXT_CHANGED); // dispatch a CONTEXT_CHANGED symbol
+        if(ref.current !== null) { // do not run this for the initial dependencies
+            ref.current.dispatch({type: 'contextChange'});
+        }
     }, dependencies);
-    return [state || ref.current[0], ref.current[1], ref.current[2]];
+    if(ref.current === null) {
+        ref.current = new Scenarios(stagingFunction, (a: ScenariosContext): void => { setState(a) })
+    }
+    return [state || ref.current.initialScenariosContext, ref.current.dispatch];
 }

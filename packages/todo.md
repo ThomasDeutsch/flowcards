@@ -1,2 +1,0 @@
-- Typing of CachedItem
-- Typing of bid returns

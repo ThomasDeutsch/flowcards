@@ -1,9 +1,10 @@
 import * as bp from "../src/bid";
-import { testScenarios } from './testutils';
-import { flow } from '../src/scenario';
+import { testScenarios, delay } from './testutils';
+import { BThreadContext } from '../src/index';
+import { scenario } from '../src/scenario';
 
 test("a bthread-state will have an completed count of 0", () => {
-    const thread1 = flow({name: 'T1'}, function* () {
+    const thread1 = scenario({id: 'T1'}, function* () {
         yield bp.waitFor('A');
     });
 
@@ -16,11 +17,11 @@ test("a bthread-state will have an completed count of 0", () => {
 
 
 test("every complete will increase the completeCount", () => {
-    const countClicks = flow({name: 'countClicks', autoRepeat: true}, function* () {
+    const countClicks = scenario({id: 'countClicks', autoRepeat: true}, function* () {
         yield bp.waitFor('click');
     });
 
-    const clicker = flow(null, function* () {
+    const clicker = scenario(null, function* () {
         yield bp.request('click');
         yield bp.request('click');
         yield bp.request('click');
@@ -40,11 +41,11 @@ interface CountClicksProps {
 }
 
 test("prop changes will reset the completeCount", () => {
-    const countClicks = flow({name: 'countClicks', autoRepeat: true}, function* ({completed}: CountClicksProps) {
+    const countClicks = scenario({id: 'countClicks', autoRepeat: true}, function* ({completed}: CountClicksProps) {
         yield bp.waitFor('click');
     });
 
-    const clicker = flow(null, function* () {
+    const clicker = scenario(null, function* () {
         yield bp.request('click');
         yield bp.request('click');
         yield bp.request('click');

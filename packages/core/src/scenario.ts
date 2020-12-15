@@ -1,16 +1,27 @@
-import { GeneratorFn, BThreadKey, BThreadInfo } from './bthread';
+
+import { Bid } from './bid';
 import { uuidv4 } from './utils';
 
-export function flow<T extends GeneratorFn>(info: BThreadInfo | null, gen: T): (generatorProps?: Parameters<T>[0], flowKey?: BThreadKey) => [BThreadInfo, GeneratorFn, Parameters<T>[0]] {
-    const i: BThreadInfo = {
-        name: info?.name || uuidv4(),
+export type BThreadGenerator = Generator<Bid | (Bid | null)[] | null, void, any>;
+export type BThreadGeneratorFunction = (props: any) => BThreadGenerator;
+export interface ScenarioInfo {
+    id: string;
+    destroyOnDisable?: boolean;
+    description?: string;
+    autoRepeat?: boolean;
+}
+
+export type Scenario<T extends BThreadGeneratorFunction> = [ScenarioInfo, T, Parameters<T>[0]]
+export type CreateScenario<T extends BThreadGeneratorFunction> = (generatorProps?: Parameters<T>[0]) => Scenario<T>;
+
+export function scenario<T extends BThreadGeneratorFunction>(info: ScenarioInfo | null, generatorFunction: T): CreateScenario<T> {
+    const scenarioInfo: ScenarioInfo = {
+        id: info?.id || uuidv4(),
         description: info?.description,
-        key: info?.key,
-        destroyOnDisable: info?.destroyOnDisable || false,
+        destroyOnDisable: info?.destroyOnDisable,
         autoRepeat: info?.autoRepeat
     };
-    return (generatorProps?: Parameters<T>[0], key?: BThreadKey): [BThreadInfo, GeneratorFn, Parameters<T>[0]] => {
-        i.key = key;
-        return [i, gen, generatorProps]
+    return (generatorProps?: Parameters<T>[0]) => {
+        return [scenarioInfo, generatorFunction, generatorProps]
     }
 }

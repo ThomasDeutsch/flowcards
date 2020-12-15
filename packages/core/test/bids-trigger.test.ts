@@ -1,18 +1,18 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { flow } from '../src/scenario';
+import { scenario } from '../src/scenario';
 
 
 test("a trigger is a request, that is only selected if another thread is waiting for the same event.", () => {
     let hasAdvancedFirstTrigger = false;
     let hasAdvancedSecondTrigger = false;
 
-    const waitingThread = flow({name: 'waitingThread'}, function*() {
+    const waitingThread = scenario({id: 'waitingThread'}, function*() {
         yield bp.askFor("eventA");
         yield bp.askFor("eventB");
     });
 
-    const requestingThread = flow({name: 'requestingThread'}, function*() {
+    const requestingThread = scenario({id: 'requestingThread'}, function*() {
         yield bp.trigger("eventA");
         hasAdvancedFirstTrigger = true;
         yield bp.trigger("eventA");
@@ -32,16 +32,16 @@ test("a trigger is a request, that is only selected if another thread is waiting
 test("a trigger is a request, that can be blocked.", () => {
     let hasAdvancedTrigger = false;
 
-    const waitingThread = flow({name: 'waitingThread'}, function*() {
+    const waitingThread = scenario({id: 'waitingThread'}, function*() {
         yield bp.askFor("eventA");
     });
 
-    const requestingThread = flow({name: 'requestingThread'}, function*() {
+    const requestingThread = scenario({id: 'requestingThread'}, function*() {
         yield bp.trigger("eventA");
         hasAdvancedTrigger = true;
     });
 
-    const blockingThread = flow({name: 'blockingThread'}, function*() {
+    const blockingThread = scenario({id: 'blockingThread'}, function*() {
         yield bp.block('eventA');
     });
 
@@ -59,18 +59,18 @@ test("a trigger needs to fulfill the wait-guard validation.", () => {
     let hasAdvancedTrigger1 = false;
     let hasAdvancedTrigger2 = false;
 
-    const waitingThread = flow({name: 'waitingThread'}, function*() {
+    const waitingThread = scenario({id: 'waitingThread'}, function*() {
         while(true) {
             yield bp.askFor("eventA", (pl) => pl > 100);
         }
     });
 
-    const requestingThread1 = flow({name: 'requestingThread1'}, function*() {
+    const requestingThread1 = scenario({id: 'requestingThread1'}, function*() {
         yield bp.trigger("eventA", 101);
         hasAdvancedTrigger1 = true;
     });
 
-    const requestingThread2 = flow({name: 'requestingThread2'}, function*() {
+    const requestingThread2 = scenario({id: 'requestingThread2'}, function*() {
         yield bp.trigger("eventA", 0);
         hasAdvancedTrigger2 = true;
     });

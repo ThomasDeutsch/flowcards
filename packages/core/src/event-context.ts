@@ -3,19 +3,19 @@ import { BidType, isBlocked, hasValidMatch, BidsByType } from './bid';
 import { ActionType } from './action';
 import { GetCachedItem, CachedItem } from './event-cache';
 import { validate, ValidationResult } from './validation';
-import { ActionDispatch } from './scaffolding';
+import { SingleActionDispatch } from './index';
 
 
 export class EventContext {
-    private _actionDispatch: ActionDispatch;
+    private _singleActionDispatch: SingleActionDispatch;
     public readonly eventId: EventId;
     private _cachedItem?: CachedItem<unknown>;
     private _lastUpdatedOnActionId = -1;
-    public get value(): unknown {
+    public get value(): any {
         return this._cachedItem?.value;
     }
-    public get history(): unknown[] {
-        return this._cachedItem?.history || [];
+    public get history(): any[] {
+        return this._cachedItem?.history|| [];
     }
     private _activeBidsByType: BidsByType;
     private _dispatchEnabled = false;
@@ -27,7 +27,7 @@ export class EventContext {
     private _dispatch(payload: any): boolean {  
         if(isBlocked(this._activeBidsByType, this.eventId, {payload: payload})) return false; 
         if(hasValidMatch(this._activeBidsByType, BidType.askFor, this.eventId, {payload: payload})) {
-            this._actionDispatch({id: null, type: ActionType.ui, eventId: this.eventId, payload: payload, bThreadId: {name: ""}});
+            this._singleActionDispatch({id: null, type: ActionType.ui, eventId: this.eventId, payload: payload, bThreadId: {name: ""}});
             return true;
         }
         return false;
@@ -38,12 +38,12 @@ export class EventContext {
     }
 
     public get dispatch(): ((payload?: any) => boolean) | undefined {
-        if(this._dispatchEnabled) return this._dispatch.bind(this);
+        if(this._dispatchEnabled) return this._dispatch;
         return undefined;
     }
 
-    constructor(actionDispatch: ActionDispatch, eventId: EventId) {
-        this._actionDispatch = actionDispatch;
+    constructor(singleActionDispatch: SingleActionDispatch, eventId: EventId) {
+        this._singleActionDispatch = singleActionDispatch;
         this.eventId = eventId;
         this._activeBidsByType = {} as BidsByType;
     }

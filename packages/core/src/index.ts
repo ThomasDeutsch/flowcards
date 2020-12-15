@@ -1,4 +1,4 @@
-import { Action } from './action';
+import { Action, ActionType } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 
@@ -14,78 +14,91 @@ export * from './event-map';
 export * from './logger';
 export * from './action';
 export * from './extend-context';
-export const CONTEXT_CHANGED: unique symbol = Symbol('contextChanged');
 
 export type UpdateCallback = (scenario: ScenariosContext) => any;
-export type DispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => void;
-export type PlayPause = { getIsPaused: () => boolean; toggle: () => void };
+export type SingleActionDispatch = (action: Action) => void;
+export type ScenariosDispatch = (action: ScenariosAction) => void;
+export type ContextTest = (context: ScenariosContext) => boolean;
 
-export function scenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, updateInitial = false): [ScenariosContext, DispatchActions, PlayPause] {
-    const bufferedActions: Action[] = [];
-    let isPaused = false;
-    const bufferedReplayMap = new Map<number, Action>();
+export interface ActionWithId extends Action {
+    id: number;
+}
 
-    function placeBufferedAction(action?: Action): void {
-        if(action === undefined) return;
-        if(action.id === null) {
-            bufferedActions.push(action);
-        } else {  // is a replay action
-            if(action.id === 0) {
-                loop.replayMap.clear();
-            }
-            bufferedReplayMap.set(action.id, action);
+export interface ScenariosAction {
+    type: 'replay' | 'playPause' | 'contextChange';
+    actions?: ActionWithId[];
+    tests?: Map<number, ContextTest[]>;
+}
+
+export interface ScenariosReplayAction extends ScenariosAction {
+    type: 'replay';
+    actions: ActionWithId[];
+}
+
+export class Scenarios {
+    private _bufferedActions: Action[] = [];
+    private _latestReplayAction?: ScenariosReplayAction;
+    private _updateLoop: UpdateLoop;
+    private _updateCb?: UpdateCallback;
+    public initialScenariosContext: ScenariosContext;
+
+    private _singleActionDispatch(action: Action) {
+        if(this._updateLoop.isPaused && action.type === ActionType.ui) { // dispatching a ui action will resume a paused update-loop
+            this._updateLoop.isPaused = false;
+            this._bufferedActions.unshift(action);
+        } else {
+            this._bufferedActions.push(action);
         }
+        this._clearBufferOnNextTick();
     }
 
-    function internalDispatchSingleAction(action: Action): void {
-        placeBufferedAction(action);
-        clearBufferOnNextTick();
+    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false) {
+        this._updateLoop = new UpdateLoop(stagingFunction, this._singleActionDispatch.bind(this));
+        this.initialScenariosContext = this._updateLoop.runScaffolding();
+        this._updateCb = updateCb;
+        if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
     }
 
-    function dispatchMultipleActions(actions: Action[]): void {
-        actions.forEach(action => placeBufferedAction(action));
-        clearBufferOnNextTick();
+    private _maybeCallUpdateCb(context: ScenariosContext) {
+        if(this._updateCb) this._updateCb(context); // call update callback!
     }
 
-    const loop = new UpdateLoop(stagingFunction, internalDispatchSingleAction);
-
-    const clearBufferOnNextTick = (forceRefresh?: boolean) => {
+    private _clearBufferOnNextTick = () => {
         Promise.resolve().then(() => { // next tick
-            let withUpdate = false;
-            if(bufferedReplayMap.size !== 0) {
-                bufferedActions.length = 0;
-                bufferedReplayMap.forEach((action, key) => loop.replayMap.set(key, action)); // transfer buffer to replay-Map
-                bufferedReplayMap.clear();
-                withUpdate = true;
+            if(this._latestReplayAction) {
+                const actionCopy = {...this._latestReplayAction};
+                delete this._latestReplayAction;
+                this._maybeCallUpdateCb(this._updateLoop.startReplay(actionCopy));
             }
-            else if(bufferedActions.length !== 0 && !isPaused) {
-                bufferedActions.forEach(action => loop.actionQueue.push(action)); // transfer buffer to action-queue
-                bufferedActions.length = 0;
-                withUpdate = true;
+            if(this._bufferedActions.length > 0) {
+                this._bufferedActions.forEach(action => this._updateLoop.actionQueue.push(action)); // transfer buffer to action-queue
+                this._bufferedActions.length = 0;
+                this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
             } 
-            if(withUpdate || forceRefresh) {
-                if(updateCb !== undefined) updateCb(loop.setupContext(isPaused)); // call update callback!
-                else loop.setupContext(isPaused);
-            }
         }).catch(error => console.error(error));
     }
 
-    const togglePlayPause = () => { 
-        isPaused = !isPaused;
-        clearBufferOnNextTick(true);
-     };
-
-    const dispatchActions = (actions: Action[] | typeof CONTEXT_CHANGED) => {
-        if(actions === CONTEXT_CHANGED) { // an action, that will run on context change.
-            loop.runScaffolding();
-            loop.setupContext(isPaused);
-        }
-        else {
-            dispatchMultipleActions(actions);
+    private _dispatch(scenariosAction: ScenariosAction): void {
+        switch(scenariosAction.type) {
+            case 'contextChange': {
+                this._maybeCallUpdateCb(this._updateLoop.runScaffolding());
+                break;
+            }
+            case 'playPause': {
+                this._maybeCallUpdateCb(this._updateLoop.togglePaused());
+                break;
+            }
+            case 'replay': {
+                if(scenariosAction.actions === undefined || scenariosAction.actions.length === 0) {
+                    console.warn('replay was dispatched without replay actions - replay was aborted');
+                    return;
+                }
+                this._bufferedActions.length = 0; // cancel all buffered actions
+                this._latestReplayAction = {...scenariosAction} as ScenariosReplayAction;
+                this._clearBufferOnNextTick();
+            }
         }
     }
-
-    const initialScenarioContext = loop.setupContext(isPaused);
-    if(updateCb !== undefined && updateInitial) updateCb(initialScenarioContext); // callback with initial value
-    return [initialScenarioContext, dispatchActions, { getIsPaused: () => isPaused, toggle: togglePlayPause }];
+    
+    public get dispatch(): ScenariosDispatch { return this._dispatch.bind(this) }
 }
