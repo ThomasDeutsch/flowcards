@@ -83,7 +83,7 @@ export class Logger {
     public logAction(action: Action): void {
         const a = {...action}
         if(action.resolve) {
-            this._actions[action.resolve.requestLoopIndex].resolveActionId = action.id!;
+            this._actions[action.resolve.requestActionId].resolveActionId = action.id!;
         }
         if(action.resolveActionId === null) {
             a.payload = undefined; // do not save the promise object 

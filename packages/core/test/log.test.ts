@@ -57,7 +57,7 @@ test("the actions in a log will contain info, if and when the promise got resolv
   }, ({log, thread}) => {
     if(thread.get({name: 'thread1'})?.isCompleted) {
       expect(log.actions[1]?.payload).toEqual('value');
-      expect(log.actions[1]?.resolve?.requestLoopIndex).toEqual(0);
+      expect(log.actions[1]?.resolve?.requestActionId).toEqual(0);
       expect(log.actions[1]?.resolve?.requestDuration).toBeGreaterThan(8);
       done();
     }

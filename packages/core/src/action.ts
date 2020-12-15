@@ -1,6 +1,5 @@
 import { Bid, BidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch, getNextBidAndRemaining } from './bid';
 import { EventId } from './event-map';
-
 import { BThreadId } from './bthread';
 
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
@@ -21,7 +20,7 @@ export interface Action {
     resolveActionId?: number | null; 
     resolve?: {
         isResolvedExtend: boolean;
-        requestLoopIndex: number;
+        requestActionId: number;
         requestDuration: number;  
     };
     bidType?: BidType;

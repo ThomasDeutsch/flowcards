@@ -1,7 +1,5 @@
-import { Bid, BidsByType, BidType, getMatchingBids, isBlocked } from './bid';
+import { Bid, BidsByType, BidType, getMatchingBids } from './bid';
 import { EventId } from './event-map';
-import { BThreadId } from './bthread';
-import { BThreadMap } from './bthread-map';
 import { getProgressingBids } from './advance-bthreads';
 
 export type Validation = (payload: any) => {isValid: boolean; message?: string} | boolean
@@ -41,12 +39,11 @@ export interface ValidationResult {
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function validate(activeBidsByType: BidsByType, eventId: EventId, payload: any): ValidationResult {
     const askingForBids = activeBidsByType[BidType.askFor]?.get(eventId);
-    const progressingThreads = new BThreadMap<void>();
     const validationResult: ValidationResult = {
         isValid: false,
         required: [[]],
         optional: [],
-        progressingBids: []
+        progressingBids: getProgressingBids(activeBidsByType, [BidType.waitFor, BidType.askFor], eventId, payload) || []
     }
     if(askingForBids === undefined) return validationResult;
     askingForBids.forEach(bid => {
@@ -71,6 +68,5 @@ export function validate(activeBidsByType: BidsByType, eventId: EventId, payload
         validationResult.required.push([bidValidationResult]);
     });
     validationResult.isValid = validationResult.required.every(r => r.some(({isValid}) => isValid === true));
-    validationResult.progressingBids = getProgressingBids(activeBidsByType, [BidType.waitFor, BidType.askFor], eventId, payload) || [];
     return validationResult;
 }
