@@ -32,7 +32,7 @@ test("an askFor bid can be dispatched with the corresponding key", (done) => {
 
 
 test("askFor-bids can be dispatched", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.askFor('A');
     });
 
@@ -44,7 +44,7 @@ test("askFor-bids can be dispatched", () => {
 });
 
 test("askFor-bids with a key can not be dispatched by the same event-name but without a key.", () => {
-    const thread1 = flow(null, function* () {
+    const thread1 = scenario(null, function* () {
         yield bp.askFor({name: 'A', key: 1});
     });
 
