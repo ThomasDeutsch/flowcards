@@ -71,7 +71,7 @@ export class Scenarios {
                 this._maybeCallUpdateCb(this._updateLoop.startReplay(actionCopy));
             }
             if(this._bufferedActions.length > 0) {
-                this._bufferedActions.forEach(action => this._updateLoop.actionQueue.push(action)); // transfer buffer to action-queue
+                this._updateLoop.setActionQueue(this._bufferedActions);
                 this._bufferedActions.length = 0;
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
             } 

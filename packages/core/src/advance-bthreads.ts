@@ -43,6 +43,7 @@ function progressWaitingBThreads(activeBidsByType: BidsByType, bThreadMap: BThre
     return true;
 }
 
+
 function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, action: Action): ActionResult.ExtendedWithPromise | undefined {
     const matchingBids = getMatchingBids(activeBidsByType, [BidType.extend], action.eventId);
     if(matchingBids === undefined) return undefined;
@@ -63,6 +64,7 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
         }
     }
 }
+
 
 export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): ActionResult {
     switch (action.type) {

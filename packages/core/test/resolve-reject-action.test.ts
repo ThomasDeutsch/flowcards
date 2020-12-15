@@ -15,17 +15,17 @@ function delay(ms: number) {
 
 test("when a promise is resolved, it will dispatch an Action.", done => {
     const testLoop = (enable: StagingFunction): void => {
-        const loop = new UpdateLoop(enable, (action: Action) => {
+        const updateLoop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
-                loop.actionQueue.push(action)
+                updateLoop.setActionQueue([action]);
                 expect(action.type).toBe(ActionType.resolve);
                 expect(action.bThreadId.name).toBe('thread1');
                 expect(action.eventId.name).toBe('A');
                 expect(action.payload).toBe('data');
             }
-            loop.runScaffolding();
+            updateLoop.runScaffolding();
         });
-        loop.runScaffolding();
+        updateLoop.runScaffolding();
     };
 
     const thread1 = scenario({id: 'thread1'}, function* () {
@@ -42,13 +42,13 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
 describe('dispatched action', () => {
 
     const testLoop = (enable: StagingFunction): void => {
-        const loop = new UpdateLoop(enable, (action: Action) => {
+        const updateLoop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
-                loop.actionQueue.push(action);
+                updateLoop.setActionQueue([action]);
             }
-            loop.runScaffolding();
+            updateLoop.runScaffolding();
         });
-        loop.runScaffolding();
+        updateLoop.runScaffolding();
     };
 
     test("A promise that throws an error, will continue. The error object will contain the reason and the eventId", done => {

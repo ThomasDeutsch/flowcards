@@ -26,6 +26,7 @@ export interface Action {
     bidType?: BidType;
 }
 
+
 function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
     if(isBlocked(bidsByType, bid.eventId, bid)) return false;
     if(bid.type === BidType.trigger) {
@@ -46,6 +47,7 @@ function getActionFromBid(bid: Bid): Action {
     };
     return action;
 }
+
 
 export function getNextActionFromRequests(activeBidsByType: BidsByType): Action | undefined {
     const bids = getActiveBidsForSelectedTypes(activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);

@@ -45,7 +45,7 @@ export class UpdateLoop {
     private readonly _contextTests = new Map<number, ContextTest[]>();
     private readonly _testResults = new Map<number, any[]>();
     private readonly _replayMap = new Map<number, Action>();
-    
+    private readonly _actionQueue: Action[] = [];     
 
     constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch) {
         this._logger = new Logger();
@@ -55,10 +55,11 @@ export class UpdateLoop {
 
     private _reset() {
         this._currentActionId = 0;
-        this.actionQueue.length = 0;
+        this._actionQueue.length = 0;
         this._bThreadMap.forEach(bThread => bThread.destroy(true));
         this._bThreadMap.clear();
         this._eventCache.clear();
+        this._testResults.clear();
         this._logger.resetLog();
     }
 
@@ -104,13 +105,17 @@ export class UpdateLoop {
     private _runTests(): void {
         const tests = this._contextTests.get(this._currentActionId);
         if(tests === undefined || tests.length === 0) return;
-        try {
-            tests.forEach(scenarioTest => scenarioTest(this._getContext()));
-        } catch(error) {
-            this.isPaused = true;
-            this._testResults.set(this._currentActionId, error);
-            console.log('ERROR_UPDATER: ', error);
-        }
+        const results: any[] = [];
+        tests.forEach(scenarioTest => {
+            try { 
+                results.push(scenarioTest(this._getContext()));
+            } catch(error) {
+                this.isPaused = true;
+                results.push(error);
+                console.log('error in test: ', error);
+            }
+        });
+        this._testResults.set(this._currentActionId, results);
     }
 
     private _setupContext(): ScenariosContext {
@@ -118,7 +123,7 @@ export class UpdateLoop {
         this._runTests();
         if(this.isPaused === false) {
             action = this._getNextReplayAction(this._currentActionId)
-                || this.actionQueue.shift() || 
+                || this._actionQueue.shift() || 
                 getNextActionFromRequests(this._activeBidsByType);
         }
         if (action !== undefined) { // use next action
@@ -145,8 +150,11 @@ export class UpdateLoop {
 
     // public ----------------------------------------------------------------------
     public isPaused = false;
-    public readonly actionQueue: Action[] = []; // TODO: check if it would be a good idea to make this private
 
+    public setActionQueue(actions: Action[]): void {
+        this._actionQueue.length = 0;
+        actions.forEach(action => this._actionQueue.push(action));
+    }
 
     public setContextTests(testMap?: Map<number, ContextTest[]>): void {
         this._contextTests.clear();
