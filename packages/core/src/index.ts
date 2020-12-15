@@ -18,7 +18,7 @@ export * from './extend-context';
 export type UpdateCallback = (scenario: ScenariosContext) => any;
 export type SingleActionDispatch = (action: Action) => void;
 export type ScenariosDispatch = (action: ScenariosAction) => void;
-export type ContextTest = (context: ScenariosContext) => boolean;
+export type ContextTest = (context: ScenariosContext) => any;
 
 export interface ActionWithId extends Action {
     id: number;

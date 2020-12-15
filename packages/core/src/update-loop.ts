@@ -22,6 +22,7 @@ export interface ScenariosContext {
     log: Logger;
     bids: BidsByType;
     debug: {
+        currentActionId: number;
         inReplay: boolean;
         isPaused: boolean;
         testResults: Map<number, any>;  // TODO: replace any with a defined type
@@ -95,6 +96,7 @@ export class UpdateLoop {
             log: this._logger,
             bids: this._activeBidsByType,
             debug: {
+                currentActionId: this._currentActionId,
                 inReplay: this._replayMap.size > 0,
                 isPaused: this.isPaused,
                 testResults: this._testResults
@@ -112,7 +114,6 @@ export class UpdateLoop {
             } catch(error) {
                 this.isPaused = true;
                 results.push(error);
-                console.log('error in test: ', error);
             }
         });
         this._testResults.set(this._currentActionId, results);

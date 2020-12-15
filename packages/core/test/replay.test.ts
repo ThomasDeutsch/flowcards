@@ -2,10 +2,10 @@ import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { ActionType, GET_VALUE_FROM_BTHREAD } from '../src/action';
 import { scenario } from '../src/scenario';
-import { BidType } from '../src/bid';
+import { BidType, isBlocked } from '../src/bid';
 import { ScenariosContext } from '../src/update-loop';
 import { ContextTest } from "../src";
-import { isValid } from '../src/validation';
+import * as chai from "chai";
 
 test("a thread can be replayed", (done) => {
     let value1: number, value2: number;
@@ -169,6 +169,38 @@ test("during a replay, the inReplay flag is true", (done) => {
     testMap.set(0, [(context: ScenariosContext) => {
         expect(context.debug.inReplay).toBe(true);
         return true;
+    }]);
+    dispatch({
+        type: 'replay',
+        actions: [
+            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
+        ],
+        tests: testMap
+    });
+});
+
+
+
+test("if a test fails, the execution will be paused", (done) => {
+    const thread1 = scenario({id: 'thread1'}, function* () {
+        yield bp.askFor('replayEvent1');
+        yield bp.request('requestEvent1');
+        yield bp.request('requestEvent2');
+    });
+    const [context, dispatch] = testScenarios((enable) => {
+        enable(thread1());
+    }, ({debug}) => {
+        if(debug.isPaused) {
+            expect(debug.currentActionId).toBe(0);
+            expect(debug.testResults.get(debug.currentActionId)[0]).toBeInstanceOf(chai.AssertionError);
+            done();
+        }
+    });
+
+    const testMap = new Map<number, ContextTest[]>();
+    testMap.set(0, [() => {
+        return chai.expect(1).to.equal(2);
     }]);
     dispatch({
         type: 'replay',
