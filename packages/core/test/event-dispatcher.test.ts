@@ -17,6 +17,20 @@ test("an askFor bid can be dispatched", (done) => {
     });
 });
 
+test("an askFor bid without a key can be dispatched as an event with a key", (done) => {
+    // this is the same as with requests. A request with a key will trigger the askFor without a key.
+    const asking = scenario(null, function* () {
+        yield bp.askFor('A');
+    })
+
+    testScenarios((enable) => {
+        enable(asking());
+    }, ({event}) => {
+        expect(event({name: 'A', key: 1}).dispatch).toBeDefined();
+        done();
+    });
+});
+
 test("an askFor bid can be dispatched with the corresponding key", (done) => {
     const asking = scenario(null, function* () {
         yield bp.askFor({name: 'AX', key: 1});

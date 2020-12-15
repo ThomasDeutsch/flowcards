@@ -1,4 +1,4 @@
-import { BThreadId } from './bthread';
+import { BThreadId, BThread } from './bthread';
 
 
 export class BThreadMap<T> {
@@ -43,6 +43,12 @@ export class BThreadMap<T> {
 
     public forEach(callbackFn: (value: T, key: string, map: Map<string, T>) => void): void {
         this._map.forEach(callbackFn);
+    }
+
+    public threadIds(): BThreadId[] {
+        const result: BThreadId[] = [];
+        this._map.forEach((val, key) => result.push(BThreadMap.toThreadId(key)));
+        return result;
     }
 
     public clone(): BThreadMap<T> {

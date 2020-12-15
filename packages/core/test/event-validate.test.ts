@@ -43,14 +43,23 @@ test("a validation will tell what bThreads are progressing", () => {
     const asking2 = scenario({id: 'asking2'}, function* () {
         yield bp.askFor({name: 'A', key: 2}, (val) => val > 100);
     });
+    const asking3 = scenario({id: 'askingWithoutKey'}, function* () {
+        yield bp.askFor('A');
+    });
 
     testScenarios((enable) => {
         enable(asking1());
         enable(asking2());
+        enable(asking3());
     }, ({event}) => {
-        expect(event({name: 'A', key: 1}).validate(1)?.progressing.length).toBe(0);
-        expect(event({name: 'A', key: 1}).validate(101)?.progressing.length).toBe(1);
-        expect(event({name: 'A', key: 1}).validate(101)?.progressing[0].name).toBe('asking1');
+        expect(event({name: 'A', key: 1}).validate().progressingBids.length).toBe(1);
+        expect(event({name: 'A', key: 1}).validate().progressingBids[0].bThreadId.name).toBe('askingWithoutKey');
+        expect(event({name: 'A', key: 1}).validate(1001)?.progressingBids.map(b => b.bThreadId.name)).toContain('askingWithoutKey');
+        expect(event({name: 'A', key: 1}).validate(1001)?.progressingBids.map(b => b.bThreadId.name)).toContain('asking1');
+        // only the event A will be progressed
+        expect(event('A').validate(0)?.progressingBids.length).toBe(1);
+        expect(event('A').validate(1001)?.progressingBids.length).toBe(1);
+        expect(event('A').validate().progressingBids[0].bThreadId.name).toBe('askingWithoutKey');
     });
 });
 

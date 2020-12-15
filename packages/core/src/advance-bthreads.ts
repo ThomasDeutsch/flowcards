@@ -1,8 +1,8 @@
 import { Action, ActionType } from './action';
-import { BidType, getMatchingBids, BidsByType, isBlocked} from './bid';
-import { BThread } from './bthread';
+import { BidType, getMatchingBids, BidsByType, isBlocked, Bid } from './bid';
+import { BThread, BThreadId } from './bthread';
 import { BThreadMap } from './bthread-map';
-import { EventMap } from './event-map';
+import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
 import { isValid } from './validation';
 
@@ -21,18 +21,26 @@ export enum ActionResult {
 
 // advance threads, based on selected action
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+export function getProgressingBids(activeBidsByType: BidsByType, types: BidType[], eventId: EventId, payload: any): Bid[] | undefined {
+    const matchingBids = getMatchingBids(activeBidsByType, types, eventId);
+    if(matchingBids === undefined) return undefined;
+    const progressingBids: Bid[] = [];
+    matchingBids.forEach(bid => {
+        if(isBlocked(activeBidsByType, bid.eventId, {payload: payload})) return undefined;
+        if(!isValid(bid, payload)) return undefined;
+        progressingBids.push(bid);
+    });
+    return progressingBids.length === 0 ? undefined : progressingBids;
+}
+
 
 function progressWaitingBThreads(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, types: BidType[], action: Action): boolean {
-    const matchingBids = getMatchingBids(activeBidsByType, types, action.eventId);
-    if(matchingBids === undefined) return false;
-    let someWaitProgressed = false;
-    matchingBids.forEach(bid => {
-        if(isBlocked(activeBidsByType, bid.eventId, action)) return;
-        if(!isValid(bid, action.payload)) return;
+    const bThreadIds = getProgressingBids(activeBidsByType, types, action.eventId, action.payload);
+    if(bThreadIds === undefined) return false;
+    bThreadIds.forEach(bid => {
         bThreadMap.get(bid.bThreadId)?.progressWait(bid, action);
-        someWaitProgressed = true;
     });
-    return someWaitProgressed;
+    return true;
 }
 
 function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, action: Action): ActionResult.ExtendedWithPromise | undefined {

@@ -1,5 +1,8 @@
-import { Bid, BidsByType, BidType, getMatchingBids } from './bid';
+import { Bid, BidsByType, BidType, getMatchingBids, isBlocked } from './bid';
 import { EventId } from './event-map';
+import { BThreadId } from './bthread';
+import { BThreadMap } from './bthread-map';
+import { getProgressingBids } from './advance-bthreads';
 
 export type Validation = (payload: any) => {isValid: boolean; message?: string} | boolean
 
@@ -32,38 +35,42 @@ export interface ValidationResult {
     isValid: boolean;
     required: BidValidationResult[][];
     optional: BidValidationResult[];
+    progressingBids: Bid[];
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function validate(activeBidsByType: BidsByType, event: EventId, payload: any): ValidationResult {
-    const bids = activeBidsByType[BidType.askFor]?.get(event);
+export function validate(activeBidsByType: BidsByType, eventId: EventId, payload: any): ValidationResult {
+    const askingForBids = activeBidsByType[BidType.askFor]?.get(eventId);
+    const progressingThreads = new BThreadMap<void>();
     const validationResult: ValidationResult = {
         isValid: false,
         required: [[]],
-        optional: []
+        optional: [],
+        progressingBids: []
     }
-    if(bids === undefined) return validationResult;
-    bids.forEach(bid => {
+    if(askingForBids === undefined) return validationResult;
+    askingForBids.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         validationResult.required[0].push(bidValidationResult);
     });
-    const blocks = getMatchingBids(activeBidsByType, [BidType.block], event);
+    const waitingForBids = getMatchingBids(activeBidsByType, [BidType.waitFor], eventId);
+    waitingForBids?.forEach(bid => {
+        const bidValidationResult = getValidationResult(bid, payload);
+        validationResult.optional.push(bidValidationResult);
+    });
+    const blocks = getMatchingBids(activeBidsByType, [BidType.block], eventId);
     blocks?.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         bidValidationResult.isValid = !bidValidationResult.isValid; // reverse isValid because a passed block is a restriction.
         validationResult.required.push([bidValidationResult]);
     });
-    const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], event);
+    const guardedBlocks = getMatchingBids(activeBidsByType, [BidType.guardedBlock], eventId);
     guardedBlocks?.forEach(bid => {
         const bidValidationResult = getValidationResult(bid, payload);
         bidValidationResult.isValid = !bidValidationResult.isValid; // reverse isValid because a passed block is a restriction.
         validationResult.required.push([bidValidationResult]);
     });
-    const waitFors = getMatchingBids(activeBidsByType, [BidType.waitFor], event);
-    waitFors?.forEach(bid => {
-        const bidValidationResult = getValidationResult(bid, payload);
-        validationResult.optional.push(bidValidationResult);
-    });
-    validationResult.isValid = validationResult.required.every(validationResults => validationResults.some(({isValid}) => isValid === true));
+    validationResult.isValid = validationResult.required.every(r => r.some(({isValid}) => isValid === true));
+    validationResult.progressingBids = getProgressingBids(activeBidsByType, [BidType.waitFor, BidType.askFor], eventId, payload) || [];
     return validationResult;
 }
