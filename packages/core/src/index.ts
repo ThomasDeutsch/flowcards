@@ -15,7 +15,7 @@ export * from './logger';
 export * from './action';
 export * from './extend-context';
 
-export type UpdateCallback = (scenario: ScenariosContext) => any;
+export type UpdateCallback = (scenario: ScenariosContext) => void;
 export type SingleActionDispatch = (action: Action) => void;
 export type ScenariosDispatch = (action: ScenariosAction) => void;
 export type ContextTest = (context: ScenariosContext) => any;

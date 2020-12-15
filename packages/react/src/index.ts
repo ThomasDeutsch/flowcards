@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { StagingFunction, ScenariosContext, ScenariosDispatch } from "@flowcards/core";
-import { Scenarios } from '../../core/src/index';
+import { Scenarios, UpdateCallback } from '../../core/src/index';
 
 export * from '@flowcards/core';
 
@@ -8,12 +8,15 @@ export function useScenarios(stagingFunction: StagingFunction, dependencies: any
     const [context, setContext] = useState<ScenariosContext>();
     const scenariosRef = useRef<Scenarios | null>(null);
     useMemo(() => {
-        if(scenariosRef.current !== null) { // do not run this for the initial dependencies
+        if(scenariosRef.current !== null) { 
+            // do not run this for the initial dependencies
             scenariosRef.current.dispatch({type: 'contextChange'});
         }
     }, dependencies);
-    if(scenariosRef.current === null) { // only to this once
-        scenariosRef.current = new Scenarios(stagingFunction, (a: ScenariosContext): void => { setContext(a) })
+    if(scenariosRef.current === null) { 
+        // only to this once
+        const updateCallback: UpdateCallback = (newContext: ScenariosContext): void => { setContext(newContext) }
+        scenariosRef.current = new Scenarios(stagingFunction, updateCallback);
     }
     return [context || scenariosRef.current.initialScenariosContext, scenariosRef.current.dispatch];
 }
