@@ -1,17 +1,18 @@
 {
   "compilerOptions": {
     /* Basic Options */
-    "target": "ES2015" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019' or 'ESNEXT'. */,
-    "module": "ES2015" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
+    "target": "es5" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019' or 'ESNEXT'. */,
+    "module": "ESNext" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
     "rootDir": "." /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */,
     /* Strict Type-Checking Options */
     "strict": true /* Enable all strict type-checking options. */,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
     "moduleResolution": "node",
     "jsx": "preserve",
     /* Module Resolution Options */
-    "baseUrl": "." /* Base directory to resolve non-absolute module names. */,
+    "baseUrl": "./" /* Base directory to resolve non-absolute module names. */,
     "paths": {
       "@flowcards/*": ["packages/*/src"]
     } /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */,

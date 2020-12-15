@@ -15,7 +15,8 @@
   "scripts": {
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "prepublish": "npm run build"
   },
   "license": "MIT",
   "gitHead": "61054bc59f60a85200725d3a2ecda70d92fa3dcc",

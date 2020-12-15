@@ -15,7 +15,7 @@ export function useScenarios(stagingFunction: StagingFunction, dependencies: any
     }, dependencies);
     if(scenariosRef.current === null) { 
         // only to this once
-        const updateCallback: UpdateCallback = (newContext: ScenariosContext): void => { setContext(newContext) }
+        const updateCallback: UpdateCallback = (newContext: ScenariosContext) => { setContext(newContext) }
         scenariosRef.current = new Scenarios(stagingFunction, updateCallback);
     }
     return [context || scenariosRef.current.initialScenariosContext, scenariosRef.current.dispatch];
