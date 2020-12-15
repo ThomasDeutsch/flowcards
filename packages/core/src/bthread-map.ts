@@ -1,4 +1,4 @@
-import { BThreadId, BThread } from './bthread';
+import { BThreadId } from './bthread';
 
 
 export class BThreadMap<T> {

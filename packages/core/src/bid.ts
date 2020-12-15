@@ -117,8 +117,7 @@ export function getMatchingBids(bidsByType: BidsByType, types: BidType[], event:
         acc.push(...utils.flattenShallow(matchingBids)!);
         return acc;
     }, []);
-    if(result.length === 0) return undefined;
-    return result;
+    return result.length === 0 ? undefined : result;
 }
 
 export function getNextBidAndRemaining(bids: Bid[]): [Bid, Bid[]] {

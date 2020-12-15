@@ -1,6 +1,6 @@
 import { Action, ActionType } from './action';
 import { BidType, getMatchingBids, BidsByType, isBlocked, Bid } from './bid';
-import { BThread, BThreadId } from './bthread';
+import { BThread } from './bthread';
 import { BThreadMap } from './bthread-map';
 import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
@@ -44,11 +44,10 @@ function progressWaitingBThreads(activeBidsByType: BidsByType, bThreadMap: BThre
 }
 
 function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, action: Action): ActionResult.ExtendedWithPromise | undefined {
-    const bids = getMatchingBids(activeBidsByType, [BidType.extend], action.eventId);
-    if(!bids || bids.length === 0) return;
-    while(bids && bids.length > 0) {
-        const bid = bids.shift(); // get bid with highest priority
-        if(bid === undefined) continue;
+    const matchingBids = getMatchingBids(activeBidsByType, [BidType.extend], action.eventId);
+    if(matchingBids === undefined) return undefined;
+    while(matchingBids && matchingBids.length > 0) {
+        const bid = matchingBids.shift()!; // get bid with highest priority
         if(isBlocked(activeBidsByType, bid.eventId, action)) continue;
         if(!isValid(bid, action.payload)) continue;
         const extendContext = bThreadMap.get(bid.bThreadId)?.progressExtend(action, bid);
