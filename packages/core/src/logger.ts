@@ -1,10 +1,10 @@
-import { Action } from './action';
 import { Bid } from './bid';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
 import { EventId, EventMap } from './event-map';
 import { ActionResult } from './advance-bthreads';
+import { ActionWithId } from '.';
 
 export enum BThreadReactionType {
     init = 'init',
@@ -59,8 +59,8 @@ export class Logger {
     public set actionId(id: number) {
         this._actionId = id;
     }
-    private _actions: Action[] = [];
-    public get actions(): Action[] { return this._actions; }
+    private _actions: ActionWithId[] = [];
+    public get actions(): ActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
     public pendingHistory = new Map<number, EventMap<Bid[]>>();
@@ -80,10 +80,10 @@ export class Logger {
         bThreadHistory!.set(this._actionId, type);
     }
 
-    public logAction(action: Action): void {
+    public logAction(action: ActionWithId): void {
         const a = {...action}
         if(action.resolve) {
-            this._actions[action.resolve.requestActionId].resolveActionId = action.id!;
+            this._actions[action.resolve.requestActionId].resolveActionId = action.id;
         }
         if(action.resolveActionId === null) {
             a.payload = undefined; // do not save the promise object 

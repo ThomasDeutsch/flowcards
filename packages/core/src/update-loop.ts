@@ -9,7 +9,7 @@ import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { ContextTest, SingleActionDispatch, ScenariosReplayAction } from './index';
+import { ContextTest, SingleActionDispatch, ActionWithId, Replay } from './index';
 
 
 
@@ -139,7 +139,7 @@ export class UpdateLoop {
                     action.resolveActionId = null;
                 }
             }
-            this._logger.logAction(action);
+            this._logger.logAction(action as ActionWithId);
             const actionResult = advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
             this._logger.logActionResult(actionResult);
             this._currentActionId++;
@@ -168,11 +168,11 @@ export class UpdateLoop {
         return this._setupContext();
     }
 
-    public startReplay(replayAction: ScenariosReplayAction): ScenariosContext {
+    public startReplay(replay: Replay): ScenariosContext {
         this._replayMap.clear();
         this._testResults.clear();
-        replayAction.actions.forEach(action => this._replayMap.set(action.id, action));
-        replayAction.tests?.forEach((tests, actionId) => this._contextTests.set(actionId, [...tests]));
+        replay.actions.forEach(action => this._replayMap.set(action.id, action));
+        replay.tests?.forEach((tests, actionId) => this._contextTests.set(actionId, [...tests]));
         this._reset();
         return this.runScaffolding();
     }

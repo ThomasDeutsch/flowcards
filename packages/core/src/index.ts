@@ -17,27 +17,31 @@ export * from './extend-context';
 
 export type UpdateCallback = (newContext: ScenariosContext) => void;
 export type SingleActionDispatch = (action: Action) => void;
-export type ScenariosDispatch = (action: ScenariosAction) => void;
+export type DispatchCommand = (command: Replay | ContextChange | PlayPause) => void;
 export type ContextTest = (context: ScenariosContext) => any;
 
 export interface ActionWithId extends Action {
     id: number;
 }
 
-export interface ScenariosAction {
-    type: 'replay' | 'playPause' | 'contextChange';
-    actions?: ActionWithId[];
+export interface Replay {
+    type: 'replay';
+    actions: ActionWithId[];
+    breakpoints?: Set<number>;
     tests?: Map<number, ContextTest[]>;
 }
 
-export interface ScenariosReplayAction extends ScenariosAction {
-    type: 'replay';
-    actions: ActionWithId[];
+export interface ContextChange {
+    type: 'contextChange';
+}
+
+export interface PlayPause {
+    type: 'playPause';
 }
 
 export class Scenarios {
     private _bufferedActions: Action[] = [];
-    private _latestReplayAction?: ScenariosReplayAction;
+    private _latestReplay?: Replay;
     private _updateLoop: UpdateLoop;
     private _updateCb?: UpdateCallback;
     public initialScenariosContext: ScenariosContext;
@@ -65,9 +69,9 @@ export class Scenarios {
 
     private _clearBufferOnNextTick = () => {
         Promise.resolve().then(() => { // next tick
-            if(this._latestReplayAction) {
-                const actionCopy = {...this._latestReplayAction};
-                delete this._latestReplayAction;
+            if(this._latestReplay) {
+                const actionCopy = {...this._latestReplay};
+                delete this._latestReplay;
                 this._maybeCallUpdateCb(this._updateLoop.startReplay(actionCopy));
             }
             if(this._bufferedActions.length > 0) {
@@ -78,8 +82,8 @@ export class Scenarios {
         }).catch(error => console.error(error));
     }
 
-    private _dispatch(scenariosAction: ScenariosAction): void {
-        switch(scenariosAction.type) {
+    private _dispatch(command: Replay | ContextChange | PlayPause): void {
+        switch(command.type) {
             case 'contextChange': {
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding());
                 break;
@@ -89,16 +93,16 @@ export class Scenarios {
                 break;
             }
             case 'replay': {
-                if(scenariosAction.actions === undefined || scenariosAction.actions.length === 0) {
+                if(command.actions === undefined || command.actions.length === 0) {
                     console.warn('replay was dispatched without replay actions - replay was aborted');
                     return;
                 }
                 this._bufferedActions.length = 0; // cancel all buffered actions
-                this._latestReplayAction = {...scenariosAction} as ScenariosReplayAction;
+                this._latestReplay = {...command};
                 this._clearBufferOnNextTick();
             }
         }
     }
     
-    public get dispatch(): ScenariosDispatch { return this._dispatch.bind(this) }
+    public get dispatch(): DispatchCommand { return this._dispatch.bind(this) }
 }
