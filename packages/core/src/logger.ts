@@ -143,10 +143,6 @@ export class Logger {
         this.pendingHistory.set(this._actionId-1, pending.clone());
     }
 
-    public logActionResult(actionResult: ActionResult): void {
-        this.actionResults.set(this._actionId, actionResult);
-    }
-
     public resetLog(): void {
         this._actionId = 0;
         this._actions = [];

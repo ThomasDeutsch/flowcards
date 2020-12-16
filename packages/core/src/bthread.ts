@@ -250,10 +250,8 @@ export class BThread {
         }
     }
 
-    public hasActiveBid(action: Action): boolean {
-        const bid = this._currentBids?.[action.bidType!]?.get(action.eventId);
-        if(!bid) return false;
-        return true;
+    public getCurrentBid(action: Action): Bid | undefined {
+        return this._currentBids?.[action.bidType!]?.get(action.eventId);
     }
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {

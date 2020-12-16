@@ -72,7 +72,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
             if(action.bidType === undefined) return ActionResult.MissingBidType;
             const bThread = bThreadMap.get(action.bThreadId);
             if(bThread === undefined) return ActionResult.RequestingBThreadNotFound;
-            if(!bThread.hasActiveBid) return ActionResult.NoActiveBidForRequest
+            if(!bThread.getCurrentBid(action)) return ActionResult.NoActiveBidForRequest
             if(action.resolveActionId !== undefined) {
                 bThread.addPendingEvent({...action}, false);
                 progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], action);
@@ -95,7 +95,7 @@ export function advanceBThreads(bThreadMap: BThreadMap<BThread>, eventCache: Eve
             if(bThread === undefined) return ActionResult.ResolveBThreadNotFound;
             if(bThread.resolvePending(action) === false) return ActionResult.ResolveCancelled
             activeBidsByType.pending?.deleteSingle(action.eventId);
-            if(extendAction(activeBidsByType, bThreadMap, action) === ActionResult.ExtendedWithPromise) ActionResult.ExtendedWithPromise;
+            if(extendAction(activeBidsByType, bThreadMap, action) === ActionResult.ExtendedWithPromise) return ActionResult.ExtendedWithPromise;
             bThread.progressRequest(eventCache, action);
             progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
             return ActionResult.OK;

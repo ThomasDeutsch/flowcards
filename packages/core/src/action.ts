@@ -1,6 +1,7 @@
 import { Bid, BidsByType, isBlocked, BidType, getActiveBidsForSelectedTypes, hasValidMatch, getNextBidAndRemaining } from './bid';
 import { EventId } from './event-map';
 import { BThreadId } from './bthread';
+import { validateRequestAction } from './action-test';
 
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
 
@@ -27,16 +28,7 @@ export interface Action {
 }
 
 
-function isValidRequest(bidsByType: BidsByType, bid: Bid): boolean {
-    if(isBlocked(bidsByType, bid.eventId, bid)) return false;
-    if(bid.type === BidType.trigger) {
-        return hasValidMatch(bidsByType, BidType.askFor, bid.eventId, bid) || hasValidMatch(bidsByType, BidType.waitFor, bid.eventId, bid);
-    }
-    return true;
-}
-
-
-function getActionFromBid(bid: Bid): Action {
+export function getActionFromBid(bid: Bid): Action {
     const action = {
         id: null,
         type: ActionType.request,
@@ -46,18 +38,4 @@ function getActionFromBid(bid: Bid): Action {
         bidType: bid.type
     };
     return action;
-}
-
-
-export function getNextActionFromRequests(activeBidsByType: BidsByType): Action | undefined {
-    const bids = getActiveBidsForSelectedTypes(activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);
-    if(bids === undefined) return undefined;
-    let [nextBid, restBids] = getNextBidAndRemaining(bids);
-    while(nextBid) {
-        if(isValidRequest(activeBidsByType, nextBid)) {
-            return getActionFromBid(nextBid);
-        }
-        [nextBid, restBids] = getNextBidAndRemaining(restBids);
-    }
-    return undefined; 
 }

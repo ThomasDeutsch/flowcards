@@ -1,5 +1,5 @@
 import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
-import { BThreadBids, activeBidsByType, BidsByType, extend } from './bid';
+import { BThreadBids, activeBidsByType, BidsByType, extend, getActiveBidsForSelectedTypes } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
@@ -10,6 +10,8 @@ import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { setupScaffolding, StagingFunction } from './scaffolding';
 import { ContextTest, SingleActionDispatch, ActionWithId, Replay } from './index';
+import { actionTest, ActionTestResult, getRequestBid } from './action-test';
+import { BidType } from '../build';
 
 
 
@@ -50,7 +52,7 @@ export class UpdateLoop {
     private readonly _contextTests = new Map<number, ContextTest[]>();
     private readonly _testResults = new Map<number, any[]>();
     private _replay?: CurrentReplay;
-    private readonly _actionQueue: Action[] = [];     
+    private readonly _uiActionQueue: Action[] = [];     
 
     constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch) {
         this._logger = new Logger();
@@ -60,7 +62,7 @@ export class UpdateLoop {
 
     private _reset() {
         this._currentActionId = 0;
-        this._actionQueue.length = 0;
+        this._uiActionQueue.length = 0;
         this._bThreadMap.forEach(bThread => bThread.destroy(true));
         this._bThreadMap.clear();
         this._eventCache.clear();
@@ -107,7 +109,7 @@ export class UpdateLoop {
         }
     }
 
-    private _runTests(): void {
+    private _runContextTests(): void {
         // run required (default) tests:
         // - is this action blocked?
         // - has this action a valid payload?
@@ -130,41 +132,65 @@ export class UpdateLoop {
         this._testResults.set(this._currentActionId, results);
     }
 
-    private _setupContext(): ScenariosContext {
-        let action: undefined | Action;
-        this._runTests();
-        if(this.isPaused === false) {
-            action = this._getNextReplayAction(this._currentActionId)
-                || this._actionQueue.shift() || 
-                getNextActionFromRequests(this._activeBidsByType);
-        }
-        if (action !== undefined) { // use next action
-            if(action.id === null) {
-                action.id = this._currentActionId;
+    private _processPayload(action: Action): void {
+        if(action.type === ActionType.request) {
+            if (typeof action.payload === "function") {
+                action.payload = action.payload(this._eventCache.get(action.eventId)?.value);
             }
-            if(action.type === ActionType.request) {
-                if (typeof action.payload === "function") {
-                    action.payload = action.payload(this._eventCache.get(action.eventId)?.value);
-                }
-                if(utils.isThenable(action.payload) && action.resolveActionId === undefined) {
-                    action.resolveActionId = null;
-                }
+            if(utils.isThenable(action.payload) && action.resolveActionId === undefined) {
+                action.resolveActionId = null;
             }
-            this._logger.logAction(action as ActionWithId);
-            const actionResult = advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-            this._logger.logActionResult(actionResult);
-            this._currentActionId++;
-            this._logger.logPending(this._activeBidsByType.pending);
-            return this.runScaffolding();
         }
-        return this._getContext();
     }
+
+    private _setupContext(): ScenariosContext {
+        this._runContextTests();
+        if(this.isPaused) return this._getContext();
+        const requestingBids = getActiveBidsForSelectedTypes(this._activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);
+        let bThreadsAdvanced = false;
+        do {
+            const action = this._getNextReplayAction(this._currentActionId) ||  this._uiActionQueue.shift() || getActionFromBid(requestingBids.shift())
+            if(action === undefined) return this._getContext();
+            if (action.id === null) action.id = this._currentActionId;
+            if (action.type === ActionType.request) {
+                // get bid
+                this._processPayload(action);
+                this._logger.logAction(action as ActionWithId);
+                // advance b-threads
+                bThreadsAdvanced = true;
+            } 
+            else if (action.type === ActionType.ui) {
+                // get bids
+                this._processPayload(action);
+                this._logger.logAction(action as ActionWithId);
+                // advance b-threads
+                bThreadsAdvanced = true;
+            }
+            else if (action.type === ActionType.resolve) {
+                // getBThreadId
+                // advance b-threads
+                bThreadsAdvanced = true;
+            }
+            else if (action.type === ActionType.reject) {
+                // getBThreadId
+                // advance b-threads
+                bThreadsAdvanced = true;
+            }
+         } while (!bThreadsAdvanced);
+         advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+         this._currentActionId++;
+         this._logger.logPending(this._activeBidsByType.pending);
+         return this.runScaffolding();
+    }
+
+    //TODO: Teste den fall, dass 2x eine UI-Action gefeuert wurde, diese aber nur 1x ausgeführt wurden durfte -> eine warnung wird ausgegeben.
+    //TODO: Teste den fall, dass eine request-action, eine ui-action gleichzeitig in der update-loop vorhanden sind.
 
     // public ----------------------------------------------------------------------
     public isPaused = false;
 
-    public setActionQueue(actions: Action[]): void {
-        this._actionQueue.length = 0;
+    public setUiActionQueue(actions: Action[]): void {
+        this._uiActionQueue.length = 0;
         actions.forEach(action => this._actionQueue.push(action));
     }
 
