@@ -1,5 +1,5 @@
 import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
-import { BThreadBids, activeBidsByType, BidsByType } from './bid';
+import { BThreadBids, activeBidsByType, BidsByType, extend } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
@@ -30,6 +30,10 @@ export interface ScenariosContext {
 }
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
+export interface CurrentReplay extends Replay {
+    testResults: Map<number, any>;
+    isCompleted: boolean;
+}
 
 export class UpdateLoop {
     private _currentActionId = 0;
@@ -45,7 +49,7 @@ export class UpdateLoop {
     private readonly _singleActionDispatch: SingleActionDispatch;
     private readonly _contextTests = new Map<number, ContextTest[]>();
     private readonly _testResults = new Map<number, any[]>();
-    private readonly _replayMap = new Map<number, Action>();
+    private _replay?: CurrentReplay;
     private readonly _actionQueue: Action[] = [];     
 
     constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch) {
@@ -75,12 +79,11 @@ export class UpdateLoop {
         return context;
     }
 
-    private _getNextReplayAction(actionId: number): Action | undefined {
-        if(this._replayMap.size !== 0) {
-            if(this._replayMap.has(0)) actionId = 0;
-            const action = this._replayMap.get(actionId);
-            if(action === undefined) return undefined;
-            this._replayMap.delete(actionId);
+    private _getNextReplayAction(actionId: number): ActionWithId | undefined {
+        if(this._replay === undefined) return undefined
+        const actions = this._replay.actions;
+        if(actions.length > 0 && actions[0].id === actionId) {
+            const action = this._replay.actions.shift()!;
             if(action.payload === GET_VALUE_FROM_BTHREAD) {
                 action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.eventId)?.payload;
             }
@@ -97,7 +100,7 @@ export class UpdateLoop {
             bids: this._activeBidsByType,
             debug: {
                 currentActionId: this._currentActionId,
-                inReplay: this._replayMap.size > 0,
+                inReplay: this._replay !== undefined && this._replay.isCompleted === false,
                 isPaused: this.isPaused,
                 testResults: this._testResults
             }
@@ -169,10 +172,7 @@ export class UpdateLoop {
     }
 
     public startReplay(replay: Replay): ScenariosContext {
-        this._replayMap.clear();
-        this._testResults.clear();
-        replay.actions.forEach(action => this._replayMap.set(action.id, action));
-        replay.tests?.forEach((tests, actionId) => this._contextTests.set(actionId, [...tests]));
+        this._replay = {...replay, isCompleted: false, testResults: new Map<number, any>()}
         this._reset();
         return this.runScaffolding();
     }
