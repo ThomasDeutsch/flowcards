@@ -108,6 +108,14 @@ export class UpdateLoop {
     }
 
     private _runTests(): void {
+        // run required (default) tests:
+        // - is this action blocked?
+        // - has this action a valid payload?
+        // - ui: is there an askFor?
+        // - request: is the BThread making this request?
+        // - resolve/reject: is the BThread pending this event?
+        // + run additional tests based on context
+        // + run UI-Tests ( screenshots + filling of UI-Fields )
         const tests = this._contextTests.get(this._currentActionId);
         if(tests === undefined || tests.length === 0) return;
         const results: any[] = [];
