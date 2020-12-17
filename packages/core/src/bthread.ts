@@ -146,7 +146,7 @@ export class BThread {
     }
 
     private _deletePending(action: Action): boolean {
-        if(action.resolve?.isResolvedExtend) {
+        if(action.bidType === BidType.extend) {
             return this._pendingExtends.deleteSingle(action.eventId);
         }
         else {
@@ -196,17 +196,15 @@ export class BThread {
             if(pendingEventInfo === undefined || pendingEventInfo.actionId === null) return;
             if(pendingEventInfo.actionId !== action.id) return;
             if (pendingEventInfo.actionId === action.id) {
-                if(!isExtendPromise) this._cancelPendingRequests(pendingEventInfo.eventId);
                 const requestDuration = new Date().getTime() - startTime;
                 this._singleActionDispatch({
                     id: action.resolveActionId || null, 
                     type: ActionType.resolve,
                     bThreadId: this.id,
                     eventId: action.eventId,
-                    bidType: action.bidType,
+                    bidType: isExtendPromise ? BidType.extend : action.bidType,
                     payload: data,
                     resolve: {
-                        isResolvedExtend: isExtendPromise,
                         requestActionId: action.id!,
                         requestDuration: requestDuration
                     }
@@ -222,10 +220,9 @@ export class BThread {
                     type: ActionType.reject,
                     bThreadId: this.id,
                     eventId: action.eventId,
-                    bidType: action.bidType,
+                    bidType: isExtendPromise ? BidType.extend : action.bidType,
                     payload: e,
                     resolve: {
-                        isResolvedExtend: isExtendPromise,
                         requestActionId: action.id!,
                         requestDuration: requestDuration
                     }
@@ -234,6 +231,7 @@ export class BThread {
         });
     }
 
+    
     public resolvePending(action: Action): boolean {
         if(this._deletePending(action) === false) return false;
         this._setCurrentBids();
@@ -241,8 +239,9 @@ export class BThread {
     }
 
     public rejectPending(action: Action): void {
-        if(action.type !== ActionType.reject || action.resolve?.isResolvedExtend) return;
-        if(this._thread && this._thread.throw) {
+        if(action.bidType === BidType.extend) {
+            this._deletePending(action);
+        } else {
             this._thread.throw({event: action.eventId, error: action.payload});
             this._cancelPendingRequests(action.eventId);
             this._progressBThread(action.eventId, action.payload, true);
@@ -250,17 +249,13 @@ export class BThread {
         }
     }
 
-    public hasActiveBid(action: Action): boolean {
-        const bid = this._currentBids?.[action.bidType!]?.get(action.eventId);
-        if(!bid) return false;
-        return true;
+    public getCurrentBid(action: Action): Bid | undefined {
+        return this._currentBids?.[action.bidType!]?.get(action.eventId);
     }
     
     public progressRequest(eventCache: EventMap<CachedItem<any>>, action: Action): void {
-        const bidType = action.bidType;
-        if(bidType === undefined) return;
-        const bid = this._currentBids?.[bidType]?.get(action.eventId);
-        if(!bid) return;
+        const bidType = action.bidType!; // ensured by action check
+        const bid: Bid = this.getCurrentBid(action)!; // ensured by action check
         if(bidType === BidType.set) {
             setEventCache(eventCache, action.eventId, action.payload);
         }
@@ -276,7 +271,7 @@ export class BThread {
 
     public progressExtend(action: Action, bid: Bid): ExtendContext {
         const extendContext = new ExtendContext(action.payload);
-        this._cancelPendingRequests(action.eventId);
+        //this._cancelPendingRequests(action.eventId);
         this._progressBThread(bid.eventId, extendContext);
         this._logger.logBThreadProgress(this.id, bid, this._state);
         extendContext.createPromiseIfNotCompleted();

@@ -75,11 +75,11 @@ export class Scenarios {
                 this._maybeCallUpdateCb(this._updateLoop.startReplay(actionCopy));
             }
             if(this._bufferedActions.length > 0) {
-                this._updateLoop.setActionQueue(this._bufferedActions);
+                this._updateLoop.setUiActionQueue(this._bufferedActions);
                 this._bufferedActions.length = 0;
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
             } 
-        }).catch(error => console.error(error));
+        });
     }
 
     private _dispatch(command: Replay | ContextChange | PlayPause): void {

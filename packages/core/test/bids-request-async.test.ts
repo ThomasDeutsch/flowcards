@@ -210,3 +210,7 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
         }
     });
 });
+
+
+
+// TODO: a resolve/reject can not be blocked

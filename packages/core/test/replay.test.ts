@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios, delay } from './testutils';
 import { ActionType, GET_VALUE_FROM_BTHREAD } from '../src/action';
 import { scenario } from '../src/scenario';
-import { BidType, isBlocked } from '../src/bid';
+import { BidType } from '../src/bid';
 import { ScenariosContext } from '../src/update-loop';
 import { ContextTest } from "../src";
 import * as chai from "chai";

@@ -17,6 +17,8 @@ export enum BidType {
     onPending = "onPending"
 }
 
+export type RequestBidType = BidType.request | BidType.trigger | BidType.set;
+
 export interface Bid {
     type: BidType;
     bThreadId: BThreadId;
