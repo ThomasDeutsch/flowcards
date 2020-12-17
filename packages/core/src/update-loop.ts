@@ -9,8 +9,8 @@ import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { ContextTest, SingleActionDispatch, ActionWithId, Replay, BidType } from './index';
-import { ActionTestResult, checkRequestAction, checkUiAction, checkResolveAction, checkRejectAction } from './action-test';
+import { SingleActionDispatch, ActionWithId, Replay, BidType } from './index';
+import { ActionCheck, checkRequestAction, checkUiAction, checkResolveAction, checkRejectAction } from './action-check';
 
 
 
@@ -48,8 +48,10 @@ export class UpdateLoop {
     private readonly _eventContexts = new EventMap<EventContext>();
     private readonly _singleActionDispatch: SingleActionDispatch;
     private readonly _testResults = new Map<number, any[]>();
+    private _inReplay = false;
     private _replay?: CurrentReplay;
     private readonly _uiActionQueue: Action[] = [];     
+    
 
     constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch) {
         this._logger = new Logger();
@@ -92,6 +94,7 @@ export class UpdateLoop {
     }
 
     private _getContext(): ScenariosContext {
+        this._inReplay = this._replay !== undefined && this._replay.actions.length > 0
         return { 
             event: this._getEventContext.bind(this),
             thread: this._bThreadStateMap,
@@ -99,7 +102,7 @@ export class UpdateLoop {
             bids: this._activeBidsByType,
             debug: {
                 currentActionId: this._currentActionId,
-                inReplay: this._replay !== undefined && this._replay.actions.length > 0,
+                inReplay: this._inReplay,
                 isPaused: this.isPaused,
                 testResults: this._testResults
             }
@@ -107,8 +110,7 @@ export class UpdateLoop {
     }
 
     private _runContextTests(): void {
-        if(this._replay === undefined) return;
-        const tests = this._replay.tests?.get(this._currentActionId);
+        const tests = this._replay?.tests?.get(this._currentActionId);
         if(tests === undefined || tests.length === 0) return;
         const results: any[] = [];
         tests.forEach(scenarioTest => {
@@ -123,7 +125,7 @@ export class UpdateLoop {
     }
 
     private _processPayload(action: Action): void {
-        if(action.type === ActionType.request) {
+        if(action.type === ActionType.requested) {
             if (typeof action.payload === "function") {
                 action.payload = action.payload(this._eventCache.get(action.eventId)?.value);
             }
@@ -134,55 +136,54 @@ export class UpdateLoop {
     }
 
     private _setupContext(): ScenariosContext {
-        this._runContextTests();
+        if(this._inReplay) this._runContextTests();
         if(this.isPaused) return this._getContext();
         const requestingBids = getActiveBidsForSelectedTypes(this._activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);
-        let bThreadsAdvanced = false;
+        let actionCheck: ActionCheck | undefined = undefined;        
         do {
             const action = this._getNextReplayAction(this._currentActionId) ||  this._uiActionQueue.shift() || getActionFromBid(requestingBids?.shift())
-            let testResult: ActionTestResult | undefined = undefined;
             if(action === undefined) return this._getContext();
             if (action.id === null) action.id = this._currentActionId;
-            if (action.type === ActionType.request) {
-                testResult = checkRequestAction(this._bThreadMap, this._activeBidsByType, action);
-                if(testResult === ActionTestResult.OK) {
+            if (action.type === ActionType.requested) {
+                actionCheck = checkRequestAction(this._bThreadMap, this._activeBidsByType, action);
+                if(actionCheck === ActionCheck.OK) {
                     this._processPayload(action);
                     this._logger.logAction(action as ActionWithId);
                     advanceRequestAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-                    bThreadsAdvanced = true;
                 }
             }
-            else if (action.type === ActionType.ui) {
-                testResult = checkUiAction(this._activeBidsByType, action);
-                if(testResult === ActionTestResult.OK) {
+            else if (action.type === ActionType.uiDispatched) {
+                actionCheck = checkUiAction(this._activeBidsByType, action);
+                if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ActionWithId);
                     advanceUiAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-                    bThreadsAdvanced = true;
                 }
             }
-            else if (action.type === ActionType.resolve) {
-                testResult = checkResolveAction(this._bThreadMap, action);
-                if(testResult === ActionTestResult.OK) {
+            else if (action.type === ActionType.resolved) {
+                actionCheck = checkResolveAction(this._bThreadMap, action);
+                if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ActionWithId);
                     advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-                    bThreadsAdvanced = true;
                 }
             }
-            else if (action.type === ActionType.reject) {
-                testResult = checkRejectAction(this._bThreadMap, action);
-                if(testResult === ActionTestResult.OK) {
+            else if (action.type === ActionType.rejected) {
+                actionCheck = checkRejectAction(this._bThreadMap, action);
+                if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ActionWithId);
                     advanceRejectAction(this._bThreadMap, this._activeBidsByType, action);
-                    bThreadsAdvanced = true;
                 }
             }
-
-         } while (!bThreadsAdvanced);
+            if(this._inReplay && actionCheck !== ActionCheck.OK) {
+                this.isPaused = true;
+                const results = this._testResults.get(this._currentActionId) || [];
+                this._testResults.set(this._currentActionId, [...results, {type: 'action-validation', message: actionCheck, action: action}]);
+                return this._getContext();
+            }
+         } while (actionCheck !== ActionCheck.OK);
          this._currentActionId++;
          this._logger.logPending(this._activeBidsByType.pending); //TODO: can this be removed?
          return this.runScaffolding();
     }
-
 
 
     // public ----------------------------------------------------------------------
@@ -201,6 +202,7 @@ export class UpdateLoop {
 
     public startReplay(replay: Replay): ScenariosContext {
         this._replay = {...replay, testResults: new Map<number, any>()}
+        this._inReplay = true;
         this._reset();
         return this.runScaffolding();
     }

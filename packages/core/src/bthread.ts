@@ -199,7 +199,7 @@ export class BThread {
                 const requestDuration = new Date().getTime() - startTime;
                 this._singleActionDispatch({
                     id: action.resolveActionId || null, 
-                    type: ActionType.resolve,
+                    type: ActionType.resolved,
                     bThreadId: this.id,
                     eventId: action.eventId,
                     bidType: isExtendPromise ? BidType.extend : action.bidType,
@@ -217,7 +217,7 @@ export class BThread {
                 const requestDuration = new Date().getTime() - startTime;
                 this._singleActionDispatch({
                     id: action.resolveActionId || null,
-                    type: ActionType.reject,
+                    type: ActionType.rejected,
                     bThreadId: this.id,
                     eventId: action.eventId,
                     bidType: isExtendPromise ? BidType.extend : action.bidType,

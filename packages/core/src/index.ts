@@ -47,7 +47,7 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
 
     private _singleActionDispatch(action: Action) {
-        if(this._updateLoop.isPaused && action.type === ActionType.ui) { // dispatching a ui action will resume a paused update-loop
+        if(this._updateLoop.isPaused && action.type === ActionType.uiDispatched) { // dispatching a ui action will resume a paused update-loop
             this._updateLoop.isPaused = false;
             this._bufferedActions.unshift(action);
         } else {

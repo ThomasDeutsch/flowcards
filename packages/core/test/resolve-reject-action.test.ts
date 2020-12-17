@@ -18,7 +18,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
         const updateLoop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
                 updateLoop.setUiActionQueue([action]);
-                expect(action.type).toBe(ActionType.resolve);
+                expect(action.type).toBe(ActionType.resolved);
                 expect(action.bThreadId.name).toBe('thread1');
                 expect(action.eventId.name).toBe('A');
                 expect(action.payload).toBe('data');

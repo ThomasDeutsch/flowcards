@@ -1,23 +1,10 @@
-import { Action, ActionType } from './action';
+import { Action } from './action';
 import { BidType, getMatchingBids, BidsByType, isBlocked, Bid } from './bid';
 import { BThread } from './bthread';
 import { BThreadMap } from './bthread-map';
 import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
 import { isValid } from './validation';
-
-export enum ActionResult {
-    OK,
-    ExtendedWithPromise,
-    RequestingBThreadNotFound,
-    NoBThreadAskedForEvent,
-    ResolveBThreadNotFound,
-    ResolveCancelled,
-    RejectBThreadNotFound,
-    CreatedPendingEvent,
-    MissingBidType,
-    NoActiveBidForRequest
-}
 
 // advance threads, based on selected action
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -44,7 +31,7 @@ function progressWaitingBThreads(activeBidsByType: BidsByType, bThreadMap: BThre
 }
 
 
-function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, action: Action): ActionResult.ExtendedWithPromise | undefined {
+function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThread>, action: Action): 'ExtendedWithPromise' | undefined {
     const matchingBids = getMatchingBids(activeBidsByType, [BidType.extend], action.eventId);
     if(matchingBids === undefined) return undefined;
     while(matchingBids && matchingBids.length > 0) {
@@ -58,55 +45,49 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
             const bThreadId = action.bThreadId.name ? action.bThreadId : bid.bThreadId;
             bThreadMap.get(bThreadId)?.addPendingEvent(action, true);
             progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], action);
-            return ActionResult.ExtendedWithPromise;
+            return 'ExtendedWithPromise';
         } else {
             action.payload = extendContext.value;
         }
     }
 }
 
-export function advanceRequestAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): ActionResult {
-    const bThread = bThreadMap.get(action.bThreadId)!;  // ensured by the previous action test.
-    if(action.resolveActionId !== undefined) {  // payload is a promise
+export function advanceRequestAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): void {
+    const bThread = bThreadMap.get(action.bThreadId)!;
+    if(action.resolveActionId !== undefined) {
         bThread.addPendingEvent({...action}, false);
         progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], action);
-        return ActionResult.CreatedPendingEvent;
+        return;
     }
-    if(extendAction(activeBidsByType, bThreadMap, action)) return ActionResult.ExtendedWithPromise;
+    if(extendAction(activeBidsByType, bThreadMap, action) === 'ExtendedWithPromise') return;
     bThread.progressRequest(eventCache, action);
     progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
-    return ActionResult.OK;
 }
 
 
-export function advanceUiAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): ActionResult {
-    if(extendAction(activeBidsByType, bThreadMap, action)) return ActionResult.ExtendedWithPromise;
+export function advanceUiAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): void {
+    if(extendAction(activeBidsByType, bThreadMap, action)  === 'ExtendedWithPromise') return;
     progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
-    return ActionResult.OK;
 }
 
 
-export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): ActionResult {
+export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): void {
     const bThread = bThreadMap.get(action.bThreadId)!;
     bThread.resolvePending(action);
     activeBidsByType.pending?.deleteSingle(action.eventId);
-    if(extendAction(activeBidsByType, bThreadMap, action)) return ActionResult.ExtendedWithPromise;
+    if(extendAction(activeBidsByType, bThreadMap, action) === 'ExtendedWithPromise') return;
     if(action.bidType !== BidType.extend) {
         bThread.progressRequest(eventCache, action);
     }
     progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
-    return ActionResult.OK;
 }
 
-export function advanceRejectAction(bThreadMap: BThreadMap<BThread>, activeBidsByType: BidsByType, action: Action): ActionResult {
-    const bThread = bThreadMap.get(action.bThreadId);
-    if(bThread === undefined) return ActionResult.RejectBThreadNotFound;
+export function advanceRejectAction(bThreadMap: BThreadMap<BThread>, activeBidsByType: BidsByType, action: Action): void {
+    const bThread = bThreadMap.get(action.bThreadId)!;
     bThread.rejectPending(action);
     if(action.bidType === BidType.extend) {
         activeBidsByType.pending?.deleteSingle(action.eventId);
-        if(extendAction(activeBidsByType, bThreadMap, action)) return ActionResult.ExtendedWithPromise;
+        if(extendAction(activeBidsByType, bThreadMap, action)  === 'ExtendedWithPromise') return;
         progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
     }
-    
-    return ActionResult.OK;
 }

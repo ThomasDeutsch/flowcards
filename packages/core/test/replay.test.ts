@@ -27,10 +27,10 @@ test("a thread can be replayed", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'HEY'}},
-            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: () => delay(100, 1)},
-            {id: 2, type: ActionType.resolve, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: 1},
-            {id: 3, type: ActionType.ui, bThreadId: {name: 'thread1'}, eventId: {name: 'B'}, payload: 3}
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'HEY'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: () => delay(100, 1)},
+            {id: 2, type: ActionType.resolved, bThreadId: {name: 'thread1'}, eventId: {name: 'requestingEventA'}, bidType: BidType.request, payload: 1},
+            {id: 3, type: ActionType.uiDispatched, bThreadId: {name: 'thread1'}, eventId: {name: 'B'}, payload: 3}
         ]
     });
 });
@@ -53,8 +53,8 @@ test("if a request-replay has a GET_VALUE_FROM_BTHREAD symbol as payload, the b-
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request}
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request}
         ]
     });  
 });
@@ -83,10 +83,10 @@ test("a async request can be replayed", (done) => {
     replay({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 2, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 2, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
             // the index:2 action is missing ... this is where the resolve will be placed.
-            {id: 3, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent3'}}
+            {id: 3, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent3'}}
         ]
     });
 });
@@ -109,8 +109,8 @@ test("after a replay completes, the normal execution will resume", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
         ]
     });
 });
@@ -142,8 +142,8 @@ test("a replay can contain tests that will run before an action for that index i
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
         ],
         tests: testMap
     });
@@ -173,8 +173,8 @@ test("during a replay, the inReplay flag is true", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
         ],
         tests: testMap
     });
@@ -205,9 +205,35 @@ test("if a test fails, the execution will be paused", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-            {id: 1, type: ActionType.request, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'requestEvent1'}, bidType: BidType.request}
         ],
         tests: testMap
+    });
+});
+
+
+test("results of a failed action-validation tests are found in the debugger.testResults map", (done) => {
+    const thread1 = scenario({id: 'thread1'}, function* () {
+        yield bp.askFor('replayEvent1');
+        yield bp.request('requestEvent1');
+        yield bp.request('requestEvent2');
+    });
+    const [context, dispatch] = testScenarios((enable) => {
+        enable(thread1());
+    }, ({debug}) => {
+        if(debug.isPaused) {
+            expect(debug.currentActionId).toBe(1);
+            expect(debug.testResults.get(debug.currentActionId)[0].type).toBe('action-validation');
+            expect(debug.testResults.get(debug.currentActionId)[0].message).toBe('BThreadWithoutMatchingBid');
+            done();
+        }
+    });
+    dispatch({
+        type: 'replay',
+        actions: [
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'event-XX'}, bidType: BidType.request}
+        ]
     });
 });
