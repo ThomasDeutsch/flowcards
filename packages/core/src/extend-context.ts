@@ -19,14 +19,14 @@ export class ExtendContext {
         this._value = value;
     }
 
-    public reject(reason: any): void { 
+    public reject(): void { 
         delete this._promise;
         this._isCompleted = true; 
-        this._rejectFn?.(reason)
+        this._rejectFn?.(this._value);
     }
 
     public createPromiseIfNotCompleted(): void {
-        if(this.isCompleted) return
+        if(this.isCompleted) return;
         this._promise = new Promise((resolve, reject) => {
             this._resolveFn = resolve;
             this._rejectFn = reject;

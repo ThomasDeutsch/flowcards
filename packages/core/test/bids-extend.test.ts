@@ -421,17 +421,50 @@ test("a wait can be extended. during the extension, the event is pending", (done
 test("a wait can be extended. After resolving the extend, the wait will be continued", (done) => {
     let timesEventADispatched = 0;
 
-    const waitingThread = scenario(null, function* () {
+    const waitingThread = scenario({id: 'waitingBThread'}, function* () {
         const val = yield bp.askFor("eventA");
         expect(val).toBe(12);
         expect(timesEventADispatched).toBe(1);
         done();
     });
 
-    const extendingThread = scenario(null, function* () {
+    const extendingThread = scenario({id: 'extendingBThread'}, function* () {
         const x = yield bp.extend("eventA");
         yield bp.request('ASYNC', () => delay(200));
         x.resolve(12);
+    });
+
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(extendingThread());
+    }, ({event}) => {
+        if(event('eventA').dispatch !== undefined) {
+            event('eventA')!.dispatch!(10);
+            timesEventADispatched++;
+        }
+
+    });
+});
+
+
+
+test("a wait can be extended. After rejecting the extend, the wait will be continued", (done) => {
+    let timesEventADispatched = 0;
+
+    const waitingThread = scenario({id: 'waitingBThread'}, function* () {
+        const val = yield bp.askFor("eventA");
+        console.log('WAIT CONTINUED123')
+        expect(val).toBe(10);
+        expect(timesEventADispatched).toBe(1);
+        done();
+    });
+
+    const extendingThread = scenario({id: 'extendingBThread'}, function* () {
+        const x = yield bp.extend("eventA");
+        yield bp.request('ASYNC', () => delay(200));
+        x.reject();
+        console.log('extend rejected!')
     });
 
 

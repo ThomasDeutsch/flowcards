@@ -1,17 +1,16 @@
-import { Action, getNextActionFromRequests, ActionType, GET_VALUE_FROM_BTHREAD } from './action';
-import { BThreadBids, activeBidsByType, BidsByType, extend, getActiveBidsForSelectedTypes } from './bid';
+import { Action, ActionType, GET_VALUE_FROM_BTHREAD, getActionFromBid } from './action';
+import { BThreadBids, activeBidsByType, BidsByType, getActiveBidsForSelectedTypes } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
 import { Logger } from './logger';
-import { advanceBThreads } from './advance-bthreads';
+import { advanceRejectAction, advanceRequestAction, advanceResolveAction, advanceUiAction } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { ContextTest, SingleActionDispatch, ActionWithId, Replay } from './index';
-import { actionTest, ActionTestResult, getRequestBid } from './action-test';
-import { BidType } from '../build';
+import { ContextTest, SingleActionDispatch, ActionWithId, Replay, BidType } from './index';
+import { ActionTestResult, checkRequestAction, checkUiAction, checkResolveAction, checkRejectAction } from './action-test';
 
 
 
@@ -110,14 +109,6 @@ export class UpdateLoop {
     }
 
     private _runContextTests(): void {
-        // run required (default) tests:
-        // - is this action blocked?
-        // - has this action a valid payload?
-        // - ui: is there an askFor?
-        // - request: is the BThread making this request?
-        // - resolve/reject: is the BThread pending this event?
-        // + run additional tests based on context
-        // + run UI-Tests ( screenshots + filling of UI-Fields )
         const tests = this._contextTests.get(this._currentActionId);
         if(tests === undefined || tests.length === 0) return;
         const results: any[] = [];
@@ -149,37 +140,49 @@ export class UpdateLoop {
         const requestingBids = getActiveBidsForSelectedTypes(this._activeBidsByType, [BidType.request, BidType.set, BidType.trigger]);
         let bThreadsAdvanced = false;
         do {
-            const action = this._getNextReplayAction(this._currentActionId) ||  this._uiActionQueue.shift() || getActionFromBid(requestingBids.shift())
+            const action = this._getNextReplayAction(this._currentActionId) ||  this._uiActionQueue.shift() || getActionFromBid(requestingBids?.shift())
+            let testResult: ActionTestResult | undefined = undefined;
             if(action === undefined) return this._getContext();
             if (action.id === null) action.id = this._currentActionId;
             if (action.type === ActionType.request) {
-                // get bid
-                this._processPayload(action);
-                this._logger.logAction(action as ActionWithId);
-                // advance b-threads
-                bThreadsAdvanced = true;
-            } 
+                testResult = checkRequestAction(this._bThreadMap, this._activeBidsByType, action);
+                if(testResult === ActionTestResult.OK) {
+                    this._processPayload(action);
+                    this._logger.logAction(action as ActionWithId);
+                    advanceRequestAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                    bThreadsAdvanced = true;
+                }
+            }
             else if (action.type === ActionType.ui) {
-                // get bids
-                this._processPayload(action);
-                this._logger.logAction(action as ActionWithId);
-                // advance b-threads
-                bThreadsAdvanced = true;
+                testResult = checkUiAction(this._activeBidsByType, action);
+                if(testResult === ActionTestResult.OK) {
+                    // this._processPayload(action);  functions not handled as ui-payload
+                    this._logger.logAction(action as ActionWithId);
+                    advanceUiAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                    bThreadsAdvanced = true;
+                }
             }
             else if (action.type === ActionType.resolve) {
-                // getBThreadId
-                // advance b-threads
-                bThreadsAdvanced = true;
+                testResult = checkResolveAction(this._bThreadMap, action);
+                console
+                if(testResult === ActionTestResult.OK) {
+                    this._logger.logAction(action as ActionWithId);
+                    advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                    bThreadsAdvanced = true;
+                }
             }
             else if (action.type === ActionType.reject) {
-                // getBThreadId
-                // advance b-threads
-                bThreadsAdvanced = true;
+                testResult = checkRejectAction(this._bThreadMap, action);
+                if(testResult === ActionTestResult.OK) {
+                    this._logger.logAction(action as ActionWithId);
+                    advanceRejectAction(this._bThreadMap, this._activeBidsByType, action);
+                    bThreadsAdvanced = true;
+                }
             }
+
          } while (!bThreadsAdvanced);
-         advanceBThreads(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
          this._currentActionId++;
-         this._logger.logPending(this._activeBidsByType.pending);
+         this._logger.logPending(this._activeBidsByType.pending); //TODO: can this be removed?
          return this.runScaffolding();
     }
 
@@ -191,7 +194,7 @@ export class UpdateLoop {
 
     public setUiActionQueue(actions: Action[]): void {
         this._uiActionQueue.length = 0;
-        actions.forEach(action => this._actionQueue.push(action));
+        actions.forEach(action => this._uiActionQueue.push(action));
     }
 
     public setContextTests(testMap?: Map<number, ContextTest[]>): void {
