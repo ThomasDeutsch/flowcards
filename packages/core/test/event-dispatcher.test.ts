@@ -186,3 +186,28 @@ test("there is be a dispatch-function for every askingFor event", () => {
         expect(event('XXY').dispatch).toBeUndefined();
     });
 });
+
+
+test("dispatches will be bundled, but invalid dispatches will be ignored", (done) => {
+    //TODO: show a warning if a dispatched event was ignored.
+    const thread1 = scenario({id: 'thread1'}, function* () {
+        yield bp.askFor("eventOne");
+        yield bp.askFor("eventTwo");
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event}) => {
+        if(event("eventOne").dispatch) {
+            event("eventOne").dispatch?.();
+            event("eventOne").dispatch?.(); // this event is ignored.
+        } else {
+            expect(event('eventTwo').dispatch).toBeDefined();
+            done();
+        }
+    });
+});
+
+
+    //TODO: Teste den fall, dass 2x eine UI-Action gefeuert wurde, diese aber nur 1x ausgeführt wurden durfte -> eine warnung wird ausgegeben.
+    //TODO: Teste den fall, dass eine request-action, eine ui-action gleichzeitig in der update-loop vorhanden sind.

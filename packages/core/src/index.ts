@@ -79,7 +79,7 @@ export class Scenarios {
                 this._bufferedActions.length = 0;
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
             } 
-        }).catch(error => console.error(error));
+        });
     }
 
     private _dispatch(command: Replay | ContextChange | PlayPause): void {

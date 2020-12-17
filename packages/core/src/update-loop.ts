@@ -33,7 +33,6 @@ export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, Action>;
 export interface CurrentReplay extends Replay {
     testResults: Map<number, any>;
-    isCompleted: boolean;
 }
 
 export class UpdateLoop {
@@ -48,7 +47,6 @@ export class UpdateLoop {
     private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
     private readonly _eventContexts = new EventMap<EventContext>();
     private readonly _singleActionDispatch: SingleActionDispatch;
-    private readonly _contextTests = new Map<number, ContextTest[]>();
     private readonly _testResults = new Map<number, any[]>();
     private _replay?: CurrentReplay;
     private readonly _uiActionQueue: Action[] = [];     
@@ -101,7 +99,7 @@ export class UpdateLoop {
             bids: this._activeBidsByType,
             debug: {
                 currentActionId: this._currentActionId,
-                inReplay: this._replay !== undefined && this._replay.isCompleted === false,
+                inReplay: this._replay !== undefined && this._replay.actions.length > 0,
                 isPaused: this.isPaused,
                 testResults: this._testResults
             }
@@ -109,7 +107,8 @@ export class UpdateLoop {
     }
 
     private _runContextTests(): void {
-        const tests = this._contextTests.get(this._currentActionId);
+        if(this._replay === undefined) return;
+        const tests = this._replay.tests?.get(this._currentActionId);
         if(tests === undefined || tests.length === 0) return;
         const results: any[] = [];
         tests.forEach(scenarioTest => {
@@ -156,7 +155,6 @@ export class UpdateLoop {
             else if (action.type === ActionType.ui) {
                 testResult = checkUiAction(this._activeBidsByType, action);
                 if(testResult === ActionTestResult.OK) {
-                    // this._processPayload(action);  functions not handled as ui-payload
                     this._logger.logAction(action as ActionWithId);
                     advanceUiAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                     bThreadsAdvanced = true;
@@ -164,7 +162,6 @@ export class UpdateLoop {
             }
             else if (action.type === ActionType.resolve) {
                 testResult = checkResolveAction(this._bThreadMap, action);
-                console
                 if(testResult === ActionTestResult.OK) {
                     this._logger.logAction(action as ActionWithId);
                     advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
@@ -186,8 +183,7 @@ export class UpdateLoop {
          return this.runScaffolding();
     }
 
-    //TODO: Teste den fall, dass 2x eine UI-Action gefeuert wurde, diese aber nur 1x ausgeführt wurden durfte -> eine warnung wird ausgegeben.
-    //TODO: Teste den fall, dass eine request-action, eine ui-action gleichzeitig in der update-loop vorhanden sind.
+
 
     // public ----------------------------------------------------------------------
     public isPaused = false;
@@ -197,11 +193,6 @@ export class UpdateLoop {
         actions.forEach(action => this._uiActionQueue.push(action));
     }
 
-    public setContextTests(testMap?: Map<number, ContextTest[]>): void {
-        this._contextTests.clear();
-        testMap?.forEach((tests, actionId) => this._contextTests.set(actionId, tests));
-    }
-
     public runScaffolding(): ScenariosContext {
         this._scaffold(this._currentActionId);
         this._activeBidsByType = activeBidsByType(this._bThreadBids);
@@ -209,7 +200,7 @@ export class UpdateLoop {
     }
 
     public startReplay(replay: Replay): ScenariosContext {
-        this._replay = {...replay, isCompleted: false, testResults: new Map<number, any>()}
+        this._replay = {...replay, testResults: new Map<number, any>()}
         this._reset();
         return this.runScaffolding();
     }

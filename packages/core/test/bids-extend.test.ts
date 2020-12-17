@@ -454,7 +454,6 @@ test("a wait can be extended. After rejecting the extend, the wait will be conti
 
     const waitingThread = scenario({id: 'waitingBThread'}, function* () {
         const val = yield bp.askFor("eventA");
-        console.log('WAIT CONTINUED123')
         expect(val).toBe(10);
         expect(timesEventADispatched).toBe(1);
         done();
@@ -464,7 +463,6 @@ test("a wait can be extended. After rejecting the extend, the wait will be conti
         const x = yield bp.extend("eventA");
         yield bp.request('ASYNC', () => delay(200));
         x.reject();
-        console.log('extend rejected!')
     });
 
 
