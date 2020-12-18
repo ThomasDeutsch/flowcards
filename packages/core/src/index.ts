@@ -1,6 +1,7 @@
 import { Action, ActionType } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
+import { Logger } from './logger';
 
 export * from './scenario';
 export * from './bthread';
@@ -32,7 +33,7 @@ export interface Replay {
 }
 
 export interface ContextChange {
-    type: 'contextChange';
+    type: 'appContextChange';
 }
 
 export interface PlayPause {
@@ -45,6 +46,7 @@ export class Scenarios {
     private _updateLoop: UpdateLoop;
     private _updateCb?: UpdateCallback;
     public initialScenariosContext: ScenariosContext;
+    private _logger: Logger;
 
     private _singleActionDispatch(action: Action) {
         if(this._updateLoop.isPaused && action.type === ActionType.uiDispatched) { // dispatching a ui action will resume a paused update-loop
@@ -57,7 +59,8 @@ export class Scenarios {
     }
 
     constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false) {
-        this._updateLoop = new UpdateLoop(stagingFunction, this._singleActionDispatch.bind(this));
+        this._logger = new Logger();
+        this._updateLoop = new UpdateLoop(stagingFunction, this._singleActionDispatch.bind(this), this._logger);
         this.initialScenariosContext = this._updateLoop.runScaffolding();
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
@@ -84,7 +87,11 @@ export class Scenarios {
 
     private _dispatch(command: Replay | ContextChange | PlayPause): void {
         switch(command.type) {
-            case 'contextChange': {
+            case 'appContextChange': {
+                //TODO: make context change replayable
+                // for this, the logger needs to be placed in this Scenarios Class
+                // a method needs to be added to the logger
+                // 
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding());
                 break;
             }

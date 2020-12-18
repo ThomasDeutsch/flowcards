@@ -10,7 +10,7 @@ export function useScenarios(stagingFunction: StagingFunction, dependencies: any
     useMemo(() => {
         if(scenariosRef.current !== null) { 
             // do not run this for the initial dependencies
-            scenariosRef.current.dispatch({type: 'contextChange'});
+            scenariosRef.current.dispatch({type: 'appContextChange'});
         }
     }, dependencies);
     if(scenariosRef.current === null) { 

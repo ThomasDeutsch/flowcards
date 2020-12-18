@@ -3,6 +3,7 @@ import { Action, ActionType } from '../src/action';
 import { UpdateLoop } from '../src/update-loop';
 import { scenario } from '../src/scenario';
 import { StagingFunction } from '../src/scaffolding';
+import { Logger } from "../src";
 
 
 function rejectedDelay(ms: number) {
@@ -24,7 +25,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
                 expect(action.payload).toBe('data');
             }
             updateLoop.runScaffolding();
-        });
+        }, new Logger());
         updateLoop.runScaffolding();
     };
 
@@ -47,7 +48,7 @@ describe('dispatched action', () => {
                 updateLoop.setUiActionQueue([action]);
             }
             updateLoop.runScaffolding();
-        });
+        }, new Logger());
         updateLoop.runScaffolding();
     };
 

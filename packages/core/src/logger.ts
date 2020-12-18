@@ -3,8 +3,8 @@ import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
 import { EventId, EventMap } from './event-map';
-import { ActionResult } from './advance-bthreads';
 import { ActionWithId } from '.';
+import { ActionCheck } from './action-check';
 
 export enum BThreadReactionType {
     init = 'init',
@@ -64,7 +64,7 @@ export class Logger {
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
     public pendingHistory = new Map<number, EventMap<Bid[]>>();
-    public actionResults = new Map<number, ActionResult>();
+    public actionChecks = new Map<number, ActionCheck>();
 
     private _getHasNextSection(bThreadReactions: Map<number, BThreadReaction>, nextState: BThreadState): boolean {
         const latestReactionIndex = utils.latest([...bThreadReactions.keys()]);
@@ -136,11 +136,6 @@ export class Logger {
             nextState: {...nextState},
             hasNextSection: hasNextSection
         });
-    }
-
-    public logPending(pending?: EventMap<Bid[]>): void {
-        if(!pending) return;
-        this.pendingHistory.set(this._actionId-1, pending.clone());
     }
 
     public resetLog(): void {

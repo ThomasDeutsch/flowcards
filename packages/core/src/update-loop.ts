@@ -29,7 +29,9 @@ export interface ScenariosContext {
         testResults: Map<number, any>;  // TODO: replace any with a defined type
     }
 }
+
 export type UpdateLoopFunction = () => ScenariosContext;
+
 export type ReplayMap = Map<number, Action>;
 export interface CurrentReplay extends Replay {
     testResults: Map<number, any>;
@@ -52,9 +54,8 @@ export class UpdateLoop {
     private _replay?: CurrentReplay;
     private readonly _uiActionQueue: Action[] = [];     
     
-
-    constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch) {
-        this._logger = new Logger();
+    constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch, logger: Logger) {
+        this._logger = logger;
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, singleActionDispatch, this._logger);
         this._singleActionDispatch = singleActionDispatch;
     }
@@ -147,7 +148,7 @@ export class UpdateLoop {
             if (action.type === ActionType.requested) {
                 actionCheck = checkRequestAction(this._bThreadMap, this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
-                    this._processPayload(action);
+                    this._processPayload(action); //TODO: not sure if this should be done before logging. It could be a good idea to check 
                     this._logger.logAction(action as ActionWithId);
                     advanceRequestAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
@@ -180,8 +181,8 @@ export class UpdateLoop {
                 return this._getContext();
             }
          } while (actionCheck !== ActionCheck.OK);
+
          this._currentActionId++;
-         this._logger.logPending(this._activeBidsByType.pending); //TODO: can this be removed?
          return this.runScaffolding();
     }
 
