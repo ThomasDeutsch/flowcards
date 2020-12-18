@@ -1,6 +1,5 @@
 import { BThreadId } from './bthread';
 
-
 export class BThreadMap<T> {
     private _map: Map<string, T> = new Map();
 

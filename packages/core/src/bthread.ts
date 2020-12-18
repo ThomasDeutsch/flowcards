@@ -230,7 +230,6 @@ export class BThread {
             }
         });
     }
-
     
     public resolvePending(action: Action): boolean {
         if(this._deletePending(action) === false) return false;
