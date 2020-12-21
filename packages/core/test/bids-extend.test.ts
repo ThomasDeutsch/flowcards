@@ -343,7 +343,7 @@ test("multiple extends will resolve after another. After all extends complete, t
     });
 });
 
-test("an extend can be resolved in the same cycle", () => {
+test("an extend will be resolved in the next cycle", () => {
     let loopCount = 0;
     let requestedValue: number;
 
@@ -364,7 +364,7 @@ test("an extend can be resolved in the same cycle", () => {
     }, ({event}) => {
         expect(event('A').isPending).toBeFalsy();
         expect(requestedValue).toEqual(2);
-        expect(loopCount).toEqual(2); // 1: init, 2: request & extend (same loop)
+        expect(loopCount).toEqual(3); // 1: init, 2: request 3. extend
     });
 });
 

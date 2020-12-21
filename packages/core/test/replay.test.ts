@@ -92,6 +92,51 @@ test("a async request can be replayed", (done) => {
 });
 
 
+test("an extend can be replayed", (done) => {
+    let value1: number;
+    let eventReplayed = false;
+
+    const thread1 = scenario({id: 'thread1'}, function* () {
+        yield bp.askFor('replayEvent1');
+        value1 = yield bp.request("replayEvent2", () => {
+            eventReplayed = true;
+            return delay(100, 'YEAH');
+        });
+        yield bp.askFor('replayEvent3');
+    });
+
+    const thread2 = scenario({id: 'thread2'}, function* () {
+        const ext = yield bp.extend('replayEvent2');
+        console.log('wait for replayEvent2a');
+        yield bp.askFor('replayEvent2a');
+        ext.resolve('SUPER');
+    });
+
+    const [context, replay] = testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({thread, debug, log}) => {
+        console.log(log.actions);
+        if(thread.get('thread1')?.isCompleted) {
+            expect(value1).toEqual('SUPER');
+            expect(eventReplayed).toBeTruthy();
+            done();
+        }
+    });
+    replay({
+        type: 'replay',
+        actions: [
+            {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 2, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
+            // the index:2 action is missing ... this is where the resolve will be placed.
+            {id: 3, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent2a'}},
+            {id: 4, type: ActionType.resolved, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, payload: 'SUPER', bidType: BidType.extend},
+            {id: 5, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent3'}}
+        ]
+    });
+});
+
+
 test("after a replay completes, the normal execution will resume", (done) => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.askFor('replayEvent1');
