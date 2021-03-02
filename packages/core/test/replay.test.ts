@@ -127,9 +127,8 @@ test("an extend can be replayed", (done) => {
         type: 'replay',
         actions: [
             {id: 0, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent1'}},
-            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 2, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
-            // the index:2 action is missing ... this is where the resolve will be placed.
-            {id: 3, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent2a'}},
+            {id: 1, type: ActionType.requested, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, resolveActionId: 4, payload: GET_VALUE_FROM_BTHREAD, bidType: BidType.request},
+            {id: 2, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent2a'}},
             {id: 4, type: ActionType.resolved, bThreadId: {name: 'thread1'}, eventId: {name: 'replayEvent2'}, payload: 'SUPER', bidType: BidType.extend},
             {id: 5, type: ActionType.uiDispatched, bThreadId: {name: ''}, eventId: {name: 'replayEvent3'}}
         ]
