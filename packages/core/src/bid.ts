@@ -200,4 +200,3 @@ export function extend(event: string | EventId, validation?: Validation): Bid {
         bThreadId: {name: ""}
     };
 }
-
