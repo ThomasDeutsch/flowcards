@@ -55,7 +55,7 @@ export enum ScaffoldingResultType {
 export type BThreadReaction = BThreadProgressReaction | BThreadExceptionReaction | BThreadInitReaction | BThreadNewPendingReaction;
 
 export class Logger {
-    private _actionId = -1;
+    private _actionId = 0;
     public set actionId(id: number) {
         this._actionId = id;
     }
