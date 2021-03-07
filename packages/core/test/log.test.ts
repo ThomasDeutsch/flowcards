@@ -3,7 +3,7 @@ import { testScenarios } from './testutils';
 import { scenario } from '../src/scenario';
 import { delay } from './testutils';
 import { BThreadContext } from '../src/bthread';
-import { ScaffoldingResultType } from "../src";
+import { BThreadReactionType, ScaffoldingResultType } from "../src";
 
 test("log will contain a list of executed actions (sorted)", () => {
     const flow1 = scenario(
@@ -80,6 +80,25 @@ test("scaffolding results are logged", (done) => {
       expect(history!.get(0)).toEqual(ScaffoldingResultType.init);
       console.log('test:', history);
       done();
+    }
+  });
+});
+
+test("pending events are logged", (done) => {
+
+  const thread1 = scenario({id: 'thread1', description: 'myThread1'}, function* () {
+      yield bp.request('request1', delay(10));
+  });
+
+  testScenarios((enable) => {
+      enable(thread1());
+  }, ({log, thread}) => {
+    if(thread.get({name: 'thread1'})?.isCompleted) {
+      const history = log.bThreadReactionHistory.get('thread1');
+      expect(history?.size).toEqual(2);
+      expect(history?.get(0)?.type).toEqual(BThreadReactionType.newPending);
+      done();
+
     }
   });
 });

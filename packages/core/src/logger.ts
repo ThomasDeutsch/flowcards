@@ -63,7 +63,6 @@ export class Logger {
     public get actions(): ActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
-    public pendingHistory = new Map<number, EventMap<Bid[]>>();
     public actionChecks = new Map<number, ActionCheck>();
 
     private _getHasNextSection(bThreadReactions: Map<number, BThreadReaction>, nextState: BThreadState): boolean {
@@ -143,6 +142,5 @@ export class Logger {
         this._actions = [];
         this.bThreadReactionHistory = new BThreadMap();
         this.bThreadScaffoldingHistory = new BThreadMap();
-        this.pendingHistory = new Map();
     }
 }
