@@ -1,6 +1,5 @@
 import { useState, useRef, useMemo } from "react";
 import { Scenarios, UpdateCallback, StagingFunction, ScenariosContext, DispatchCommand } from "@flowcards/core";
-
 export * from '@flowcards/core';
 
 export function useScenarios(stagingFunction: StagingFunction, dependencies: any[]): [ScenariosContext, DispatchCommand] {
