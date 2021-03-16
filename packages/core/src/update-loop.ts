@@ -95,7 +95,7 @@ export class UpdateLoop {
     }
 
     private _getContext(): ScenariosContext {
-        this._inReplay = this._replay !== undefined && this._replay.actions.length > 0
+        this._inReplay = this._replay !== undefined && this._replay.actions.length > 0;
         return { 
             event: this._getEventContext.bind(this),
             thread: this._bThreadStateMap,

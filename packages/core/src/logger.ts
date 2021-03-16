@@ -8,7 +8,6 @@ import { ActionCheck } from './action-check';
 
 export enum BThreadReactionType {
     init = 'init',
-    newPending = 'newPending',
     progress = 'progress',
     error = 'error'
 }
@@ -17,14 +16,6 @@ export interface BThreadInitReaction {
     type: BThreadReactionType.init;
     actionId: number;
     nextState: BThreadState;
-    hasNextSection: boolean;
-}
-
-export interface BThreadNewPendingReaction {
-    type: BThreadReactionType.newPending;
-    actionId: number;
-    nextState: BThreadState;
-    bid: Bid;
     hasNextSection: boolean;
 }
 
@@ -52,7 +43,7 @@ export enum ScaffoldingResultType {
     destroyed = 'destroyed',
 }
 
-export type BThreadReaction = BThreadProgressReaction | BThreadExceptionReaction | BThreadInitReaction | BThreadNewPendingReaction;
+export type BThreadReaction = BThreadProgressReaction | BThreadExceptionReaction | BThreadInitReaction;
 
 export class Logger {
     private _actionId = 0;
@@ -63,7 +54,6 @@ export class Logger {
     public get actions(): ActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
-    public actionChecks = new Map<number, ActionCheck>();
 
     private _getHasNextSection(bThreadReactions: Map<number, BThreadReaction>, nextState: BThreadState): boolean {
         const latestReactionIndex = utils.latest([...bThreadReactions.keys()]);
@@ -99,21 +89,9 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logBThreadNewPending( bThreadId: BThreadId, bid: Bid, nextState: BThreadState): void {
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)?.id || 0;
-        bThreadReactions.set(currentLoopIndex, {
-            type: BThreadReactionType.newPending,
-            actionId: currentLoopIndex,
-            nextState: {...nextState},
-            bid: bid,
-            hasNextSection: false
-        });
-    }
-
     public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.id!;
+        const currentLoopIndex = utils.latest(this._actions)!.id || 0;
         const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
         bThreadReactions.set(currentLoopIndex, {
             type: BThreadReactionType.progress,
@@ -126,7 +104,7 @@ export class Logger {
 
     public logBThreadException( bThreadId: BThreadId, eventId: EventId, nextState: BThreadState): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.id!;
+        const currentLoopIndex = utils.latest(this._actions)!.id || 0;
         const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
         bThreadReactions.set(currentLoopIndex, {
             type: BThreadReactionType.error,
