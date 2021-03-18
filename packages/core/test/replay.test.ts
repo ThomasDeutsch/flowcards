@@ -107,7 +107,6 @@ test("an extend can be replayed", (done) => {
 
     const thread2 = scenario({id: 'thread2'}, function* () {
         const ext = yield bp.extend('replayEvent2');
-        console.log('wait for replayEvent2a');
         yield bp.askFor('replayEvent2a');
         ext.resolve('SUPER');
     });
@@ -115,8 +114,7 @@ test("an extend can be replayed", (done) => {
     const [context, replay] = testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({thread, debug, log}) => {
-        console.log(log.actions);
+    }, ({thread, log}) => {
         if(thread.get('thread1')?.isCompleted) {
             expect(value1).toEqual('SUPER');
             expect(eventReplayed).toBeTruthy();

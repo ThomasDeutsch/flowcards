@@ -4,7 +4,7 @@ import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
 import { Logger } from './logger';
-import { advanceRejectAction, advanceRequestAction, advanceResolveAction, advanceUiAction } from './advance-bthreads';
+import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
@@ -150,14 +150,14 @@ export class UpdateLoop {
                 if(actionCheck === ActionCheck.OK) {
                     this._processPayload(action); //TODO: not sure if this should be done before logging. It could be a good idea to check 
                     this._logger.logAction(action as ActionWithId);
-                    advanceRequestAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                    advanceRequestedAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.uiDispatched) {
                 actionCheck = checkUiAction(this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ActionWithId);
-                    advanceUiAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                    advanceUiAction(this._bThreadMap, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.resolved) {

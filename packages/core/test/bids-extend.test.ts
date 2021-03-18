@@ -418,13 +418,39 @@ test("a wait can be extended. during the extension, the event is pending", (done
     });
 });
 
-test("a wait can be extended. After resolving the extend, the wait will be continued", (done) => {
+test("a askFor can be extended. After resolving the extend, the wait will be continued", (done) => {
     let timesEventADispatched = 0;
 
     const waitingThread = scenario({id: 'waitingBThread'}, function* () {
-        const val = yield bp.askFor("eventA");
+        const val = yield bp.askFor("eventAX");
         expect(val).toBe(12);
         expect(timesEventADispatched).toBe(1);
+        done();
+    });
+
+    const extendingThread = scenario({id: 'extendingBThread'}, function* () {
+        const x = yield bp.extend("eventAX");
+        yield bp.request('ASYNC', () => delay(200));
+        x.resolve(12);
+    });
+
+
+    testScenarios((enable) => {
+        enable(waitingThread());
+        enable(extendingThread());
+    }, ({event}) => {
+        if(event('eventAX').dispatch !== undefined) {
+            event('eventAX')!.dispatch!(10);
+            timesEventADispatched++;
+        }
+    });
+});
+
+test("a request can be extended. After resolving the extend, the request will be continued", (done) => {
+
+    const requestingThread = scenario({id: 'requestingThread'}, function* () {
+        const val = yield bp.request("eventA");
+        expect(val).toBe(12);
         done();
     });
 
@@ -436,44 +462,16 @@ test("a wait can be extended. After resolving the extend, the wait will be conti
 
 
     testScenarios((enable) => {
-        enable(waitingThread());
+        enable(requestingThread());
         enable(extendingThread());
-    }, ({event}) => {
-        if(event('eventA').dispatch !== undefined) {
-            event('eventA')!.dispatch!(10);
-            timesEventADispatched++;
-        }
-
     });
 });
 
 
+// extending Bids - where to attach the pending-event-promises?
+// an extend can not be rejected!
 
-test("a wait can be extended. After rejecting the extend, the wait will be continued", (done) => {
-    let timesEventADispatched = 0;
-
-    const waitingThread = scenario({id: 'waitingBThread'}, function* () {
-        const val = yield bp.askFor("eventA");
-        expect(val).toBe(10);
-        expect(timesEventADispatched).toBe(1);
-        done();
-    });
-
-    const extendingThread = scenario({id: 'extendingBThread'}, function* () {
-        const x = yield bp.extend("eventA");
-        yield bp.request('ASYNC', () => delay(200));
-        x.reject();
-    });
-
-
-    testScenarios((enable) => {
-        enable(waitingThread());
-        enable(extendingThread());
-    }, ({event}) => {
-        if(event('eventA').dispatch !== undefined) {
-            event('eventA')!.dispatch!(10);
-            timesEventADispatched++;
-        }
-
-    });
-});
+// a request: the requesting BThread
+// - the event is stored in the extending BThread, so that
+//   if during the extend, the requesting BThread is deleted, the resolved extend will resolve the event
+//   if during the extend, the extending BThread is deleted, the event will be lost

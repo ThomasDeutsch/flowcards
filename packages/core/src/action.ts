@@ -20,14 +20,14 @@ export interface Action {
     bThreadId: BThreadId;
     eventId: EventId;
     payload?: any;
-    resolveActionId?: number | null; 
+    resolveActionId?: number | null; //TODO: move this into resolve?
     resolve?: {
         requestActionId: number;
-        requestDuration: number;  
+        requestDuration: number;
+        extendedAction?: Action;  
     };
     bidType?: BidType;
 }
-
 
 export function getActionFromBid(bid?: Bid): Action | undefined {
     if(bid === undefined) return undefined;

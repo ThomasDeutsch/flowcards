@@ -78,7 +78,6 @@ test("scaffolding results are logged", (done) => {
     if(thread.get({name: 'thread1'})?.bids?.askFor.get({name: 'heyho'})) {
       const history = log.bThreadScaffoldingHistory.get('thread1');
       expect(history!.get(0)).toEqual(ScaffoldingResultType.init);
-      console.log('test:', history);
       done();
     }
   });

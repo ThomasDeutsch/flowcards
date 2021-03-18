@@ -6,7 +6,6 @@ export class ExtendContext {
     private _promise?: Promise<unknown>;
     public get promise(): Promise<unknown> | undefined { return this._promise }
     private _resolveFn?: (value?: unknown) => void;
-    private _rejectFn?: (reason?: any) => void;
 
     constructor(payload: unknown) {
         this._value = payload;
@@ -19,17 +18,10 @@ export class ExtendContext {
         this._value = value;
     }
 
-    public reject(): void { 
-        delete this._promise;
-        this._isCompleted = true; 
-        this._rejectFn?.(this._value);
-    }
-
     public createPromiseIfNotCompleted(): void {
         if(this.isCompleted) return;
         this._promise = new Promise((resolve, reject) => {
             this._resolveFn = resolve;
-            this._rejectFn = reject;
         });
     }
 }
