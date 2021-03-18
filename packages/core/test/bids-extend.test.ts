@@ -422,7 +422,7 @@ test("a askFor can be extended. After resolving the extend, the wait will be con
     let timesEventADispatched = 0;
 
     const waitingThread = scenario({id: 'waitingBThread'}, function* () {
-        const val = yield bp.askFor("eventAX");
+        const [type, val] = yield [bp.askFor("eventAX"), bp.askFor("eventB")];
         expect(val).toBe(12);
         expect(timesEventADispatched).toBe(1);
         done();
@@ -467,6 +467,28 @@ test("a request can be extended. After resolving the extend, the request will be
     });
 });
 
+
+test("a request can be extended. After resolving the extend, the extend-bid will not be used again in this run.", (done) => {
+
+    const requestingThread = scenario({id: 'requestingThread'}, function* () {
+        const val = yield bp.request("eventiii");
+        expect(val).toBe(12);
+        done();
+    });
+
+    const extendingThread = scenario({id: 'extendingBThread', autoRepeat: false}, function* () {
+        while(true) {
+            const x = yield bp.extend("eventiii");
+            yield bp.request('ASYNC', () => delay(200));
+            x.resolve(12);
+        }
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+        enable(extendingThread());
+    });
+});
 
 // extending Bids - where to attach the pending-event-promises?
 // an extend can not be rejected!

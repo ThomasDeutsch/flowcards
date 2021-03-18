@@ -19,6 +19,7 @@ export enum ActionCheck {
 
 
 export function checkRequestAction(bThreadMap: BThreadMap<BThread>, bidsByType: BidsByType, action: Action): ActionCheck {
+    if(action.eventId.name === 'eventiii') console.log('is blocked?: ', isBlocked(bidsByType, action.eventId, action), bidsByType.pending);
     if(isBlocked(bidsByType, action.eventId, action)) return ActionCheck.WasBlocked;
     if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
     const bThread = bThreadMap.get(action.bThreadId);

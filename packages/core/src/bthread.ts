@@ -35,10 +35,13 @@ export interface BThreadState {
     isCompleted: boolean;
     description?: string;
     orderIndex: number;
-    isAutoRepeat?: boolean;
-    completeCount: number;
     progressionCount: number;
     cancelledPending: EventMap<PendingEventInfo>;
+}
+
+export function isSameBThreadId(a?: BThreadId, b?: BThreadId): boolean {
+    if(!a || !b) return false;
+    return a.name === b.name && a.key === b.key;
 }
 
 export class BThread {
@@ -66,8 +69,6 @@ export class BThread {
             destroyOnDisable: scenarioInfo.destroyOnDisable,
             cancelledPending: new EventMap(),
             description: scenarioInfo.description,
-            isAutoRepeat: scenarioInfo.autoRepeat,
-            completeCount: 0,
             section: undefined,
             pending: new EventMap(),
             isCompleted: false,
@@ -119,13 +120,8 @@ export class BThread {
     private _processNextBid(returnValue?: any): void {
         const next = this._thread.next(returnValue); // progress BThread to next bid
         this._state.progressionCount++;
-        if (next.done && this._state.isAutoRepeat) {
-            this._resetBThread(this._currentProps);
-            this._state.completeCount++;
-            return;
-        } else if (next.done) {
+        if (next.done) {
             this._state.isCompleted = true;
-            this._state.completeCount++;
             delete this._state.section;
             delete this._nextBid;
             delete this._currentBids;
@@ -169,7 +165,6 @@ export class BThread {
     public resetOnPropsChange(nextProps: BThreadProps): boolean {
         const changedPropNames = utils.getChangedProps(this._currentProps, nextProps);
         if (changedPropNames === undefined) return false;
-        this._state.completeCount = 0;
         this._resetBThread(nextProps);
         return true;
     }

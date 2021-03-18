@@ -148,9 +148,18 @@ export class UpdateLoop {
             if (action.type === ActionType.requested) {
                 actionCheck = checkRequestAction(this._bThreadMap, this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
+                    if(action.eventId.name === 'eventiii') console.log('advance requested!!!')
                     this._processPayload(action); //TODO: not sure if this should be done before logging. It could be a good idea to check 
                     this._logger.logAction(action as ActionWithId);
                     advanceRequestedAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                }
+            }
+            else if (action.type === ActionType.resolved) {
+                actionCheck = checkResolveAction(this._bThreadMap, action);
+                if(actionCheck === ActionCheck.OK) {
+                    if(action.eventId.name === 'eventiii') console.log('advance resolved!!!')
+                    this._logger.logAction(action as ActionWithId);
+                    advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.uiDispatched) {
@@ -158,13 +167,6 @@ export class UpdateLoop {
                 if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ActionWithId);
                     advanceUiAction(this._bThreadMap, this._activeBidsByType, action);
-                }
-            }
-            else if (action.type === ActionType.resolved) {
-                actionCheck = checkResolveAction(this._bThreadMap, action);
-                if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action as ActionWithId);
-                    advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.rejected) {
