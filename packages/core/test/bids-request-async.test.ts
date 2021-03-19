@@ -153,7 +153,7 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
 
     testScenarios((enable) => {
         const t1 = enable(thread1());
-        if(t1.pending.has('A')) {
+        if(t1.bids?.pending?.has('A')) {
             enable(thread2());
         }
     }, (({thread}) => {
@@ -177,7 +177,7 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
 
     testScenarios((enable) => {
         const t1 = enable(thread1());
-        if(t1.pending.has('A')) {
+        if(t1.bids?.pending?.has('A')) {
             enable(thread2());
         }
     }, (({thread}) => {

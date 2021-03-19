@@ -30,7 +30,7 @@ export interface BThreadState {
     id: BThreadId;
     section?: string;
     bids?: Record<BidType, EventMap<Bid>>;
-    pending: EventMap<PendingEventInfo>;
+    //pending: EventMap<PendingEventInfo>;
     destroyOnDisable?: boolean;
     isCompleted: boolean;
     description?: string;
@@ -70,7 +70,6 @@ export class BThread {
             cancelledPending: new EventMap(),
             description: scenarioInfo.description,
             section: undefined,
-            pending: new EventMap(),
             isCompleted: false,
             progressionCount: -1 // not counting the initial progression
         };
@@ -97,7 +96,7 @@ export class BThread {
             key: this._state.id.key,
             section: section,
             clearSection: removeSection,
-            isPending: (event: string | EventId) => this._state.pending.has(toEventId(event)),
+            isPending: (event: string | EventId) => !!this._state.bids?.pending.has(toEventId(event)),
         };
     }
 
@@ -112,8 +111,8 @@ export class BThread {
     }
 
     private _setCurrentBids() {
-        this._state.pending = this._pendingRequests.clone().merge(this._pendingExtends);
-        this._currentBids = getBidsForBThread(this.id, this._nextBid, this._state.pending);
+        const pending = this._pendingRequests.clone().merge(this._pendingExtends);
+        this._currentBids = getBidsForBThread(this.id, this._nextBid, pending);
         this._state.bids = this._currentBids;
     }
 
