@@ -1,4 +1,4 @@
-import { Bid } from './bid';
+import { PlacedBid } from './bid';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
@@ -15,8 +15,8 @@ export enum BThreadReactionType {
 export interface BThreadReaction {
     reactionType: BThreadReactionType;
     actionId: number;
-    selectedBid?: Bid;
-    bids?: Record<BidType, EventMap<Bid>>;
+    selectedBid?: PlacedBid;
+    bids?: Record<BidType, EventMap<PlacedBid>>;
     section?: string;
     isCompleted: boolean;
     progressionCount: number;
@@ -67,7 +67,7 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logReaction(reactionType: BThreadReactionType, bThreadId: BThreadId, state: BThreadState, bid?: Bid): void {
+    public logReaction(reactionType: BThreadReactionType, bThreadId: BThreadId, state: BThreadState, bid?: PlacedBid): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentActionId = utils.latest(this._actions)?.id || 0;
         bThreadReactions.set(currentActionId, {

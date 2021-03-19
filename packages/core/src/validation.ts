@@ -1,11 +1,11 @@
-import { Bid, BidsByType, BidType, getMatchingBids } from './bid';
+import { PlacedBid, BidsByType, BidType, getMatchingBids } from './bid';
 import { EventId } from './event-map';
 import { getProgressingBids } from './advance-bthreads';
 
 export type Validation = (payload: any) => {isValid: boolean; message?: string} | boolean
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function isValid(bid: Bid, payload?: any): boolean {
+export function isValid(bid: PlacedBid, payload?: any): boolean {
     if(!bid.validate) return true;
     const validationReturn = bid.validate(payload);
     if(validationReturn === true) return true;
@@ -14,9 +14,9 @@ export function isValid(bid: Bid, payload?: any): boolean {
     return false;
 }
 
-export type BidValidationResult = {isValid: boolean; bid: Bid; message?: string}
+export type BidValidationResult = {isValid: boolean; bid: PlacedBid; message?: string}
 
-export function getValidationResult(bid: Bid, payload?: unknown): BidValidationResult {
+export function getValidationResult(bid: PlacedBid, payload?: unknown): BidValidationResult {
     if(bid.validate === undefined) return {isValid: true, bid: bid, message: bid.eventId.description};
     const validationReturn = bid.validate(payload);
     if(validationReturn === true) return {isValid: true, bid: bid, message: bid.eventId.description};
@@ -25,7 +25,7 @@ export function getValidationResult(bid: Bid, payload?: unknown): BidValidationR
     return {isValid: false, bid: bid, message: validationReturn.message};
 }
 
-export function withValidPayload(bids: Bid[] | undefined, payload: unknown): boolean {
+export function withValidPayload(bids: PlacedBid[] | undefined, payload: unknown): boolean {
     return (bids !== undefined) && bids.some(bid => isValid(bid, payload))
 }
 
@@ -33,7 +33,7 @@ export interface ValidationResult {
     isValid: boolean;
     required: BidValidationResult[][];
     optional: BidValidationResult[];
-    progressingBids: Bid[];
+    progressingBids: PlacedBid[];
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

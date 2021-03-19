@@ -1,18 +1,17 @@
 import { Action } from './action';
-import { BidType, getMatchingBids, BidsByType, isBlocked, Bid } from './bid';
+import { BidType, getMatchingBids, BidsByType, isBlocked, PlacedBid } from './bid';
 import { BThread } from './bthread';
 import { BThreadMap } from './bthread-map';
 import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
 import { isValid } from './validation';
-import { isSameBThreadId } from '.';
 
 // advance threads, based on selected action
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
-export function getProgressingBids(activeBidsByType: BidsByType, types: BidType[], eventId: EventId, payload: any): Bid[] | undefined {
+export function getProgressingBids(activeBidsByType: BidsByType, types: BidType[], eventId: EventId, payload: any): PlacedBid[] | undefined {
     const matchingBids = getMatchingBids(activeBidsByType, types, eventId);
     if(matchingBids === undefined) return undefined;
-    const progressingBids: Bid[] = [];
+    const progressingBids: PlacedBid[] = [];
     matchingBids.forEach(bid => {
         if(isBlocked(activeBidsByType, bid.eventId, {payload: payload})) return undefined;
         if(!isValid(bid, payload)) return undefined;

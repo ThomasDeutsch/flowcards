@@ -1,5 +1,5 @@
 import { Action, ActionType } from './action';
-import { Bid, BidType, BThreadBids, getBidsForBThread } from './bid';
+import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread } from './bid';
 import { EventMap, EventId, toEventId, sameEventId } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
 import * as utils from './utils';
@@ -7,7 +7,7 @@ import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
-import { BThreadReactionType, SingleActionDispatch } from '.';
+import { Bid, BidOrBids, BThreadReactionType, SingleActionDispatch } from '.';
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
@@ -29,8 +29,7 @@ export interface PendingEventInfo {
 export interface BThreadState {
     id: BThreadId;
     section?: string;
-    bids?: Record<BidType, EventMap<Bid>>;
-    //pending: EventMap<PendingEventInfo>;
+    bids?: Record<BidType, EventMap<PlacedBid>>;
     destroyOnDisable?: boolean;
     isCompleted: boolean;
     description?: string;
@@ -54,7 +53,7 @@ export class BThread {
     private _thread: BThreadGenerator;
     private _currentBids?: BThreadBids;
     public get currentBids(): BThreadBids | undefined { return this._currentBids; }
-    private _nextBid?: any;
+    private _nextBid?: BidOrBids;
     public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _pendingExtends: EventMap<PendingEventInfo> = new EventMap();
@@ -114,7 +113,7 @@ export class BThread {
 
     private _setCurrentBids() {
         const pending = this._pendingRequests.clone().merge(this._pendingExtends);
-        this._currentBids = getBidsForBThread(this.id, this._nextBid, pending);
+        this._currentBids = getPlacedBidsForBThread(this.id, this._nextBid, pending);
         this._state.bids = this._currentBids;
     }
 
@@ -237,13 +236,13 @@ export class BThread {
         
     }
 
-    public getCurrentBid(action: Action): Bid | undefined {
+    public getCurrentBid(action: Action): PlacedBid | undefined {
         return this._currentBids?.[action.bidType!]?.get(action.eventId) || this._currentBids?.[BidType.pending]?.get(action.eventId);
     }
     
     public progressRequested(eventCache: EventMap<CachedItem<any>>, action: Action): void {
         const bidType = action.bidType!; // ensured by action check
-        const bid: Bid = this.getCurrentBid(action)!; // ensured by action check
+        const bid: PlacedBid = this.getCurrentBid(action)!; // ensured by action check
         if(bidType === BidType.set) {
             setEventCache(eventCache, action.eventId, action.payload);
         }
@@ -252,12 +251,12 @@ export class BThread {
     }
 
 
-    public progressWait(bid: Bid, action: Action): void {
+    public progressWait(bid: PlacedBid, action: Action): void {
         this._progressBThread(bid.eventId, action.payload);
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
     }
 
-    public progressExtend(action: Action, bid: Bid): ExtendContext {
+    public progressExtend(action: Action, bid: PlacedBid): ExtendContext {
         const extendContext = new ExtendContext(action.payload);
         this._progressBThread(bid.eventId, extendContext);
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);

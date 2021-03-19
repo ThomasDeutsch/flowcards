@@ -1,8 +1,8 @@
 
-import { Bid } from './bid';
+import { BidOrBids } from '.';
 import { uuidv4 } from './utils';
 
-export type BThreadGenerator = Generator<Bid | (Bid | null)[] | null, void, any>;
+export type BThreadGenerator = Generator<BidOrBids, void, any>;
 export type BThreadGeneratorFunction = (props: any) => BThreadGenerator;
 export interface ScenarioInfo {
     id: string;

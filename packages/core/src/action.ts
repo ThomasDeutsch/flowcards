@@ -1,4 +1,4 @@
-import { Bid, BidType} from './bid';
+import { BidType, PlacedBid} from './bid';
 import { EventId } from './event-map';
 import { BThreadId } from './bthread';
 
@@ -29,7 +29,7 @@ export interface Action {
     bidType?: BidType;
 }
 
-export function getActionFromBid(bid?: Bid): Action | undefined {
+export function getActionFromBid(bid?: PlacedBid): Action | undefined {
     if(bid === undefined) return undefined;
     const action = {
         id: null,
