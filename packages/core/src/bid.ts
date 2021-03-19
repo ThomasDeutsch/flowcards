@@ -41,7 +41,7 @@ export function getBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pe
         bThreadId: info.bThreadId,
         eventId: info.eventId
     }));
-    bidColl = [...bidColl, ...(pendingBids || [])];
+    bidColl = bidColl.concat(pendingBids || []);
     const bids = {} as BThreadBids;
     if(bidColl.length === 0) return bids;
     return bidColl.reduce((acc: BThreadBids, bid: Bid): BThreadBids => {

@@ -130,7 +130,8 @@ export class BThread {
         this._setCurrentBids();
     }
 
-    private _progressBThread(eventId: EventId, payload: any, isReject = false): void { 
+    private _progressBThread(eventId: EventId, payload: any, isReject = false): void {
+        this._cancelPendingRequests(eventId);
         let returnVal;
         if(!isReject) {
             returnVal = Array.isArray(this._nextBid) ? [eventId, payload] : payload;
@@ -250,24 +251,23 @@ export class BThread {
 
 
     public progressWait(bid: Bid, action: Action): void {
-        this._cancelPendingRequests(action.eventId);
         this._progressBThread(bid.eventId, action.payload);
         this._logger.logBThreadProgress(this.id, bid, this._state);
     }
 
     public progressExtend(action: Action, bid: Bid): ExtendContext {
         const extendContext = new ExtendContext(action.payload);
-        this._cancelPendingRequests(action.eventId);
         this._progressBThread(bid.eventId, extendContext);
         this._logger.logBThreadProgress(this.id, bid, this._state);
         extendContext.createPromiseIfNotCompleted();
         return extendContext;
     }
 
-    public destroy(destroyOnReplay?: boolean): void {
+    public destroy(): void {
         this._pendingExtends.clear();
         this._cancelPendingRequests();
+        delete this._currentBids;
         this._logger.logScaffoldingResult(ScaffoldingResultType.destroyed, this.id);
-        if(destroyOnReplay) return;
+
     }
 }
