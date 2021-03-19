@@ -9,7 +9,8 @@ import { ActionCheck } from './action-check';
 export enum BThreadReactionType {
     init = 'init',
     progress = 'progress',
-    error = 'error'
+    error = 'error',
+    newPending = 'newPending'
 }
 
 export interface BThreadInitReaction {
@@ -35,6 +36,14 @@ export interface BThreadExceptionReaction {
     hasNextSection: boolean;
 }
 
+export interface BThreadNewPendingReaction {
+    type: BThreadReactionType.newPending;
+    actionId: number;
+    nextState: BThreadState;
+    bid: Bid;
+    hasNextSection: boolean;
+}
+
 export enum ScaffoldingResultType {
     init = 'init',
     reset = 'reset',
@@ -43,7 +52,7 @@ export enum ScaffoldingResultType {
     destroyed = 'destroyed',
 }
 
-export type BThreadReaction = BThreadProgressReaction | BThreadExceptionReaction | BThreadInitReaction;
+export type BThreadReaction = BThreadProgressReaction | BThreadExceptionReaction | BThreadInitReaction | BThreadNewPendingReaction;
 
 export class Logger {
     private _actionId = 0;
@@ -95,6 +104,19 @@ export class Logger {
         const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
         bThreadReactions.set(currentLoopIndex, {
             type: BThreadReactionType.progress,
+            actionId: currentLoopIndex,
+            bid: bid,
+            nextState: {...nextState},
+            hasNextSection: hasNextSection
+        });
+    }
+
+    public logBThreadNewPending( bThreadId: BThreadId, bid: Bid, nextState: BThreadState): void {
+        const bThreadReactions = this._getBThreadReactions(bThreadId);
+        const currentLoopIndex = utils.latest(this._actions)!.id || 0;
+        const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
+        bThreadReactions.set(currentLoopIndex, {
+            type: BThreadReactionType.newPending,
             actionId: currentLoopIndex,
             bid: bid,
             nextState: {...nextState},

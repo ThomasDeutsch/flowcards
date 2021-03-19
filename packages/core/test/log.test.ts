@@ -83,7 +83,7 @@ test("scaffolding results are logged", (done) => {
   });
 });
 
-test("pending events are not logged", (done) => {
+test("pending events are logged", (done) => {
 
   const thread1 = scenario({id: 'thread1', description: 'myThread1'}, function* () {
       yield bp.request('request1', delay(10));
@@ -94,7 +94,7 @@ test("pending events are not logged", (done) => {
   }, ({log, thread}) => {
     if(thread.get({name: 'thread1'})?.isCompleted) {
       const history = log.bThreadReactionHistory.get('thread1');
-      expect(history?.size).toEqual(1);
+      expect(history?.size).toEqual(2);
       done();
 
     }

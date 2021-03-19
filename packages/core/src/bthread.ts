@@ -182,6 +182,7 @@ export class BThread {
         }
         this._setCurrentBids();
         const startTime = new Date().getTime();  //TODO: replace with performance.now() ?
+        this._logger.logBThreadNewPending(this.id, this.getCurrentBid(action)!, this.state);
         action.payload.then((data: any): void => {
             if(!this._thread) return; // thread was deleted
             const pendingEventInfo = isExtend ? this._pendingExtends.get(action.eventId) : this._pendingRequests.get(action.eventId);
