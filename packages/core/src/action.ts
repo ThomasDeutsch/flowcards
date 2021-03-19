@@ -2,9 +2,7 @@ import { BidType, PlacedBid} from './bid';
 import { EventId } from './event-map';
 import { BThreadId } from './bthread';
 
-
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
-
 
 export enum ActionType {
     requested = "requested",
@@ -13,20 +11,19 @@ export enum ActionType {
     rejected = "rejected"
 }
 
-
 export interface Action {
     id: number | null;
     type: ActionType;
     bThreadId: BThreadId;
     eventId: EventId;
     payload?: any;
+    bidType?: BidType;
     resolveActionId?: number | null; //TODO: move this into resolve?
     resolve?: {
         requestActionId: number;
         requestDuration: number;
         extendedAction?: Action;  
     };
-    bidType?: BidType;
 }
 
 export function getActionFromBid(bid?: PlacedBid): Action | undefined {

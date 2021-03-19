@@ -53,7 +53,7 @@ export class BThread {
     private _thread: BThreadGenerator;
     private _currentBids?: BThreadBids;
     public get currentBids(): BThreadBids | undefined { return this._currentBids; }
-    private _nextBid?: BidOrBids;
+    private _nextBidOrBids?: BidOrBids;
     public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingEventInfo> = new EventMap();
     private _pendingExtends: EventMap<PendingEventInfo> = new EventMap();
@@ -113,7 +113,7 @@ export class BThread {
 
     private _setCurrentBids() {
         const pending = this._pendingRequests.clone().merge(this._pendingExtends);
-        this._currentBids = getPlacedBidsForBThread(this.id, this._nextBid, pending);
+        this._currentBids = getPlacedBidsForBThread(this.id, this._nextBidOrBids, pending);
         this._state.bids = this._currentBids;
     }
 
@@ -123,10 +123,10 @@ export class BThread {
         if (next.done) {
             this._state.isCompleted = true;
             delete this._state.section;
-            delete this._nextBid;
+            delete this._nextBidOrBids;
             delete this._currentBids;
         } else {
-            this._nextBid = next.value;
+            this._nextBidOrBids = next.value;
         }
         this._setCurrentBids();
     }
@@ -135,7 +135,7 @@ export class BThread {
         this._cancelPendingRequests(eventId);
         let returnVal;
         if(!isReject) {
-            returnVal = Array.isArray(this._nextBid) ? [eventId, payload] : payload;
+            returnVal = Array.isArray(this._nextBidOrBids) ? [eventId, payload] : payload;
         }
         this._pendingRequests.clear();
         this._processNextBid(returnVal);
