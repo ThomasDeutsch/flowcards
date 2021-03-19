@@ -63,7 +63,7 @@ export class UpdateLoop {
     private _reset() {
         this._currentActionId = 0;
         this._uiActionQueue.length = 0;
-        this._bThreadMap.forEach(bThread => bThread.destroy(true));
+        this._bThreadMap.forEach(bThread => bThread.destroy());
         this._bThreadMap.clear();
         this._eventCache.clear();
         this._testResults.clear();
