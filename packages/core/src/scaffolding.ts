@@ -37,7 +37,7 @@ export function setupScaffolding(
         } else {
             bThreadMap.set(bThreadId, new BThread(bThreadId, scenarioInfo, bThreadOrderIndex, generatorFunction, props, singleActionDispatch, logger));
             if(scenarioInfo.destroyOnDisable) destroyOnDisableThreadIds.set(bThreadId, bThreadId);
-            logger.logScaffoldingResult(ScaffoldingResultType.init, bThreadId);
+            else logger.logScaffoldingResult(ScaffoldingResultType.enabled, bThreadId);
         }
         bThread = bThreadMap.get(bThreadId)!;
         if(bThread.currentBids) bThreadBids.push(bThread.currentBids);

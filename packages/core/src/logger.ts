@@ -2,9 +2,8 @@ import { Bid } from './bid';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
-import { EventId, EventMap } from './event-map';
-import { ActionWithId } from '.';
-import { ActionCheck } from './action-check';
+import { EventMap } from './event-map';
+import { ActionWithId, BidType } from '.';
 
 export enum BThreadReactionType {
     init = 'init',
@@ -13,46 +12,22 @@ export enum BThreadReactionType {
     newPending = 'newPending'
 }
 
-export interface BThreadInitReaction {
-    type: BThreadReactionType.init;
+interface BThreadReaction {
+    reactionType: BThreadReactionType;
     actionId: number;
-    nextState: BThreadState;
-    hasNextSection: boolean;
-}
-
-export interface BThreadProgressReaction {
-    type: BThreadReactionType.progress;
-    actionId: number;
-    nextState: BThreadState;
-    bid: Bid;
-    hasNextSection: boolean;
-}
-
-export interface BThreadExceptionReaction {
-    type: BThreadReactionType.error;
-    actionId: number;
-    nextState: BThreadState;
-    eventId: EventId;
-    hasNextSection: boolean;
-}
-
-export interface BThreadNewPendingReaction {
-    type: BThreadReactionType.newPending;
-    actionId: number;
-    nextState: BThreadState;
-    bid: Bid;
-    hasNextSection: boolean;
+    selectedBid?: Bid;
+    bids?: Record<BidType, EventMap<Bid>>;
+    section?: string;
+    isCompleted: boolean;
+    progressionCount: number;
 }
 
 export enum ScaffoldingResultType {
-    init = 'init',
-    reset = 'reset',
     enabled = 'enabled',
     disabled = 'disabled',
+    reset = 'reset',
     destroyed = 'destroyed',
 }
-
-export type BThreadReaction = BThreadProgressReaction | BThreadExceptionReaction | BThreadInitReaction | BThreadNewPendingReaction;
 
 export class Logger {
     private _actionId = 0;
@@ -63,12 +38,6 @@ export class Logger {
     public get actions(): ActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
-
-    private _getHasNextSection(bThreadReactions: Map<number, BThreadReaction>, nextState: BThreadState): boolean {
-        const latestReactionIndex = utils.latest([...bThreadReactions.keys()]);
-        if(latestReactionIndex === undefined) return false;
-        return nextState.section !== bThreadReactions.get(latestReactionIndex)?.nextState.section;
-    }
 
     public logScaffoldingResult(type: ScaffoldingResultType, bThreadId: BThreadId): void {
         let bThreadHistory = this.bThreadScaffoldingHistory.get(bThreadId);
@@ -98,42 +67,17 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logBThreadProgress( bThreadId: BThreadId, bid: Bid, nextState: BThreadState): void {
+    public logReaction(reactionType: BThreadReactionType, bThreadId: BThreadId, state: BThreadState, bid?: Bid): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.id || 0;
-        const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
-        bThreadReactions.set(currentLoopIndex, {
-            type: BThreadReactionType.progress,
-            actionId: currentLoopIndex,
-            bid: bid,
-            nextState: {...nextState},
-            hasNextSection: hasNextSection
-        });
-    }
-
-    public logBThreadNewPending( bThreadId: BThreadId, bid: Bid, nextState: BThreadState): void {
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.id || 0;
-        const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
-        bThreadReactions.set(currentLoopIndex, {
-            type: BThreadReactionType.newPending,
-            actionId: currentLoopIndex,
-            bid: bid,
-            nextState: {...nextState},
-            hasNextSection: hasNextSection
-        });
-    }
-
-    public logBThreadException( bThreadId: BThreadId, eventId: EventId, nextState: BThreadState): void {
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentLoopIndex = utils.latest(this._actions)!.id || 0;
-        const hasNextSection = this._getHasNextSection(bThreadReactions, nextState);
-        bThreadReactions.set(currentLoopIndex, {
-            type: BThreadReactionType.error,
-            actionId: currentLoopIndex,
-            eventId: eventId,
-            nextState: {...nextState},
-            hasNextSection: hasNextSection
+        const currentActionId = utils.latest(this._actions)?.id || 0;
+        bThreadReactions.set(currentActionId, {
+            reactionType: reactionType,
+            actionId: currentActionId,
+            selectedBid: bid,
+            progressionCount: state.progressionCount,
+            bids: state.bids,
+            section: state.section,
+            isCompleted: state.isCompleted
         });
     }
 

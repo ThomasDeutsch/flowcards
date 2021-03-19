@@ -7,7 +7,7 @@ import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
-import { SingleActionDispatch } from '.';
+import { BThreadReactionType, SingleActionDispatch } from '.';
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
@@ -70,6 +70,7 @@ export class BThread {
             cancelledPending: new EventMap(),
             description: scenarioInfo.description,
             section: undefined,
+            bids: undefined,
             isCompleted: false,
             progressionCount: -1 // not counting the initial progression
         };
@@ -80,6 +81,7 @@ export class BThread {
         this._thread = this._generatorFunction(this._currentProps);
         this._logger = logger;
         this._processNextBid();
+        this._logger.logReaction(BThreadReactionType.init, this.id, this._state);
     }
 
      // --- private
@@ -206,7 +208,7 @@ export class BThread {
         }
         this._setCurrentBids();
         const startTime = new Date().getTime();
-        this._logger.logBThreadNewPending(this.id, this.getCurrentBid(action)!, this.state);
+        this._logger.logReaction(BThreadReactionType.newPending, this.id, this._state, this.getCurrentBid(action)!);
         action.payload.then((data: any): void => {
             if(!this._validatePromise(isExtend, action)) return;
             const requestDuration = new Date().getTime() - startTime;
@@ -229,7 +231,7 @@ export class BThread {
     public rejectPending(action: Action): void {
         this._thread.throw({event: action.eventId, error: action.payload});
         this._progressBThread(action.eventId, action.payload, true);
-        this._logger.logBThreadException(this.id, action.eventId, this._state);
+        this._logger.logReaction(BThreadReactionType.error, this.id, this._state, this.getCurrentBid(action)!);
         this._deletePending(action);
             this._cancelPendingRequests(action.eventId);
         
@@ -246,19 +248,19 @@ export class BThread {
             setEventCache(eventCache, action.eventId, action.payload);
         }
         this._progressBThread(bid.eventId, action.payload);
-        this._logger.logBThreadProgress(this.id, bid, this._state);
+        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
     }
 
 
     public progressWait(bid: Bid, action: Action): void {
         this._progressBThread(bid.eventId, action.payload);
-        this._logger.logBThreadProgress(this.id, bid, this._state);
+        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
     }
 
     public progressExtend(action: Action, bid: Bid): ExtendContext {
         const extendContext = new ExtendContext(action.payload);
         this._progressBThread(bid.eventId, extendContext);
-        this._logger.logBThreadProgress(this.id, bid, this._state);
+        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
         extendContext.createPromiseIfNotCompleted();
         return extendContext;
     }
