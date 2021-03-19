@@ -12,7 +12,7 @@ export enum BThreadReactionType {
     newPending = 'newPending'
 }
 
-interface BThreadReaction {
+export interface BThreadReaction {
     reactionType: BThreadReactionType;
     actionId: number;
     selectedBid?: Bid;
