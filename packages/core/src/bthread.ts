@@ -160,6 +160,30 @@ export class BThread {
         this._processNextBid(); // progress BThread
     }
 
+    private _validatePromise(isExtend: boolean, action: Action) {
+        if(!this._thread) return false; // thread was deleted
+        const pendingEventInfo = isExtend ? this._pendingExtends.get(action.eventId) : this._pendingRequests.get(action.eventId);
+        if(pendingEventInfo === undefined || pendingEventInfo.actionId === null) return false;
+        if(pendingEventInfo.actionId !== action.id) return false;
+        return pendingEventInfo.actionId === action.id
+    }
+
+    private _createResposeAction(action: Action, responseType: ActionType, isExtend: boolean, requestDuration: number, data: unknown) {
+        return {
+            id: action.resolveActionId || null,
+            type: responseType,
+            bThreadId: this.id,
+            eventId: action.eventId,
+            bidType: isExtend ? BidType.extend : action.bidType,
+            payload: data,
+            resolve: {
+                extendedAction: isExtend ? action : undefined,
+                requestActionId: action.id!,
+                requestDuration: requestDuration
+            }
+        }
+    }
+
     // --- public
 
     public resetOnPropsChange(nextProps: BThreadProps): boolean {
@@ -181,48 +205,18 @@ export class BThread {
             this._pendingRequests.set(action.eventId, eventInfo);
         }
         this._setCurrentBids();
-        const startTime = new Date().getTime();  //TODO: replace with performance.now() ?
+        const startTime = new Date().getTime();
         this._logger.logBThreadNewPending(this.id, this.getCurrentBid(action)!, this.state);
         action.payload.then((data: any): void => {
-            if(!this._thread) return; // thread was deleted
-            const pendingEventInfo = isExtend ? this._pendingExtends.get(action.eventId) : this._pendingRequests.get(action.eventId);
-            if(pendingEventInfo === undefined || pendingEventInfo.actionId === null) return;
-            if(pendingEventInfo.actionId !== action.id) return;
-            if (pendingEventInfo.actionId === action.id) {
-                const requestDuration = new Date().getTime() - startTime;
-                this._singleActionDispatch({
-                    id: action.resolveActionId || null, 
-                    type: ActionType.resolved,
-                    bThreadId: this.id,
-                    eventId: action.eventId,
-                    bidType: isExtend ? BidType.extend : action.bidType,
-                    payload: data,
-                    resolve: {
-                        extendedAction: isExtend ? action : undefined,
-                        requestActionId: action.id!,
-                        requestDuration: requestDuration
-                    }
-                });
-            }
+            if(!this._validatePromise(isExtend, action)) return;
+            const requestDuration = new Date().getTime() - startTime;
+            const response = this._createResposeAction(action, ActionType.resolved, isExtend,requestDuration, data);
+            this._singleActionDispatch(response);
         }).catch((e: Error): void => {
-            if(!this._thread) return; // was deleted
-            const pendingEventInfo = this.state.pending.get(action.eventId);
-            if (pendingEventInfo?.actionId === action.id) {
-                const requestDuration = new Date().getTime() - startTime;
-                this._singleActionDispatch({
-                    id: action.resolveActionId || null,
-                    type: ActionType.rejected,
-                    bThreadId: this.id,
-                    eventId: action.eventId,
-                    bidType: isExtend ? BidType.extend : action.bidType,
-                    payload: e,
-                    resolve: {
-                        extendedAction: isExtend ? action : undefined,
-                        requestActionId: action.id!,
-                        requestDuration: requestDuration
-                    }
-                });
-            }
+            if(!this._validatePromise(isExtend, action)) return; 
+            const requestDuration = new Date().getTime() - startTime;
+            const response = this._createResposeAction(action, ActionType.rejected, isExtend,requestDuration, e);
+            this._singleActionDispatch(response);
         });
     }
     
@@ -246,8 +240,6 @@ export class BThread {
     }
     
     public progressRequested(eventCache: EventMap<CachedItem<any>>, action: Action): void {
-        if(action.eventId.name === 'eventAX') console.log('11: ', action);
-
         const bidType = action.bidType!; // ensured by action check
         const bid: Bid = this.getCurrentBid(action)!; // ensured by action check
         if(bidType === BidType.set) {

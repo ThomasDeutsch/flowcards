@@ -62,7 +62,6 @@ export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, eventCac
         return;
     }
     const extendResult = extendAction(activeBidsByType, bThreadMap, action);
-    if(action.eventId.name === 'eventiii') console.log('extend result: ', extendResult, action);
     if( extendResult === 'ExtendedWithPromise') return;
     bThread.progressRequested(eventCache, action);
     progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
@@ -89,7 +88,6 @@ function resolveExtendAction(bThreadMap: BThreadMap<BThread>, eventCache: EventM
 }
 
 export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: Action): void {
-    if(action.eventId.name === 'eventiii') console.log('------------------------- RESOLVE?????????');
     const bThread = bThreadMap.get(action.bThreadId);
     if(!bThread) return;
     bThread.resolvePending(action);
