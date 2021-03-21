@@ -1,7 +1,7 @@
 import { EventMap, EventId, toEventId } from './event-map';
 import { Validation, withValidPayload } from './validation';
 import * as utils from './utils';
-import { PendingEventInfo, BThreadId } from './bthread';
+import { BThreadId } from './bthread';
 import { flattenShallow } from './utils';
 
 export enum BidType {
@@ -17,7 +17,6 @@ export enum BidType {
     onPending = "onPending"
 }
 
-export type RequestBidType = BidType.request | BidType.trigger | BidType.set;
 
 export interface Bid {
     type: BidType;
@@ -30,20 +29,27 @@ export interface PlacedBid extends Bid {
     bThreadId: BThreadId;
 }
 
+export interface PendingBid extends PlacedBid {
+    actionId: number;
+}
+
+export type RequestingBidType = BidType.request | BidType.trigger | BidType.set | BidType.extend;
+
+export interface PlacedRequestingBid extends Bid {
+    type: RequestingBidType;
+    bThreadId: BThreadId;
+}
+
 // bids from BThreads
 // --------------------------------------------------------------------------------------------------------------------
 
-export type BThreadBids = Record<BidType, EventMap<PlacedBid>>;
+export type BThreadBids = Record<BidType, EventMap<PlacedBid>>; //TODO: add pending bid type.
 export type BidOrBids =  Bid | (Bid | undefined)[] | undefined;
 
 
-export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pendingEvents: EventMap<PendingEventInfo>): BThreadBids {
-    let bidColl = utils.toArray(bidOrBids).filter(utils.notUndefined).filter(bid => !pendingEvents.has(bid.eventId));
-    const pendingBids: PlacedBid[] | undefined = pendingEvents.allValues?.map(info => ({
-        type: BidType.pending,
-        bThreadId: info.bThreadId,
-        eventId: info.eventId
-    }));
+export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pendingBidMap: EventMap<PendingBid>): BThreadBids {
+    let bidColl = utils.toArray(bidOrBids).filter(utils.notUndefined).filter(bid => !pendingBidMap.has(bid.eventId));
+    const pendingBids = pendingBidMap.allValues?.map(bid => ({...bid, type: BidType.pending}));
     bidColl = bidColl.concat(pendingBids || []);
     const bids = {} as BThreadBids;
     if(bidColl.length === 0) return bids;
@@ -95,9 +101,9 @@ export function isBlocked(bidsByType: BidsByType, event: EventId, withPayload?: 
     return false;
 }
 
-export function getActiveBidsForSelectedTypes(activeBidsByType: BidsByType, types: BidType[]): PlacedBid[] | undefined {
-    const result = types.reduce((acc: PlacedBid[], type: BidType) => {
-        const bids = utils.flattenShallow(activeBidsByType[type]?.allValues);
+export function getRequestingBids(activeBidsByType: BidsByType): PlacedRequestingBid[] | undefined {
+    const result = [BidType.request, BidType.set, BidType.trigger].reduce((acc: PlacedRequestingBid[], type: BidType) => {
+        const bids = utils.flattenShallow(activeBidsByType[type]?.allValues) as PlacedRequestingBid[];
         if(bids === undefined) return acc;
         acc.push(...bids);
         return acc;

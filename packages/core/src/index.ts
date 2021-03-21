@@ -1,7 +1,8 @@
-import { Action, ActionType } from './action';
+import { ActionType, RequestedAction, ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
+import { BThread, BThreadId } from './bthread';
 
 export * from './scenario';
 export * from './bthread';
@@ -17,17 +18,13 @@ export * from './action';
 export * from './extend-context';
 
 export type UpdateCallback = (newContext: ScenariosContext) => void;
-export type SingleActionDispatch = (action: Action) => void;
+export type SingleActionDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
 export type DispatchCommand = (command: Replay | ContextChange | PlayPause) => void;
 export type ContextTest = (context: ScenariosContext) => any;
 
-export interface ActionWithId extends Action {
-    id: number;
-}
-
 export interface Replay {
     type: 'replay';
-    actions: ActionWithId[];
+    actions: (Required<UIAction> | Required<ResolveAction> | Required<RequestedAction> | Required<ResolveExtendAction>)[];
     breakpoints?: Set<number>;
     tests?: Map<number, ContextTest[]>;
 }
@@ -41,22 +38,12 @@ export interface PlayPause {
 }
 
 export class Scenarios {
-    private _bufferedActions: Action[] = [];
+    private _bufferedActions: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _latestReplay?: Replay;
     private _updateLoop: UpdateLoop;
     private _updateCb?: UpdateCallback;
     public initialScenariosContext: ScenariosContext;
     private _logger: Logger;
-
-    private _singleActionDispatch(action: Action) {
-        if(this._updateLoop.isPaused && action.type === ActionType.uiDispatched) { // dispatching a ui action will resume a paused update-loop
-            this._updateLoop.isPaused = false;
-            this._bufferedActions.unshift(action);
-        } else {
-            this._bufferedActions.push(action);
-        }
-        this._clearBufferOnNextTick();
-    }
 
     constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false) {
         this._logger = new Logger();
@@ -64,6 +51,16 @@ export class Scenarios {
         this.initialScenariosContext = this._updateLoop.runScaffolding();
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
+    }
+
+    private _singleActionDispatch(action: UIAction | ResolveAction | ResolveExtendAction) {
+        if(this._updateLoop.isPaused && action.type === ActionType.UI) { // dispatching a ui action will resume a paused update-loop
+            this._updateLoop.isPaused = false;
+            this._bufferedActions.unshift(action);
+        } else {
+            this._bufferedActions.push(action);
+        }
+        this._clearBufferOnNextTick();
     }
 
     private _maybeCallUpdateCb(context: ScenariosContext) {
@@ -78,7 +75,7 @@ export class Scenarios {
                 this._maybeCallUpdateCb(this._updateLoop.startReplay(actionCopy));
             }
             if(this._bufferedActions.length > 0) {
-                this._updateLoop.setUiActionQueue(this._bufferedActions);
+                this._updateLoop.setActionQueue(this._bufferedActions);
                 this._bufferedActions.length = 0;
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
             } 

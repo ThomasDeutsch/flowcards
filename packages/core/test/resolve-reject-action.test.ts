@@ -18,7 +18,7 @@ test("when a promise is resolved, it will dispatch an Action.", done => {
     const testLoop = (enable: StagingFunction): void => {
         const updateLoop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
-                updateLoop.setUiActionQueue([action]);
+                updateLoop.setActionQueue([action]);
                 expect(action.type).toBe(ActionType.resolved);
                 expect(action.bThreadId.name).toBe('thread1');
                 expect(action.eventId.name).toBe('A');
@@ -45,7 +45,7 @@ describe('dispatched action', () => {
     const testLoop = (enable: StagingFunction): void => {
         const updateLoop = new UpdateLoop(enable, (action: Action) => {
             if(action) {
-                updateLoop.setUiActionQueue([action]);
+                updateLoop.setActionQueue([action]);
             }
             updateLoop.runScaffolding();
         }, new Logger());

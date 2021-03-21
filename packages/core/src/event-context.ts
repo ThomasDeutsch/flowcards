@@ -27,7 +27,7 @@ export class EventContext {
     private _dispatch(payload: any): boolean {  
         if(isBlocked(this._activeBidsByType, this.eventId, {payload: payload})) return false; 
         if(hasValidMatch(this._activeBidsByType, BidType.askFor, this.eventId, {payload: payload})) {
-            this._singleActionDispatch({id: null, type: ActionType.uiDispatched, eventId: this.eventId, payload: payload, bThreadId: {name: ""}});
+            this._singleActionDispatch({type: ActionType.UI, eventId: this.eventId, payload: payload});
             return true;
         }
         return false;

@@ -1,5 +1,5 @@
 import { BidsByType, isBlocked, BidType, hasValidMatch, getMatchingBids } from './bid';
-import { Action } from './action';
+import { RequestedAction, ResolveAction, UIAction } from './action';
 import { BThreadMap } from './bthread-map';
 import { BThread } from './bthread';
 import { isValid } from './validation';
@@ -18,21 +18,21 @@ export enum ActionCheck {
 }
 
 
-export function checkRequestAction(bThreadMap: BThreadMap<BThread>, bidsByType: BidsByType, action: Action): ActionCheck {
+export function checkRequestAction(bThreadMap: BThreadMap<BThread>, bidsByType: BidsByType, action: RequestedAction): ActionCheck {
     if(isBlocked(bidsByType, action.eventId, action)) return ActionCheck.WasBlocked;
     if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
-    const bThread = bThreadMap.get(action.bThreadId);
-    if(bThread === undefined) return ActionCheck.BThreadNotFound;
-    const bid = bThread.getCurrentBid(action);
-    if(bid === undefined) return ActionCheck.BThreadWithoutMatchingBid;
-    if(bid.type === BidType.trigger) {
-        if(!hasValidMatch(bidsByType, BidType.askFor, bid.eventId, bid) && !hasValidMatch(bidsByType, BidType.waitFor, bid.eventId, bid)) return ActionCheck.WasNotAskedOrWaitedFor; 
+    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
+    const requestedBid = requestingBThread.getCurrentBid(action.bidType, action.eventId);
+    if(requestedBid === undefined) return ActionCheck.BThreadWithoutMatchingBid;
+    if(requestedBid.type === BidType.trigger) {
+        if(!hasValidMatch(bidsByType, BidType.askFor, requestedBid.eventId, requestedBid) && !hasValidMatch(bidsByType, BidType.waitFor, requestedBid.eventId, requestedBid)) return ActionCheck.WasNotAskedOrWaitedFor; 
     }
     return ActionCheck.OK;
 }
 
 
-export function checkUiAction(bidsByType: BidsByType, action: Action): ActionCheck {
+export function checkUiAction(bidsByType: BidsByType, action: UIAction): ActionCheck {
     if(isBlocked(bidsByType, action.eventId, action)) return ActionCheck.WasBlocked;
     const matchingAskForBids = getMatchingBids(bidsByType, [BidType.askFor], action.eventId);
     if(matchingAskForBids === undefined) return ActionCheck.WasNotAskedFor;
@@ -41,17 +41,17 @@ export function checkUiAction(bidsByType: BidsByType, action: Action): ActionChe
 }
 
 
-export function checkResolveAction(bThreadMap: BThreadMap<BThread>, action: Action): ActionCheck {
-    if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
-    const bThread = bThreadMap.get(action.bThreadId);
-    if(bThread === undefined) return ActionCheck.BThreadNotFound;
-    if(bThread.currentBids?.pending?.get(action.eventId) === undefined) return ActionCheck.EventWasCancelled;
+export function checkResolveAction(bThreadMap: BThreadMap<BThread>, action: ResolveAction): ActionCheck {
+    //if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
+    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
+    if(requestingBThread.currentBids?.pending?.get(action.eventId) === undefined) return ActionCheck.EventWasCancelled;
     return ActionCheck.OK;
 }
 
 
-export function checkRejectAction(bThreadMap: BThreadMap<BThread>, action: Action): ActionCheck {
-    const bThread = bThreadMap.get(action.bThreadId);
-    if(bThread === undefined) return ActionCheck.BThreadNotFound;
+export function checkRejectAction(bThreadMap: BThreadMap<BThread>, action: ResolveAction): ActionCheck {
+    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
     return ActionCheck.OK;
 }

@@ -3,7 +3,8 @@ import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
 import { EventMap } from './event-map';
-import { ActionWithId, BidType } from '.';
+import { BidType } from '.';
+import { ActionType, ReplayAction, RequestedAction } from './action';
 
 export enum BThreadReactionType {
     init = 'init',
@@ -34,8 +35,8 @@ export class Logger {
     public set actionId(id: number) {
         this._actionId = id;
     }
-    private _actions: ActionWithId[] = [];
-    public get actions(): ActionWithId[] { return this._actions; }
+    private _actions: ReplayAction[] = [];
+    public get actions(): ReplayAction[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
 
@@ -47,12 +48,13 @@ export class Logger {
         bThreadHistory!.set(this._actionId, type);
     }
 
-    public logAction(action: ActionWithId): void {
+    public logAction(action: ReplayAction): void {
         const a = {...action}
-        if(action.resolve) {
-            this._actions[action.resolve.requestActionId].resolveActionId = action.id;
+        if(action.type === ActionType.resolved) {
+            const requestAction = this._actions[action.requestActionId] as RequestedAction;
+            requestAction.resolveActionId = action.id;
         }
-        if(action.resolveActionId === null) {
+        if(action.type === ActionType.requested && action.resolveActionId === 'notResolved') {
             a.payload = undefined; // do not save the promise object 
         }
         this._actions.push(a);

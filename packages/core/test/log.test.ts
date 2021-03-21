@@ -53,16 +53,19 @@ test("the actions in a log will contain info, if and when the promise got resolv
       yield bp.request('request2');
   });
 
+
   testScenarios((enable) => {
       enable(thread1());
   }, ({log, thread}) => {
     if(thread.get({name: 'thread1'})?.isCompleted) {
+      console.log('ACTIONS: ------------------------------------', log.actions);
       expect(log.actions[1]?.payload).toEqual('value');
       expect(log.actions[1]?.resolve?.requestActionId).toEqual(0);
       expect(log.actions[1]?.resolve?.requestDuration).toBeGreaterThan(8);
       done();
     }
   });
+
 });
 
 
