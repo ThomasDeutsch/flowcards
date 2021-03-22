@@ -104,3 +104,14 @@ export function getResolveExtendAction(pendingBid: PendingBid, extendedBid: Plac
         extendedRequestingBid: extendedBid
     }
 }
+
+export function getRequestingBid(action: AnyAction): PlacedBid | undefined {
+    if(isRequestedAction(action)) {
+        return {
+            bThreadId: action.bThreadId,
+            type: action.bidType,
+            eventId: action.eventId
+        }
+    }
+    return undefined;
+}

@@ -43,7 +43,7 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
         if(!isValid(extendBid, extendedAction.payload)) continue;
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
-        const extendContext = extendingBThread.progressExtend(extendedAction, extendBid);
+        const extendContext = extendingBThread.progressExtend(extendedAction);
         if(extendContext.promise) {
             progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], extendedAction);
             return extendContext;
@@ -80,7 +80,6 @@ export function advanceUiAction(bThreadMap: BThreadMap<BThread>, activeBidsByTyp
 
 
 export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: ResolveExtendAction): void {
-    console.log('RESOLVE EXTEND: ', action);
     if(action.extendedRequestingBid?.bThreadId) { // extended action originated from a requesting BThread
         const requestingBThread = bThreadMap.get(action.extendedRequestingBid.bThreadId);
         if(requestingBThread === undefined) return;

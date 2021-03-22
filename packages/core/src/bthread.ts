@@ -7,7 +7,7 @@ import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
-import { Bid, BidOrBids, BThreadReactionType, getExtendPendingBid, getResolveAction, getResolveExtendAction, isRequestedAction, isResolveAction, PendingBid, RequestedAction, SingleActionDispatch } from '.';
+import { Bid, BidOrBids, BThreadReactionType, extend, getExtendPendingBid, getRequestingBid, getResolveAction, getResolveExtendAction, isRequestedAction, isResolveAction, PendingBid, PlacedRequestingBid, RequestedAction, SingleActionDispatch } from '.';
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
@@ -190,7 +190,7 @@ export class BThread {
     public addPendingExtend(extendedAction: AnyAction, extendContext: ExtendContext): void { 
         const pendingBid: PendingBid = getExtendPendingBid(extendedAction, extendContext, this.id);
         this._pendingExtends.set(extendedAction.eventId, pendingBid);
-        this._addPendingBid(pendingBid, extendContext.bid);
+        this._addPendingBid(pendingBid, extendContext.requestingBid);
     }
 
     public addPendingRequest(action: RequestedAction,) {
@@ -247,10 +247,10 @@ export class BThread {
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
     }
 
-    public progressExtend(action: AnyAction, bid: PlacedBid): ExtendContext {
-        const extendContext = new ExtendContext(action.payload, bid);
-        this._progressBThread(bid.eventId, extendContext);
-        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
+    public progressExtend(action: AnyAction): ExtendContext {
+        const extendContext = new ExtendContext(action.payload, getRequestingBid(action));
+        this._progressBThread(action.eventId, extendContext);
+        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, this._currentBids?.pending?.get(action.eventId));
         extendContext.createPromiseIfNotCompleted();
         if(extendContext.promise) {
             this.addPendingExtend(action, extendContext);

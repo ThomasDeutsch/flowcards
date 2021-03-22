@@ -155,7 +155,6 @@ export class UpdateLoop {
             }
             else if (action.type === ActionType.resolvedExtend) {
                 actionCheck = checkResolveExtendAction(this._bThreadMap, action);
-                console.log('check actoin: ', action, actionCheck)
                 if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ReplayAction);
                     advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);

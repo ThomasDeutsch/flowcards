@@ -46,7 +46,6 @@ export function checkResolveAction(bThreadMap: BThreadMap<BThread>, action: Reso
     //if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
     const requestingBThread = bThreadMap.get(action.requestingBThreadId);
     if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
-    console.log('current Bids from requesting BThread:', requestingBThread.currentBids);
     if(requestingBThread.currentBids?.pending?.get(action.eventId) === undefined) return ActionCheck.EventWasCancelled;
     return ActionCheck.OK;
 }
@@ -57,7 +56,7 @@ export function checkResolveExtendAction(bThreadMap: BThreadMap<BThread>, action
     const requestingBThread = bThreadMap.get(action.extendedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
     if(action.extendedRequestingBid === undefined) return ActionCheck.HasMissingBidType;
-    if(requestingBThread.currentBids?.[BidType.pending] === undefined) return ActionCheck.EventWasCancelled;
+    if(requestingBThread.currentBids?.[action.extendedRequestingBid.type] === undefined) return ActionCheck.EventWasCancelled;
     return ActionCheck.OK;
 }
 
