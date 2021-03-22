@@ -16,16 +16,16 @@ test("a set is a request, that will be cached. ", () => {
 });
 
 test("when a promise resolves, the cache gets updated", (done) => {
-    const thread1 = scenario(null, function* () {
-        yield bp.set("testeventA11", delay(100, 'resolved value'));
+    const thread1 = scenario({id: 't1'}, function* () {
+        const x = yield bp.set("EVENTXXS", () => delay(100, 'resolved value'));
         yield bp.askFor('fin11');
     });
 
     testScenarios((enable) => {
         enable(thread1());
-    }, ({event}) => {
+    }, ({event, log, thread}) => {
         if(event('fin11').dispatch) {
-            expect(event('testeventA11')?.value).toEqual("resolved value");
+            expect(event('EVENTXXS')?.value).toEqual("resolved value");
             done();
         }
     });

@@ -8,6 +8,7 @@ import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
 import { Bid, BidOrBids, BThreadReactionType, extend, getExtendPendingBid, getRequestingBid, getResolveAction, getResolveExtendAction, isRequestedAction, isResolveAction, PendingBid, PlacedRequestingBid, RequestedAction, SingleActionDispatch } from '.';
+import { ActionCheck } from './action-check';
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
@@ -193,8 +194,8 @@ export class BThread {
         this._addPendingBid(pendingBid, extendContext.requestingBid);
     }
 
-    public addPendingRequest(action: RequestedAction,) {
-        const pendingBid: PendingBid = {bThreadId: this.id, type: BidType.extend, eventId: action.eventId, actionId: action.id!};
+    public addPendingRequest(action: RequestedAction) {
+        const pendingBid: PendingBid = {bThreadId: this.id, type: action.bidType, eventId: action.eventId, actionId: action.id!, payload: action.payload};
         this._pendingRequests.set(action.eventId, pendingBid);
         this._addPendingBid(pendingBid);
     }
@@ -203,12 +204,15 @@ export class BThread {
         this._setCurrentBids();
         const startTime = new Date().getTime();
         this._logger.logReaction(BThreadReactionType.newPending, this.id, this._state, pendingBid);
+        if(pendingBid.eventId.name === 'asdf') console.log('PENDING BID IS CALLED: ------------------------------', pendingBid)
         pendingBid.payload.then((data: any): void => {
+            if(pendingBid.eventId.name === 'asdf') console.log('asdf is resolved: ', pendingBid)
             if(this._validateBid(pendingBid) === false) return;
             const requestDuration = new Date().getTime() - startTime;
             const response = extendedBid ? getResolveExtendAction(pendingBid, extendedBid, requestDuration, data) : getResolveAction(ActionType.resolved, pendingBid, requestDuration, data);
             this._singleActionDispatch(response);
         }).catch((e: Error): void => {
+            if(pendingBid.eventId.name === 'asdf') console.log('asdf is rejected: ', pendingBid, 'ERROR: ', e)
             if(this._validateBid(pendingBid) === false) return; 
             const requestDuration = new Date().getTime() - startTime;
             const response = getResolveAction(ActionType.rejected, pendingBid, requestDuration, e);
@@ -226,7 +230,7 @@ export class BThread {
     }
 
     public progressResolved(eventCache: EventMap<CachedItem<any>>, action: ResolveExtendAction | ResolveAction): void {
-        const bid = this.getCurrentBid(BidType.pending, action.eventId);
+        const bid = this._pendingRequests.get(action.eventId);
         if(bid === undefined) return;
         this._progressBid(eventCache, bid, action.payload);
     }
