@@ -4,12 +4,12 @@ import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedItem } from './event-cache';
 import { Logger } from './logger';
-import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction } from './advance-bthreads';
+import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
 import { SingleActionDispatch, Replay, BidType } from './index';
-import { ActionCheck, checkRequestAction, checkUiAction, checkResolveAction, checkRejectAction } from './action-check';
+import { ActionCheck, checkRequestAction, checkUiAction, checkResolveAction, checkRejectAction, checkResolveExtendAction } from './action-check';
 
 
 // update loop
@@ -84,8 +84,8 @@ export class UpdateLoop {
         const actions = this._replay.actions;
         if(actions.length > 0 && actions[0].id === actionId) {
             const action = this._replay.actions.shift()!;
-            if(action.type !== ActionType.UI && action.payload === GET_VALUE_FROM_BTHREAD) {
-                action.payload = this._bThreadMap.get(action.requestingBThreadId)?.currentBids?.request?.get(action.eventId)?.payload;
+            if(action.type === ActionType.requested && action.payload === GET_VALUE_FROM_BTHREAD) {
+                action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.eventId)?.payload;
             }
             return action;
         }
@@ -137,7 +137,7 @@ export class UpdateLoop {
         do {
             const action = this._getNextReplayAction(this._currentActionId) || this._getQueuedAction() || getRequestedAction(this._currentActionId, requestingBids?.shift())
             if(action === undefined) return this._getContext();
-            if(this._currentActionId > 5) return this._getContext();
+            
             if (action.id === undefined) action.id = this._currentActionId;
             if (action.type === ActionType.requested) {
                 actionCheck = checkRequestAction(this._bThreadMap, this._activeBidsByType, action);
@@ -151,6 +151,14 @@ export class UpdateLoop {
                 if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ReplayAction);
                     advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                }
+            }
+            else if (action.type === ActionType.resolvedExtend) {
+                actionCheck = checkResolveExtendAction(this._bThreadMap, action);
+                console.log('check actoin: ', action, actionCheck)
+                if(actionCheck === ActionCheck.OK) {
+                    this._logger.logAction(action as ReplayAction);
+                    advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.UI) {

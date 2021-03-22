@@ -7,7 +7,7 @@ import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
-import { Bid, BidOrBids, BThreadReactionType, ExtendAction, getResponseAction, isResolveExtendAction, PendingBid, PlacedRequestingBid, RequestedAction, SingleActionDispatch } from '.';
+import { Bid, BidOrBids, BThreadReactionType, getExtendPendingBid, getResolveAction, getResolveExtendAction, isRequestedAction, isResolveAction, PendingBid, RequestedAction, SingleActionDispatch } from '.';
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
@@ -136,11 +136,11 @@ export class BThread {
     }
 
     private _deletePending(action: ResolveAction | ResolveExtendAction): boolean {
-        if(isResolveExtendAction(action)) {
-            return this._pendingExtends.deleteSingle(action.eventId);
+        if(isResolveAction(action)) {
+            return this._pendingRequests.deleteSingle(action.eventId);
         }
         else {
-            return this._pendingRequests.deleteSingle(action.eventId);
+            return this._pendingExtends.deleteSingle(action.eventId);
         }
     }
 
@@ -155,11 +155,14 @@ export class BThread {
         this._processNextBid(); // progress BThread
     }
 
-    private _validatePromise(isExtend: boolean, action: RequestedAction) {
+    private _validateBid(pendingBid: PendingBid) {
         if(!this._thread) return false; // thread was deleted
-        const pendingBid = isExtend ? this._pendingExtends.get(action.eventId) : this._pendingRequests.get(action.eventId);
         if(pendingBid === undefined) return false;
-        if(pendingBid.actionId !== action.id) return false;
+        if(pendingBid.type === BidType.extend) {
+            if(pendingBid.actionId !== this._pendingExtends.get(pendingBid.eventId)?.actionId) return false;
+        } else {
+            if(pendingBid.actionId !== this._pendingRequests.get(pendingBid.eventId)?.actionId) return false;
+        }
         return true;
     }
 
@@ -184,36 +187,34 @@ export class BThread {
         return true;
     }
 
-    public addPendingBid(requestedAction: RequestedAction | ExtendAction, extendedAction?: AnyAction): void { 
-        const bid = this.getCurrentBid(requestedAction.bidType, requestedAction.eventId);
-        if(bid === undefined) return;
-        const pendingBid: PendingBid = {...bid, actionId: requestedAction.id};
-        if(extendedAction) {
-            this._pendingExtends.set(requestedAction.eventId, pendingBid);
-        } else {
-            this._pendingRequests.set(requestedAction.eventId, pendingBid);
-        }
+    public addPendingExtend(extendedAction: AnyAction, extendContext: ExtendContext): void { 
+        const pendingBid: PendingBid = getExtendPendingBid(extendedAction, extendContext, this.id);
+        this._pendingExtends.set(extendedAction.eventId, pendingBid);
+        this._addPendingBid(pendingBid, extendContext.bid);
+    }
+
+    public addPendingRequest(action: RequestedAction,) {
+        const pendingBid: PendingBid = {bThreadId: this.id, type: BidType.extend, eventId: action.eventId, actionId: action.id!};
+        this._pendingRequests.set(action.eventId, pendingBid);
+        this._addPendingBid(pendingBid);
+    }
+
+    private _addPendingBid(pendingBid: PendingBid, extendedBid?: PlacedBid): void { 
         this._setCurrentBids();
         const startTime = new Date().getTime();
-        this._logger.logReaction(BThreadReactionType.newPending, this.id, this._state, bid);
-        requestedAction.payload.then((data: any): void => {
-            if(!this._validatePromise(!!extendedAction, requestedAction)) return;
+        this._logger.logReaction(BThreadReactionType.newPending, this.id, this._state, pendingBid);
+        pendingBid.payload.then((data: any): void => {
+            if(this._validateBid(pendingBid) === false) return;
             const requestDuration = new Date().getTime() - startTime;
-            const response = getResponseAction(ActionType.resolved, requestedAction, requestDuration, data, extendedAction);
+            const response = extendedBid ? getResolveExtendAction(pendingBid, extendedBid, requestDuration, data) : getResolveAction(ActionType.resolved, pendingBid, requestDuration, data);
             this._singleActionDispatch(response);
         }).catch((e: Error): void => {
-            if(!this._validatePromise(!!extendedAction, requestedAction)) return; 
+            if(this._validateBid(pendingBid) === false) return; 
             const requestDuration = new Date().getTime() - startTime;
-            const response = getResponseAction(ActionType.rejected, requestedAction, requestDuration, e, extendedAction);
+            const response = getResolveAction(ActionType.rejected, pendingBid, requestDuration, e);
             this._singleActionDispatch(response);
         });
     }
-    
-    // public resolvePending(action: ResolveAction | ResolveExtendAction): boolean {
-    //     if(this._deletePending(action) === false) return false;
-    //     this._setCurrentBids();
-    //     return true;
-    // }
 
     public rejectPending(action: ResolveAction): void {
         this._thread.throw({event: action.eventId, error: action.payload});
@@ -230,6 +231,11 @@ export class BThread {
         this._progressBid(eventCache, bid, action.payload);
     }
 
+    public progressResolvedExtend(eventCache: EventMap<CachedItem<any>>, action: ResolveExtendAction): void {        
+        if(action.extendedRequestingBid === undefined) return;
+        this._progressBid(eventCache, action.extendedRequestingBid, action.payload);
+    }
+
     public progressRequested(eventCache: EventMap<CachedItem<any>>, action: RequestedAction): void {
         const bid = this.getCurrentBid(action.bidType, action.eventId);
         if(bid === undefined) return;
@@ -242,10 +248,13 @@ export class BThread {
     }
 
     public progressExtend(action: AnyAction, bid: PlacedBid): ExtendContext {
-        const extendContext = new ExtendContext(action.payload);
+        const extendContext = new ExtendContext(action.payload, bid);
         this._progressBThread(bid.eventId, extendContext);
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
         extendContext.createPromiseIfNotCompleted();
+        if(extendContext.promise) {
+            this.addPendingExtend(action, extendContext);
+        }
         return extendContext;
     }
 

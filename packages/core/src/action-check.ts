@@ -3,6 +3,7 @@ import { RequestedAction, ResolveAction, UIAction } from './action';
 import { BThreadMap } from './bthread-map';
 import { BThread } from './bthread';
 import { isValid } from './validation';
+import { ResolveExtendAction } from '.';
 
 
 export enum ActionCheck {
@@ -21,7 +22,7 @@ export enum ActionCheck {
 export function checkRequestAction(bThreadMap: BThreadMap<BThread>, bidsByType: BidsByType, action: RequestedAction): ActionCheck {
     if(isBlocked(bidsByType, action.eventId, action)) return ActionCheck.WasBlocked;
     if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
-    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    const requestingBThread = bThreadMap.get(action.bThreadId);
     if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
     const requestedBid = requestingBThread.getCurrentBid(action.bidType, action.eventId);
     if(requestedBid === undefined) return ActionCheck.BThreadWithoutMatchingBid;
@@ -45,7 +46,18 @@ export function checkResolveAction(bThreadMap: BThreadMap<BThread>, action: Reso
     //if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
     const requestingBThread = bThreadMap.get(action.requestingBThreadId);
     if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
+    console.log('current Bids from requesting BThread:', requestingBThread.currentBids);
     if(requestingBThread.currentBids?.pending?.get(action.eventId) === undefined) return ActionCheck.EventWasCancelled;
+    return ActionCheck.OK;
+}
+
+
+export function checkResolveExtendAction(bThreadMap: BThreadMap<BThread>, action: ResolveExtendAction): ActionCheck {
+    if(action.extendedRequestingBid?.bThreadId === undefined) return ActionCheck.BThreadNotFound;
+    const requestingBThread = bThreadMap.get(action.extendedRequestingBid.bThreadId);
+    if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
+    if(action.extendedRequestingBid === undefined) return ActionCheck.HasMissingBidType;
+    if(requestingBThread.currentBids?.[BidType.pending] === undefined) return ActionCheck.EventWasCancelled;
     return ActionCheck.OK;
 }
 

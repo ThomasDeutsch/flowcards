@@ -3,6 +3,8 @@ import { Validation, withValidPayload } from './validation';
 import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { flattenShallow } from './utils';
+import { AnyAction, isRequestedAction } from '.';
+import { ExtendContext } from './extend-context';
 
 export enum BidType {
     request = "request",
@@ -29,11 +31,7 @@ export interface PlacedBid extends Bid {
     bThreadId: BThreadId;
 }
 
-export interface PendingBid extends PlacedBid {
-    actionId: number;
-}
-
-export type RequestingBidType = BidType.request | BidType.trigger | BidType.set | BidType.extend;
+export type RequestingBidType = BidType.request | BidType.trigger | BidType.set;
 
 export interface PlacedRequestingBid extends Bid {
     type: RequestingBidType;
@@ -200,4 +198,24 @@ export function extend(event: string | EventId, validation?: Validation): Bid {
         eventId: toEventId(event), 
         validate: validation
     };
+}
+
+export interface PendingBid extends PlacedBid {
+    actionId: number;
+    extendedRequestingBid?: PlacedBid;
+}
+
+export function getExtendPendingBid(extendedAction: AnyAction, extendContext: ExtendContext, extendingBThreadId: BThreadId): PendingBid {
+    return {
+        actionId: extendedAction.id!,
+        type: BidType.extend,
+        bThreadId: extendingBThreadId,
+        extendedRequestingBid: isRequestedAction(extendedAction) ? {
+            type: extendedAction.bidType,
+            eventId: extendedAction.eventId,
+            bThreadId: extendedAction.bThreadId
+        }: undefined,
+        eventId: extendedAction.eventId,
+        payload: extendContext.promise
+    }
 }

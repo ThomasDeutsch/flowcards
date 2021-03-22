@@ -1,5 +1,8 @@
+import { PlacedBid } from ".";
+
 export class ExtendContext {
     private _isCompleted = false;
+    public readonly bid: PlacedBid;
     public get isCompleted(): boolean { return this._isCompleted }
     private _value: any;
     public get value(): any { return this._value }
@@ -7,8 +10,9 @@ export class ExtendContext {
     public get promise(): Promise<unknown> | undefined { return this._promise }
     private _resolveFn?: (value?: unknown) => void;
 
-    constructor(payload: unknown) {
+    constructor(payload: unknown, bid: PlacedBid) {
         this._value = payload;
+        this.bid = bid;
     }
 
     public resolve(value?: unknown): void { 
