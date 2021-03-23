@@ -8,8 +8,8 @@ import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, adva
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { SingleActionDispatch, Replay, BidType } from './index';
-import { ActionCheck, checkRequestAction, checkUiAction, checkResolveAction, checkRejectAction, checkResolveExtendAction } from './action-check';
+import { SingleActionDispatch, Replay } from './index';
+import { ActionCheck, checkUiAction, checkResolveAction, checkRejectAction, checkResolveExtendAction, checkRequestedAction } from './action-check';
 
 
 // update loop
@@ -140,7 +140,7 @@ export class UpdateLoop {
             
             if (action.id === undefined) action.id = this._currentActionId;
             if (action.type === ActionType.requested) {
-                actionCheck = checkRequestAction(this._bThreadMap, this._activeBidsByType, action);
+                actionCheck = checkRequestedAction(this._bThreadMap, this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action as ReplayAction);
                     advanceRequestedAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);

@@ -1,5 +1,5 @@
 
-import { BidOrBids } from '.';
+import { BidOrBids } from './bid';
 import { uuidv4 } from './utils';
 
 export type BThreadGenerator = Generator<BidOrBids, void, any>;

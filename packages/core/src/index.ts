@@ -2,7 +2,6 @@ import { ActionType, RequestedAction, ResolveAction, ResolveExtendAction, UIActi
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
-import { BThread, BThreadId } from './bthread';
 
 export * from './scenario';
 export * from './bthread';

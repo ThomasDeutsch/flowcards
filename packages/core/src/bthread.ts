@@ -1,14 +1,15 @@
-import { ActionType, AnyAction, ResolveAction, ResolveExtendAction } from './action';
-import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread } from './bid';
+import { ActionType, AnyAction, ResolveAction, ResolveExtendAction, getResolveAction, getResolveExtendAction, isResolveAction, RequestedAction, getRequestingBid } from './action';
+import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids } from './bid';
 import { EventMap, EventId, toEventId, sameEventId } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
 import * as utils from './utils';
 import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
-import { Logger, ScaffoldingResultType } from './logger';
+import { Logger, ScaffoldingResultType, BThreadReactionType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
-import { Bid, BidOrBids, BThreadReactionType, extend, getExtendPendingBid, getRequestingBid, getResolveAction, getResolveExtendAction, isRequestedAction, isResolveAction, PendingBid, PlacedRequestingBid, RequestedAction, SingleActionDispatch } from '.';
-import { ActionCheck } from './action-check';
+import { SingleActionDispatch } from './index';
+import { getExtendPendingBid, PendingBid } from './pending-bid';
+
 
 export type BThreadKey = string | number;
 export type BThreadId = {name: string; key?: BThreadKey};
@@ -194,7 +195,7 @@ export class BThread {
         this._addPendingBid(pendingBid, extendContext.requestingBid);
     }
 
-    public addPendingRequest(action: RequestedAction) {
+    public addPendingRequest(action: RequestedAction): void{
         const pendingBid: PendingBid = {bThreadId: this.id, type: action.bidType, eventId: action.eventId, actionId: action.id!, payload: action.payload};
         this._pendingRequests.set(action.eventId, pendingBid);
         this._addPendingBid(pendingBid);

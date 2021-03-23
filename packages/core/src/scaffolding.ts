@@ -5,7 +5,7 @@ import { CachedItem, GetCachedItem } from './event-cache';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadMap } from './bthread-map';
 import { BThreadGeneratorFunction, Scenario } from './scenario';
-import { SingleActionDispatch } from '.';
+import { SingleActionDispatch } from './index';
 
 export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState, cached: GetCachedItem) => void;
 

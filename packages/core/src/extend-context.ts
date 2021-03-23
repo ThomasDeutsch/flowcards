@@ -1,4 +1,4 @@
-import { PlacedBid } from ".";
+import { PlacedBid } from "./bid";
 
 export class ExtendContext {
     private _isCompleted = false;
@@ -24,7 +24,7 @@ export class ExtendContext {
 
     public createPromiseIfNotCompleted(): void {
         if(this.isCompleted) return;
-        this._promise = new Promise((resolve, reject) => {
+        this._promise = new Promise((resolve) => {
             this._resolveFn = resolve;
         });
     }

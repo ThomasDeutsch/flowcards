@@ -1,9 +1,8 @@
 import { BidsByType, isBlocked, BidType, hasValidMatch, getMatchingBids } from './bid';
-import { RequestedAction, ResolveAction, UIAction } from './action';
+import { RequestedAction, ResolveAction, UIAction, ResolveExtendAction } from './action';
 import { BThreadMap } from './bthread-map';
 import { BThread } from './bthread';
 import { isValid } from './validation';
-import { ResolveExtendAction } from '.';
 
 
 export enum ActionCheck {
@@ -19,7 +18,7 @@ export enum ActionCheck {
 }
 
 
-export function checkRequestAction(bThreadMap: BThreadMap<BThread>, bidsByType: BidsByType, action: RequestedAction): ActionCheck {
+export function checkRequestedAction(bThreadMap: BThreadMap<BThread>, bidsByType: BidsByType, action: RequestedAction): ActionCheck {
     if(isBlocked(bidsByType, action.eventId, action)) return ActionCheck.WasBlocked;
     if(action.bidType === undefined) return ActionCheck.HasMissingBidType;
     const requestingBThread = bThreadMap.get(action.bThreadId);

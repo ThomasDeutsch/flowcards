@@ -3,7 +3,7 @@ import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
 import { EventMap } from './event-map';
-import { BidType } from '.';
+import { BidType } from './bid';
 import { ActionType, ReplayAction, RequestedAction } from './action';
 
 export enum BThreadReactionType {

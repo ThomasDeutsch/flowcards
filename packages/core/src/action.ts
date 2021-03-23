@@ -1,10 +1,11 @@
-import { BidType, RequestingBidType} from './bid';
+import { RequestingBidType, PlacedBid, PlacedRequestingBid} from './bid';
 import { EventId } from './event-map';
 import { BThreadId } from './bthread';
-import { ExtendContext } from './extend-context';
-import { BThread, PendingBid, PlacedBid, PlacedRequestingBid } from '.';
+import { PendingBid } from './pending-bid';
+
 
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
+
 
 export enum ActionType {
     requested = "requested",
@@ -15,18 +16,21 @@ export enum ActionType {
     resolvedExtend = "resolvedExtend"
 }
 
+
 interface Action {
     type: ActionType;
     eventId: EventId;
-    payload?: any;
+    payload?: unknown;
 }
+
 
 export interface UIAction extends Action {
     id?: number,
     type: ActionType.UI,
     eventId: EventId;
-    payload?: any;
+    payload?: unknown;
 }
+
 
 export interface RequestedAction extends Action {
     id: number,
@@ -36,6 +40,7 @@ export interface RequestedAction extends Action {
     resolveActionId?: number | "notResolved" | "checkPayloadForPromise";
 }
 
+
 export interface ResolveAction extends Action {
     id?: number,
     type: ActionType.resolved | ActionType.rejected;
@@ -43,6 +48,7 @@ export interface ResolveAction extends Action {
     requestActionId: number;
     pendingDuration: number;
 }
+
 
 export interface ResolveExtendAction extends Action {
     id?: number,
@@ -52,21 +58,27 @@ export interface ResolveExtendAction extends Action {
     extendedRequestingBid?: PlacedBid;
 }
 
+
 export function isResolveAction(action: AnyAction): action is ResolveAction {
+    // eslint-disable-next-line no-prototype-builtins
     return action.hasOwnProperty('requestingBThreadId');
 }
 
+
 export function notUIAction(action: AnyAction): action is RequestedAction | ResolveAction | ResolveExtendAction {
+        // eslint-disable-next-line no-prototype-builtins
     return action.hasOwnProperty('requestingBThreadId');
 }
+
 
 export function isRequestedAction(action: AnyAction): action is RequestedAction {
     return action.type === ActionType.requested;
 }
 
-export type AnyAction = UIAction | RequestedAction | ResolveAction | ResolveExtendAction;
 
+export type AnyAction = UIAction | RequestedAction | ResolveAction | ResolveExtendAction;
 export type ReplayAction = Required<UIAction> | Required<RequestedAction> | Required<ResolveAction> | Required<ResolveExtendAction>;
+
 
 export function getRequestedAction(currentActionId: number, bid?: PlacedRequestingBid): RequestedAction | undefined {
     if(bid === undefined) return undefined;
@@ -81,6 +93,7 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
     };
 }
 
+
 export function getResolveAction(responseType: ActionType.rejected | ActionType.resolved, pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveAction {
     return {
         id: undefined,
@@ -93,6 +106,7 @@ export function getResolveAction(responseType: ActionType.rejected | ActionType.
     }
 }
 
+
 export function getResolveExtendAction(pendingBid: PendingBid, extendedBid: PlacedBid, pendingDuration: number, data: unknown): ResolveExtendAction {
     return {
         id: undefined,
@@ -104,6 +118,7 @@ export function getResolveExtendAction(pendingBid: PendingBid, extendedBid: Plac
         extendedRequestingBid: extendedBid
     }
 }
+
 
 export function getRequestingBid(action: AnyAction): PlacedBid | undefined {
     if(isRequestedAction(action)) {
