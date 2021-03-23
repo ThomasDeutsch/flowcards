@@ -15,20 +15,20 @@ export function getChangedProps(nextDeps: Record<string, any>, prevDeps?: Record
     return keys.length > 0 ? keys : undefined;
 }
 
+
 // promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function isThenable(p?: any): boolean { 
     return p !== undefined && p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
 
-// UNDEFINED CHECK --------------
 
+// UNDEFINED CHECK --------------
 export function notUndefined<T>(value?: T): value is T {
     return value !== undefined;
 }
 
 // ARRAY --------------------
-
 export function toArray<T>(x: T | T[]): T[] {
     if(Array.isArray(x)) return x;
     return [x];

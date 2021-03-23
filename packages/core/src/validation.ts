@@ -2,7 +2,9 @@ import { PlacedBid, BidsByType, BidType, getMatchingBids } from './bid';
 import { EventId } from './event-map';
 import { getProgressingBids } from './advance-bthreads';
 
+
 export type Validation = (payload: any) => {isValid: boolean; message?: string} | boolean
+
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function isValid(bid: PlacedBid, payload?: any): boolean {
@@ -14,7 +16,9 @@ export function isValid(bid: PlacedBid, payload?: any): boolean {
     return false;
 }
 
+
 export type BidValidationResult = {isValid: boolean; bid: PlacedBid; message?: string}
+
 
 export function getValidationResult(bid: PlacedBid, payload?: unknown): BidValidationResult {
     if(bid.validate === undefined) return {isValid: true, bid: bid, message: bid.eventId.description};
@@ -25,9 +29,11 @@ export function getValidationResult(bid: PlacedBid, payload?: unknown): BidValid
     return {isValid: false, bid: bid, message: validationReturn.message};
 }
 
+
 export function withValidPayload(bids: PlacedBid[] | undefined, payload: unknown): boolean {
     return (bids !== undefined) && bids.some(bid => isValid(bid, payload))
 }
+
 
 export interface ValidationResult {
     isValid: boolean;
@@ -35,6 +41,7 @@ export interface ValidationResult {
     optional: BidValidationResult[];
     progressingBids: PlacedBid[];
 }
+
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function validate(activeBidsByType: BidsByType, eventId: EventId, payload: any): ValidationResult {
