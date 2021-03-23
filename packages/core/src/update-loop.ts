@@ -186,7 +186,6 @@ export class UpdateLoop {
          return this.runScaffolding();
     }
 
-
     // public ----------------------------------------------------------------------
     public isPaused = false;
 

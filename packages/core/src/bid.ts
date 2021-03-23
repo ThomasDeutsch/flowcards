@@ -87,15 +87,15 @@ export function activeBidsByType(allBThreadBids: BThreadBids[]): BidsByType {
 
 type WithPayload = {payload?: any};
 
-export function isBlocked(bidsByType: BidsByType, event: EventId, withPayload?: WithPayload): boolean {
-    if(bidsByType.block !== undefined) {
-        if(bidsByType.block.hasMatching(event)) return true
+export function isBlocked(activeBidsByType: BidsByType, event: EventId, withPayload?: WithPayload): boolean {
+    if(activeBidsByType.block !== undefined) {
+        if(activeBidsByType.block.hasMatching(event)) return true
     }
-    if(bidsByType.pending !== undefined) {
-        if(bidsByType.pending.hasMatching(event)) return true;
+    if(activeBidsByType.pending !== undefined) {
+        if(activeBidsByType.pending.hasMatching(event)) return true;
     }
-    if(withPayload && bidsByType.guardedBlock !== undefined) {
-        const blockBids = flattenShallow(bidsByType.guardedBlock.getExactMatchAndUnkeyedMatch(event));
+    if(withPayload !== undefined && activeBidsByType.guardedBlock !== undefined) {
+        const blockBids = flattenShallow(activeBidsByType.guardedBlock.getExactMatchAndUnkeyedMatch(event));
         return withValidPayload(blockBids, withPayload.payload);
     }
     return false;
@@ -104,8 +104,9 @@ export function isBlocked(bidsByType: BidsByType, event: EventId, withPayload?: 
 export function getRequestingBids(activeBidsByType: BidsByType): PlacedRequestingBid[] | undefined {
     const result = [BidType.request, BidType.set, BidType.trigger].reduce((acc: PlacedRequestingBid[], type: BidType) => {
         const bids = utils.flattenShallow(activeBidsByType[type]?.allValues) as PlacedRequestingBid[];
-        if(bids === undefined) return acc;
-        acc.push(...bids);
+        if(bids === undefined || bids.length === 0) return acc;
+        const notBlockedBids = bids.filter(bid => !isBlocked(activeBidsByType, bid.eventId));
+        acc.push(...notBlockedBids);
         return acc;
     }, []);
     if(result.length === 0) return undefined;
