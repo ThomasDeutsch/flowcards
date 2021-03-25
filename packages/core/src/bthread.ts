@@ -7,7 +7,6 @@ import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType, BThreadReactionType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
-import { SingleActionDispatch } from './index';
 import { getExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
 
