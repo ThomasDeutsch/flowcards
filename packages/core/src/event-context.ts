@@ -7,7 +7,7 @@ import { SingleActionDispatch } from './index';
 
 
 export class EventContext {
-    private _singleActionDispatch: SingleActionDispatch;
+    private _internalDispatch: SingleActionDispatch;
     public readonly eventId: EventId;
     private _cachedItem?: CachedItem<unknown>;
     private _lastUpdatedOnActionId = -1;
@@ -27,7 +27,7 @@ export class EventContext {
     private _dispatch(payload: any): boolean {  
         if(isBlocked(this._activeBidsByType, this.eventId, {payload: payload})) return false; 
         if(hasValidMatch(this._activeBidsByType, BidType.askFor, this.eventId, {payload: payload})) {
-            this._singleActionDispatch({type: ActionType.UI, eventId: this.eventId, payload: payload});
+            this._internalDispatch({type: ActionType.UI, eventId: this.eventId, payload: payload});
             return true;
         }
         return false;
@@ -42,8 +42,8 @@ export class EventContext {
         return undefined;
     }
 
-    constructor(singleActionDispatch: SingleActionDispatch, eventId: EventId) {
-        this._singleActionDispatch = singleActionDispatch;
+    constructor(internalDispatch: SingleActionDispatch, eventId: EventId) {
+        this._internalDispatch = internalDispatch;
         this.eventId = eventId;
         this._activeBidsByType = {} as BidsByType;
     }

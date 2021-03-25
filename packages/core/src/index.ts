@@ -1,4 +1,4 @@
-import { ActionType, RequestedAction, ResolveAction, ResolveExtendAction, UIAction } from './action';
+import { ActionType, ReplayAction, RequestedAction, ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
@@ -23,7 +23,7 @@ export type ContextTest = (context: ScenariosContext) => any;
 
 export interface Replay {
     type: 'replay';
-    actions: (Required<UIAction> | Required<ResolveAction> | Required<RequestedAction> | Required<ResolveExtendAction>)[];
+    actions: ReplayAction[];
     breakpoints?: Set<number>;
     tests?: Map<number, ContextTest[]>;
 }
@@ -46,13 +46,13 @@ export class Scenarios {
 
     constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false) {
         this._logger = new Logger();
-        this._updateLoop = new UpdateLoop(stagingFunction, this._singleActionDispatch.bind(this), this._logger);
+        this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
         this.initialScenariosContext = this._updateLoop.runScaffolding();
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
     }
 
-    private _singleActionDispatch(action: UIAction | ResolveAction | ResolveExtendAction) {
+    private _internalDispatch(action: UIAction | ResolveAction | ResolveExtendAction) {
         if(this._updateLoop.isPaused && action.type === ActionType.UI) { // dispatching a ui action will resume a paused update-loop
             this._updateLoop.isPaused = false;
             this._bufferedActions.unshift(action);

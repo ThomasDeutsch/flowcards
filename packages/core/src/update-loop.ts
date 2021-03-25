@@ -29,11 +29,11 @@ export interface ScenariosContext {
 }
 
 export type UpdateLoopFunction = () => ScenariosContext;
-
 export type ReplayMap = Map<number, ReplayAction>;
 export interface CurrentReplay extends Replay {
     testResults: Map<number, any>;
 }
+export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
 
 export class UpdateLoop {
     private _currentActionId = 0;
@@ -46,16 +46,17 @@ export class UpdateLoop {
     private readonly _eventCache = new EventMap<CachedItem<any>>();
     private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
     private readonly _eventContexts = new EventMap<EventContext>();
-    private readonly _singleActionDispatch: SingleActionDispatch;
+    private readonly _internalDispatch: SingleActionDispatch;
     private readonly _testResults = new Map<number, any[]>();
     private _inReplay = false;
     private _replay?: CurrentReplay;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];     
     
-    constructor(stagingFunction: StagingFunction, singleActionDispatch: SingleActionDispatch, logger: Logger) {
+    constructor(stagingFunction: StagingFunction, internalDispatch: SingleActionDispatch, logger: Logger) {
         this._logger = logger;
-        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, singleActionDispatch, this._logger);
-        this._singleActionDispatch = singleActionDispatch;
+        const resolveActionCB = (action: ResolveAction | ResolveExtendAction) => internalDispatch(action);
+        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, resolveActionCB, this._logger);
+        this._internalDispatch = internalDispatch;
     }
 
     private _reset() {
@@ -72,7 +73,7 @@ export class UpdateLoop {
         const eventId = toEventId(event);
         let context = this._eventContexts.get(eventId);
         if(context === undefined) {
-            context = new EventContext(this._singleActionDispatch, eventId);
+            context = new EventContext(this._internalDispatch, eventId);
             this._eventContexts.set(eventId, context);
         }
         context?.update(this._activeBidsByType, this._getCachedItem, this._currentActionId);
@@ -126,18 +127,17 @@ export class UpdateLoop {
     private _getQueuedAction(): UIAction | ResolveAction | ResolveExtendAction | undefined {
         const action = this._actionQueue.shift();
         if(action === undefined) return undefined
-        return {...action, id: this._currentActionId }
+        return {...action, id: this._currentActionId}
     }
 
     private _setupContext(): ScenariosContext {
         if(this._inReplay) this._runContextTests();
         if(this.isPaused) return this._getContext();
-        const requestingBids = getRequestingBids(this._activeBidsByType);
+        const placedRequestingBids = getRequestingBids(this._activeBidsByType);
         let actionCheck: ActionCheck | undefined = undefined;
         do {
-            const action = this._getNextReplayAction(this._currentActionId) || this._getQueuedAction() || getRequestedAction(this._currentActionId, requestingBids?.shift())
+            const action = this._getNextReplayAction(this._currentActionId) || this._getQueuedAction() || getRequestedAction(this._currentActionId, placedRequestingBids?.shift())
             if(action === undefined) return this._getContext();
-            
             if (action.id === undefined) action.id = this._currentActionId;
             if (action.type === ActionType.requested) {
                 actionCheck = checkRequestedAction(this._bThreadMap, this._activeBidsByType, action);
