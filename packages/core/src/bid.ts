@@ -132,11 +132,6 @@ export function getMatchingBids(bidsByType: BidsByType, types: BidType[], event:
     return result.length === 0 ? undefined : result;
 }
 
-export function getNextBidAndRemaining(bids: PlacedBid[]): [PlacedBid, PlacedBid[]] {
-    const [nextBid, ...remainingBids] = bids;
-    return [nextBid, remainingBids]
-}
-
 
 // bids user-API --------------------------------------------------------------------
 

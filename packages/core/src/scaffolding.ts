@@ -1,14 +1,12 @@
 import { BThreadBids } from './bid';
 import { BThread, BThreadState, BThreadId, BThreadKey } from './bthread';
-import { EventMap, EventId, toEventId } from './event-map';
-import { CachedItem, GetCachedItem } from './event-cache';
+import { GetCachedEvent } from './event-cache';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadMap } from './bthread-map';
 import { BThreadGeneratorFunction, Scenario } from './scenario';
-import { SingleActionDispatch } from './index';
 import { ResolveActionCB } from './update-loop';
 
-export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState, cached: GetCachedItem) => void;
+export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState, getCachedEvent: GetCachedEvent) => void;
 
 
 // enable, disable or delete bThreads
@@ -18,7 +16,7 @@ export function setupScaffolding(
     bThreadMap: BThreadMap<BThread>,
     bThreadBids: BThreadBids[],
     bThreadStateMap: BThreadMap<BThreadState>,
-    eventCache: EventMap<CachedItem<any>>,
+    getCachedEvent: GetCachedEvent,
     resolveActionCB: ResolveActionCB,
     logger: Logger): 
 (currentActionId: number) => void {
@@ -47,17 +45,12 @@ export function setupScaffolding(
         return bThread.state;
     }
 
-    function getCached<T>(event: EventId | string): CachedItem<T> {
-        event = toEventId(event);
-        return eventCache.get(event)!;
-    }
-
     function scaffold(beforeActionId: number) {
         logger.actionId = beforeActionId;
         bThreadBids.length = 0;
         bThreadOrderIndex = 0;
         enabledBThreadIds.clear();
-        stagingFunction(enableBThread, getCached); // do the staging
+        stagingFunction(enableBThread, getCachedEvent); // do the staging
         bThreadMap.forEach(bThread => {
             if(enabledBThreadIds.has(bThread.id) === false) {
                 logger.logScaffoldingResult(ScaffoldingResultType.disabled, bThread.id);

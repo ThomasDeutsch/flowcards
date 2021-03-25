@@ -2,13 +2,13 @@ import { ActionType, GET_VALUE_FROM_BTHREAD, getRequestedAction, ReplayAction, U
 import { BThreadBids, activeBidsByType, BidsByType, getRequestingBids } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
-import { CachedItem, GetCachedItem } from './event-cache';
+import { CachedItem, GetCachedEvent } from './event-cache';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { SingleActionDispatch, Replay } from './index';
+import { InternalDispatch, Replay } from './index';
 import { ActionCheck, checkUiAction, checkResolveAction, checkRejectAction, checkResolveExtendAction, checkRequestedAction } from './action-check';
 
 
@@ -34,6 +34,7 @@ export interface CurrentReplay extends Replay {
     testResults: Map<number, any>;
 }
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
+export type UIActionDispatch = (action: UIAction) => void;
 
 export class UpdateLoop {
     private _currentActionId = 0;
@@ -44,19 +45,19 @@ export class UpdateLoop {
     private readonly _logger: Logger;
     private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<any>>();
-    private readonly _getCachedItem: GetCachedItem = (eventId: EventId) => this._eventCache.get(eventId);
+    private readonly _getCachedEvent: GetCachedEvent = (eventId: EventId) => this._eventCache.get(eventId);
     private readonly _eventContexts = new EventMap<EventContext>();
-    private readonly _internalDispatch: SingleActionDispatch;
+    private readonly _uiActionDispatch: UIActionDispatch;
     private readonly _testResults = new Map<number, any[]>();
     private _inReplay = false;
     private _replay?: CurrentReplay;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];     
     
-    constructor(stagingFunction: StagingFunction, internalDispatch: SingleActionDispatch, logger: Logger) {
+    constructor(stagingFunction: StagingFunction, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
         const resolveActionCB = (action: ResolveAction | ResolveExtendAction) => internalDispatch(action);
-        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._eventCache, resolveActionCB, this._logger);
-        this._internalDispatch = internalDispatch;
+        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._getCachedEvent, resolveActionCB, this._logger);
+        this._uiActionDispatch = (action : UIAction) => internalDispatch(action);
     }
 
     private _reset() {
@@ -73,10 +74,10 @@ export class UpdateLoop {
         const eventId = toEventId(event);
         let context = this._eventContexts.get(eventId);
         if(context === undefined) {
-            context = new EventContext(this._internalDispatch, eventId);
+            context = new EventContext(this._getCachedEvent, this._uiActionDispatch, eventId);
             this._eventContexts.set(eventId, context);
         }
-        context?.update(this._activeBidsByType, this._getCachedItem, this._currentActionId);
+        context?.update(this._activeBidsByType, this._currentActionId);
         return context;
     }
 

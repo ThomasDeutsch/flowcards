@@ -17,7 +17,7 @@ export * from './action';
 export * from './extend-context';
 
 export type UpdateCallback = (newContext: ScenariosContext) => void;
-export type SingleActionDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
+export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
 export type DispatchCommand = (command: Replay | ContextChange | PlayPause) => void;
 export type ContextTest = (context: ScenariosContext) => any;
 
