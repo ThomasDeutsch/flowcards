@@ -69,11 +69,11 @@ export class Scenarios {
     private _clearBufferOnNextTick = () => {
         Promise.resolve().then(() => { // next tick
             if(this._latestReplay) {
-                const actionCopy = {...this._latestReplay};
+                this._bufferedActions.length = 0;
+                this._maybeCallUpdateCb(this._updateLoop.startReplay({...this._latestReplay}));
                 delete this._latestReplay;
-                this._maybeCallUpdateCb(this._updateLoop.startReplay(actionCopy));
             }
-            if(this._bufferedActions.length > 0) {
+            else if(this._bufferedActions.length > 0) {
                 this._updateLoop.setActionQueue(this._bufferedActions);
                 this._bufferedActions.length = 0;
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
@@ -100,7 +100,6 @@ export class Scenarios {
                     console.warn('replay was dispatched without replay actions - replay was aborted');
                     return;
                 }
-                this._bufferedActions.length = 0; // cancel all buffered actions
                 this._latestReplay = {...command};
                 this._clearBufferOnNextTick();
             }

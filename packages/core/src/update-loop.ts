@@ -133,6 +133,7 @@ export class UpdateLoop {
 
     private _setupContext(): ScenariosContext {
         if(this._inReplay) this._runContextTests();
+        if(this._replay?.breakpoints?.has(this._currentActionId)) this.isPaused === true;
         if(this.isPaused) return this._getContext();
         const placedRequestingBids = getRequestingBids(this._activeBidsByType);
         let actionCheck: ActionCheck | undefined = undefined;
@@ -203,6 +204,10 @@ export class UpdateLoop {
 
     public startReplay(replay: Replay): ScenariosContext {
         this._replay = {...replay, testResults: new Map<number, any>()}
+        // TODO: tests: 
+        // - check if reactions are the same as the recorded reactions
+        // - check if the action is Checked OK
+        // - add context checks via chai assertions
         this._inReplay = true;
         this._reset();
         return this.runScaffolding();
