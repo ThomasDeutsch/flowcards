@@ -1,4 +1,4 @@
-import { ActionType, ReplayAction, RequestedAction, ResolveAction, ResolveExtendAction, UIAction } from './action';
+import { ActionType, AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
@@ -23,7 +23,7 @@ export type ContextTest = (context: ScenariosContext) => any;
 
 export interface Replay {
     type: 'replay';
-    actions: ReplayAction[];
+    actions: AnyActionWithId[];
     breakpoints?: Set<number>;
     tests?: Map<number, ContextTest[]>;
 }

@@ -1,5 +1,5 @@
 import { BThreadId } from "./bthread";
-import { AnyAction, isRequestedAction } from "./action";
+import { ActionType, AnyAction } from "./action";
 import { PlacedBid, BidType } from "./bid";
 import { ExtendContext } from "./extend-context";
 
@@ -14,7 +14,7 @@ export function getExtendPendingBid(extendedAction: AnyAction, extendContext: Ex
         actionId: extendedAction.id!,
         type: BidType.extend,
         bThreadId: extendingBThreadId,
-        extendedRequestingBid: isRequestedAction(extendedAction) ? {
+        extendedRequestingBid: (extendedAction.type === ActionType.requested) ? {
             type: extendedAction.bidType,
             eventId: extendedAction.eventId,
             bThreadId: extendedAction.bThreadId

@@ -1,4 +1,4 @@
-import { ActionType, AnyAction, ResolveAction, ResolveExtendAction, getResolveAction, getResolveExtendAction, isResolveAction, RequestedAction, getRequestingBid } from './action';
+import { ActionType, AnyAction, ResolveAction, ResolveExtendAction, getResolveAction, getResolveExtendAction, RequestedAction, getRequestingBid } from './action';
 import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids } from './bid';
 import { EventMap, EventId, toEventId, sameEventId } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
@@ -138,7 +138,7 @@ export class BThread {
     }
 
     private _deletePending(action: ResolveAction | ResolveExtendAction): boolean {
-        if(isResolveAction(action)) {
+        if(action.type === ActionType.resolved) {
             return this._pendingRequests.deleteSingle(action.eventId);
         }
         else {

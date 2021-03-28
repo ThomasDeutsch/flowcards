@@ -4,7 +4,7 @@ import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
 import { EventMap } from './event-map';
 import { BidType } from './bid';
-import { ActionType, ReplayAction, RequestedAction } from './action';
+import { ActionType, AnyActionWithId, RequestedAction } from './action';
 
 export enum BThreadReactionType {
     init = 'init',
@@ -35,8 +35,8 @@ export class Logger {
     public set actionId(id: number) {
         this._actionId = id;
     }
-    private _actions: ReplayAction[] = [];
-    public get actions(): ReplayAction[] { return this._actions; }
+    private _actions: AnyActionWithId[] = [];
+    public get actions(): AnyActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
 
@@ -48,7 +48,7 @@ export class Logger {
         bThreadHistory!.set(this._actionId, type);
     }
 
-    public logAction(action: ReplayAction): void {
+    public logAction(action: AnyActionWithId): void {
         const a = {...action}
         if(action.type === ActionType.resolved) {
             const requestAction = this._actions[action.requestActionId] as RequestedAction;

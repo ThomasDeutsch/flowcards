@@ -55,29 +55,36 @@ export interface ResolveExtendAction extends Action {
     type: ActionType.resolvedExtend;
     pendingDuration: number;
     requestActionId: number;
-    extendedRequestingBid?: PlacedBid;
+    extendedRequestingBid: PlacedBid;
 }
 
 
-export function isResolveAction(action: AnyAction): action is ResolveAction {
-    // eslint-disable-next-line no-prototype-builtins
-    return action.hasOwnProperty('requestingBThreadId');
-}
+// export function isResolveAction(action: AnyAction): action is ResolveAction {
+//     return action.type === ActionType.resolved || action.type === ActionType.rejected;
+// }
 
+// export function isResolveExtendAction(action: AnyAction): action is ResolveAction {
+//     return action.type === ActionType.resolvedExtend;
+// }
 
-export function notUIAction(action: AnyAction): action is RequestedAction | ResolveAction | ResolveExtendAction {
-        // eslint-disable-next-line no-prototype-builtins
-    return action.hasOwnProperty('requestingBThreadId');
-}
+// export function isUIAction(action: AnyAction): action is UIAction {
+//     return action.type === ActionType.UI
+// }
 
-
-export function isRequestedAction(action: AnyAction): action is RequestedAction {
-    return action.type === ActionType.requested;
-}
+// export function isRequestedAction(action: AnyAction): action is RequestedAction {
+//     return action.type === ActionType.requested;
+// }
 
 
 export type AnyAction = UIAction | RequestedAction | ResolveAction | ResolveExtendAction;
-export type ReplayAction = Required<UIAction> | Required<RequestedAction> | Required<ResolveAction> | Required<ResolveExtendAction>;
+type RequireOne<T, K extends keyof T> = T & {[P in K]-?: T[P]};
+export type AnyActionWithId = RequireOne<AnyAction, 'id'>;
+
+
+export function toActionWithId(action: AnyAction, id: number): AnyActionWithId {
+    if(action.id !== undefined) return action as AnyActionWithId;
+    return {...action, id: id};
+}
 
 
 export function getRequestedAction(currentActionId: number, bid?: PlacedRequestingBid): RequestedAction | undefined {
@@ -121,7 +128,7 @@ export function getResolveExtendAction(pendingBid: PendingBid, extendedBid: Plac
 
 
 export function getRequestingBid(action: AnyAction): PlacedBid | undefined {
-    if(isRequestedAction(action)) {
+    if(action.type === ActionType.requested) {
         return {
             bThreadId: action.bThreadId,
             type: action.bidType,

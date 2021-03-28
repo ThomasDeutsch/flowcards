@@ -1,4 +1,4 @@
-import { ActionType, GET_VALUE_FROM_BTHREAD, getRequestedAction, ReplayAction, UIAction, ResolveAction, ResolveExtendAction } from './action';
+import { ActionType, GET_VALUE_FROM_BTHREAD, getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyActionWithId, toActionWithId } from './action';
 import { BThreadBids, activeBidsByType, BidsByType, getRequestingBids } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
@@ -29,7 +29,7 @@ export interface ScenariosContext {
 }
 
 export type UpdateLoopFunction = () => ScenariosContext;
-export type ReplayMap = Map<number, ReplayAction>;
+export type ReplayMap = Map<number, AnyActionWithId>;
 export interface CurrentReplay extends Replay {
     testResults: Map<number, any>;
 }
@@ -81,7 +81,7 @@ export class UpdateLoop {
         return context;
     }
 
-    private _getNextReplayAction(actionId: number): ReplayAction | undefined {
+    private _getNextReplayAction(actionId: number): AnyActionWithId | undefined {
         if(this._replay === undefined) return undefined
         const actions = this._replay.actions;
         if(actions.length > 0 && actions[0].id === actionId) {
@@ -138,41 +138,41 @@ export class UpdateLoop {
         const placedRequestingBids = getRequestingBids(this._activeBidsByType);
         let actionCheck: ActionCheck | undefined = undefined;
         do {
-            const action = this._getNextReplayAction(this._currentActionId) || this._getQueuedAction() || getRequestedAction(this._currentActionId, placedRequestingBids?.shift())
-            if(action === undefined) return this._getContext();
-            if (action.id === undefined) action.id = this._currentActionId;
+            const maybeAction = this._getNextReplayAction(this._currentActionId) || this._getQueuedAction() || getRequestedAction(this._currentActionId, placedRequestingBids?.shift())
+            if(maybeAction === undefined) return this._getContext();
+            const action = toActionWithId(maybeAction, this._currentActionId);
             if (action.type === ActionType.requested) {
                 actionCheck = checkRequestedAction(this._bThreadMap, this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action as ReplayAction);
+                    this._logger.logAction(action);
                     advanceRequestedAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.resolved) {
                 actionCheck = checkResolveAction(this._bThreadMap, action);
                 if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action as ReplayAction);
+                    this._logger.logAction(action);
                     advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.resolvedExtend) {
                 actionCheck = checkResolveExtendAction(this._bThreadMap, action);
                 if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action as ReplayAction);
+                    this._logger.logAction(action);
                     advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.UI) {
                 actionCheck = checkUiAction(this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action as ReplayAction);
+                    this._logger.logAction(action);
                     advanceUiAction(this._bThreadMap, this._activeBidsByType, action);
                 }
             }
             else if (action.type === ActionType.rejected) {
                 actionCheck = checkRejectAction(this._bThreadMap, action);
                 if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action as ReplayAction);
+                    this._logger.logAction(action);
                     advanceRejectAction(this._bThreadMap, this._activeBidsByType, action);
                 }
             }
