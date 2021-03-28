@@ -59,23 +59,6 @@ export interface ResolveExtendAction extends Action {
 }
 
 
-// export function isResolveAction(action: AnyAction): action is ResolveAction {
-//     return action.type === ActionType.resolved || action.type === ActionType.rejected;
-// }
-
-// export function isResolveExtendAction(action: AnyAction): action is ResolveAction {
-//     return action.type === ActionType.resolvedExtend;
-// }
-
-// export function isUIAction(action: AnyAction): action is UIAction {
-//     return action.type === ActionType.UI
-// }
-
-// export function isRequestedAction(action: AnyAction): action is RequestedAction {
-//     return action.type === ActionType.requested;
-// }
-
-
 export type AnyAction = UIAction | RequestedAction | ResolveAction | ResolveExtendAction;
 type RequireOne<T, K extends keyof T> = T & {[P in K]-?: T[P]};
 export type AnyActionWithId = RequireOne<AnyAction, 'id'>;
