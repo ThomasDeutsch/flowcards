@@ -54,7 +54,7 @@ export class Logger {
             const requestAction = this._actions[action.requestActionId] as RequestedAction;
             requestAction.resolveActionId = action.id;
         }
-        if(action.type === ActionType.requested && action.resolveActionId === 'notResolved') {
+        if(action.type === ActionType.requested) {
             a.payload = undefined; // do not save the promise object 
         }
         this._actions.push(a);
