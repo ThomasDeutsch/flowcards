@@ -42,7 +42,7 @@ export function checkUiAction(bidsByType: BidsByType, action: UIAction): ActionC
 
 
 export function checkResolveAction(bThreadMap: BThreadMap<BThread>, action: ResolveAction): ActionCheck {
-    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    const requestingBThread = bThreadMap.get(action.resolvedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
     if(requestingBThread.currentBids?.pending?.get(action.eventId) === undefined) return ActionCheck.EventWasCancelled;
     return ActionCheck.OK;
@@ -60,7 +60,7 @@ export function checkResolveExtendAction(bThreadMap: BThreadMap<BThread>, action
 
 
 export function checkRejectAction(bThreadMap: BThreadMap<BThread>, action: ResolveAction): ActionCheck {
-    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    const requestingBThread = bThreadMap.get(action.resolvedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return ActionCheck.BThreadNotFound;
     return ActionCheck.OK;
 }

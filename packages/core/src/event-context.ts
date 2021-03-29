@@ -27,7 +27,7 @@ export class EventContext {
     private _dispatch(payload: any): boolean {  
         if(isBlocked(this._activeBidsByType, this.eventId, {payload: payload})) return false; 
         if(hasValidMatch(this._activeBidsByType, BidType.askFor, this.eventId, {payload: payload})) {
-            this._uiActionDispatch({type: ActionType.UI, eventId: this.eventId, payload: payload});
+            this._uiActionDispatch({type: ActionType.ui, eventId: this.eventId, payload: payload});
             return true;
         }
         return false;

@@ -89,7 +89,7 @@ export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, even
 
 
 export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: ResolveAction): void {
-    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    const requestingBThread = bThreadMap.get(action.resolvedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return;
     activeBidsByType.pending?.deleteSingle(action.eventId);
     if(extendAction(activeBidsByType, bThreadMap, action)) return;
@@ -99,7 +99,7 @@ export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache
 
 
 export function advanceRejectAction(bThreadMap: BThreadMap<BThread>, activeBidsByType: BidsByType, action: ResolveAction): void {
-    const requestingBThread = bThreadMap.get(action.requestingBThreadId);
+    const requestingBThread = bThreadMap.get(action.resolvedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return;
     requestingBThread.rejectPending(action);
     activeBidsByType.pending?.deleteSingle(action.eventId);

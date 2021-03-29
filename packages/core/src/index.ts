@@ -53,7 +53,7 @@ export class Scenarios {
     }
 
     private _internalDispatch(action: UIAction | ResolveAction | ResolveExtendAction) {
-        if(this._updateLoop.isPaused && action.type === ActionType.UI) { // dispatching a ui action will resume a paused update-loop
+        if(this._updateLoop.isPaused && action.type === ActionType.ui) { // dispatching a ui action will resume a paused update-loop
             this._updateLoop.isPaused = false;
             this._bufferedActions.unshift(action);
         } else {

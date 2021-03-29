@@ -43,9 +43,9 @@ export interface RequestedAction extends Action {
 export interface ResolveAction extends Action {
     id?: number,
     type: ActionType.resolved | ActionType.rejected;
-    requestingBThreadId: BThreadId;
     requestActionId: number;
     pendingDuration: number;
+    resolvedRequestingBid: PlacedBid;
 }
 
 
@@ -87,11 +87,11 @@ export function getResolveAction(responseType: ActionType.rejected | ActionType.
     return {
         id: undefined,
         type: responseType,
-        requestingBThreadId: pendingBid.bThreadId,
         eventId: pendingBid.eventId,
         payload: data,
         requestActionId: pendingBid.actionId,
-        pendingDuration: pendingDuration
+        pendingDuration: pendingDuration,
+        resolvedRequestingBid: pendingBid
     }
 }
 

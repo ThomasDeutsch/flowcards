@@ -162,7 +162,7 @@ export class UpdateLoop {
                     advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }
             }
-            else if (action.type === ActionType.UI) {
+            else if (action.type === ActionType.ui) {
                 actionCheck = checkUiAction(this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action);
