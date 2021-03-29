@@ -10,6 +10,7 @@ import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
 import { InternalDispatch, Replay } from './index';
 import { ActionCheck, checkUiAction, checkResolveAction, checkRejectAction, checkResolveExtendAction, checkRequestedAction } from './action-check';
+import { isThenable } from './utils';
 
 
 // update loop
@@ -144,6 +145,12 @@ export class UpdateLoop {
             if (action.type === ActionType.requested) {
                 actionCheck = checkRequestedAction(this._bThreadMap, this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
+                    if (typeof action.payload === "function") {
+                        action.payload = action.payload(this._getCachedEvent(action.eventId));
+                    }
+                    if(isThenable(action.payload)) {
+                        action.resolveActionId = 'pending';
+                    }
                     this._logger.logAction(action);
                     advanceRequestedAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
                 }

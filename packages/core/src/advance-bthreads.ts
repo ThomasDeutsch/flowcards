@@ -55,15 +55,10 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
 export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: RequestedAction): void {
     const requestingBThread = bThreadMap.get(action.bThreadId);
     if(requestingBThread === undefined) return;
-    if(action.type === ActionType.requested) {
-        if (typeof action.payload === "function") {
-            action.payload = action.payload(eventCache.get(action.eventId)?.value);
-        }
-        if(isThenable(action.payload)) {
-            requestingBThread.addPendingRequest({...action, resolveActionId: 'pending'});
-            progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], action);
-            return;
-        }
+    if(action.resolveActionId === 'pending') {
+        requestingBThread.addPendingRequest(action);
+        progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], action);
+        return;
     }
     const extendContext = extendAction(activeBidsByType, bThreadMap, action);
     if(extendContext) return;
