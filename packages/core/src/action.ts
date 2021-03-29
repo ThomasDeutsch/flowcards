@@ -12,7 +12,6 @@ export enum ActionType {
     UI = "UI",
     resolved = "resolved",
     rejected = "rejected",
-    extended = "extended",
     resolvedExtend = "resolvedExtend"
 }
 
