@@ -36,7 +36,7 @@ export interface RequestedAction extends Action {
     type: ActionType.requested,
     bidType: RequestingBidType;
     bThreadId: BThreadId;
-    resolveActionId?: number;
+    resolveActionId?: number | 'pending';
 }
 
 
