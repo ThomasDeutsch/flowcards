@@ -36,7 +36,7 @@ export interface RequestedAction extends Action {
     type: ActionType.requested,
     bidType: RequestingBidType;
     bThreadId: BThreadId;
-    resolveActionId?: number | "notResolved" | "checkPayloadForPromise";
+    resolveActionId?: number;
 }
 
 
@@ -77,8 +77,7 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
         bidType: bid.type as RequestingBidType,
         bThreadId: bid.bThreadId,
         eventId: bid.eventId,
-        payload: bid.payload,
-        resolveActionId: 'checkPayloadForPromise'
+        payload: bid.payload
     };
 }
 

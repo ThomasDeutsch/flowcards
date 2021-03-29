@@ -59,8 +59,8 @@ export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, eventCac
         if (typeof action.payload === "function") {
             action.payload = action.payload(eventCache.get(action.eventId)?.value);
         }
-        if(action.resolveActionId === 'checkPayloadForPromise' && isThenable(action.payload)) {
-            requestingBThread.addPendingRequest({...action, resolveActionId: 'notResolved'});
+        if(isThenable(action.payload)) {
+            requestingBThread.addPendingRequest({...action});
             progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], action);
             return;
         }
