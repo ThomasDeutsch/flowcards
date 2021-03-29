@@ -9,7 +9,7 @@ export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread
 
 export enum ActionType {
     requested = "requested",
-    UI = "UI",
+    ui = "ui",
     resolved = "resolved",
     rejected = "rejected",
     resolvedExtend = "resolvedExtend"
@@ -25,7 +25,7 @@ interface Action {
 
 export interface UIAction extends Action {
     id?: number,
-    type: ActionType.UI,
+    type: ActionType.ui,
     eventId: EventId;
     payload?: unknown;
 }
