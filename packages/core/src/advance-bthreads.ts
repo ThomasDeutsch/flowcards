@@ -4,8 +4,7 @@ import { BThreadMap } from './bthread-map';
 import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
 import { isValid } from './validation';
-import { isThenable } from './utils';
-import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, ActionType, RequestedAction } from './action';
+import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
 import { ExtendContext } from './extend-context';
 
 

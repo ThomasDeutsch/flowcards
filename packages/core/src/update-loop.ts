@@ -32,6 +32,7 @@ export interface ScenariosContext {
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, AnyActionWithId>;
 export interface CurrentReplay extends Replay {
+    isPaused: boolean;
     testResults: Map<number, any>;
 }
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
@@ -50,7 +51,6 @@ export class UpdateLoop {
     private readonly _eventContexts = new EventMap<EventContext>();
     private readonly _uiActionDispatch: UIActionDispatch;
     private readonly _testResults = new Map<number, any[]>();
-    private _inReplay = false;
     private _replay?: CurrentReplay;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];     
     
@@ -95,8 +95,11 @@ export class UpdateLoop {
         return undefined;
     }
 
+    private _isInReplay(): boolean {
+        return this._replay !== undefined && this._replay.actions.length > 0;
+    }
+
     private _getContext(): ScenariosContext {
-        this._inReplay = this._replay !== undefined && this._replay.actions.length > 0;
         return { 
             event: this._getEventContext.bind(this),
             thread: this._bThreadStateMap,
@@ -104,22 +107,23 @@ export class UpdateLoop {
             bids: this._activeBidsByType,
             debug: {
                 currentActionId: this._currentActionId,
-                inReplay: this._inReplay,
-                isPaused: this.isPaused,
+                inReplay: this._isInReplay(),
+                isPaused: !!this._replay?.isPaused,
                 testResults: this._testResults
             }
         }
     }
 
     private _runContextTests(): void {
-        const tests = this._replay?.tests?.get(this._currentActionId);
+        if(this._replay === undefined) return;
+        const tests = this._replay.tests?.get(this._currentActionId);
         if(tests === undefined || tests.length === 0) return;
         const results: any[] = [];
         tests.forEach(scenarioTest => {
             try { 
                 results.push(scenarioTest(this._getContext()));
             } catch(error) {
-                this.isPaused = true;
+                this._replay!.isPaused = true;
                 results.push(error);
             }
         });
@@ -133,9 +137,11 @@ export class UpdateLoop {
     }
 
     private _setupContext(): ScenariosContext {
-        if(this._inReplay) this._runContextTests();
-        if(this._replay?.breakpoints?.has(this._currentActionId)) this.isPaused === true;
-        if(this.isPaused) return this._getContext();
+        if(this._replay) {
+            this._runContextTests();
+            if(this._replay?.breakpoints?.has(this._currentActionId)) this._replay.isPaused = true;
+            if(this._replay?.isPaused === true) return this._getContext();
+        }
         const placedRequestingBids = getRequestingBids(this._activeBidsByType);
         let actionCheck: ActionCheck | undefined = undefined;
         do {
@@ -145,7 +151,11 @@ export class UpdateLoop {
             if (action.type === ActionType.requested) {
                 actionCheck = checkRequestedAction(this._bThreadMap, this._activeBidsByType, action);
                 if(actionCheck === ActionCheck.OK) {
-                    if (typeof action.payload === "function") {
+                    if(this._replay && action.payload === undefined) {
+                        const currentBid = this._bThreadMap.get(action.bThreadId)?.getCurrentBid(action.bidType, action.eventId);
+                        action.payload = currentBid?.payload;
+                    }
+                    if(typeof action.payload === "function") {
                         action.payload = action.payload(this._getCachedEvent(action.eventId));
                     }
                     if(isThenable(action.payload)) {
@@ -183,8 +193,8 @@ export class UpdateLoop {
                     advanceRejectAction(this._bThreadMap, this._activeBidsByType, action);
                 }
             }
-            if(this._inReplay && actionCheck !== ActionCheck.OK) {
-                this.isPaused = true;
+            if(this._replay && actionCheck !== ActionCheck.OK) {
+                this._replay.isPaused = true;
                 const results = this._testResults.get(this._currentActionId) || [];
                 this._testResults.set(this._currentActionId, [...results, {type: 'action-validation', message: actionCheck, action: action}]);
                 return this._getContext();
@@ -196,32 +206,33 @@ export class UpdateLoop {
     }
 
     // public ----------------------------------------------------------------------
-    public isPaused = false;
-
     public setActionQueue(actions: (UIAction | ResolveAction | ResolveExtendAction)[]): void {
         this._actionQueue.length = 0;
         actions.forEach(action => this._actionQueue.push(action));
     }
 
     public runScaffolding(): ScenariosContext {
+        if(this._replay && this._replay.actions.length === 0) delete this._replay;
         this._scaffold(this._currentActionId);
         this._activeBidsByType = activeBidsByType(this._bThreadBids);
         return this._setupContext();
     }
 
     public startReplay(replay: Replay): ScenariosContext {
-        this._replay = {...replay, testResults: new Map<number, any>()}
+        this._replay = {...replay, testResults: new Map<number, any>(), isPaused: false}
         // TODO: tests: 
         // - check if reactions are the same as the recorded reactions
         // - check if the action is Checked OK
         // - add context checks via chai assertions
-        this._inReplay = true;
         this._reset();
         return this.runScaffolding();
     }
 
-    public togglePaused(): ScenariosContext {
-        this.isPaused = !this.isPaused;
-        return this.runScaffolding();
+    public togglePaused(): ScenariosContext | undefined {
+        if(this._replay) {
+            this._replay.isPaused = !this._replay.isPaused
+            return this.runScaffolding();
+        }
+        return undefined;
     }
 }

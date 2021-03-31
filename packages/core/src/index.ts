@@ -1,4 +1,4 @@
-import { ActionType, AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
+import { AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
@@ -18,7 +18,7 @@ export * from './extend-context';
 
 export type UpdateCallback = (newContext: ScenariosContext) => void;
 export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
-export type DispatchCommand = (command: Replay | ContextChange | PlayPause) => void;
+export type DispatchCommand = (command: Replay | ContextChange) => void;
 export type ContextTest = (context: ScenariosContext) => any;
 
 export interface Replay {
@@ -30,10 +30,6 @@ export interface Replay {
 
 export interface ContextChange {
     type: 'appContextChange';
-}
-
-export interface PlayPause {
-    type: 'playPause';
 }
 
 export class Scenarios {
@@ -53,12 +49,7 @@ export class Scenarios {
     }
 
     private _internalDispatch(action: UIAction | ResolveAction | ResolveExtendAction) {
-        if(this._updateLoop.isPaused && action.type === ActionType.ui) { // dispatching a ui action will resume a paused update-loop
-            this._updateLoop.isPaused = false;
-            this._bufferedActions.unshift(action);
-        } else {
-            this._bufferedActions.push(action);
-        }
+        this._bufferedActions.push(action);
         this._clearBufferOnNextTick();
     }
 
@@ -81,7 +72,7 @@ export class Scenarios {
         });
     }
 
-    private _dispatch(command: Replay | ContextChange | PlayPause): void {
+    private _dispatch(command: Replay | ContextChange): void {
         switch(command.type) {
             case 'appContextChange': {
                 //TODO: make context change replayable
@@ -89,10 +80,6 @@ export class Scenarios {
                 // a method needs to be added to the logger
                 // 
                 this._maybeCallUpdateCb(this._updateLoop.runScaffolding());
-                break;
-            }
-            case 'playPause': {
-                this._maybeCallUpdateCb(this._updateLoop.togglePaused());
                 break;
             }
             case 'replay': {
