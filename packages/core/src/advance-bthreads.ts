@@ -73,11 +73,10 @@ export function advanceUiAction(bThreadMap: BThreadMap<BThread>, activeBidsByTyp
 }
 
 
-
 export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: ResolveExtendAction): void {
-    const extendedBThread = bThreadMap.get(action.extendedBThreadId);
-    if(!extendedBThread) return;
-    extendedBThread!.progressResolvedExtend(eventCache, action); 
+    const extendingBThread = bThreadMap.get(action.extendingBThreadId);
+    if(!extendingBThread) return;
+    extendingBThread.deleteResolvedExtend(action); 
     if(action.extendedRequestingBid) {
         const requestingBThread = bThreadMap.get(action.extendedRequestingBid.bThreadId);
         if(requestingBThread === undefined) return;

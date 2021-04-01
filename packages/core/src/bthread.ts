@@ -226,11 +226,11 @@ export class BThread {
         this._progressBid(eventCache, bid, action.payload);
     }
 
-    public progressResolvedExtend(eventCache: EventMap<CachedItem<any>>, action: ResolveExtendAction): void {  
+    public deleteResolvedExtend(action: ResolveExtendAction): void {  
         const bid = this._pendingExtends.get(action.eventId);
         if(bid === undefined) return;
         this._pendingExtends.deleteSingle(action.eventId);
-        this._progressBid(eventCache, bid, action.payload);
+        this._logger.logReaction(BThreadReactionType.resolvedExtend ,this.id, this._state, bid);
     }
 
     public progressRequested(eventCache: EventMap<CachedItem<any>>, bidType: BidType, eventId: EventId, payload: unknown): void {

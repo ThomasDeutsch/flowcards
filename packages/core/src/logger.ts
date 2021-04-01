@@ -10,7 +10,8 @@ export enum BThreadReactionType {
     init = 'init',
     progress = 'progress',
     error = 'error',
-    newPending = 'newPending'
+    newPending = 'newPending',
+    resolvedExtend = 'resolvedExtend'
 }
 
 export interface BThreadReaction {
