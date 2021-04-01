@@ -7,7 +7,7 @@ import { ExtendContext } from './extend-context';
 import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType, BThreadReactionType } from './logger';
 import { BThreadGenerator, BThreadGeneratorFunction, ScenarioInfo } from './scenario';
-import { getExtendPendingBid, PendingBid } from './pending-bid';
+import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
 
 
@@ -189,12 +189,6 @@ export class BThread {
         return true;
     }
 
-    public addPendingExtend(extendedAction: AnyAction, extendContext: ExtendContext): void { 
-        const pendingBid: PendingBid = getExtendPendingBid(extendedAction, extendContext, this.id);
-        this._pendingExtends.set(extendedAction.eventId, pendingBid);
-        this._addPendingBid(pendingBid, extendContext.requestingBid);
-    }
-
     public addPendingRequest(action: RequestedAction): void{
         const pendingBid: PendingBid = {
             bThreadId: this.id, 
@@ -255,13 +249,16 @@ export class BThread {
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
     }
 
-    public progressExtend(action: AnyAction): ExtendContext {
-        const extendContext = new ExtendContext(action.payload, getRequestingBid(action));
-        this._progressBThread(action.eventId, extendContext);
-        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, this._currentBids?.pending?.get(action.eventId));
+    public progressExtend(extendedAction: AnyAction): ExtendContext {
+        const extendedBid = getRequestingBid(extendedAction)
+        const extendContext = new ExtendContext(extendedAction.payload);
+        this._progressBThread(extendedAction.eventId, extendContext);
+        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, this._currentBids?.pending?.get(extendedAction.eventId));
         extendContext.createPromiseIfNotCompleted();
         if(extendContext.promise) {
-            this.addPendingExtend(action, extendContext);
+            const pendingBid: PendingBid = toExtendPendingBid(extendedAction, extendContext, this.id);
+            this._pendingExtends.set(extendedAction.eventId, pendingBid);
+            this._addPendingBid(pendingBid, extendedBid);
         }
         return extendContext;
     }
