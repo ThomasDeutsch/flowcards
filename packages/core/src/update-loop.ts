@@ -145,6 +145,8 @@ export class UpdateLoop {
         const placedRequestingBids = getRequestingBids(this._activeBidsByType);
         let actionCheck: ActionCheck | undefined = undefined;
         do {
+            // TODO: add block & payload validation check into getRequestedAction 
+            // then unify the action-check and advance-bthreads functions
             const maybeAction = this._getNextReplayAction(this._currentActionId) || this._getQueuedAction() || getRequestedAction(this._currentActionId, placedRequestingBids?.shift())
             if(maybeAction === undefined) return this._getContext();
             const action = toActionWithId(maybeAction, this._currentActionId);

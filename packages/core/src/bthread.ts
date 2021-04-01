@@ -195,11 +195,13 @@ export class BThread {
     private _addPendingBid(pendingBid: PendingBid): void { 
         this._setCurrentBids();
         const startTime = new Date().getTime();
-        this._logger.logReaction(BThreadReactionType.newPending, this.id, this._state, pendingBid);
+        if(pendingBid.type !== BidType.extend) {
+            this._logger.logReaction(BThreadReactionType.newPending, this.id, this._state, pendingBid);
+        }
         pendingBid.payload.then((data: any): void => {
             if(this._validateBid(pendingBid) === false) return;
             const requestDuration = new Date().getTime() - startTime;
-            const response = pendingBid.type === BidType.extend ? getResolveExtendAction(pendingBid, requestDuration, data) : getResolveAction(ActionType.resolved, pendingBid, requestDuration, data);
+            const response = (pendingBid.type === BidType.extend) ? getResolveExtendAction(pendingBid, requestDuration, data) : getResolveAction(ActionType.resolved, pendingBid, requestDuration, data);
             this._resolveActionCB(response);
         }).catch((e: Error): void => {
             if(this._validateBid(pendingBid) === false) return; 
