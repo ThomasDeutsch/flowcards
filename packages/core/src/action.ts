@@ -54,7 +54,8 @@ export interface ResolveExtendAction extends Action {
     type: ActionType.resolvedExtend;
     pendingDuration: number;
     requestActionId: number;
-    extendedRequestingBid: PlacedBid;
+    extendedBThreadId: BThreadId;
+    extendedRequestingBid?: PlacedBid;
 }
 
 
@@ -95,15 +96,16 @@ export function getResolveAction(responseType: ActionType.rejected | ActionType.
 }
 
 
-export function getResolveExtendAction(pendingBid: PendingBid, extendedBid: PlacedBid, pendingDuration: number, data: unknown): ResolveExtendAction {
+export function getResolveExtendAction(pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveExtendAction {
     return {
         id: undefined,
         type: ActionType.resolvedExtend,
         eventId: pendingBid.eventId,
         payload: data,
+        extendedBThreadId: pendingBid.bThreadId,
         requestActionId: pendingBid.actionId,
         pendingDuration: pendingDuration,
-        extendedRequestingBid: extendedBid
+        extendedRequestingBid: pendingBid.extendedRequestingBid
     }
 }
 

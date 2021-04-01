@@ -438,7 +438,7 @@ test("a askFor can be extended. After resolving the extend, the wait will be con
     testScenarios((enable) => {
         enable(waitingThread());
         enable(extendingThread());
-    }, ({event}) => {
+    }, ({event, log}) => {
         if(event('eventAX').dispatch !== undefined) {
             event('eventAX')!.dispatch!(10);
             timesEventADispatched++;
@@ -449,13 +449,13 @@ test("a askFor can be extended. After resolving the extend, the wait will be con
 test("a request can be extended. After resolving the extend, the request will be continued", (done) => {
 
     const requestingThread = scenario({id: 'requestingThread'}, function* () {
-        const val = yield bp.request("eventA");
+        const val = yield bp.request("eventAtt");
         expect(val).toBe(12);
         done();
     });
 
     const extendingThread = scenario({id: 'extendingBThread'}, function* () {
-        const x = yield bp.extend("eventA");
+        const x = yield bp.extend("eventAtt");
         yield bp.request('ASYNC', () => delay(200));
         x.resolve(12);
     });
@@ -464,6 +464,8 @@ test("a request can be extended. After resolving the extend, the request will be
     testScenarios((enable) => {
         enable(requestingThread());
         enable(extendingThread());
+    },({log}) => {   
+        console.log('ACTION LOG:', log.actions)
     });
 });
 

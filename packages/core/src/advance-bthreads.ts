@@ -4,7 +4,7 @@ import { BThreadMap } from './bthread-map';
 import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
 import { isValid } from './validation';
-import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
+import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction, getResolveAction } from './action';
 import { ExtendContext } from './extend-context';
 
 
@@ -61,7 +61,7 @@ export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, eventCac
     }
     const extendContext = extendAction(activeBidsByType, bThreadMap, action);
     if(extendContext) return;
-    requestingBThread.progressRequested(eventCache, action);
+    requestingBThread.progressRequested(eventCache, action.bidType, action.eventId, action.payload);
     progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
 }
 
@@ -72,12 +72,17 @@ export function advanceUiAction(bThreadMap: BThreadMap<BThread>, activeBidsByTyp
 }
 
 
+
 export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, activeBidsByType: BidsByType, action: ResolveExtendAction): void {
-    if(action.extendedRequestingBid?.bThreadId) {
+    const extendedBThread = bThreadMap.get(action.extendedBThreadId);
+    if(!extendedBThread) return;
+    extendedBThread!.progressResolvedExtend(eventCache, action); 
+    if(action.extendedRequestingBid) {
         const requestingBThread = bThreadMap.get(action.extendedRequestingBid.bThreadId);
         if(requestingBThread === undefined) return;
-        requestingBThread.progressResolvedExtend(eventCache, action);    
+        requestingBThread.progressRequested(eventCache, action.extendedRequestingBid.type, action.eventId, action.payload);
     }
+    activeBidsByType.pending?.deleteSingle(action.eventId);
     progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.askFor, BidType.waitFor], action);
 }
 

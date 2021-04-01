@@ -173,11 +173,12 @@ export class UpdateLoop {
                 }
             }
             else if (action.type === ActionType.resolvedExtend) {
-                actionCheck = checkResolveExtendAction(this._bThreadMap, action);
-                if(actionCheck === ActionCheck.OK) {
+                //actionCheck = checkResolveExtendAction(this._bThreadMap, action);
+                //if(actionCheck === ActionCheck.OK) {
                     this._logger.logAction(action);
+                    //console.log('action: ', action)
                     advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-                }
+                //}
             }
             else if (action.type === ActionType.ui) {
                 actionCheck = checkUiAction(this._activeBidsByType, action);

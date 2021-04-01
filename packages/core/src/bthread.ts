@@ -201,14 +201,14 @@ export class BThread {
         this._addPendingBid(pendingBid);
     }
 
-    private _addPendingBid(pendingBid: PendingBid, extendedBid?: PlacedBid): void { 
+    private _addPendingBid(pendingBid: PendingBid): void { 
         this._setCurrentBids();
         const startTime = new Date().getTime();
         this._logger.logReaction(BThreadReactionType.newPending, this.id, this._state, pendingBid);
         pendingBid.payload.then((data: any): void => {
             if(this._validateBid(pendingBid) === false) return;
             const requestDuration = new Date().getTime() - startTime;
-            const response = extendedBid ? getResolveExtendAction(pendingBid, extendedBid, requestDuration, data) : getResolveAction(ActionType.resolved, pendingBid, requestDuration, data);
+            const response = pendingBid.type === BidType.extend ? getResolveExtendAction(pendingBid, requestDuration, data) : getResolveAction(ActionType.resolved, pendingBid, requestDuration, data);
             this._resolveActionCB(response);
         }).catch((e: Error): void => {
             if(this._validateBid(pendingBid) === false) return; 
@@ -233,15 +233,16 @@ export class BThread {
         this._progressBid(eventCache, bid, action.payload);
     }
 
-    public progressResolvedExtend(eventCache: EventMap<CachedItem<any>>, action: ResolveExtendAction): void {        
-        if(action.extendedRequestingBid === undefined) return;
-        this._progressBid(eventCache, action.extendedRequestingBid, action.payload);
-    }
-
-    public progressRequested(eventCache: EventMap<CachedItem<any>>, action: RequestedAction): void {
-        const bid = this.getCurrentBid(action.bidType, action.eventId);
+    public progressResolvedExtend(eventCache: EventMap<CachedItem<any>>, action: ResolveExtendAction): void {  
+        const bid = this._pendingExtends.get(action.eventId);
         if(bid === undefined) return;
         this._progressBid(eventCache, bid, action.payload);
+    }
+
+    public progressRequested(eventCache: EventMap<CachedItem<any>>, bidType: BidType, eventId: EventId, payload: unknown): void {
+        const bid = this.getCurrentBid(bidType, eventId);
+        if(bid === undefined) return;
+        this._progressBid(eventCache, bid, payload);
     }
 
     public progressWait(bid: PlacedBid, action: AnyAction): void {
@@ -250,7 +251,6 @@ export class BThread {
     }
 
     public progressExtend(extendedAction: AnyAction): ExtendContext {
-        const extendedBid = getRequestingBid(extendedAction)
         const extendContext = new ExtendContext(extendedAction.payload);
         this._progressBThread(extendedAction.eventId, extendContext);
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, this._currentBids?.pending?.get(extendedAction.eventId));
@@ -258,7 +258,7 @@ export class BThread {
         if(extendContext.promise) {
             const pendingBid: PendingBid = toExtendPendingBid(extendedAction, extendContext, this.id);
             this._pendingExtends.set(extendedAction.eventId, pendingBid);
-            this._addPendingBid(pendingBid, extendedBid);
+            this._addPendingBid(pendingBid);
         }
         return extendContext;
     }
