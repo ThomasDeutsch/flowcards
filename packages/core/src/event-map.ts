@@ -112,6 +112,12 @@ export class EventMap<T>  {
         return elements.length > 0 ? elements : undefined;
     }
 
+    public get allKeys(): Set<EventId> | undefined {
+        const events = new Set<EventId>();
+        this.forEach((event) => events.add(event));
+        return events.size > 0 ? events : undefined;
+    }
+
     public merge(em: EventMap<T> | undefined): EventMap<T> {
         if(!em) return this;
         em.forEach((event, value) => {

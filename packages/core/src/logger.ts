@@ -2,7 +2,7 @@ import { PlacedBid } from './bid';
 import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
-import { EventMap } from './event-map';
+import { EventId, EventMap } from './event-map';
 import { BidType } from './bid';
 import { ActionType, AnyActionWithId, RequestedAction } from './action';
 
@@ -40,6 +40,7 @@ export class Logger {
     public get actions(): AnyActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
     public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
+    public pendingEventIdHistory = new Map<number, Set<EventId> | undefined>();
 
     public logScaffoldingResult(type: ScaffoldingResultType, bThreadId: BThreadId): void {
         let bThreadHistory = this.bThreadScaffoldingHistory.get(bThreadId);
@@ -47,6 +48,12 @@ export class Logger {
             bThreadHistory = this.bThreadScaffoldingHistory.set(bThreadId, new Map()).get(bThreadId);
         }
         bThreadHistory!.set(this._actionId, type);
+    }
+
+    public logPendingEventIds(pending: EventMap<PlacedBid[]> | undefined): void {
+        const eventIds = pending?.allKeys;
+        const currentActionId = utils.latest(this._actions)?.id || 0;
+        this.pendingEventIdHistory.set(currentActionId, eventIds);
     }
 
     public logAction(action: AnyActionWithId): void {
