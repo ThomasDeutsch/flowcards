@@ -137,15 +137,6 @@ export class BThread {
         this._processNextBid(returnVal);
     }
 
-    private _deletePending(action: ResolveAction | ResolveExtendAction): boolean {
-        if(action.type === ActionType.resolved) {
-            return this._pendingRequests.deleteSingle(action.eventId);
-        }
-        else {
-            return this._pendingExtends.deleteSingle(action.eventId);
-        }
-    }
-
     private _resetBThread(props: BThreadProps) {
         this._pendingExtends = new EventMap();
         this._currentProps = props;
@@ -222,7 +213,7 @@ export class BThread {
         this._thread.throw({event: action.eventId, error: action.payload});
         this._progressBThread(action.eventId, action.payload, true);
         this._logger.logReaction(BThreadReactionType.error, this.id, this._state, this.getCurrentBid(BidType.pending, action.eventId));
-        this._deletePending(action);
+        this._pendingRequests.deleteSingle(action.eventId);
         this._setCurrentBids();
         this._cancelPendingRequests(action.eventId);
     }
@@ -236,6 +227,7 @@ export class BThread {
     public progressResolvedExtend(eventCache: EventMap<CachedItem<any>>, action: ResolveExtendAction): void {  
         const bid = this._pendingExtends.get(action.eventId);
         if(bid === undefined) return;
+        this._pendingExtends.deleteSingle(action.eventId);
         this._progressBid(eventCache, bid, action.payload);
     }
 

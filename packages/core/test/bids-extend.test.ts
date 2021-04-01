@@ -37,6 +37,32 @@ test("requests can be extended", () => {
 });
 
 
+test("after the extend resolved, the event is no longer pending", (done) => {
+    const thread1 = scenario({id: 'requesting thread'}, function* () {
+        yield bp.request("A");
+        yield bp.request("B");
+        yield bp.askFor('X');
+    });
+
+    const thread3 = scenario({id: 'extending thread'}, function* () {
+        const e = yield bp.extend("A");
+        e.resolve(10);
+        yield bp.askFor('Z');
+    })
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread3());
+    }, ({event, thread}) => {
+        if(event('X').dispatch) {
+            expect(thread.get('extending thread')?.bids?.pending).toBe(undefined)
+            expect(event('A').isPending).toBe(false);
+            done();
+        }
+    }
+ );  
+});
+
 test("if an extend is not applied, than the next extend will get the event", () => {
     let requestAdvanced = false;
     let waitBAdvanced = false;
