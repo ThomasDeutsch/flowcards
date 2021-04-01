@@ -230,6 +230,7 @@ export class BThread {
         const bid = this._pendingExtends.get(action.eventId);
         if(bid === undefined) return;
         this._pendingExtends.deleteSingle(action.eventId);
+        this._setCurrentBids();
         this._logger.logReaction(BThreadReactionType.resolvedExtend ,this.id, this._state, bid);
     }
 
