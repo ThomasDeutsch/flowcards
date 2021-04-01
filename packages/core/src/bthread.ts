@@ -247,13 +247,13 @@ export class BThread {
     public progressExtend(extendedAction: AnyAction): ExtendContext {
         const extendContext = new ExtendContext(extendedAction.payload);
         this._progressBThread(extendedAction.eventId, extendContext);
-        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, this._currentBids?.pending?.get(extendedAction.eventId));
         extendContext.createPromiseIfNotCompleted();
         if(extendContext.promise) {
             const pendingBid: PendingBid = toExtendPendingBid(extendedAction, extendContext, this.id);
             this._pendingExtends.set(extendedAction.eventId, pendingBid);
             this._addPendingBid(pendingBid);
         }
+        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, this._currentBids?.pending?.get(extendedAction.eventId));
         return extendContext;
     }
 
