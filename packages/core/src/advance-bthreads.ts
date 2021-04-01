@@ -41,6 +41,7 @@ function extendAction(activeBidsByType: BidsByType, bThreadMap: BThreadMap<BThre
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
         const extendContext = extendingBThread.progressExtend(extendedAction);
+        if(!extendContext) continue;
         if(extendContext.promise) {
             progressWaitingBThreads(activeBidsByType, bThreadMap, [BidType.onPending], extendedAction);
             return extendContext;

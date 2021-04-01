@@ -244,7 +244,9 @@ export class BThread {
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
     }
 
-    public progressExtend(extendedAction: AnyAction): ExtendContext {
+    public progressExtend(extendedAction: AnyAction): ExtendContext | undefined {
+        const bid = this.getCurrentBid(BidType.extend, extendedAction.eventId);
+        if(bid === undefined) return undefined;
         const extendContext = new ExtendContext(extendedAction.payload);
         this._progressBThread(extendedAction.eventId, extendContext);
         extendContext.createPromiseIfNotCompleted();
@@ -253,7 +255,7 @@ export class BThread {
             this._pendingExtends.set(extendedAction.eventId, pendingBid);
             this._addPendingBid(pendingBid);
         }
-        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, this._currentBids?.pending?.get(extendedAction.eventId));
+        this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
         return extendContext;
     }
 
