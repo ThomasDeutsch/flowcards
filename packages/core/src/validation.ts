@@ -35,7 +35,7 @@ export function getValidateCheck(bid?: PlacedBid, bidContext?: PlacedBidContext)
     if(bid === undefined) errors.push('Event was not asked for');
     if(errors.length > 0) return (payload?: any) => errors;
     if(bid && bid.validateCB === undefined) return (payload?: any) => true;
-    return (payload) => bid!.validateCB!(payload, bid!.schema);
+    return (payload) => bid!.validateCB!(payload, [bid!.schema, ...(bidContext?.validatedBy || [])]);
 }
 
 export function validateAskedFor(action: AnyAction, allPlacedBids: AllPlacedBids): UIActionCheck {
@@ -55,6 +55,6 @@ export function validateAskedFor(action: AnyAction, allPlacedBids: AllPlacedBids
 
 
 export function checkPayload(bid: PlacedBid, payload: unknown): true | ValidationErrors {
-    if(bid.validateCB) return bid.validateCB(payload, bid.schema);
+    if(bid.validateCB) return bid.validateCB(payload, [bid.schema]);
     return true;
 }

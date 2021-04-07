@@ -133,7 +133,7 @@ export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBid
         const requestingBidForEvent = [...context.bids].reverse().find(bid => {
             if(!isRequestingBid(bid)) return false;
             if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
-            if(context.validatedBy && context.validatedBy.some(vb => vb.validateCB!(bid.payload, vb.schema) !== true)) return false;
+            if(context.validatedBy && context.validatedBy.some(vb => vb.validateCB!(bid.payload, [vb.schema]) !== true)) return false;
             return true;
         });
         if(requestingBidForEvent) requestingBids.push(requestingBidForEvent as PlacedRequestingBid)
@@ -154,7 +154,7 @@ export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: E
     if(!bidContext || bidContext.blockedBy || bidContext.pendingBy) return undefined
     return bidContext.bids.reverse().find(bid => {
         if(bid.type !== BidType.askFor) return false;
-        if(bidContext.validatedBy && bidContext.validatedBy.some(vb => vb.validateCB!(bid.payload, bid.schema) !== true)) return false;
+        if(bidContext.validatedBy && bidContext.validatedBy.some(vb => vb.validateCB!(bid.payload, [bid.schema]) !== true)) return false;
         if(withPayload !== undefined && bid.validateCB !== undefined && bid.validateCB(withPayload.payload) !== true) return false;
         return true;
     });
@@ -237,15 +237,3 @@ export function validate(event: string | EventId, validateCB: ValidateCB, schema
         schema: schema
     };
 }
-
-
-// function ajvValidate(data, schemas): null | errors {
-//     // combine schemas
-//     // validate(data, combined schemas)
-//     // if null - return true
-//     // if error, return error
-// }
-
-
-// askFor('A', ajvValidate, {prop: 'x'})
-// askFor('A', (payload) => (payload <= 0) ? 'x needs to be...' : true)
