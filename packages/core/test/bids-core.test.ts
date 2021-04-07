@@ -335,3 +335,33 @@ test("if a thread has multiple requests, the last request has the highest priori
         expect(requestProgressed).toBe(true);
     });
 });
+
+
+test("with multiple requests for the same eventId, highest priority request is selected - that is also valid", () => {
+    let lowerPrioRequestProgressed = false;
+    let higherPrioRequestProgressed = false;
+
+    const requestingThread1 = scenario({id: 'thread1'}, function*() {
+        yield bp.request('eventA', 1);
+        lowerPrioRequestProgressed = true;
+    });
+
+    const requestingThread2 = scenario({id: 'thread2'}, function*() {
+        yield bp.request('eventA', 10);
+        higherPrioRequestProgressed = true;
+    });
+
+    const validatingThread = scenario({id: 'thread3'}, function*() {
+        yield bp.validate('eventA', (payload) => payload !== 10);
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread1());
+        enable(requestingThread2());
+        enable(validatingThread());
+    }, () => {
+        expect(lowerPrioRequestProgressed).toBe(true);
+        expect(higherPrioRequestProgressed).toBe(false);
+
+    });
+});

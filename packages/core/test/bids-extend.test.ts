@@ -75,17 +75,17 @@ test("if an extend is not applied, than the next extend will get the event", () 
     });
 
     const waitThread = scenario(null, function* () {
-        yield bp.askFor("A", (pl: number) => pl === 1000);
+        yield bp.askFor("A", (pl) => pl === 1000);
         waitBAdvanced = true;
     });
 
     const extendPriorityLowThread = scenario(null, function* () {
-        yield bp.extend("A", (pl: number) => pl === 1000);
+        yield bp.extend("A", (pl) => pl === 1000);
         waitCAdvanced = true;
     });
 
     const extendPriorityHighThread = scenario(null, function* () {
-        yield bp.extend("A", (pl: number) => pl !== 1000);
+        yield bp.extend("A", (pl) => pl !== 1000);
         waitDAdvanced = true;
     });
 
@@ -405,11 +405,11 @@ test("an extend can have an optional validation-function", () => {
     });
 
     const extendingThreadOne = scenario(null, function* () {
-        const bid = yield bp.extend("A", (val: number) => val === 2);
+        const bid = yield bp.extend("A", (val) => val === 2);
         bid.resolve?.(99);
     });
     const extendingThreadTwo = scenario(null, function* () {
-        const bid = yield bp.extend("A", (val: number) => val === 1);
+        const bid = yield bp.extend("A", (val) => val === 1);
         bid.resolve?.(10);
     });
 

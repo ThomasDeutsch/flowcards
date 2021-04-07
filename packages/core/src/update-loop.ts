@@ -7,16 +7,15 @@ import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { allPlacedBids, AllPlacedBids, AnyAction, getAllRequestingBids, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
-import { UIActionCheck, ReactionCheck } from './validation';
+import { allPlacedBids, AllPlacedBids, AnyAction, getAllValidRequestingBids, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
+import { UIActionCheck, ReactionCheck, getValidateCheck, ValidateCheck, validateAskedFor } from './validation';
 import { isThenable } from './utils';
-import { validate, validateDispatchedUIAction, ValidationResult } from './validation';
 
 
 export interface EventInfo {
     lastUpdate: number;
     dispatch?: (payload?: any) => void;
-    validate: (payload?: any) => ValidationResult;
+    validate: ValidateCheck;
     value?: unknown;
     history: unknown[];
     isPending: boolean;
@@ -45,7 +44,7 @@ export interface CurrentReplay extends Replay {
     testResults: Map<number, any>;
 }
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
-export type UIActionDispatch = (bid: PlacedBid) => (payload: any) => void;
+export type UIActionDispatch = (bid: PlacedBid, payload: any) => void;
 
 export class UpdateLoop {
     private _currentActionId = 0;
@@ -61,22 +60,19 @@ export class UpdateLoop {
     private readonly _uiActionCB: UIActionDispatch;
     private readonly _testResults = new Map<number, any[]>();
     private _replay?: CurrentReplay;
-    private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];     
+    private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];    
     
     constructor(stagingFunction: StagingFunction, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
         const resolveActionCB = (action: ResolveAction | ResolveExtendAction) => internalDispatch(action);
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._getCachedEvent, resolveActionCB, this._logger);
-        this._uiActionCB = (bid: PlacedBid) => {
-            return (payload: any) => {
-                if(validate(this._allPlacedBids, bid.eventId, payload).isValid === false) return;
-                const uiAction: UIAction = {
-                    type: ActionType.ui,
-                    eventId: bid.eventId,
-                    payload: payload
-                }
-                internalDispatch(uiAction);
+        this._uiActionCB = (bid: PlacedBid, payload: any) => {
+            const uiAction: UIAction = {
+                type: ActionType.ui,
+                eventId: bid.eventId,
+                payload: payload
             }
+            internalDispatch(uiAction);
         }
     }
 
@@ -98,9 +94,12 @@ export class UpdateLoop {
         const bidContext = this._allPlacedBids.get(eventId);
         const cachedEvent = this._getCachedEvent(eventId);
         const newEventInfo: EventInfo = eventInfo || {} as EventInfo;
+        const validateCheck = getValidateCheck(askForBid, bidContext);
         newEventInfo.lastUpdate = this._currentActionId - 1,
-        newEventInfo.dispatch = askForBid ? eventInfo?.dispatch || this._uiActionCB(askForBid) : undefined,
-        newEventInfo.validate = eventInfo?.validate || ((payload: any) => validate(this._allPlacedBids, eventId, payload)),
+        newEventInfo.dispatch = askForBid ? (payload: any) => {
+            validateCheck(payload) && this._uiActionCB(askForBid, payload);
+        } : undefined;
+        newEventInfo.validate = validateCheck;
         newEventInfo.value = eventInfo?.value || cachedEvent?.value,
         newEventInfo.history = eventInfo?.history || cachedEvent?.history || [],
         newEventInfo.isPending = !!bidContext?.pendingBy,
@@ -174,14 +173,14 @@ export class UpdateLoop {
             if(this._replay?.breakpoints?.has(this._currentActionId)) this._replay.isPaused = true;
             if(this._replay?.isPaused === true) return this._getContext();
         }
-        const placedRequestingBids = getAllRequestingBids(this._allPlacedBids);
+        const placedRequestingBids = getAllValidRequestingBids(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
         do {
             const maybeAction = this._getNextReplayAction(this._currentActionId)
                 || this._getQueuedAction() 
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
             if(maybeAction === undefined) return this._getContext();
-            const actionCheck = validateDispatchedUIAction(maybeAction, this._allPlacedBids);
+            const actionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
             if(actionCheck !== UIActionCheck.OK) {
                 if(this._replay) { 
                     this._pauseReplay(maybeAction, actionCheck);

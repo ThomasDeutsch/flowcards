@@ -3,10 +3,9 @@ import { BThread } from './bthread';
 import { BThreadMap } from './bthread-map';
 import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
-import { isValid } from './validation';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
 import { AllPlacedBids, unblockEventId } from '.';
-import { ReactionCheck } from './validation';
+import { checkPayload, ReactionCheck } from './validation';
 
 
 export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId, payload: unknown): PlacedBid[] | undefined {
@@ -15,7 +14,7 @@ export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[
     const progressingBids: PlacedBid[] = [];
     matchingBids.forEach(bid => {
         if(allPlacedBids.get(bid.eventId)?.blockedBy) return;
-        if(!isValid(bid, payload)) return;
+        if(checkPayload(bid, payload) !== true) return;
         progressingBids.push(bid);
     });
     return progressingBids.length === 0 ? undefined : progressingBids;
@@ -38,7 +37,7 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThre
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.pop()!; // get bid with highest priority
         if(allPlacedBids.get(extendBid.eventId)?.blockedBy) continue;
-        if(!isValid(extendBid, extendedAction.payload)) continue;
+        if(checkPayload(extendBid, extendedAction.payload) !== true) continue;
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
         const extendContext = extendingBThread.progressExtend(extendedAction);

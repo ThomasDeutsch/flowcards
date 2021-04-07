@@ -31,6 +31,7 @@ export interface ContextChange {
     type: 'appContextChange';
 }
 
+
 export class Scenarios {
     private _bufferedActions: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _latestReplay?: Replay;

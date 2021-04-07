@@ -1,5 +1,5 @@
 import { EventMap, EventId, toEventId } from './event-map';
-import { Validation } from './validation';
+import { ValidateCB } from './validation';
 import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
@@ -13,14 +13,17 @@ export enum BidType {
     trigger = "trigger",
     set = "set",
     waitFor = "waitFor",
-    onPending = "onPending"
+    onPending = "onPending",
+    validate = "validate"
 }
 
 export interface Bid {
     type: BidType;
     eventId: EventId;
     payload?: any;
-    validate?: Validation;
+    validateCB?: ValidateCB;
+    schema?: any;
+    error?: unknown;
 }
 
 export interface PlacedBid extends Bid {
@@ -60,32 +63,42 @@ export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBi
 
 // bids from multiple BThreads
 // --------------------------------------------------------------------------------------------------------------------
-export type PlacedBidContext = {blockedBy?: [BThreadId], pendingBy?: BThreadId, bids: PlacedBid[]}
+export type PlacedBidContext = {
+    blockedBy?: [PlacedBid];
+    pendingBy?: BThreadId;
+    validatedBy?: PlacedBid[];
+    bids: PlacedBid[];
+}
 export type AllPlacedBids = EventMap<PlacedBidContext>;
 
 export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
     const pendingEvents = new EventMap<BThreadId>();
-    const blockedEvents = new EventMap<BThreadId[]>();
+    const blockedEvents = new EventMap<PlacedBid[]>();
     allBThreadBids.forEach(({placedBids, pendingBidMap}) => {
         pendingBidMap.allValues?.forEach(bid => { 
             pendingEvents.set(bid.eventId, bid.bThreadId);
         });
         placedBids.forEach(bid => { 
             if(bid.type === BidType.block) {
-                blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid.bThreadId]);
+                blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid]);
             }
         });
     });
     const bidsByEventId: AllPlacedBids = new EventMap();
     allBThreadBids.forEach(({placedBids}) => {
         placedBids.forEach(bid => {
-            const waitingBidsForEventId = bidsByEventId.get(bid.eventId) || {
+            if(bid.type === BidType.block) return;
+            const placedBidsForEventId = bidsByEventId.get(bid.eventId) || {
                 blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)), 
-                pendingBy: pendingEvents.get(bid.eventId), 
+                pendingBy: pendingEvents.get(bid.eventId),
                 bids: []
             } as PlacedBidContext
-            waitingBidsForEventId.bids.push(bid);
-            bidsByEventId.set(bid.eventId, waitingBidsForEventId);
+            if(bid.type === BidType.validate) {
+                placedBidsForEventId.validatedBy = [...(placedBidsForEventId.validatedBy || []), bid];
+            } else {
+                placedBidsForEventId.bids.push(bid);
+            }
+            bidsByEventId.set(bid.eventId, placedBidsForEventId);
         });
     });
     return bidsByEventId;
@@ -112,13 +125,14 @@ export function toBidsByType(bThreadBids: BThreadBids): BidsByType {
     }, {} as BidsByType);
 }
 
-export function getAllRequestingBids(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
+export function getAllValidRequestingBids(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
     const requestingBids: PlacedRequestingBid[] = []
     allPlacedBids.forEach((eventId, context) => {
         if(context.blockedBy || context.pendingBy) return;
-        context.bids.forEach(bid => {
-            if(!isRequestingBid(bid)) return;
-            if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId) === undefined) return;
+        context.bids.find(bid => {
+            if(!isRequestingBid(bid)) return false;
+            if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId) === undefined) return false;
+            if(context.validatedBy && context.validatedBy.some(vb => vb.validateCB!(bid.payload, vb.schema) !== true)) return false;
             requestingBids.push(bid as PlacedRequestingBid)
         });
     });
@@ -174,19 +188,21 @@ export function trigger(event: string | EventId, payload?: unknown): Bid {
     };
 }
 
-export function askFor(event: string | EventId, validation?: Validation): Bid {
+export function askFor(event: string | EventId, validateCB?: ValidateCB, schema?: Record<any, any>): Bid {
     return { 
         type: BidType.askFor,
         eventId: toEventId(event), 
-        validate: validation
+        validateCB: validateCB,
+        schema: schema
     };
 }
 
-export function waitFor(event: string | EventId, validation?: Validation): Bid {
+export function waitFor(event: string | EventId, validateCB?: ValidateCB, schema?: Record<any, any>): Bid {
     return { 
         type: BidType.waitFor,
         eventId: toEventId(event), 
-        validate: validation
+        validateCB: validateCB,
+        schema: schema
     };
 }
 
@@ -197,17 +213,40 @@ export function onPending(event: string | EventId): Bid {
     };
 }
 
-export function block(event: string | EventId): Bid {
+export function block(event: string | EventId, error?: unknown): Bid {
     return { 
         type: BidType.block,
-        eventId: toEventId(event)
+        eventId: toEventId(event),
+        error: error
     };
 }
 
-export function extend(event: string | EventId, validation?: Validation): Bid {
+export function extend(event: string | EventId, validateCB?: ValidateCB, schema?: Record<any, any>): Bid {
     return { 
         type: BidType.extend,
         eventId: toEventId(event), 
-        validate: validation
+        validateCB: validateCB,
+        schema: schema
     };
 }
+
+export function validate(event: string | EventId, validateCB: ValidateCB, schema?: Record<any, any>): Bid {
+    return { 
+        type: BidType.validate,
+        eventId: toEventId(event), 
+        validateCB: validateCB,
+        schema: schema
+    };
+}
+
+
+// function ajvValidate(data, schemas): null | errors {
+//     // combine schemas
+//     // validate(data, combined schemas)
+//     // if null - return true
+//     // if error, return error
+// }
+
+
+// askFor('A', ajvValidate, {prop: 'x'})
+// askFor('A', (payload) => (payload <= 0) ? 'x needs to be...' : true)

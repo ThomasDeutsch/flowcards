@@ -18,7 +18,7 @@ export interface BThreadReaction {
     reactionType: BThreadReactionType;
     actionId: number;
     selectedBid?: PlacedBid;
-    bids?: Record<BidType, EventMap<PlacedBid>>;
+    bids: Partial<Record<BidType, EventMap<PlacedBid>>>;
     section?: string;
     isCompleted: boolean;
     progressionCount: number;
