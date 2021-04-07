@@ -7,7 +7,7 @@ import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { allPlacedBids, AllPlacedBids, AnyAction, getAllValidRequestingBids, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
+import { allPlacedBids, AllPlacedBids, AnyAction, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
 import { UIActionCheck, ReactionCheck, getValidateCheck, ValidateCheck, validateAskedFor } from './validation';
 import { isThenable } from './utils';
 
@@ -173,7 +173,8 @@ export class UpdateLoop {
             if(this._replay?.breakpoints?.has(this._currentActionId)) this._replay.isPaused = true;
             if(this._replay?.isPaused === true) return this._getContext();
         }
-        const placedRequestingBids = getAllValidRequestingBids(this._allPlacedBids);
+        
+        const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
         do {
             const maybeAction = this._getNextReplayAction(this._currentActionId)

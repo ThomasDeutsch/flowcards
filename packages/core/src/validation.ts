@@ -47,7 +47,7 @@ export function validateAskedFor(action: AnyAction, allPlacedBids: AllPlacedBids
     if(eventContext.pendingBy) return UIActionCheck.EventIsPending;
     // re-check the dispatched action, because this action comes from a buffer, it could be that the user was able
     // to dispatch, but another action may caused BThread changes.
-    const askForBid = getHighestPrioAskForBid(allPlacedBids, action.eventId); //TODO: validate trigger payload
+    const askForBid = getHighestPrioAskForBid(allPlacedBids, action.eventId, action); //TODO: validate trigger payload
     if(askForBid === undefined) return UIActionCheck.NoMatchingAskForBid;
     //TODO: askForBid?.validate(action.payload);
     return UIActionCheck.OK

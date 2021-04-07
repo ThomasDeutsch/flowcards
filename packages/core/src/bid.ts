@@ -3,6 +3,7 @@ import { ValidateCB } from './validation';
 import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
+import { AnyAction, RequestedAction } from '.';
 
 
 export enum BidType {
@@ -125,27 +126,20 @@ export function toBidsByType(bThreadBids: BThreadBids): BidsByType {
     }, {} as BidsByType);
 }
 
-export function getAllValidRequestingBids(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
+export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
     const requestingBids: PlacedRequestingBid[] = []
     allPlacedBids.forEach((eventId, context) => {
         if(context.blockedBy || context.pendingBy) return;
-        context.bids.find(bid => {
+        const requestingBidForEvent = [...context.bids].reverse().find(bid => {
             if(!isRequestingBid(bid)) return false;
-            if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId) === undefined) return false;
+            if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
             if(context.validatedBy && context.validatedBy.some(vb => vb.validateCB!(bid.payload, vb.schema) !== true)) return false;
-            requestingBids.push(bid as PlacedRequestingBid)
+            return true;
         });
+        if(requestingBidForEvent) requestingBids.push(requestingBidForEvent as PlacedRequestingBid)
     });
     return requestingBids.length > 0 ? requestingBids : undefined;
 }
-
-// export function hasValidMatch(bidsByType: BidsByType, bidType: BidType, event: EventId, withPayload?: WithPayload): boolean {
-//     const bidsMap = bidsByType[bidType];
-//     const bids = flattenShallow(bidsMap?.getExactMatchAndUnkeyedMatch(event));
-//     if(bids === undefined) return false;
-//     if(withPayload === undefined) return true;
-//     return withValidPayload(bids, withPayload.payload);
-// }
 
 export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId): PlacedBid[] | undefined {
     let bids = allPlacedBids.get(eventId)?.bids || [];
@@ -155,10 +149,15 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
     return matchingBids.length > 0 ? matchingBids : undefined;
 }
 
-export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId): PlacedBid | undefined {
+export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId, withPayload?: AnyAction | PlacedBid): PlacedBid | undefined {
     const bidContext = allPlacedBids.get(eventId);
     if(!bidContext || bidContext.blockedBy || bidContext.pendingBy) return undefined
-    return bidContext.bids.reverse().find(bid => bid.type === BidType.askFor);
+    return bidContext.bids.reverse().find(bid => {
+        if(bid.type !== BidType.askFor) return false;
+        if(bidContext.validatedBy && bidContext.validatedBy.some(vb => vb.validateCB!(bid.payload, bid.schema) !== true)) return false;
+        if(withPayload !== undefined && bid.validateCB !== undefined && bid.validateCB(withPayload.payload) !== true) return false;
+        return true;
+    });
 }
 
 
