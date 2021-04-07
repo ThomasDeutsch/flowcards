@@ -26,8 +26,8 @@ test("a set is a request, that will be cached.2 ", (done) => {
     const thread1 = scenario({id: 'flow1'}, function* () {
         const pl1 = yield bp.askFor("count");
         const pl2 = yield bp.askFor("count");
-        expect(pl1).toEqual('replayPayload1');
-        expect(pl2).toEqual('replayPayload2');
+        expect(pl1.payload).toEqual('replayPayload1');
+        expect(pl2.payload).toEqual('replayPayload2');
         done();
     })
 
@@ -98,20 +98,15 @@ test("a set is a request, that will be ,cachedd.23j ", (done) => {
             {id: 0, type: ActionType.ui, eventId: {name: 'count1'}, payload: 'replayPayload1'},
             {id: 2, type: ActionType.ui, eventId: {name: 'count2'}, payload: 'replayPayload3'}
         ],
-        // tests: [
-        //     { id: 1, test: (action, reactions) => action.payload === 1 }
-        // ]
-        //TODO: ist es sinnvoll die actions nur auf payloads zu testen, da alles andere bereits über die automatischen Test abgearbeitet wird?
-
     })
 });
 
 
 test("replay async event", (done) => {
     const thread1 = scenario({id: 'flow1'}, function* () {
-        const pl = yield bp.set("count", () => delay(20, 'result'));
-        if(pl === 'replayPayload') {
-            expect(pl).toEqual('replayPayload');
+        const bid = yield bp.set("count", () => delay(20, 'result'));
+        if(bid.payload === 'replayPayload') {
+            expect(bid.payload).toEqual('replayPayload');
             done();
         }
     })
@@ -130,9 +125,9 @@ test("replay async event", (done) => {
 
 test("replay async event, with mocked delay", (done) => {
     const thread1 = scenario({id: 'flow1'}, function* () {
-        const pl = yield bp.set("count", () => delay(20, 'result'));
-        if(pl === 'replayPayload') {
-            expect(pl).toEqual('replayPayload');
+        const bid = yield bp.set("count", () => delay(20, 'result'));
+        if(bid.payload === 'replayPayload') {
+            expect(bid.payload).toEqual('replayPayload');
             done();
         }
     })
@@ -151,11 +146,11 @@ test("replay async event, with mocked delay", (done) => {
 test("when a replay action for an async request is missing, the current bid payload of the BThread is used (api-calls are re-executed)", (done) => {
     let isCallExecuted = false;
     const thread1 = scenario({id: 'flow1'}, function* () {
-        const pl = yield bp.set("count", () => {
+        const bid = yield bp.set("count", () => {
             isCallExecuted = true;
             return delay(20, 'result')
         });
-        expect(pl).toEqual('result');
+        expect(bid.payload).toEqual('result');
         expect(isCallExecuted).toBe(true);
         done();
     });

@@ -59,7 +59,9 @@ export class Logger {
     public logAction(action: AnyActionWithId): void {
         const a = {...action}
         if(action.type === ActionType.resolved) {
+
             const requestAction = this._actions[action.requestActionId] as RequestedAction;
+            if(requestAction === undefined) console.log('WHY???: ', this._actions, action, action.requestActionId)
             requestAction.resolveActionId = action.id;
         }
         if(action.type === ActionType.requested) {

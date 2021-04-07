@@ -54,7 +54,6 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         enable(thread1());
         enable(thread3());
     }, ({event, log}) => {
-        console.log('ACTIONS: ', log.actions)
         if(event('X').dispatch) {
             expect(event('Azz').isPending).toBe(false);
             done();
