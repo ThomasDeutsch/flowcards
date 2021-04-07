@@ -39,24 +39,24 @@ test("requests can be extended", () => {
 
 test("after the extend resolved, the event is no longer pending", (done) => {
     const thread1 = scenario({id: 'requesting thread'}, function* () {
-        yield bp.request("A");
+        yield bp.request("Azz");
         yield bp.request("B");
         yield bp.askFor('X');
     });
 
     const thread3 = scenario({id: 'extending thread'}, function* () {
-        const e = yield bp.extend("A");
-        e.resolve(10);
+        const e = yield bp.extend("Azz");
+        e.resolve!(10);
         yield bp.askFor('Z');
     })
 
     testScenarios((enable) => {
         enable(thread1());
         enable(thread3());
-    }, ({event, thread}) => {
+    }, ({event, log}) => {
+        console.log('ACTIONS: ', log.actions)
         if(event('X').dispatch) {
-            expect(thread.get('extending thread')?.bids?.pending).toBe(undefined)
-            expect(event('A').isPending).toBe(false);
+            expect(event('Azz').isPending).toBe(false);
             done();
         }
     }
@@ -133,7 +133,7 @@ test("if an extended thread completed, without resolving or rejecting the event,
 
 
 test("extends will receive a value (like waits)", () => {
-    let extendedValue: ExtendContext;
+    let extendedValue: any;
     let thread1Advanced = false;
 
     const thread1 = scenario(null, function* () {
@@ -146,7 +146,8 @@ test("extends will receive a value (like waits)", () => {
     });
 
     const thread3 = scenario(null, function* () {
-        extendedValue = yield bp.extend("A");
+        const bid = yield bp.extend("A");
+        extendedValue = bid.payload;
     });
 
     testScenarios((enable) => {
@@ -155,11 +156,10 @@ test("extends will receive a value (like waits)", () => {
         enable(thread3());
     }, ({event}) => {
         expect(thread1Advanced).toBe(false);
-        expect(extendedValue.value).toBe(1000);
+        expect(extendedValue).toBe(1000);
         expect(event('A').isPending).toBeTruthy();
     });
 });
-
 
 test("blocked events can not be extended", () => {
     let extendedValue: ExtendContext;
@@ -175,7 +175,8 @@ test("blocked events can not be extended", () => {
     });
 
     const thread3 = scenario(null, function* () {
-        extendedValue = yield bp.extend("A");
+        const bid = yield bp.extend("A");
+        extendedValue = bid.payload;
     });
 
     testScenarios((enable) => {
@@ -191,7 +192,7 @@ test("blocked events can not be extended", () => {
 
 
 test("extends will extend requests", () => {
-    let extended: ExtendContext
+    let extended: bp.ProgressedBid
 
     const thread1 = scenario(null, function* () {
         yield bp.request("A", 1000);
@@ -205,7 +206,7 @@ test("extends will extend requests", () => {
         enable(thread1());
         enable(thread2());
     }, () => {
-        expect(extended.value).toEqual(1000);
+        expect(extended.payload).toEqual(1000);
     });
 });
 
@@ -264,8 +265,8 @@ test("an extend will wait for the pending-event to finish before it extends.", (
     });
 
     const extendingThread = scenario({id: 'extendingThread'}, function* () {
-        const {value} = yield bp.extend("A");
-        expect(value).toBe('resolvedValue');
+        const bid = yield bp.extend("A");
+        expect(bid.payload).toBe('resolvedValue');
         yield bp.request("V", delay(200, 'resolvedValue'));
     });
 
@@ -284,19 +285,19 @@ test("an extend will wait for the pending-event to finish before it extends.", (
 
 test("an extend can be resolved. This will progress waits and requests", (done) => {
     const requestingThread = scenario({id: 'requestingThread'}, function* () {
-        const val = yield bp.request("A", delay(100, 'value'));
-        expect(val).toBe('value extended');
+        const bid = yield bp.request("A", delay(100, 'value'));
+        expect(bid.payload).toBe('value extended');
     });
 
     const extendingThread = scenario({id: 'extendingThread'}, function* () {
         const extend = yield bp.extend("A");
-        expect(extend.value).toBe('value');
-        extend.resolve(extend.value + " extended");
+        expect(extend.payload).toBe('value');
+        extend.resolve?.(extend.payload + " extended");
     });
 
     const waitingThread = scenario({id: 'waitingThread'}, function* () {
-        const val = yield bp.askFor("A");
-        expect(val).toBe('value extended');
+        const bid = yield bp.askFor("A");
+        expect(bid.payload).toBe('value extended');
         yield bp.askFor('fin');
     });
 
@@ -335,25 +336,25 @@ test("an extend will keep the event-pending if the BThread with the extend compl
 
 test("multiple extends will resolve after another. After all extends complete, the request and wait will continue", (done) => {
     const requestingThread = scenario(null, function* () {
-        const val = yield bp.request("A", delay(100, 'super'));
-        expect(val).toBe('super extend1 extend2');
+        const bid = yield bp.request("A", delay(100, 'super'));
+        expect(bid.payload).toBe('super extend1 extend2');
     });
 
     const extendingThread = scenario(null, function* () {
         const extend = yield bp.extend("A");
-        expect(extend.value).toBe('super extend1');
-        extend.resolve(extend.value + " extend2");
+        expect(extend.payload).toBe('super extend1');
+        extend.resolve?.(extend.payload + " extend2");
     });
 
     const extendingThreadHigherPriority = scenario(null, function* () {
         const extend = yield bp.extend("A");
-        expect(extend.value).toBe('super');
-        extend.resolve(extend.value + ' extend1');
+        expect(extend.payload).toBe('super');
+        extend.resolve?.(extend.payload + ' extend1');
     });
 
     const waitingThread = scenario(null, function* () {
-        const val = yield bp.askFor("A");
-        expect(val).toBe('super extend1 extend2');
+        const bid = yield bp.askFor("A");
+        expect(bid.payload).toBe('super extend1 extend2');
         yield bp.askFor('fin');
     });
     
@@ -374,13 +375,13 @@ test("an extend will be resolved in the same cycle", () => {
     let requestedValue: number;
 
     const requestingThread = scenario(null, function* () {
-        const val: number = yield bp.request("A", 1);
-        requestedValue = val;
+        const bid = yield bp.request("A", 1);
+        requestedValue = bid.payload;
     });
 
     const extendingThread = scenario(null, function* () {
-        const extendContext: ExtendContext = yield bp.extend("A");
-        extendContext.resolve(extendContext.value + 1);
+        const bid = yield bp.extend("A");
+        bid.resolve?.(bid.payload + 1);
     });
 
     testScenarios((enable) => {
@@ -397,19 +398,19 @@ test("an extend will be resolved in the same cycle", () => {
 test("an extend can have an optional validation-function", () => {
 
     const requestingThread = scenario(null, function* () {
-        const val: number = yield bp.request("A", 1);
-        expect(val).toBe(10);
-        const val2: number = yield bp.request("A", 2);
-        expect(val2).toBe(99);
+        const bid = yield bp.request("A", 1);
+        expect(bid.payload).toBe(10);
+        const bid2 = yield bp.request("A", 2);
+        expect(bid2.payload).toBe(99);
     });
 
     const extendingThreadOne = scenario(null, function* () {
-        const extendContext: ExtendContext = yield bp.extend("A", (val: number) => val === 2);
-        extendContext.resolve(99);
+        const bid = yield bp.extend("A", (val: number) => val === 2);
+        bid.resolve?.(99);
     });
     const extendingThreadTwo = scenario(null, function* () {
-        const extendContext: ExtendContext = yield bp.extend("A", (val: number) => val === 1);
-        extendContext.resolve(10);
+        const bid = yield bp.extend("A", (val: number) => val === 1);
+        bid.resolve?.(10);
     });
 
     testScenarios((enable) => {
@@ -434,8 +435,8 @@ test("a wait can be extended. during the extension, the event is pending", (done
     testScenarios((enable) => {
         enable(waitingThread());
         enable(extendingThread());
-    }, ({event, log}) => {
-        if(event('AB').dispatch !== undefined) event('AB')!.dispatch!();
+    }, ({event}) => {
+        if(event('AB').dispatch !== undefined) event('AB').dispatch!();
         else {
             expect(event('AB').isPending).toBe(true);
             done();
@@ -448,8 +449,8 @@ test("a askFor can be extended. After resolving the extend, the wait will be con
     let timesEventADispatched = 0;
 
     const waitingThread = scenario({id: 'waitingBThread'}, function* () {
-        const [type, val] = yield [bp.askFor("eventAX"), bp.askFor("eventB")];
-        expect(val).toBe(12);
+        const bid = yield [bp.askFor("eventAX"), bp.askFor("eventB")];
+        expect(bid.payload).toBe(12);
         expect(timesEventADispatched).toBe(1);
         done();
     });
@@ -457,7 +458,7 @@ test("a askFor can be extended. After resolving the extend, the wait will be con
     const extendingThread = scenario({id: 'extendingBThread'}, function* () {
         const x = yield bp.extend("eventAX");
         yield bp.request('ASYNC', () => delay(200));
-        x.resolve(12);
+        x.resolve!(12);
     });
 
 
@@ -475,23 +476,21 @@ test("a askFor can be extended. After resolving the extend, the wait will be con
 test("a request can be extended. After resolving the extend, the request will be continued", (done) => {
 
     const requestingThread = scenario({id: 'requestingThread'}, function* () {
-        const val = yield bp.request("eventAtt");
-        expect(val).toBe(12);
+        const bid = yield bp.request("eventAtt");
+        expect(bid.payload).toBe(12);
         done();
     });
 
     const extendingThread = scenario({id: 'extendingBThread'}, function* () {
         const x = yield bp.extend("eventAtt");
         yield bp.request('ASYNC', () => delay(200));
-        x.resolve(12);
+        x.resolve?.(12);
     });
 
 
     testScenarios((enable) => {
         enable(requestingThread());
         enable(extendingThread());
-    },({log}) => {   
-        console.log('ACTION LOG:', log.actions)
     });
 });
 
@@ -499,16 +498,16 @@ test("a request can be extended. After resolving the extend, the request will be
 test("a request can be extended. After resolving the extend, the extend-bid will not be used again in this run.", (done) => {
 
     const requestingThread = scenario({id: 'requestingThread'}, function* () {
-        const val = yield bp.request("eventiii");
-        expect(val).toBe(12);
+        const bid = yield bp.request("eventiii");
+        expect(bid.payload).toBe(12);
         done();
     });
 
-    const extendingThread = scenario({id: 'extendingBThread', autoRepeat: false}, function* () {
+    const extendingThread = scenario({id: 'extendingBThread'}, function* () {
         while(true) {
             const x = yield bp.extend("eventiii");
             yield bp.request('ASYNC', () => delay(200));
-            x.resolve(12);
+            x.resolve?.(12);
         }
     });
 

@@ -1,26 +1,35 @@
 import { ActionType, GET_VALUE_FROM_BTHREAD, getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyActionWithId, toActionWithId } from './action';
-import { BThreadBids, activeBidsByType, BidsByType, getRequestingBids } from './bid';
+import { BThreadBids } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, GetCachedEvent } from './event-cache';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
-import { EventContext } from './event-context';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { InternalDispatch, Replay } from './index';
-import { ActionCheck, checkUiAction, checkResolveAction, checkRejectAction, checkResolveExtendAction, checkRequestedAction } from './action-check';
+import { allPlacedBids, AllPlacedBids, AnyAction, getAllRequestingBids, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
+import { UIActionCheck, ReactionCheck } from './validation';
 import { isThenable } from './utils';
+import { validate, validateDispatchedUIAction, ValidationResult } from './validation';
 
+
+export interface EventInfo {
+    lastUpdate: number;
+    dispatch?: (payload?: any) => void;
+    validate: (payload?: any) => ValidationResult;
+    value?: unknown;
+    history: unknown[];
+    isPending: boolean;
+    isBlocked: boolean;
+}
 
 // update loop
 // -----------------------------------------------------------------------------------
 
 export interface ScenariosContext {
-    event: (eventName: string | EventId) => EventContext;
+    event: (eventName: string | EventId) => EventInfo;
     thread: BThreadMap<BThreadState>;
     log: Logger;
-    bids: BidsByType;
     debug: {
         currentActionId: number;
         inReplay: boolean;
@@ -36,11 +45,11 @@ export interface CurrentReplay extends Replay {
     testResults: Map<number, any>;
 }
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
-export type UIActionDispatch = (action: UIAction) => void;
+export type UIActionDispatch = (bid: PlacedBid) => (payload: any) => void;
 
 export class UpdateLoop {
     private _currentActionId = 0;
-    private _activeBidsByType = {} as BidsByType;
+    private _allPlacedBids: AllPlacedBids = new EventMap();
     private readonly _bThreadMap = new BThreadMap<BThread>();
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
     private readonly _bThreadBids: BThreadBids[] = [];
@@ -48,8 +57,8 @@ export class UpdateLoop {
     private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<any>>();
     private readonly _getCachedEvent: GetCachedEvent = (eventId: EventId) => this._eventCache.get(eventId);
-    private readonly _eventContexts = new EventMap<EventContext>();
-    private readonly _uiActionDispatch: UIActionDispatch;
+    private readonly _eventInfos= new EventMap<EventInfo>();
+    private readonly _uiActionCB: UIActionDispatch;
     private readonly _testResults = new Map<number, any[]>();
     private _replay?: CurrentReplay;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];     
@@ -58,7 +67,17 @@ export class UpdateLoop {
         this._logger = logger;
         const resolveActionCB = (action: ResolveAction | ResolveExtendAction) => internalDispatch(action);
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._getCachedEvent, resolveActionCB, this._logger);
-        this._uiActionDispatch = (action : UIAction) => internalDispatch(action);
+        this._uiActionCB = (bid: PlacedBid) => {
+            return (payload: any) => {
+                if(validate(this._allPlacedBids, bid.eventId, payload).isValid === false) return;
+                const uiAction: UIAction = {
+                    type: ActionType.ui,
+                    eventId: bid.eventId,
+                    payload: payload
+                }
+                internalDispatch(uiAction);
+            }
+        }
     }
 
     private _reset() {
@@ -71,15 +90,23 @@ export class UpdateLoop {
         this._logger.resetLog();
     }
 
-    private _getEventContext(event: string | EventId): EventContext {
+    private _getEventInfo(event: string | EventId): EventInfo {
         const eventId = toEventId(event);
-        let context = this._eventContexts.get(eventId);
-        if(context === undefined) {
-            context = new EventContext(this._getCachedEvent, this._uiActionDispatch, eventId);
-            this._eventContexts.set(eventId, context);
-        }
-        context?.update(this._activeBidsByType, this._currentActionId);
-        return context;
+        const eventInfo = this._eventInfos.get(eventId);
+        if(eventInfo && eventInfo.lastUpdate === this._currentActionId - 1) return eventInfo;
+        const askForBid = getHighestPrioAskForBid(this._allPlacedBids, eventId);
+        const bidContext = this._allPlacedBids.get(eventId);
+        const cachedEvent = this._getCachedEvent(eventId);
+        const newEventInfo: EventInfo = eventInfo || {} as EventInfo;
+        newEventInfo.lastUpdate = this._currentActionId - 1,
+        newEventInfo.dispatch = askForBid ? eventInfo?.dispatch || this._uiActionCB(askForBid) : undefined,
+        newEventInfo.validate = eventInfo?.validate || ((payload: any) => validate(this._allPlacedBids, eventId, payload)),
+        newEventInfo.value = eventInfo?.value || cachedEvent?.value,
+        newEventInfo.history = eventInfo?.history || cachedEvent?.history || [],
+        newEventInfo.isPending = !!bidContext?.pendingBy,
+        newEventInfo.isBlocked = !!bidContext?.blockedBy
+        this._eventInfos.set(eventId, newEventInfo);
+        return newEventInfo
     }
 
     private _getNextReplayAction(actionId: number): AnyActionWithId | undefined {
@@ -88,7 +115,7 @@ export class UpdateLoop {
         if(actions.length > 0 && actions[0].id === actionId) {
             const action = this._replay.actions.shift()!;
             if(action.type === ActionType.requested && action.payload === GET_VALUE_FROM_BTHREAD) {
-                action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.request?.get(action.eventId)?.payload;
+                action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.pendingBidMap.get(action.eventId)?.payload;
             }
             return action;
         }
@@ -101,10 +128,9 @@ export class UpdateLoop {
 
     private _getContext(): ScenariosContext {
         return { 
-            event: this._getEventContext.bind(this),
+            event: this._getEventInfo.bind(this),
             thread: this._bThreadStateMap,
             log: this._logger,
-            bids: this._activeBidsByType,
             debug: {
                 currentActionId: this._currentActionId,
                 inReplay: this._isInReplay(),
@@ -136,73 +162,69 @@ export class UpdateLoop {
         return {...action, id: this._currentActionId}
     }
 
+    private _pauseReplay(action: AnyAction, check: UIActionCheck | ReactionCheck) {
+        this._replay!.isPaused = true;
+        const results = this._testResults.get(this._currentActionId) || [];
+        this._testResults.set(this._currentActionId, [...results, {type: 'action-validation', message: check, action: action}]);        
+    }
+
     private _setupContext(): ScenariosContext {
         if(this._replay) {
             this._runContextTests();
             if(this._replay?.breakpoints?.has(this._currentActionId)) this._replay.isPaused = true;
             if(this._replay?.isPaused === true) return this._getContext();
         }
-        const placedRequestingBids = getRequestingBids(this._activeBidsByType);
-        let actionCheck: ActionCheck | undefined = undefined;
+        const placedRequestingBids = getAllRequestingBids(this._allPlacedBids);
+        let reactionCheck = ReactionCheck.OK;
         do {
-            // TODO: add block & payload validation check into getRequestedAction 
-            // then unify the action-check and advance-bthreads functions
-            const maybeAction = this._getNextReplayAction(this._currentActionId) || this._getQueuedAction() || getRequestedAction(this._currentActionId, placedRequestingBids?.shift())
+            const maybeAction = this._getNextReplayAction(this._currentActionId)
+                || this._getQueuedAction() 
+                || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
             if(maybeAction === undefined) return this._getContext();
+            const actionCheck = validateDispatchedUIAction(maybeAction, this._allPlacedBids);
+            if(actionCheck !== UIActionCheck.OK) {
+                if(this._replay) { 
+                    this._pauseReplay(maybeAction, actionCheck);
+                    return this._getContext(); 
+                }
+                continue;
+            }
             const action = toActionWithId(maybeAction, this._currentActionId);
             if (action.type === ActionType.requested) {
-                actionCheck = checkRequestedAction(this._bThreadMap, this._activeBidsByType, action);
-                if(actionCheck === ActionCheck.OK) {
-                    if(this._replay && action.payload === undefined) {
-                        const currentBid = this._bThreadMap.get(action.bThreadId)?.getCurrentBid(action.bidType, action.eventId);
-                        action.payload = currentBid?.payload;
-                    }
-                    if(typeof action.payload === "function") {
-                        action.payload = action.payload(this._getCachedEvent(action.eventId));
-                    }
-                    if(isThenable(action.payload)) {
-                        action.resolveActionId = 'pending';
-                    }
-                    this._logger.logAction(action);
-                    advanceRequestedAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
+                if(this._replay && action.payload === undefined) {
+                    const currentBid = this._bThreadMap.get(action.bThreadId)?.getCurrentBid(action.bidType, action.eventId);
+                    action.payload = currentBid?.payload;
                 }
+                if(typeof action.payload === "function") {
+                    action.payload = action.payload(this._getCachedEvent(action.eventId));
+                }
+                if(isThenable(action.payload)) {
+                    action.resolveActionId = 'pending';
+                }
+                this._logger.logAction(action);
+                reactionCheck = advanceRequestedAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
             }
             else if (action.type === ActionType.resolved) {
-                actionCheck = checkResolveAction(this._bThreadMap, action);
-                if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action);
-                    advanceResolveAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-                }
+                this._logger.logAction(action);
+                reactionCheck = advanceResolveAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
             }
             else if (action.type === ActionType.resolvedExtend) {
-                //actionCheck = checkResolveExtendAction(this._bThreadMap, action);
-                //if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action);
-                    //console.log('action: ', action)
-                    advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._activeBidsByType, action);
-                //}
+                this._logger.logAction(action);
+                reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
             }
             else if (action.type === ActionType.ui) {
-                actionCheck = checkUiAction(this._activeBidsByType, action);
-                if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action);
-                    advanceUiAction(this._bThreadMap, this._activeBidsByType, action);
-                }
+                this._logger.logAction(action);
+                advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
             }
             else if (action.type === ActionType.rejected) {
-                actionCheck = checkRejectAction(this._bThreadMap, action);
-                if(actionCheck === ActionCheck.OK) {
-                    this._logger.logAction(action);
-                    advanceRejectAction(this._bThreadMap, this._activeBidsByType, action);
-                }
+                this._logger.logAction(action);
+                reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }
-            if(this._replay && actionCheck !== ActionCheck.OK) {
-                this._replay.isPaused = true;
-                const results = this._testResults.get(this._currentActionId) || [];
-                this._testResults.set(this._currentActionId, [...results, {type: 'action-validation', message: actionCheck, action: action}]);
-                return this._getContext();
+            if(reactionCheck !== ReactionCheck.OK && this._replay) {
+                this._pauseReplay(action, actionCheck);
+                return this._getContext(); 
             }
-         } while (actionCheck !== ActionCheck.OK);
+         } while (reactionCheck !== ReactionCheck.OK);
 
          this._currentActionId++;
          return this.runScaffolding();
@@ -217,8 +239,8 @@ export class UpdateLoop {
     public runScaffolding(): ScenariosContext {
         if(this._replay && this._replay.actions.length === 0) delete this._replay;
         this._scaffold(this._currentActionId);
-        this._activeBidsByType = activeBidsByType(this._bThreadBids);
-        this._logger.logPendingEventIds(this._activeBidsByType.pending);
+        this._allPlacedBids = allPlacedBids(this._bThreadBids);
+        //this._logger.logPendingEventIds(this._allPlacedBids.pending);
         return this._setupContext();
     }
 

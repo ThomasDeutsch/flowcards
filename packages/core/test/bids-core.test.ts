@@ -1,6 +1,5 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { EventId } from "../src/event-map";
 import { scenario } from '../src/scenario';
 
 
@@ -20,6 +19,7 @@ test("a requested event that is not blocked will advance", () => {
         expect(state?.progressionCount).toBe(1);
     });
 });
+
 
 
 
@@ -52,64 +52,47 @@ test("waits will return the value that has been requested", () => {
         yield bp.request("A", 1000);
     });
 
-    let receivedValue: any = null;
-
     const receiveThread = scenario({id: 'receiveThread'}, function* () {
-        receivedValue = yield bp.askFor("A");
+        const bid = yield bp.askFor("A");
+        expect(bid.payload).toBe(1000);
     });
 
     testScenarios((enable) => {
         enable(requestThread());
         enable(receiveThread());
-    }, () => {
-        expect(receivedValue).toBe(1000);
     });
 });
 
 
 test("multiple requests will return an array of [eventId, value].", () => {
-    let progressedEventId, receivedValueA, receivedValueB;
 
-    const requestThread = scenario(null, function* (): any {
-        const [event] = yield [bp.request("A", 1000), bp.request("B", 2000)];
-        progressedEventId = event.name;
-    });
-
-    const receiveThreadA = scenario(null, function* () {
-        receivedValueA = yield bp.askFor("A");
+    const requestThread = scenario(null, function* () {
+        const bid = yield [bp.request("A", 1000), bp.request("B", 2000)];
+        expect(bid.eventId.name).toBe('B');
     });
 
     const receiveThreadB = scenario(null, function* () {
-        receivedValueB = yield bp.askFor("B");
+        const bid = yield bp.askFor("B");
+        expect(bid.eventId.name).toBe('B');
     });
 
     testScenarios((enable) => {
         enable(requestThread());
-        enable(receiveThreadA());
         enable(receiveThreadB());
     });
-
-    if (progressedEventId === "A") {
-        expect(receivedValueA).toEqual(1000);
-        expect(receivedValueB).toBeUndefined();
-    } else {
-        expect(receivedValueB).toBe(2000);
-        expect(receivedValueA).toBeUndefined();
-    }
 });
 
 
-test("multiple waits will return an array of [value, eventId].", () => {
-    let receivedValue: any, receivedEventId: any;
+test("multiple bids can be expressed as an array.", () => {
 
     const requestThread = scenario(null, function* () {
         yield bp.request("A", 1000);
     })
 
     const receiveThread = scenario(null, function* () {
-        [receivedEventId, receivedValue] = yield [bp.askFor("A"), bp.askFor("B")];
-        expect(receivedValue).toBe(1000);
-        expect(receivedEventId?.name).toBe("A");
+        const bid = yield [bp.askFor("A"), bp.askFor("B")];
+        expect(bid.payload).toBe(1000);
+        expect(bid.eventId.name).toBe("A");
     })
 
     testScenarios((enable) => {
@@ -120,17 +103,15 @@ test("multiple waits will return an array of [value, eventId].", () => {
 
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
-    let receivedValue: any
-    let receivedEvent: EventId;
 
     const requestThread = scenario(null, function* () {
         yield bp.request("A", () => 1000);
     })
 
     const receiveThread = scenario(null, function* () {
-        [receivedEvent, receivedValue] = yield [bp.askFor("A"), bp.askFor("B")];
-        expect(receivedValue).toBe(1000);
-        expect(receivedEvent?.name).toBe("A");
+        const bid = yield [bp.askFor("A"), bp.askFor("B")];
+        expect(bid.payload).toBe(1000);
+        expect(bid.eventId.name).toBe("A");
     })
 
     testScenarios((enable) => {
@@ -153,11 +134,13 @@ test("if a request value is a function, it will only be called once.", () => {
     });
 
     const receiveThread1 = scenario(null, function* () {
-        receivedValue1 = yield bp.askFor("A");
+        const bid1 = yield bp.askFor("A");
+        receivedValue1 = bid1.payload;
     });
 
     const receiveThread2 = scenario(null, function* () {
-        receivedValue2 = yield bp.askFor("A");
+        const bid = yield bp.askFor("A");
+        receivedValue2 = bid.payload;
     })
 
     testScenarios((enable) => {
@@ -183,7 +166,8 @@ test("When there are multiple requests with the same event-name, the request wit
     });
 
     const receiveThread = scenario(null, function* () {
-        receivedValue = yield bp.askFor("A");
+        const bid = yield bp.askFor("A");
+        receivedValue = bid.payload
     })
 
     testScenarios((enable) => {
@@ -336,12 +320,12 @@ test("a wait without a key will react to keyed events with the same name", () =>
     });
 });
 
-test("if a thread has multiple requests, the first gets selected", () => {
+test("if a thread has multiple requests, the last request has the highest priority.", () => {
     let requestProgressed = false;
 
     const requestingThread = scenario({id: 'thread1'}, function*() {
-        const [event, type] = yield [bp.request({name: 'A', key: 1}), bp.request({name: 'A', key: 3}), bp.request({name: 'A', key: 4})];
-        expect(event.key).toEqual(1);
+        const bid = yield [bp.request({name: 'A', key: 1}), bp.request({name: 'A', key: 3}), bp.request({name: 'A', key: 4})];
+        expect(bid.eventId.key).toEqual(4);
         requestProgressed = true;
     });
 

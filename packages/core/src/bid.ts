@@ -1,23 +1,20 @@
 import { EventMap, EventId, toEventId } from './event-map';
-import { Validation, withValidPayload } from './validation';
+import { Validation } from './validation';
 import * as utils from './utils';
 import { BThreadId } from './bthread';
-import { flattenShallow } from './utils';
 import { PendingBid } from './pending-bid';
+
 
 export enum BidType {
     request = "request",
     askFor = "askFor",
     block = "block",
-    pending = "pending",
-    guardedBlock = "guardedBlock",
     extend = "extend",
     trigger = "trigger",
     set = "set",
     waitFor = "waitFor",
     onPending = "onPending"
 }
-
 
 export interface Bid {
     type: BidType;
@@ -26,110 +23,128 @@ export interface Bid {
     validate?: Validation;
 }
 
-
 export interface PlacedBid extends Bid {
     bThreadId: BThreadId;
 }
 
+export interface ProgressedBid extends PlacedBid {
+    cancelledBids?: EventMap<PlacedBid>;
+    resolve?: (payload: any) => void;
+}
 
-export type RequestingBidType = BidType.request | BidType.trigger | BidType.set;
+export type RequestingBidType = BidType.request | BidType.set | BidType.trigger;
 
-
-export interface PlacedRequestingBid extends Bid {
+export interface PlacedRequestingBid extends PlacedBid {
     type: RequestingBidType;
-    bThreadId: BThreadId;
 }
 
 // bids from BThreads
 // --------------------------------------------------------------------------------------------------------------------
 
-export type BThreadBids = Record<BidType, EventMap<PlacedBid>>; //TODO: add pending bid type.
+export type BThreadBids = {
+    pendingBidMap: EventMap<PendingBid>
+    placedBids: PlacedBid[]
+}
 export type BidOrBids =  Bid | (Bid | undefined)[] | undefined;
 
 
 export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pendingBidMap: EventMap<PendingBid>): BThreadBids {
-    let bidColl = utils.toArray(bidOrBids).filter(utils.notUndefined).filter(bid => !pendingBidMap.has(bid.eventId));
-    const pendingBids = pendingBidMap.allValues?.map(bid => ({...bid, type: BidType.pending}));
-    bidColl = bidColl.concat(pendingBids || []);
-    const bids = {} as BThreadBids;
-    if(bidColl.length === 0) return bids;
-    return bidColl.reduce((acc: BThreadBids, bid: Bid): BThreadBids => {
-        if(bid !== undefined) {
-            if(!acc[bid.type]) {
-                acc[bid.type] = new EventMap();
-            }
-            acc[bid.type]!.set(bid.eventId, {...bid, bThreadId: bThreadId});
-        }
-        return acc;
-    }, bids);
+    const placedBids: PlacedBid[] = utils.toArray(bidOrBids)
+        .filter(utils.notUndefined)
+        .map(bid => ({...bid, bThreadId: bThreadId}));
+    return {
+        pendingBidMap: pendingBidMap,
+        placedBids: placedBids
+    }
 }
 
 // bids from multiple BThreads
 // --------------------------------------------------------------------------------------------------------------------
+export type PlacedBidContext = {blockedBy?: [BThreadId], pendingBy?: BThreadId, bids: PlacedBid[]}
+export type AllPlacedBids = EventMap<PlacedBidContext>;
 
-export type BidsByType = Record<BidType, EventMap<PlacedBid[]> | undefined>;
-
-export function activeBidsByType(allBThreadBids: BThreadBids[]): BidsByType {
-    const activeBidsByType = {} as BidsByType;
-    allBThreadBids.forEach((bids) => {
-        for(const type in bids) {
-            const bidsByEvent = bids[type as BidType];
-            if(bidsByEvent !== undefined) {
-                if(activeBidsByType[type as BidType] === undefined) activeBidsByType[type as BidType] = new EventMap<PlacedBid[]>();
-                bidsByEvent.forEach((event, bid) => {
-                    activeBidsByType[type as BidType]!.set(event, [bid, ...(activeBidsByType[type as BidType]!.get(event) || [])]);
-                })
+export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
+    const pendingEvents = new EventMap<BThreadId>();
+    const blockedEvents = new EventMap<BThreadId[]>();
+    allBThreadBids.forEach(({placedBids, pendingBidMap}) => {
+        pendingBidMap.allValues?.forEach(bid => { 
+            pendingEvents.set(bid.eventId, bid.bThreadId);
+        });
+        placedBids.forEach(bid => { 
+            if(bid.type === BidType.block) {
+                blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid.bThreadId]);
             }
-        }
+        });
     });
-    return activeBidsByType;
+    const bidsByEventId: AllPlacedBids = new EventMap();
+    allBThreadBids.forEach(({placedBids}) => {
+        placedBids.forEach(bid => {
+            const waitingBidsForEventId = bidsByEventId.get(bid.eventId) || {
+                blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)), 
+                pendingBy: pendingEvents.get(bid.eventId), 
+                bids: []
+            } as PlacedBidContext
+            waitingBidsForEventId.bids.push(bid);
+            bidsByEventId.set(bid.eventId, waitingBidsForEventId);
+        });
+    });
+    return bidsByEventId;
 }
 
-type WithPayload = {payload?: any};
-
-export function isBlocked(activeBidsByType: BidsByType, event: EventId, withPayload?: WithPayload): boolean {
-    if(activeBidsByType.block !== undefined) {
-        if(activeBidsByType.block.hasMatching(event)) return true
-    }
-    if(activeBidsByType.pending !== undefined) {
-        if(activeBidsByType.pending.hasMatching(event)) return true;
-    }
-    if(withPayload !== undefined && activeBidsByType.guardedBlock !== undefined) {
-        const blockBids = flattenShallow(activeBidsByType.guardedBlock.getExactMatchAndUnkeyedMatch(event));
-        return withValidPayload(blockBids, withPayload.payload);
-    }
-    return false;
+export function unblockEventId(allPlacedBids: AllPlacedBids, eventId: EventId): void {
+    const context = allPlacedBids.get(eventId)!;
+    allPlacedBids.set(eventId, {...context, blockedBy: undefined});
 }
 
-export function getRequestingBids(activeBidsByType: BidsByType): PlacedRequestingBid[] | undefined {
-    const result = [BidType.request, BidType.set, BidType.trigger].reduce((acc: PlacedRequestingBid[], type: BidType) => {
-        const bids = utils.flattenShallow(activeBidsByType[type]?.allValues) as PlacedRequestingBid[];
-        if(bids === undefined || bids.length === 0) return acc;
-        const notBlockedBids = bids.filter(bid => !isBlocked(activeBidsByType, bid.eventId));
-        acc.push(...notBlockedBids);
-        return acc;
-    }, []);
-    if(result.length === 0) return undefined;
-    return result;
+function isRequestingBid(bid: Bid): boolean {
+    return (bid.type === BidType.request) || (bid.type === BidType.set) || (bid.type === BidType.trigger)
 }
 
-export function hasValidMatch(bidsByType: BidsByType, bidType: BidType, event: EventId, withPayload?: WithPayload): boolean {
-    const bidsMap = bidsByType[bidType];
-    const bids = flattenShallow(bidsMap?.getExactMatchAndUnkeyedMatch(event));
-    if(bids === undefined) return false;
-    if(withPayload === undefined) return true;
-    return withValidPayload(bids, withPayload.payload);
+export type BidsByType = Partial<Record<BidType, EventMap<PlacedBid>>>;
+
+export function toBidsByType(bThreadBids: BThreadBids): BidsByType {
+    return bThreadBids.placedBids.reduce((bidsByType, bid) => {
+        if(bidsByType[bid.type] === undefined) {
+            bidsByType[bid.type] = new EventMap<PlacedBid>();
+        }
+        bidsByType[bid.type]?.set(bid.eventId, bid);
+        return bidsByType;
+    }, {} as BidsByType);
 }
 
-export function getMatchingBids(bidsByType: BidsByType, types: BidType[], event: EventId): PlacedBid[] | undefined {
-    const result = types.reduce((acc: PlacedBid[], type: BidType) => {
-        if(bidsByType[type] === undefined) return acc;
-        const matchingBids = bidsByType[type]!.getExactMatchAndUnkeyedMatch(event);
-        if(matchingBids === undefined || matchingBids.length === 0) return acc;
-        acc.push(...utils.flattenShallow(matchingBids)!);
-        return acc;
-    }, []);
-    return result.length === 0 ? undefined : result;
+export function getAllRequestingBids(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
+    const requestingBids: PlacedRequestingBid[] = []
+    allPlacedBids.forEach((eventId, context) => {
+        if(context.blockedBy || context.pendingBy) return;
+        context.bids.forEach(bid => {
+            if(!isRequestingBid(bid)) return;
+            if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId) === undefined) return;
+            requestingBids.push(bid as PlacedRequestingBid)
+        });
+    });
+    return requestingBids.length > 0 ? requestingBids : undefined;
+}
+
+// export function hasValidMatch(bidsByType: BidsByType, bidType: BidType, event: EventId, withPayload?: WithPayload): boolean {
+//     const bidsMap = bidsByType[bidType];
+//     const bids = flattenShallow(bidsMap?.getExactMatchAndUnkeyedMatch(event));
+//     if(bids === undefined) return false;
+//     if(withPayload === undefined) return true;
+//     return withValidPayload(bids, withPayload.payload);
+// }
+
+export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId): PlacedBid[] | undefined {
+    let bids = allPlacedBids.get(eventId)?.bids || [];
+    if(eventId.key !== undefined) bids = [...bids, ...(allPlacedBids.get({name: eventId.name})?.bids || [])];
+    if(bids.length === 0) return undefined;
+    const matchingBids = bids?.filter(bid => types.some(type => bid.type === type));
+    return matchingBids.length > 0 ? matchingBids : undefined;
+}
+
+export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId): PlacedBid | undefined {
+    const bidContext = allPlacedBids.get(eventId);
+    if(!bidContext || bidContext.blockedBy || bidContext.pendingBy) return undefined
+    return bidContext.bids.reverse().find(bid => bid.type === BidType.askFor);
 }
 
 
@@ -182,11 +197,10 @@ export function onPending(event: string | EventId): Bid {
     };
 }
 
-export function block(event: string | EventId, blockIf?: Validation): Bid {
+export function block(event: string | EventId): Bid {
     return { 
-        type: (typeof blockIf === 'function') ? BidType.guardedBlock : BidType.block,
-        eventId: toEventId(event), 
-        validate: blockIf
+        type: BidType.block,
+        eventId: toEventId(event)
     };
 }
 

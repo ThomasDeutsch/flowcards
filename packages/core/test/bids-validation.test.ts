@@ -73,8 +73,8 @@ test("a block can be guarded", (done) => {
     const requestingThread = scenario(null, function* () {
         let i = 0;
         while(i++ < 20) {
-            const val = yield [bp.request("A", 1000), bp.request("A", 2000)];
-            expect(val[1]).toEqual(2000);
+            const bid = yield [bp.request("A", 1000), bp.request("A", 2000)];
+            expect(bid.payload).toEqual(2000);
             done();
         }
     });

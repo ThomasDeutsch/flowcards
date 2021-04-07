@@ -5,9 +5,9 @@ import { ActionType, BidType } from "../src/index";
 
 test("a set is a request, that will be cached. ", (done) => {
     const thread1 = scenario({id: 'flow1'}, function* () {
-        const pl = yield bp.set("count", 2);
-        if(pl === 'replayPayload') {
-            expect(pl).toEqual('replayPayload');
+        const bid = yield bp.set("count", 2);
+        if(bid.payload === 'replayPayload') {
+            expect(bid.payload).toEqual('replayPayload');
             done();
         }
     })

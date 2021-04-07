@@ -49,10 +49,10 @@ test("a pending event is different from another pending-event if the name OR key
 
 test("pending-events with the same name but different keys can be run in parallel", (done) => {
     const thread1 = scenario({id: 'requestingThreadOne'}, function* () {
-        yield bp.request({name: "A", key: 1}, () => delay(250));
+        yield bp.request({name: "A", key: 1}, () => delay(25000));
     });
     const thread2 = scenario({id: 'requestingThreadTwo'}, function* () {
-        yield bp.request({name: "A", key: 2}, () => delay(250));
+        yield bp.request({name: "A", key: 2}, () => delay(25000));
     });
 
     testScenarios((enable) => {
@@ -143,8 +143,8 @@ test("for multiple active promises in one yield, only one resolve will progress 
 test("if a thread gets disabled, before the pending-event resolves, the pending-event resolve will still be dispatched", (done) => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));
-        const [event] = yield [bp.askFor('B'),  bp.request("X", () => delay(500))];
-        expect(event.name).toEqual('B');
+        const bid = yield [bp.askFor('B'),  bp.request("X", () => delay(500))];
+        expect(bid.eventId.name).toEqual('B');
     });
 
     const thread2 = scenario({id: 'thread2'}, function*() {
@@ -153,7 +153,7 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
 
     testScenarios((enable) => {
         const t1 = enable(thread1());
-        if(t1.bids?.pending?.has('A')) {
+        if(t1.pendingBids.has('A')) {
             enable(thread2());
         }
     }, (({thread}) => {
@@ -167,8 +167,8 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
 test("given the destoryOnDisable option, pending events will be canceled on destroy", (done) => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.request("A", () => delay(100));
-        const [event] = yield [bp.askFor('B'),  bp.request("X", () => delay(500))];
-        expect(event.name).toEqual('X');
+        const bid = yield [bp.askFor('B'),  bp.request("X", () => delay(500))];
+        expect(bid.eventId.name).toEqual('X');
     });
 
     const thread2 = scenario({id: 'thread2', destroyOnDisable: true}, function*() {
@@ -177,7 +177,7 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
 
     testScenarios((enable) => {
         const t1 = enable(thread1());
-        if(t1.bids?.pending?.has('A')) {
+        if(t1.pendingBids.has('A')) {
             enable(thread2());
         }
     }, (({thread}) => {
@@ -191,7 +191,7 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
 
 test("a thread in a pending-event state can place additional bids.", (done) => {
     const thread1 = scenario({id: 'requestingThread'}, function* (this: BThreadContext) {
-        yield [bp.request("A", () => delay(100)), bp.block('B', () => this.isPending('A'))];
+        yield [bp.request("A", () => delay(100)), bp.block('B')];
     });
 
     const thread2 = scenario({id: 'waitingThread'}, function* () {

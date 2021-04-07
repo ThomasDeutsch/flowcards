@@ -13,9 +13,9 @@ test("log will contain a list of executed actions (sorted)", () => {
         },
         function*(this: BThreadContext) {
           this.section("productList");
-          const id = yield bp.askFor("selectProduct");
+          const askForBid = yield bp.askFor("selectProduct");
           const item = yield bp.request("apiGetProductDetails", "testData");
-          yield bp.set({ name: "productDetails", key: id }, item);
+          yield bp.set({ name: "productDetails", key: askForBid.payload }, item);
           this.section("productDetails");
           yield bp.askFor("acceptAGB");
           this.section("new Section");
@@ -75,7 +75,7 @@ test("scaffolding results are logged", (done) => {
   testScenarios((enable) => {
       enable(thread1());
   }, ({log, thread}) => {
-    if(thread.get({name: 'thread1'})?.bids?.askFor.get({name: 'heyho'})) {
+    if(thread.get({name: 'thread1'})?.bids.askFor?.get({name: 'heyho'})) {
       const history = log.bThreadScaffoldingHistory.get('thread1');
       expect(history!.get(0)).toEqual(ScaffoldingResultType.enabled);
       done();

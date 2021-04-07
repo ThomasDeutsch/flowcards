@@ -7,7 +7,6 @@ export * from './scenario';
 export * from './bthread';
 export * from './update-loop';
 export * from './event-cache';
-export * from './event-context';
 export * from './event-map';
 export * from "./bid";
 export * from "./scaffolding";

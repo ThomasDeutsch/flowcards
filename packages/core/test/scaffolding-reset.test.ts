@@ -19,7 +19,7 @@ test("a thread gets reset, when the arguments change", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        enable(threadB({waitingForB: state.bids?.askFor.has('B')}));
+        enable(threadB({waitingForB: state.bids.askFor?.has('B')}));
     }, () => {
         expect(initCount).toBe(2);
     });
@@ -40,7 +40,7 @@ test("a thread gets reset, when the arguments change - 2", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        const test: MyProps = state.bids?.askFor.has('B') ? {waitingForB: state.bids?.askFor?.has('B')} : {waitingForB: false, waitingForX: false};
+        const test: MyProps = state.bids.askFor?.has('B') ? {waitingForB: state.bids?.askFor?.has('B')} : {waitingForB: false, waitingForX: false};
         enable(threadB(test));
     }, () => {
         expect(initCount).toBe(2);    
@@ -62,7 +62,7 @@ test("a thread gets reset, when the arguments change - 3", () => {
 
     testScenarios((enable) => {
         const state = enable(threadA());
-        const test = state.bids?.askFor?.has('B') ? {waitingForB: state.bids?.askFor.has('B')} : undefined;
+        const test = state.bids?.askFor?.has('B') ? {waitingForB: state.bids.askFor?.has('B')} : undefined;
         enable(threadB(test));
     }, () => {
         expect(initCount).toBe(2);

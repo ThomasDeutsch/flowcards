@@ -3,8 +3,9 @@ import { BThread, BThreadState, BThreadId, BThreadKey } from './bthread';
 import { GetCachedEvent } from './event-cache';
 import { Logger, ScaffoldingResultType } from './logger';
 import { BThreadMap } from './bthread-map';
-import { BThreadGeneratorFunction, Scenario } from './scenario';
+import { Scenario } from './scenario';
 import { ResolveActionCB } from './update-loop';
+import { BThreadGeneratorFunction } from '.';
 
 export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState, getCachedEvent: GetCachedEvent) => void;
 

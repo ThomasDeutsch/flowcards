@@ -11,7 +11,7 @@ test("a set is a request, that will be cached. ", () => {
     testScenarios((enable, ) => {
         enable(thread1());
     }, ({event}) => {
-        expect(event("count")?.value).toEqual(2);
+        expect(event("count").value).toEqual(2);
     });
 });
 
@@ -60,7 +60,7 @@ test("sets can be extended", () => {
 
     const thread2 = scenario(null, function* () {
         const extend = yield bp.extend("count");
-        extend.resolve(extend.value + 2);
+        extend.resolve?.(extend.payload + 2);
     });
 
     testScenarios((enable) => {

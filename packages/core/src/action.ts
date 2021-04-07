@@ -110,13 +110,3 @@ export function getResolveExtendAction(pendingBid: PendingBid, pendingDuration: 
 }
 
 
-export function getRequestingBid(action: AnyAction): PlacedBid | undefined {
-    if(action.type === ActionType.requested) {
-        return {
-            bThreadId: action.bThreadId,
-            type: action.bidType,
-            eventId: action.eventId
-        }
-    }
-    return undefined;
-}

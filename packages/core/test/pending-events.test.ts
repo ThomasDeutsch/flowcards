@@ -111,14 +111,14 @@ test("After a pending event is resolved, a BThread that has requested this event
 
 test("If one pending-event is resolved, other promises for this event are cancelled", done => {
     const threadOne = scenario(null, function* (): any {
-        const [event] = yield [bp.request("A", () => delay(300)), bp.request("B", () => delay(1))];
-        expect(event.name).toBe("B");
+        const bid = yield [bp.request("A", () => delay(300)), bp.request("B", () => delay(1))];
+        expect(bid.eventId.name).toBe("B");
         done();
     });
 
     const thread2 = scenario({id: 't2'}, function* (): any  {
-        const [event] = yield [bp.askFor('A'), bp.request("C", () => delay(400))];
-        expect(event.name).toBe("C");
+        const bid = yield [bp.askFor('A'), bp.request("C", () => delay(400))];
+        expect(bid.eventId.name).toBe("C");
         
     })
 
@@ -172,8 +172,8 @@ test("rejected pending events will not progress waiting BThreads", done => {
 
 test("if a pending event is rejected, the lower-prio thread will use its request instead", done => {
     const thread1 = scenario(null, function* () {
-        const val = yield bp.request("A", 1);
-        expect(val).toBe(1);
+        const bid = yield bp.request("A", 1);
+        expect(bid.payload).toBe(1);
         done(); 
     });
 
@@ -213,7 +213,7 @@ test("if a threads waits for an already existing pending-event, it will also pro
     });
 });
 
-test("if a threads extends an already existing pending-event, it will trigger that extend when the event resolve", done => {
+test("if a thread extends an already existing pending-event, it will trigger that extend when the event resolve", done => {
     let thread1Progressed = false;
     const thread1 = scenario(null, function* () {
         yield bp.request("A", () => delay(500, 'requestedValue'));
@@ -223,7 +223,7 @@ test("if a threads extends an already existing pending-event, it will trigger th
     const thread2 = scenario(null, function* () {
         yield bp.request("Y", () => delay(100));
         const extend = yield bp.extend("A");
-        expect(extend.value).toBe('requestedValue');
+        expect(extend.payload).toBe('requestedValue');
         
         expect(thread1Progressed).toBe(false);
         done();

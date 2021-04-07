@@ -22,11 +22,12 @@ test("a trigger is a request, that is only selected if another thread is waiting
     testScenarios((enable) => {
         enable(waitingThread());
         enable(requestingThread());
-    }, ()=> {
+    }, ({log})=> {
         expect(hasAdvancedFirstTrigger).toBe(true);
         expect(hasAdvancedSecondTrigger).toBe(false);
     });
 });
+
 
 
 test("a trigger is a request, that can be blocked.", () => {

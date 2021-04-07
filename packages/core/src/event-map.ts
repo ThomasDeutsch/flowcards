@@ -62,6 +62,11 @@ export class EventMap<T>  {
         }
     }
 
+    public update(eventId: EventId, callbackFn: (value: T | undefined) => T): EventMap<T> {
+        const value = this.get(eventId);
+        return this.set(eventId, callbackFn(value));
+    }
+
     public getExactMatchAndUnkeyedMatch(event: EventId): T[] | undefined {
         const noKeyResult = this.noKey.get(event.name)
         if(event.key === undefined) {

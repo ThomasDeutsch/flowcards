@@ -71,7 +71,7 @@ test("enable will return the current thread waits", () => {
 
     testScenarios((enable) => {
         threadState = enable(thread());
-        expect(threadState?.bids?.askFor.has('A')).toBe(true);
+        expect(threadState?.bids.askFor?.has('A')).toBe(true);
     });
 });
 
@@ -148,8 +148,8 @@ test("enable will return the current pending events and a pending function", (do
         enableReturn = enable(thread1());
     }, ({event}) => {
         if(event('A').isPending && event('B').isPending) {
-            expect(enableReturn.bids?.request?.has('A')).toBeFalsy();
-            expect(enableReturn.bids?.request?.has('B')).toBeFalsy();
+            expect(enableReturn.bids?.request?.has('A')).toBeTruthy();
+            expect(enableReturn.bids?.request?.has('B')).toBeTruthy();
             done();
         }
     });
@@ -171,7 +171,7 @@ test("enable will return the current requesting events ( blocked and pending inc
         enable(thread2());
     }, ({event}) => {
         if(event('A').isPending) {
-            expect(enableReturn.bids?.request?.has('A')).toBeFalsy();
+            expect(enableReturn.bids?.request?.has('A')).toBeTruthy();
             expect(enableReturn.bids?.request?.has('B')).toBeTruthy();
             done();
         }
