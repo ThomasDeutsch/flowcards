@@ -168,7 +168,7 @@ export class UpdateLoop {
         this._testResults.set(this._currentActionId, [...results, {type: 'action-validation', message: check, action: action}]);        
     }
 
-    private _setupContext(): ScenariosContext {
+    private _runLoop(): ScenariosContext {
         if(this._replay) {
             this._runContextTests();
             if(this._replay?.breakpoints?.has(this._currentActionId)) this._replay.isPaused = true;
@@ -220,12 +220,14 @@ export class UpdateLoop {
                 this._logger.logAction(action);
                 reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }
-            if(reactionCheck !== ReactionCheck.OK && this._replay) {
-                this._pauseReplay(action, actionCheck);
-                return this._getContext(); 
+            if(reactionCheck !== ReactionCheck.OK) {
+                console.warn('BThreadReactionError: ', reactionCheck, action);
+                if(this._replay) {
+                    this._pauseReplay(action, actionCheck);
+                    return this._getContext(); 
+                }
             }
-         } while (reactionCheck !== ReactionCheck.OK);
-
+         } while (reactionCheck !== ReactionCheck.OK); // TODO: is this needed? What should happen if a ReactionCheck is not OK? 
          this._currentActionId++;
          return this.runScaffolding();
     }
@@ -241,7 +243,7 @@ export class UpdateLoop {
         this._scaffold(this._currentActionId);
         this._allPlacedBids = allPlacedBids(this._bThreadBids);
         //this._logger.logPendingEventIds(this._allPlacedBids.pending);
-        return this._setupContext();
+        return this._runLoop();
     }
 
     public startReplay(replay: Replay): ScenariosContext {
