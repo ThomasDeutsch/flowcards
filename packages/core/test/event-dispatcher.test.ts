@@ -83,13 +83,12 @@ test("waitFor-bids can not be dispatched", () => {
     });
 });
 
-//TODO:  SOMEHOW THIS IS NOT WORKING
     //TODO: Teste den fall, dass 2x eine UI-Action gefeuert wurde, diese aber nur 1x ausgeführt wurden durfte -> eine warnung wird ausgegeben.
     //TODO: Teste den fall, dass eine request-action, eine ui-action gleichzeitig in der update-loop vorhanden sind.
 test("multiple dispatches are batched", (done) => {
     const thread1 = scenario(null, function* (this: BThreadContext) {
-        yield [bp.request("asyncRequest", () => delay(100)), bp.askFor("X"), bp.askFor("A")];
-        yield [bp.request("asyncRequest", () => delay(100)), bp.askFor("Y"), bp.askFor("A")];
+        yield [bp.request("asyncRequest1", () => delay(100)), bp.askFor("X"), bp.askFor("B")];
+        yield [bp.request("asyncRequest2", () => delay(100)), bp.askFor("X"), bp.askFor("Z")];
     });
 
     const [{event}] = testScenarios((enable) => {
