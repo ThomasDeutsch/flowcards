@@ -1,9 +1,9 @@
 import { EventMap, EventId, toEventId } from './event-map';
-import { ValidateCB } from './validation';
 import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
-import { AnyAction, RequestedAction } from '.';
+import { AnyAction } from '.';
+import { combinedIsValidCB, ValidateCB } from './validation';
 
 
 export enum BidType {
@@ -23,8 +23,6 @@ export interface Bid {
     eventId: EventId;
     payload?: any;
     validateCB?: ValidateCB;
-    schema?: any;
-    error?: unknown;
 }
 
 export interface PlacedBid extends Bid {
@@ -133,7 +131,7 @@ export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBid
         const requestingBidForEvent = [...context.bids].reverse().find(bid => {
             if(!isRequestingBid(bid)) return false;
             if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
-            if(context.validatedBy && context.validatedBy.some(vb => vb.validateCB!(bid.payload, [vb.schema]) !== true)) return false;
+            if(context.validatedBy && context.validatedBy.some(vb => vb.validateCB!(bid.payload) !== true)) return false;
             return true;
         });
         if(requestingBidForEvent) requestingBids.push(requestingBidForEvent as PlacedRequestingBid)
@@ -149,14 +147,14 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
     return matchingBids.length > 0 ? matchingBids : undefined;
 }
 
-export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId, withPayload?: AnyAction | PlacedBid): PlacedBid | undefined {
+export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {
     const bidContext = allPlacedBids.get(eventId);
     if(!bidContext || bidContext.blockedBy || bidContext.pendingBy) return undefined
     return bidContext.bids.reverse().find(bid => {
+        if(bid === undefined || bidContext === undefined) return false;
         if(bid.type !== BidType.askFor) return false;
-        if(bidContext.validatedBy && bidContext.validatedBy.some(vb => vb.validateCB!(bid.payload, [bid.schema]) !== true)) return false;
-        if(withPayload !== undefined && bid.validateCB !== undefined && bid.validateCB(withPayload.payload) !== true) return false;
-        return true;
+        if(bidContext.blockedBy || bidContext.pendingBy) return false; //TODO: gibt es auch in der combinedIsValidCB.... wie bringe ich diese zusammen?
+        return actionOrBid ? combinedIsValidCB(bid, bidContext)(actionOrBid.payload).isValid : true;
     });
 }
 
@@ -187,21 +185,19 @@ export function trigger(event: string | EventId, payload?: unknown): Bid {
     };
 }
 
-export function askFor(event: string | EventId, validateCB?: ValidateCB, schema?: Record<any, any>): Bid {
+export function askFor(event: string | EventId, validateCB?: ValidateCB): Bid {
     return { 
         type: BidType.askFor,
         eventId: toEventId(event), 
-        validateCB: validateCB,
-        schema: schema
+        validateCB: validateCB
     };
 }
 
-export function waitFor(event: string | EventId, validateCB?: ValidateCB, schema?: Record<any, any>): Bid {
+export function waitFor(event: string | EventId, validateCB?: ValidateCB): Bid {
     return { 
         type: BidType.waitFor,
         eventId: toEventId(event), 
-        validateCB: validateCB,
-        schema: schema
+        validateCB: validateCB
     };
 }
 
@@ -212,28 +208,25 @@ export function onPending(event: string | EventId): Bid {
     };
 }
 
-export function block(event: string | EventId, error?: unknown): Bid {
+export function block(event: string | EventId): Bid {
     return { 
         type: BidType.block,
-        eventId: toEventId(event),
-        error: error
+        eventId: toEventId(event)
     };
 }
 
-export function extend(event: string | EventId, validateCB?: ValidateCB, schema?: Record<any, any>): Bid {
+export function extend(event: string | EventId, validateCB?: ValidateCB): Bid {
     return { 
         type: BidType.extend,
         eventId: toEventId(event), 
-        validateCB: validateCB,
-        schema: schema
+        validateCB: validateCB
     };
 }
 
-export function validate(event: string | EventId, validateCB: ValidateCB, schema?: Record<any, any>): Bid {
+export function validate(event: string | EventId, validateCB: ValidateCB): Bid {
     return { 
         type: BidType.validate,
         eventId: toEventId(event), 
-        validateCB: validateCB,
-        schema: schema
+        validateCB: validateCB
     };
 }

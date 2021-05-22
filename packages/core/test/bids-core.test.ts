@@ -166,7 +166,7 @@ test("When there are multiple requests with the same event-name, the request wit
     });
 
     const receiveThread = scenario(null, function* () {
-        const bid = yield bp.askFor("A");
+        const bid = yield bp.waitFor("A");
         receivedValue = bid.payload
     })
 
@@ -307,7 +307,7 @@ test("a wait without a key will react to keyed events with the same name", () =>
     });
 
     const waitingThread = scenario(null, function*() {
-        yield bp.askFor('A');
+        yield bp.waitFor('A');
         waitProgressed = true;
     });
 
@@ -362,6 +362,37 @@ test("with multiple requests for the same eventId, highest priority request is s
     }, () => {
         expect(lowerPrioRequestProgressed).toBe(true);
         expect(higherPrioRequestProgressed).toBe(false);
+
+    });
+});
+
+
+
+test("with multiple askFor for the same eventId, highest priority request is selected - that is also valid", () => {
+    let lowerPrioProgressed = false;
+    let higherPrioProgressed = false;
+
+    const askingThreadLow = scenario({id: 'thread1'}, function*() {
+        yield bp.askFor('eventA', (pl) => pl > 10);
+        lowerPrioProgressed = true;
+    });
+
+    const askingThreadHigh = scenario({id: 'thread2'}, function*() {
+        yield bp.askFor('eventA', (pl) => pl < 10);
+        higherPrioProgressed = true;
+    });
+
+    const requestingThread = scenario({id: 'thread3'}, function*() {
+        yield bp.request('eventA', 11);
+    }); 
+
+    testScenarios((enable) => {
+        enable(askingThreadLow());
+        enable(askingThreadHigh());
+        enable(requestingThread());
+    }, () => {
+        expect(lowerPrioProgressed).toBe(true);
+        expect(higherPrioProgressed).toBe(false);
 
     });
 });

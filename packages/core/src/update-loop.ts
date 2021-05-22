@@ -8,14 +8,14 @@ import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, adva
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
 import { allPlacedBids, AllPlacedBids, AnyAction, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
-import { UIActionCheck, ReactionCheck, getValidateCheck, ValidateCheck, validateAskedFor } from './validation';
+import { UIActionCheck, ReactionCheck, validateAskedFor, ValidateCB, combinedIsValidCB } from './validation';
 import { isThenable } from './utils';
 
 
 export interface EventInfo {
     lastUpdate: number;
     dispatch?: (payload?: any) => void;
-    validate: ValidateCheck;
+    validate: (payload?: any) => {isValid: boolean, details?: unknown};
     value?: unknown;
     history: unknown[];
     isPending: boolean;
@@ -94,10 +94,10 @@ export class UpdateLoop {
         const bidContext = this._allPlacedBids.get(eventId);
         const cachedEvent = this._getCachedEvent(eventId);
         const newEventInfo: EventInfo = eventInfo || {} as EventInfo;
-        const validateCheck = getValidateCheck(askForBid, bidContext);
+        const validateCheck = combinedIsValidCB(askForBid, bidContext);
         newEventInfo.lastUpdate = this._currentActionId - 1,
         newEventInfo.dispatch = askForBid ? (payload: any) => {
-            validateCheck(payload) && this._uiActionCB(askForBid, payload);
+            validateCheck(payload).isValid && this._uiActionCB(askForBid, payload);
         } : undefined;
         newEventInfo.validate = validateCheck;
         newEventInfo.value = eventInfo?.value || cachedEvent?.value,
@@ -173,7 +173,7 @@ export class UpdateLoop {
             if(this._replay?.breakpoints?.has(this._currentActionId)) this._replay.isPaused = true;
             if(this._replay?.isPaused === true) return this._getContext();
         }
-        
+
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
         do {
@@ -181,10 +181,10 @@ export class UpdateLoop {
                 || this._getQueuedAction() 
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
             if(maybeAction === undefined) return this._getContext();
-            const actionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
-            if(actionCheck !== UIActionCheck.OK) {
+            const uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
+            if(uiActionCheck !== UIActionCheck.OK) {
                 if(this._replay) { 
-                    this._pauseReplay(maybeAction, actionCheck);
+                    this._pauseReplay(maybeAction, uiActionCheck);
                     return this._getContext(); 
                 }
                 continue;
@@ -223,7 +223,7 @@ export class UpdateLoop {
             if(reactionCheck !== ReactionCheck.OK) {
                 console.warn('BThreadReactionError: ', reactionCheck, action);
                 if(this._replay) {
-                    this._pauseReplay(action, actionCheck);
+                    this._pauseReplay(action, uiActionCheck);
                     return this._getContext(); 
                 }
             }

@@ -5,7 +5,7 @@ import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
 import { AllPlacedBids, unblockEventId } from '.';
-import { checkPayload, ReactionCheck } from './validation';
+import { combinedIsValidCB, ReactionCheck } from './validation';
 
 
 export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId, payload: unknown): PlacedBid[] | undefined {
@@ -13,9 +13,14 @@ export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[
     if(matchingBids === undefined) return undefined;
     const progressingBids: PlacedBid[] = [];
     matchingBids.forEach(bid => {
-        if(allPlacedBids.get(bid.eventId)?.blockedBy) return;
-        if(checkPayload(bid, payload) !== true) return;
-        progressingBids.push(bid);
+        if(bid.validateCB === undefined) {
+            progressingBids.push(bid);
+            return undefined;
+        }
+        const result = bid.validateCB(payload);
+        if(typeof result === 'object' && result.isValid || result === true) {
+            progressingBids.push(bid);
+        }
     });
     return progressingBids.length === 0 ? undefined : progressingBids;
 }
@@ -37,7 +42,9 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThre
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.pop()!; // get bid with highest priority
         if(allPlacedBids.get(extendBid.eventId)?.blockedBy) continue;
-        if(checkPayload(extendBid, extendedAction.payload) !== true) continue;
+        const bidContext = allPlacedBids.get!(extendBid.eventId)!;
+        bidContext!.pendingBy = undefined;
+        if(combinedIsValidCB(extendBid, bidContext)(extendedAction.payload).isValid !== true) continue
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
         const extendContext = extendingBThread.progressExtend(extendedAction);

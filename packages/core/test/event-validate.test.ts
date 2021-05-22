@@ -10,8 +10,8 @@ test("the validate function will show the validation result for an askFor", () =
     testScenarios((enable) => {
         enable(waitingThread());
     }, ({event}) => {
-        expect(event({name: 'A'}).validate(1)).not.toBe(true);
-        expect(event({name: 'A'}).validate(1001)).toBe(true);
+        expect(event({name: 'A'}).validate(1).isValid).not.toBe(true);
+        expect(event({name: 'A'}).validate(1001).isValid).toBe(true);
     });
 });
 
@@ -27,11 +27,11 @@ test("a validation will include the keyed events.", () => {
         enable(asking1());
         enable(asking2());
     }, ({event}) => {
-        expect(event({name: 'A', key: 1}).validate(1)).not.toBe(true);
-        expect(event({name: 'A', key: 1}).validate(101)).not.toBe(true);
-        expect(event({name: 'A', key: 1}).validate(1001)).toBe(true);
-        expect(event({name: 'A', key: 2}).validate(1)).toBe(false);
-        expect(event({name: 'A', key: 2}).validate(101)).toBe(true);
-        expect(event({name: 'A', key: 2}).validate(1001)).toBe(true);
+        expect(event({name: 'A', key: 1}).validate(1).isValid).not.toBe(true);
+        expect(event({name: 'A', key: 1}).validate(101).isValid).not.toBe(true);
+        expect(event({name: 'A', key: 1}).validate(1001).isValid).toBe(true);
+        expect(event({name: 'A', key: 2}).validate(1).isValid).toBe(false);
+        expect(event({name: 'A', key: 2}).validate(101).isValid).toBe(true);
+        expect(event({name: 'A', key: 2}).validate(1001).isValid).toBe(true);
     });
 });
