@@ -54,7 +54,6 @@ test("an extend is not applied, if the guard returns false.", () => {
 
     const threadC = scenario(null, function* () {
         yield bp.extend("A", (pl: number) => {
-            console.log('payload: ##########: ', pl);
             return {isValid: pl !== 1000}
         });
         extendAdvanced = true;

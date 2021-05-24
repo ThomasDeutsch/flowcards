@@ -5,7 +5,7 @@ import { EventMap, EventId } from './event-map';
 import { CachedItem } from './event-cache';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
 import { AllPlacedBids, unblockEventId } from '.';
-import { combinedIsValidCB, ReactionCheck } from './validation';
+import { askForValidationExplainCB, combinedIsValid, ReactionCheck } from './validation';
 
 
 export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId, payload: unknown): PlacedBid[] | undefined {
@@ -44,7 +44,7 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThre
         if(allPlacedBids.get(extendBid.eventId)?.blockedBy) continue;
         const bidContext = allPlacedBids.get!(extendBid.eventId)!;
         bidContext!.pendingBy = undefined;
-        if(combinedIsValidCB(extendBid, bidContext)(extendedAction.payload).isValid !== true) continue
+        if(combinedIsValid(extendBid, bidContext, extendedAction.payload) !== true) continue
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
         const extendContext = extendingBThread.progressExtend(extendedAction);

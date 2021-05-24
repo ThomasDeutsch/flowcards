@@ -34,14 +34,18 @@ function getResultDetails(result: PayloadValidationReturn<unknown>): unknown | u
     return (typeof result === 'object' ? result.details : undefined)
 }
 
-export type ValidationItem<T> = {type: 'blocked' | 'pending' | 'noBid' | 'payloadValidation', details: T}
+export type ValidationItem<T> = {type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation', details: T}
 export type CombinedValidationCB<T> = (payload?: any) => {isValid: boolean, passed: ValidationItem<T>[], failed: ValidationItem<T>[]}
 
-export function combinedIsValidCB(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<unknown> {
-    // TODO: add passing and failing details to result!
-    //       also include the 3 extra cases - no match, isBlocked, pending
+export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, payload?: unknown): boolean {
+    if(bid === undefined || bidContext === undefined) return false;
+    const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
+    return [bid.payloadValidationCB, ...validations].filter(notUndefined).every(validationCB => isValidReturn(validationCB(payload)))
+}
+
+export function askForValidationExplainCB(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<unknown> {
     if(bid === undefined || bidContext === undefined) return (payload?: any) => ({
-        isValid: false, passed: [], failed: [{type: 'noBid', details: 'no current bid for this event'}]
+        isValid: false, passed: [], failed: [{type: 'noAskForBid', details: 'event is not asked for'}]
     });
     return (payload) => {
         const failed: ValidationItem<unknown>[] = [];
@@ -52,8 +56,8 @@ export function combinedIsValidCB(bid?: PlacedBid, bidContext?: PlacedBidContext
         if (bidContext.pendingBy) {
             failed.push({type: 'pending', details: `event is pending by BThread: ${bidContext.pendingBy}`})
         }
-        const validation = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
-        [bid.payloadValidationCB, ...validation].filter(notUndefined).map(validationCB => {
+        const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
+        [bid.payloadValidationCB, ...validations].filter(notUndefined).map(validationCB => {
             const result = validationCB(payload);
             if(isValidReturn(result)) {
                 passed.push({type: 'payloadValidation', details: getResultDetails(result)})

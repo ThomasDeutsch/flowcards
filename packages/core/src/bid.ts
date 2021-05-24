@@ -3,7 +3,7 @@ import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
 import { AnyAction } from '.';
-import { combinedIsValidCB, PayloadValidationCB } from './validation';
+import { combinedIsValid, askForValidationExplainCB, PayloadValidationCB } from './validation';
 
 
 export enum BidType {
@@ -126,17 +126,27 @@ export function toBidsByType(bThreadBids: BThreadBids): BidsByType {
 
 export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
     const requestingBids: PlacedRequestingBid[] = []
-    allPlacedBids.forEach((eventId, context) => {
-        if(context.blockedBy || context.pendingBy) return;
-        const requestingBidForEvent = [...context.bids].reverse().find(bid => {
+    allPlacedBids.forEach((eventId, bidContext) => {
+        if(bidContext.blockedBy || bidContext.pendingBy) return;
+        const requestingBidForEvent = [...bidContext.bids].reverse().find(bid => {
             if(!isRequestingBid(bid)) return false;
             if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
-            if(context.validatedBy && context.validatedBy.some(vb => vb.payloadValidationCB!(bid.payload) !== true)) return false;
-            return true;
+            return combinedIsValid(bid, bidContext, bid.payload);
         });
         if(requestingBidForEvent) requestingBids.push(requestingBidForEvent as PlacedRequestingBid)
     });
     return requestingBids.length > 0 ? requestingBids : undefined;
+}
+
+export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {
+    const bidContext = allPlacedBids.get(eventId);
+    if(!bidContext || bidContext.blockedBy || bidContext.pendingBy) return undefined
+    return bidContext.bids.reverse().find(bid => {
+        if(bid === undefined || bidContext === undefined) return false;
+        if(bid.type !== BidType.askFor) return false;
+        if(bidContext.blockedBy || bidContext.pendingBy) return false;
+        return actionOrBid ? combinedIsValid(bid, bidContext, actionOrBid.payload) : true;
+    });
 }
 
 export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId): PlacedBid[] | undefined {
@@ -147,16 +157,7 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
     return matchingBids.length > 0 ? matchingBids : undefined;
 }
 
-export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {
-    const bidContext = allPlacedBids.get(eventId);
-    if(!bidContext || bidContext.blockedBy || bidContext.pendingBy) return undefined
-    return bidContext.bids.reverse().find(bid => {
-        if(bid === undefined || bidContext === undefined) return false;
-        if(bid.type !== BidType.askFor) return false;
-        if(bidContext.blockedBy || bidContext.pendingBy) return false;
-        return actionOrBid ? combinedIsValidCB(bid, bidContext)(actionOrBid.payload).isValid : true;
-    });
-}
+
 
 
 // bids user-API --------------------------------------------------------------------

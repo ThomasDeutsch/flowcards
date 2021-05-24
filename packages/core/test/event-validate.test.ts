@@ -2,6 +2,45 @@ import * as bp from "../src/bid";
 import { testScenarios } from './testutils';
 import { scenario } from '../src/scenario';
 
+
+test("a validate bid will add validation to an existing bid", () => {
+    const askingThread = scenario(null, function* () {
+        yield bp.askFor({name: 'A'});
+    })
+
+    const validatingThread = scenario(null, function* () {
+        yield bp.validate({name: 'A'}, (val) => val > 1000);
+    })
+
+    testScenarios((enable) => {
+        enable(askingThread());
+        enable(validatingThread());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1).isValid).not.toBe(true);
+        expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
+        expect(event({name: 'A'}).validate(1).failed[0].type).toBe('payloadValidation');
+    });
+});
+
+test("a validate bid will add validation to an existing bid (request)", () => {
+    const askingThread = scenario(null, function* () {
+        yield bp.request({name: 'A'}, 1);
+    })
+
+    const validatingThread = scenario(null, function* () {
+        yield bp.validate({name: 'A'}, (val) => val > 1000);
+    })
+
+    testScenarios((enable) => {
+        enable(askingThread());
+        enable(validatingThread());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1).isValid).not.toBe(true);
+        expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
+        expect(event({name: 'A'}).validate(1).failed[0].type).toBe('noAskForBid');
+    });
+});
+
 test("the validate function will show the validation result for an askFor", () => {
     const waitingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'}, (val) => val > 1000);
@@ -35,3 +74,5 @@ test("a validation will include the keyed events.", () => {
         expect(event({name: 'A', key: 2}).validate(1001).isValid).toBe(true);
     });
 });
+
+
