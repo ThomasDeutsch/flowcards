@@ -287,7 +287,6 @@ export class BThread {
         if(extendContext.promise) {
             const pendingBid: PendingBid = toExtendPendingBid(extendedAction, extendContext, this.id);
             this._pendingExtends.set(extendedAction.eventId, pendingBid);
-            if(extendedAction.eventId.name === 'Azz') console.log('add pending: ', pendingBid)
             this._addPendingBid(pendingBid);
         }
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);

@@ -71,3 +71,27 @@ test("an extend is not applied, if the guard returns false.", () => {
     });
 });
 
+test("bids can be extended by a validation-bid  ", () => {
+    let requestAdvanced = false;
+    let waitBAdvanced = false;
+
+    const threadA = scenario(null, function* () {
+        yield bp.askFor("A");
+        requestAdvanced = true;
+    });
+
+    const threadB = scenario(null, function* () {
+        yield bp.validate("A", (pl: number) => pl !== 1000);
+        waitBAdvanced = true;
+    })
+
+    const [context] = testScenarios((enable) => {
+        enable(threadA());
+        enable(threadB());
+    }, () => {
+        expect(requestAdvanced).toBe(false);
+        expect(waitBAdvanced).toBe(false);
+    });
+    expect(context.event('A').validate(1000).isValid).toBe(false);
+    expect(context.event('A').validate(1).isValid).toBe(true);
+});

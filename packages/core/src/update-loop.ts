@@ -8,7 +8,7 @@ import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, adva
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
 import { allPlacedBids, AllPlacedBids, AnyAction, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
-import { UIActionCheck, ReactionCheck, validateAskedFor, ValidateCB, combinedIsValidCB } from './validation';
+import { UIActionCheck, ReactionCheck, validateAskedFor, combinedIsValidCB } from './validation';
 import { isThenable } from './utils';
 
 
@@ -176,21 +176,27 @@ export class UpdateLoop {
 
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
+        let uiActionCheck = UIActionCheck.OK;
         do {
             const maybeAction = this._getNextReplayAction(this._currentActionId)
                 || this._getQueuedAction() 
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
             if(maybeAction === undefined) return this._getContext();
-            const uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
-            if(uiActionCheck !== UIActionCheck.OK) {
-                if(this._replay) { 
-                    this._pauseReplay(maybeAction, uiActionCheck);
-                    return this._getContext(); 
-                }
-                continue;
-            }
             const action = toActionWithId(maybeAction, this._currentActionId);
-            if (action.type === ActionType.requested) {
+
+            if (action.type === ActionType.ui) {
+                uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
+                if(uiActionCheck !== UIActionCheck.OK) {
+                    if(this._replay) { 
+                        this._pauseReplay(maybeAction, uiActionCheck);
+                        return this._getContext(); 
+                    }
+                    continue;
+                }
+                this._logger.logAction(action);
+                advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
+            }
+            else if (action.type === ActionType.requested) {
                 if(this._replay && action.payload === undefined) {
                     const currentBid = this._bThreadMap.get(action.bThreadId)?.getCurrentBid(action.bidType, action.eventId);
                     action.payload = currentBid?.payload;
@@ -212,22 +218,19 @@ export class UpdateLoop {
                 this._logger.logAction(action);
                 reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
             }
-            else if (action.type === ActionType.ui) {
-                this._logger.logAction(action);
-                advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
-            }
             else if (action.type === ActionType.rejected) {
                 this._logger.logAction(action);
                 reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }
             if(reactionCheck !== ReactionCheck.OK) {
                 console.warn('BThreadReactionError: ', reactionCheck, action);
+                //TODO: log this warning?
                 if(this._replay) {
                     this._pauseReplay(action, uiActionCheck);
                     return this._getContext(); 
                 }
             }
-         } while (reactionCheck !== ReactionCheck.OK); // TODO: is this needed? What should happen if a ReactionCheck is not OK? 
+         } while (reactionCheck !== ReactionCheck.OK);
          this._currentActionId++;
          return this.runScaffolding();
     }

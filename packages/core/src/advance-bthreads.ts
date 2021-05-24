@@ -13,11 +13,11 @@ export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[
     if(matchingBids === undefined) return undefined;
     const progressingBids: PlacedBid[] = [];
     matchingBids.forEach(bid => {
-        if(bid.validateCB === undefined) {
+        if(bid.payloadValidationCB === undefined) {
             progressingBids.push(bid);
             return undefined;
         }
-        const result = bid.validateCB(payload);
+        const result = bid.payloadValidationCB(payload);
         if(typeof result === 'object' && result.isValid || result === true) {
             progressingBids.push(bid);
         }

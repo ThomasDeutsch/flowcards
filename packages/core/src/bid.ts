@@ -3,7 +3,7 @@ import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
 import { AnyAction } from '.';
-import { combinedIsValidCB, ValidateCB } from './validation';
+import { combinedIsValidCB, PayloadValidationCB } from './validation';
 
 
 export enum BidType {
@@ -22,7 +22,7 @@ export interface Bid {
     type: BidType;
     eventId: EventId;
     payload?: any;
-    validateCB?: ValidateCB;
+    payloadValidationCB?: PayloadValidationCB;
 }
 
 export interface PlacedBid extends Bid {
@@ -131,7 +131,7 @@ export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBid
         const requestingBidForEvent = [...context.bids].reverse().find(bid => {
             if(!isRequestingBid(bid)) return false;
             if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
-            if(context.validatedBy && context.validatedBy.some(vb => vb.validateCB!(bid.payload) !== true)) return false;
+            if(context.validatedBy && context.validatedBy.some(vb => vb.payloadValidationCB!(bid.payload) !== true)) return false;
             return true;
         });
         if(requestingBidForEvent) requestingBids.push(requestingBidForEvent as PlacedRequestingBid)
@@ -153,7 +153,7 @@ export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: E
     return bidContext.bids.reverse().find(bid => {
         if(bid === undefined || bidContext === undefined) return false;
         if(bid.type !== BidType.askFor) return false;
-        if(bidContext.blockedBy || bidContext.pendingBy) return false; //TODO: gibt es auch in der combinedIsValidCB.... wie bringe ich diese zusammen?
+        if(bidContext.blockedBy || bidContext.pendingBy) return false;
         return actionOrBid ? combinedIsValidCB(bid, bidContext)(actionOrBid.payload).isValid : true;
     });
 }
@@ -185,19 +185,19 @@ export function trigger(event: string | EventId, payload?: unknown): Bid {
     };
 }
 
-export function askFor(event: string | EventId, validateCB?: ValidateCB): Bid {
+export function askFor(event: string | EventId, payloadValidationCB?: PayloadValidationCB): Bid {
     return { 
         type: BidType.askFor,
         eventId: toEventId(event), 
-        validateCB: validateCB
+        payloadValidationCB: payloadValidationCB
     };
 }
 
-export function waitFor(event: string | EventId, validateCB?: ValidateCB): Bid {
+export function waitFor(event: string | EventId, payloadValidationCB?: PayloadValidationCB): Bid {
     return { 
         type: BidType.waitFor,
         eventId: toEventId(event), 
-        validateCB: validateCB
+        payloadValidationCB: payloadValidationCB
     };
 }
 
@@ -215,18 +215,18 @@ export function block(event: string | EventId): Bid {
     };
 }
 
-export function extend(event: string | EventId, validateCB?: ValidateCB): Bid {
+export function extend(event: string | EventId, payloadValidationCB?: PayloadValidationCB): Bid {
     return { 
         type: BidType.extend,
         eventId: toEventId(event), 
-        validateCB: validateCB
+        payloadValidationCB: payloadValidationCB
     };
 }
 
-export function validate(event: string | EventId, validateCB: ValidateCB): Bid {
+export function validate(event: string | EventId, payloadValidationCB: PayloadValidationCB): Bid {
     return { 
         type: BidType.validate,
         eventId: toEventId(event), 
-        validateCB: validateCB
+        payloadValidationCB: payloadValidationCB
     };
 }
