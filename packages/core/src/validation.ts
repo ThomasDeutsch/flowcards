@@ -23,7 +23,7 @@ export enum ReactionCheck {
 }
 
 export type PayloadValidationReturn<T> = boolean | {isValid: boolean, details?: T};
-export type PayloadValidationCB<T = void> = (payload?: any) => PayloadValidationReturn<T>;
+export type PayloadValidationCB<T> = (payload?: any) => PayloadValidationReturn<T>;
 
 
 function isValidReturn(val: PayloadValidationReturn<unknown>): boolean {

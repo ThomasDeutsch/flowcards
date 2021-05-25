@@ -4,6 +4,7 @@ import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
 import { AnyAction } from '.';
 import { combinedIsValid, askForValidationExplainCB, PayloadValidationCB } from './validation';
+import { CachedItem } from './event-cache';
 
 
 export enum BidType {
@@ -22,7 +23,7 @@ export interface Bid {
     type: BidType;
     eventId: EventId;
     payload?: any;
-    payloadValidationCB?: PayloadValidationCB;
+    payloadValidationCB?: PayloadValidationCB<unknown>;
 }
 
 export interface PlacedBid extends Bid {
@@ -158,11 +159,12 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
 }
 
 
+type cachedItemFn = (cachedItem: CachedItem<unknown>) => void;
 
 
 // bids user-API --------------------------------------------------------------------
 
-export function request(event: string | EventId, payload?: unknown): Bid {
+export function request(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
     return {
         type: BidType.request,
         eventId: toEventId(event), 
@@ -170,7 +172,7 @@ export function request(event: string | EventId, payload?: unknown): Bid {
     };
 }
 
-export function set(event: string | EventId, payload?: unknown): Bid {
+export function set(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
     return {
         type: BidType.set,
         eventId: toEventId(event), 
@@ -186,7 +188,7 @@ export function trigger(event: string | EventId, payload?: unknown): Bid {
     };
 }
 
-export function askFor(event: string | EventId, payloadValidationCB?: PayloadValidationCB): Bid {
+export function askFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
     return { 
         type: BidType.askFor,
         eventId: toEventId(event), 
@@ -194,7 +196,7 @@ export function askFor(event: string | EventId, payloadValidationCB?: PayloadVal
     };
 }
 
-export function waitFor(event: string | EventId, payloadValidationCB?: PayloadValidationCB): Bid {
+export function waitFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
     return { 
         type: BidType.waitFor,
         eventId: toEventId(event), 
@@ -216,7 +218,7 @@ export function block(event: string | EventId): Bid {
     };
 }
 
-export function extend(event: string | EventId, payloadValidationCB?: PayloadValidationCB): Bid {
+export function extend<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
     return { 
         type: BidType.extend,
         eventId: toEventId(event), 
@@ -224,7 +226,7 @@ export function extend(event: string | EventId, payloadValidationCB?: PayloadVal
     };
 }
 
-export function validate(event: string | EventId, payloadValidationCB: PayloadValidationCB): Bid {
+export function validate<T = string>(event: string | EventId, payloadValidationCB: PayloadValidationCB<T>): Bid {
     return { 
         type: BidType.validate,
         eventId: toEventId(event), 

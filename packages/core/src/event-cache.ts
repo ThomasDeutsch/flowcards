@@ -16,17 +16,17 @@ export function setEventCache<T>(eventCache: EventMap<CachedItem<unknown>>, even
         payloadClone = payload;
     }
     if(val === undefined) {
-        const newVal = {
+        const newCachedVal = {
             history: [payloadClone],
             value: payloadClone
         }
-        eventCache.set(event, newVal);
+        eventCache.set(event, newCachedVal);
     } else {
-        const newVal = {
+        const newCachedVal = {
             history: [...val.history, payloadClone],
             value: payloadClone
         }
-        eventCache.set(event, newVal);
+        eventCache.set(event, newCachedVal);
     }
     
 }
