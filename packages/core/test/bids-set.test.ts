@@ -135,7 +135,8 @@ test("if an event cache has keyed values, they will not be replaced by a request
 test("a resolved set will update the value", (done) => {
     const thread1 = scenario({id: 't1'}, function* () {
         yield bp.set("A", "FIRST...");
-        yield bp.set("A", delay(2000, "...SECOND"));
+        yield bp.request('C', delay(10, 'x'))
+        yield bp.set("A", delay(200, "...SECOND"));
     });
 
     testScenarios((enable) => {

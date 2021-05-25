@@ -100,8 +100,8 @@ export class UpdateLoop {
             validateCheck(payload).isValid && this._uiActionCB(askForBid, payload);
         } : undefined;
         newEventInfo.validate = validateCheck;
-        newEventInfo.value = eventInfo?.value || cachedEvent?.value,
-        newEventInfo.history = eventInfo?.history || cachedEvent?.history || [],
+        newEventInfo.value = cachedEvent?.value,
+        newEventInfo.history = cachedEvent?.history || [],
         newEventInfo.isPending = !!bidContext?.pendingBy,
         newEventInfo.isBlocked = !!bidContext?.blockedBy
         this._eventInfos.set(eventId, newEventInfo);
