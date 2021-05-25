@@ -244,7 +244,6 @@ export class UpdateLoop {
         if(this._replay && this._replay.actions.length === 0) delete this._replay;
         this._scaffold(this._currentActionId);
         this._allPlacedBids = allPlacedBids(this._bThreadBids);
-        //this._logger.logPendingEventIds(this._allPlacedBids.pending);
         return this._runLoop();
     }
 

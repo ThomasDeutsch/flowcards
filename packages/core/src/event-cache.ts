@@ -9,13 +9,24 @@ export type GetCachedEvent = (eventId: EventId) => CachedItem<unknown> | undefin
 
 export function setEventCache<T>(eventCache: EventMap<CachedItem<unknown>>, event: EventId, payload?: T): void {
     const val = eventCache.get(event);
-    if(val === undefined) {
-        eventCache.set(event, {
-            value: payload, 
-            history: [payload]
-        });
+    let payloadClone: any = {};
+    if(payload && (typeof payload === 'object')) {
+        Object.assign(payloadClone, payload);
     } else {
-        val.value = payload;
-        val.history.push(payload);
+        payloadClone = payload;
     }
+    if(val === undefined) {
+        const newVal = {
+            history: [payloadClone],
+            value: payloadClone
+        }
+        eventCache.set(event, newVal);
+    } else {
+        const newVal = {
+            history: [...val.history, payloadClone],
+            value: payloadClone
+        }
+        eventCache.set(event, newVal);
+    }
+    
 }

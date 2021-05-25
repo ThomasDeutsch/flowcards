@@ -130,3 +130,21 @@ test("if an event cache has keyed values, they will not be replaced by a request
         expect(event({name: 'A', key: 2})?.value).toEqual('a value for 2');
     });
 });
+
+
+test("a resolved set will update the value", (done) => {
+    const thread1 = scenario({id: 't1'}, function* () {
+        yield bp.set("A", "FIRST...");
+        yield bp.set("A", delay(2000, "...SECOND"));
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event, log, thread})=> {
+        console.log(log.actions);
+        if(thread.get('t1')!.isCompleted) {
+            expect(event('A')?.value).toEqual('...SECOND');
+            done();
+        }
+    });
+});

@@ -188,7 +188,7 @@ export class BThread {
     }
 
     private _progressBid(bid: PlacedBid, payload: any, eventCache?: EventMap<CachedItem<any>>): void {
-        if(bid.type === BidType.set && eventCache) {
+        if((bid.type === BidType.set) && eventCache) {
             setEventCache(eventCache, bid.eventId, payload);
         }
         this._processNextBid(bid, payload);
