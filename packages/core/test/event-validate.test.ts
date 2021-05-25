@@ -75,4 +75,27 @@ test("a validation will include the keyed events.", () => {
     });
 });
 
+test("a validation can include datails", () => {
+    const askingThread = scenario(null, function* () {
+        yield bp.askFor({name: 'A'});
+    })
 
+    const validatingThread = scenario(null, function* () {
+        yield bp.validate({name: 'A'}, (val) => ({
+            isValid: val > 1000,
+            details: 'min: 1000'
+        }));
+    })
+
+    testScenarios((enable) => {
+        enable(askingThread());
+        enable(validatingThread());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1).isValid).not.toBe(true);
+        expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
+        expect(event({name: 'A'}).validate(1).failed[0].type).toBe('payloadValidation');
+        expect(event({name: 'A'}).validate(1).failed[0].type).toBe('payloadValidation');
+        expect(event({name: 'A'}).validate(1).failed[0].details).toBe('min: 1000');
+
+    });
+});
