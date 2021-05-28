@@ -51,10 +51,10 @@ export function askForValidationExplainCB(bid?: PlacedBid, bidContext?: PlacedBi
         const failed: ValidationItem<unknown>[] = [];
         const passed: ValidationItem<unknown>[] = [];
         if (bidContext.blockedBy) {
-            failed.push({type: 'blocked', details: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId).join(', ')}`})
+            failed.push({type: 'blocked', details: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId.name).join(', ')}`})
         }
         if (bidContext.pendingBy) {
-            failed.push({type: 'pending', details: `event is pending by BThread: ${bidContext.pendingBy}`})
+            failed.push({type: 'pending', details: `event is pending by BThread: ${bidContext.pendingBy.name}${bidContext.pendingBy.key ? '-' + bidContext.pendingBy.key: ''}`})
         }
         const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
         [bid.payloadValidationCB, ...validations].filter(notUndefined).map(validationCB => {

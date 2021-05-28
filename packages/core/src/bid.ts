@@ -3,7 +3,7 @@ import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
 import { AnyAction } from '.';
-import { combinedIsValid, askForValidationExplainCB, PayloadValidationCB } from './validation';
+import { combinedIsValid, PayloadValidationCB } from './validation';
 import { CachedItem } from './event-cache';
 
 
@@ -32,7 +32,7 @@ export interface PlacedBid extends Bid {
 
 export interface ProgressedBid extends PlacedBid {
     cancelledBids?: EventMap<PlacedBid>;
-    resolve?: (payload: any) => void;
+    resolve?: (payload?: unknown) => void;
 }
 
 export type RequestingBidType = BidType.request | BidType.set | BidType.trigger;
@@ -141,11 +141,10 @@ export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBid
 
 export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {
     const bidContext = allPlacedBids.get(eventId);
-    if(!bidContext || bidContext.blockedBy || bidContext.pendingBy) return undefined
+    if(!bidContext) return undefined
     return bidContext.bids.reverse().find(bid => {
         if(bid === undefined || bidContext === undefined) return false;
         if(bid.type !== BidType.askFor) return false;
-        if(bidContext.blockedBy || bidContext.pendingBy) return false;
         return actionOrBid ? combinedIsValid(bid, bidContext, actionOrBid.payload) : true;
     });
 }
@@ -160,7 +159,6 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
 
 
 type cachedItemFn = (cachedItem: CachedItem<unknown>) => void;
-
 
 // bids user-API --------------------------------------------------------------------
 

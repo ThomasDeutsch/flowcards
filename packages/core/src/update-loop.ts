@@ -96,7 +96,7 @@ export class UpdateLoop {
         const newEventInfo: EventInfo = eventInfo || {} as EventInfo;
         const validateCheck = askForValidationExplainCB(askForBid, bidContext);
         newEventInfo.lastUpdate = this._currentActionId - 1,
-        newEventInfo.dispatch = askForBid ? (payload: any) => {
+        newEventInfo.dispatch = (askForBid && bidContext && !bidContext.pendingBy && !bidContext.blockedBy) ? (payload: any) => {
             validateCheck(payload).isValid && this._uiActionCB(askForBid, payload);
         } : undefined;
         newEventInfo.validate = validateCheck;

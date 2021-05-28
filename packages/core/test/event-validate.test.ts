@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { testScenarios } from './testutils';
+import { delay, testScenarios } from './testutils';
 import { scenario } from '../src/scenario';
 
 
@@ -97,5 +97,44 @@ test("a validation can include datails", () => {
         expect(event({name: 'A'}).validate(1).failed[0].type).toBe('payloadValidation');
         expect(event({name: 'A'}).validate(1).failed[0].details).toBe('min: 1000');
 
+    });
+});
+
+
+test("a blocked askFor Event will return a validation with the blocking bThread Id", () => {
+    const askingThread = scenario(null, function* () {
+        yield bp.askFor({name: 'A'});
+    })
+
+    const blockingThead = scenario(null, function* () {
+        yield bp.block({name: 'A'});
+    })
+
+    testScenarios((enable) => {
+        enable(askingThread());
+        enable(blockingThead());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
+        expect(event({name: 'A'}).validate(1).failed[0].type).toBe('blocked');
+    });
+});
+
+
+test("a pending askFor Event will return a validation with the pending bThread Id", () => {
+    const askingThread = scenario(null, function* () {
+        yield bp.askFor({name: 'A'});
+    })
+
+    const blockingThead = scenario({id: 'requestingBThread'}, function* () {
+        yield bp.request({name: 'A'}, delay(5000, 'val'));
+    })
+
+    testScenarios((enable) => {
+        enable(askingThread());
+        enable(blockingThead());
+    }, ({event}) => {
+        expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
+        expect(event({name: 'A'}).validate(1).failed[0].type).toBe('pending');
+        expect(event({name: 'A'}).validate(1).failed[0].details).toBe('event is pending by BThread: requestingBThread');
     });
 });
