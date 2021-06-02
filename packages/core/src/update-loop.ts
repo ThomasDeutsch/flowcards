@@ -141,7 +141,7 @@ export class UpdateLoop {
 
     private _runContextTests(): void {
         if(this._replay === undefined) return;
-        const tests = this._replay.tests?.[this._currentActionId];
+        const tests = this._replay.tests?.get(this._currentActionId);
         if(tests === undefined || tests.length === 0) return;
         const results: ContextTestResult[] = [];
         tests.forEach(scenarioTest => {
