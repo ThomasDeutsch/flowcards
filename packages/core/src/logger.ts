@@ -58,11 +58,11 @@ export class Logger {
 
     public logAction(action: AnyActionWithId): void {
         const a = {...action}
-        if(action.type === ActionType.resolved) {
+        if(action.type === "resolveAction") {
             const requestAction = this._actions[action.requestActionId] as RequestedAction;
             requestAction.resolveActionId = action.id;
         }
-        if(action.type === ActionType.requested) {
+        if(action.type === "requestedAction") {
             a.payload = undefined; // do not save the promise object 
         }
         this._actions.push(a);

@@ -37,7 +37,7 @@ function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap: BThre
 
 
 function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThread>, extendedAction: AnyAction): boolean {
-    const matchingExtendBids = getMatchingBids(allPlacedBids, [BidType.extend], extendedAction.eventId);
+    const matchingExtendBids = getMatchingBids(allPlacedBids, ["extendBid"], extendedAction.eventId);
     if(matchingExtendBids === undefined) return false;
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.pop()!; // get bid with highest priority
@@ -50,7 +50,7 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThre
         const extendContext = extendingBThread.progressExtend(extendedAction);
         if(!extendContext) continue;
         if(extendContext.promise) {
-            progressWaitingBThreads(allPlacedBids, bThreadMap, [BidType.onPending], extendedAction);
+            progressWaitingBThreads(allPlacedBids, bThreadMap, ["onPendingBid"], extendedAction);
             return true;
         } else {
             extendedAction.payload = extendContext.value;
@@ -65,21 +65,21 @@ export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, eventCac
     if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
     if(action.resolveActionId === 'pending') {
         requestingBThread.addPendingRequest(action);
-        progressWaitingBThreads(allPlacedBids, bThreadMap, [BidType.onPending], action);
+        progressWaitingBThreads(allPlacedBids, bThreadMap, ["onPendingBid"], action);
         return ReactionCheck.OK;
     }
     const extendContext = extendAction(allPlacedBids, bThreadMap, action);
     if(extendContext) return ReactionCheck.OK;
     const checkedProgress = requestingBThread.progressRequested(eventCache, action.bidType, action.eventId, action.payload);
     if(checkedProgress !== ReactionCheck.OK) return checkedProgress;
-    progressWaitingBThreads(allPlacedBids, bThreadMap, [BidType.askFor, BidType.waitFor], action);
+    progressWaitingBThreads(allPlacedBids, bThreadMap, ["askForBid", "waitForBid"], action);
     return ReactionCheck.OK;
 }
 
 
 export function advanceUiAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: UIAction): void {
     if(extendAction(allPlacedBids, bThreadMap, action)) return;
-    progressWaitingBThreads(allPlacedBids, bThreadMap, [BidType.askFor, BidType.waitFor], action);
+    progressWaitingBThreads(allPlacedBids, bThreadMap, ["askForBid", "waitForBid"], action);
     return;
 }
 
@@ -95,7 +95,7 @@ export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, even
         requestingBThread.progressRequested(eventCache, action.extendedRequestingBid.type, action.eventId, action.payload);
     }
     unblockEventId(allPlacedBids, action.eventId);
-    progressWaitingBThreads(allPlacedBids, bThreadMap, [BidType.askFor, BidType.waitFor], action);
+    progressWaitingBThreads(allPlacedBids, bThreadMap, ['askForBid', 'waitForBid'], action);
     return ReactionCheck.OK;
 }
 
@@ -107,7 +107,7 @@ export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache
     if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
     const resolveCheck = requestingBThread.progressResolved(eventCache, action); 
     if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
-    progressWaitingBThreads(allPlacedBids, bThreadMap, [BidType.askFor, BidType.waitFor], action);
+    progressWaitingBThreads(allPlacedBids, bThreadMap, ['askForBid', 'waitForBid'], action);
     return ReactionCheck.OK;
 }
 

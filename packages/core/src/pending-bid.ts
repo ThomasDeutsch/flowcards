@@ -12,9 +12,9 @@ export interface PendingBid extends PlacedBid {
 export function toExtendPendingBid(extendedAction: AnyAction, extendContext: ExtendContext, extendingBThreadId: BThreadId): PendingBid {
     return {
         actionId: extendedAction.id!,
-        type: BidType.extend,
+        type: 'extendBid',
         bThreadId: extendingBThreadId,
-        extendedRequestingBid: (extendedAction.type === ActionType.requested) ? {
+        extendedRequestingBid: (extendedAction.type === 'requestedAction') ? {
             type: extendedAction.bidType,
             eventId: extendedAction.eventId,
             bThreadId: extendedAction.bThreadId

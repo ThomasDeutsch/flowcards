@@ -74,8 +74,8 @@ export function askForValidationExplainCB(bid?: PlacedBid, bidContext?: PlacedBi
 }
 
 export function validateAskedFor(action: AnyAction, allPlacedBids: AllPlacedBids): UIActionCheck {
-    if((action.type === ActionType.requested && action.bidType !== BidType.trigger) || 
-      (action.type !== ActionType.ui)) return UIActionCheck.OK;
+    if((action.type === "requestedAction" && action.bidType !== 'triggerBid') || 
+      (action.type !== "uiAction")) return UIActionCheck.OK;
     const bidContext = allPlacedBids.get(action.eventId);
     if(bidContext === undefined) return UIActionCheck.NoPlacedBidForEventId;
     if(bidContext.blockedBy) return UIActionCheck.EventIsBlocked;

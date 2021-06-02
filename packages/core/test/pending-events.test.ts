@@ -127,8 +127,8 @@ test("If one pending-event is resolved, other promises for this event are cancel
         enable(thread2());
     }, ({log, thread}) => {
         if(thread.get('t2')?.isCompleted) {
-            expect(log.actions.filter(a => a.type === ActionType.requested).length).toBe(3);
-            expect(log.actions.filter(a => a.type === ActionType.resolved).length).toBe(2); // 3 requested, but only 2 resolved because 1 got cancelled
+            expect(log.actions.filter(a => a.type === 'requestedAction').length).toBe(3);
+            expect(log.actions.filter(a => a.type === 'resolveAction').length).toBe(2); // 3 requested, but only 2 resolved because 1 got cancelled
             done();
         }
     });

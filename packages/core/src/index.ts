@@ -18,14 +18,14 @@ export * from './extend-context';
 export type UpdateCallback = (newContext: ScenariosContext) => void;
 export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
 export type DispatchCommand = (command: Replay | ContextChange) => void;
-export type ContextTestResult = {isValid: boolean, details: unknown}
-export type ContextTest = (context: ScenariosContext) => ContextTestResult;
+export type ContextTestResult = {isValid: boolean, details: unknown};
+export type ContextTest = (context: ScenariosContext) => ContextTestResult | void;
 
 export interface Replay {
     type: 'replay';
     actions: AnyActionWithId[];
     breakpoints?: Set<number>;
-    tests?: Map<number, ContextTest[]>;
+    tests?: Record<number, ContextTest[]>;
 }
 
 export interface ContextChange {

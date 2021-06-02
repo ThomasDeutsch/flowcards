@@ -7,17 +7,7 @@ import { combinedIsValid, PayloadValidationCB } from './validation';
 import { CachedItem } from './event-cache';
 
 
-export enum BidType {
-    request = "request",
-    askFor = "askFor",
-    block = "block",
-    extend = "extend",
-    trigger = "trigger",
-    set = "set",
-    waitFor = "waitFor",
-    onPending = "onPending",
-    validate = "validate"
-}
+export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" | "setBid" |  "waitForBid" | "onPendingBid" | "validateBid";
 
 export interface Bid {
     type: BidType;
@@ -35,7 +25,7 @@ export interface ProgressedBid extends PlacedBid {
     resolve?: (payload?: unknown) => void;
 }
 
-export type RequestingBidType = BidType.request | BidType.set | BidType.trigger;
+export type RequestingBidType = 'requestBid' | "setBid" | 'triggerBid';
 
 export interface PlacedRequestingBid extends PlacedBid {
     type: RequestingBidType;
@@ -79,7 +69,7 @@ export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
             pendingEvents.set(bid.eventId, bid.bThreadId);
         });
         placedBids.forEach(bid => { 
-            if(bid.type === BidType.block) {
+            if(bid.type === 'blockBid') {
                 blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid]);
             }
         });
@@ -87,13 +77,13 @@ export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
     const bidsByEventId: AllPlacedBids = new EventMap();
     allBThreadBids.forEach(({placedBids}) => {
         placedBids.forEach(bid => {
-            if(bid.type === BidType.block) return;
+            if(bid.type === 'blockBid') return;
             const placedBidsForEventId = bidsByEventId.get(bid.eventId) || {
                 blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)), 
                 pendingBy: pendingEvents.get(bid.eventId),
                 bids: []
             } as PlacedBidContext
-            if(bid.type === BidType.validate) {
+            if(bid.type === 'validateBid') {
                 placedBidsForEventId.validatedBy = [...(placedBidsForEventId.validatedBy || []), bid];
             } else {
                 placedBidsForEventId.bids.push(bid);
@@ -110,7 +100,7 @@ export function unblockEventId(allPlacedBids: AllPlacedBids, eventId: EventId): 
 }
 
 function isRequestingBid(bid: Bid): boolean {
-    return (bid.type === BidType.request) || (bid.type === BidType.set) || (bid.type === BidType.trigger)
+    return (bid.type === 'requestBid') || (bid.type === 'setBid') || (bid.type === 'triggerBid')
 }
 
 export type BidsByType = Partial<Record<BidType, EventMap<PlacedBid>>>;
@@ -131,7 +121,7 @@ export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBid
         if(bidContext.blockedBy || bidContext.pendingBy) return;
         const requestingBidForEvent = [...bidContext.bids].reverse().find(bid => {
             if(!isRequestingBid(bid)) return false;
-            if(bid.type === BidType.trigger && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
+            if(bid.type === 'triggerBid' && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
             return combinedIsValid(bid, bidContext, bid.payload);
         });
         if(requestingBidForEvent) requestingBids.push(requestingBidForEvent as PlacedRequestingBid)
@@ -144,7 +134,7 @@ export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: E
     if(!bidContext) return undefined
     return bidContext.bids.reverse().find(bid => {
         if(bid === undefined || bidContext === undefined) return false;
-        if(bid.type !== BidType.askFor) return false;
+        if(bid.type !== "askForBid") return false;
         return actionOrBid ? combinedIsValid(bid, bidContext, actionOrBid.payload) : true;
     });
 }
@@ -164,7 +154,7 @@ type cachedItemFn = (cachedItem: CachedItem<unknown>) => void;
 
 export function request(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
     return {
-        type: BidType.request,
+        type: 'requestBid',
         eventId: toEventId(event), 
         payload: payload
     };
@@ -172,7 +162,7 @@ export function request(event: string | EventId, payload?: unknown | cachedItemF
 
 export function set(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
     return {
-        type: BidType.set,
+        type: 'setBid',
         eventId: toEventId(event), 
         payload: payload
     };
@@ -180,7 +170,7 @@ export function set(event: string | EventId, payload?: unknown | cachedItemFn): 
 
 export function trigger(event: string | EventId, payload?: unknown): Bid {
     return {
-        type: BidType.trigger,
+        type: 'triggerBid',
         eventId: toEventId(event), 
         payload: payload
     };
@@ -188,7 +178,7 @@ export function trigger(event: string | EventId, payload?: unknown): Bid {
 
 export function askFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
     return { 
-        type: BidType.askFor,
+        type: 'askForBid',
         eventId: toEventId(event), 
         payloadValidationCB: payloadValidationCB
     };
@@ -196,7 +186,7 @@ export function askFor<T = string>(event: string | EventId, payloadValidationCB?
 
 export function waitFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
     return { 
-        type: BidType.waitFor,
+        type: 'waitForBid',
         eventId: toEventId(event), 
         payloadValidationCB: payloadValidationCB
     };
@@ -204,21 +194,21 @@ export function waitFor<T = string>(event: string | EventId, payloadValidationCB
 
 export function onPending(event: string | EventId): Bid {
     return { 
-        type: BidType.onPending,
+        type: 'onPendingBid',
         eventId: toEventId(event)
     };
 }
 
 export function block(event: string | EventId): Bid {
     return { 
-        type: BidType.block,
+        type: 'blockBid',
         eventId: toEventId(event)
     };
 }
 
 export function extend<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
     return { 
-        type: BidType.extend,
+        type: 'extendBid',
         eventId: toEventId(event), 
         payloadValidationCB: payloadValidationCB
     };
@@ -226,7 +216,7 @@ export function extend<T = string>(event: string | EventId, payloadValidationCB?
 
 export function validate<T = string>(event: string | EventId, payloadValidationCB: PayloadValidationCB<T>): Bid {
     return { 
-        type: BidType.validate,
+        type: 'validateBid',
         eventId: toEventId(event), 
         payloadValidationCB: payloadValidationCB
     };

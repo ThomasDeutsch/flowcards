@@ -17,7 +17,7 @@ test("a set is a request, that will be cached. ", (done) => {
     });
     dispatch({
         type: 'replay',
-        actions: [{id: 0, type: ActionType.requested, eventId: {name: 'count'}, bidType: BidType.set, bThreadId: {name: 'flow1'}, payload: 'replayPayload'}]
+        actions: [{id: 0, type: 'requestedAction', eventId: {name: 'count'}, bidType: 'setBid', bThreadId: {name: 'flow1'}, payload: 'replayPayload'}]
     })
 });
 
@@ -37,8 +37,8 @@ test("a set is a request, that will be cached.2 ", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, eventId: {name: 'count'}, payload: 'replayPayload1'},
-            {id: 1, type: ActionType.ui, eventId: {name: 'count'}, payload: 'replayPayload2'}
+            {id: 0, type: 'uiAction', eventId: {name: 'count'}, payload: 'replayPayload1'},
+            {id: 1, type: 'uiAction', eventId: {name: 'count'}, payload: 'replayPayload2'}
         ]
     })
 });
@@ -54,8 +54,7 @@ test("a set is a request, that will be cachedd.23j ", (done) => {
     const [_, dispatch] = testScenarios((enable) => {
         enable(thread1());
     },({debug}) => {
-        if(debug.testResults.size) {
-            expect(debug.testResults.size).toBe(1);
+        if(debug.testResults) {
             expect(debug.isPaused).toBe(true);
             expect(debug.inReplay).toBe(false);
             expect(debug.currentActionId).toBe(2);
@@ -65,8 +64,8 @@ test("a set is a request, that will be cachedd.23j ", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, eventId: {name: 'count1'}, payload: 'replayPayload1'},
-            {id: 2, type: ActionType.ui, eventId: {name: 'count2'}, payload: 'replayPayload3'}
+            {id: 0, type: "uiAction", eventId: {name: 'count1'}, payload: 'replayPayload1'},
+            {id: 2, type: 'uiAction', eventId: {name: 'count3'}, payload: 'replayPayload3'}
         ]
     })
 });
@@ -84,24 +83,23 @@ test("a test-hook can be added to the replay.", (done) => {
     const [_, dispatch] = testScenarios((enable) => {
         enable(thread1());
     },({debug}) => {
-        if(debug.testResults.size) {
-            expect(debug.testResults.size).toBe(1);
+        if(debug.testResults) {
             expect(debug.isPaused).toBe(true);
             expect(debug.inReplay).toBe(false);
             expect(debug.currentActionId).toBe(2);
-            expect(debug.testResults.get(1)).toBe(2);
+            expect(debug.testResults[2].length).toBe(0);
             done();
         }
     });
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.ui, eventId: {name: 'count1'}, payload: 'replayPayload1'},
-            {id: 2, type: ActionType.ui, eventId: {name: 'count2'}, payload: 'replayPayload3'}
+            {id: 0, type: 'uiAction', eventId: {name: 'count1'}, payload: 'replayPayload1'},
+            {id: 2, type: 'uiAction', eventId: {name: 'count2'}, payload: 'replayPayload3'}
         ],
-        // tests: {
-        //     1: [(context) => ({isValid: context.event('count2').isPending, details: ''})]
-        // }
+        tests: {
+            2: [(context) => expect(context.log.actions.length).toBe(2)]
+        }
     })
 });
 
@@ -121,8 +119,8 @@ test("replay async event", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.requested, eventId: {name: 'count'}, bidType: BidType.set, bThreadId: {name: 'flow1'}, payload: () => delay(200, 1)},
-            {id: 1, type: ActionType.resolved, eventId: {name: 'count'}, requestActionId: 0, pendingDuration: 20, resolvedRequestingBid: {eventId: {name: 'count'}, bThreadId: {name: 'flow1'}, type: BidType.set}, payload: 'replayPayload'}]
+            {id: 0, type: 'requestedAction', eventId: {name: 'count'}, bidType: 'setBid', bThreadId: {name: 'flow1'}, payload: () => delay(200, 1)},
+            {id: 1, type: 'resolveAction', eventId: {name: 'count'}, requestActionId: 0, pendingDuration: 20, resolvedRequestingBid: {eventId: {name: 'count'}, bThreadId: {name: 'flow1'}, type: 'setBid'}, payload: 'replayPayload'}]
     })
 });
 
@@ -142,7 +140,7 @@ test("replay async event, with mocked delay", (done) => {
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.requested, eventId: {name: 'count'}, bidType: BidType.set, bThreadId: {name: 'flow1'}, payload: () => delay(200, 'replayPayload')}]
+            {id: 0, type: 'requestedAction', eventId: {name: 'count'}, bidType: 'setBid', bThreadId: {name: 'flow1'}, payload: () => delay(200, 'replayPayload')}]
     })
 });
 
@@ -165,7 +163,7 @@ test("when a replay action for an async request is missing, the current bid payl
     dispatch({
         type: 'replay',
         actions: [
-            {id: 0, type: ActionType.requested, eventId: {name: 'count'}, bidType: BidType.set, bThreadId: {name: 'flow1'}}]
+            {id: 0, type: 'requestedAction', eventId: {name: 'count'}, bidType: 'setBid', bThreadId: {name: 'flow1'}}]
     })
 });
 
@@ -191,10 +189,10 @@ test("breakpoints", (done) => {
         type: 'replay',
         breakpoints: new Set([2]),
         actions: [
-            {id: 0, type: ActionType.requested, eventId: {name: 'event1'}, bidType: BidType.request, bThreadId: {name: 'flow1'}},
-            {id: 1, type: ActionType.requested, eventId: {name: 'event2'}, bidType: BidType.request, bThreadId: {name: 'flow1'}},
-            {id: 2, type: ActionType.requested, eventId: {name: 'event3'}, bidType: BidType.request, bThreadId: {name: 'flow1'}},
-            {id: 3, type: ActionType.requested, eventId: {name: 'event4'}, bidType: BidType.request, bThreadId: {name: 'flow1'}}
+            {id: 0, type: 'requestedAction', eventId: {name: 'event1'}, bidType: 'requestBid', bThreadId: {name: 'flow1'}},
+            {id: 1, type: 'requestedAction', eventId: {name: 'event2'}, bidType: 'requestBid', bThreadId: {name: 'flow1'}},
+            {id: 2, type: 'requestedAction', eventId: {name: 'event3'}, bidType: 'requestBid', bThreadId: {name: 'flow1'}},
+            {id: 3, type: 'requestedAction', eventId: {name: 'event4'}, bidType: 'requestBid', bThreadId: {name: 'flow1'}}
         ]
     })
 });

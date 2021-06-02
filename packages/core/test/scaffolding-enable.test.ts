@@ -71,7 +71,7 @@ test("enable will return the current thread waits", () => {
 
     testScenarios((enable) => {
         threadState = enable(thread());
-        expect(threadState?.bids.askFor?.has('A')).toBe(true);
+        expect(threadState?.bids.askForBid?.has('A')).toBe(true);
     });
 });
 
@@ -85,7 +85,7 @@ test("enable will return the current thread blocks", () => {
 
     testScenarios((enable) => {
         threadState = enable(thread());
-        expect(threadState?.bids?.block?.has('A')).toBe(true);
+        expect(threadState?.bids?.blockBid?.has('A')).toBe(true);
     });
 });
 
@@ -148,8 +148,8 @@ test("enable will return the current pending events and a pending function", (do
         enableReturn = enable(thread1());
     }, ({event}) => {
         if(event('A').isPending && event('B').isPending) {
-            expect(enableReturn.bids?.request?.has('A')).toBeTruthy();
-            expect(enableReturn.bids?.request?.has('B')).toBeTruthy();
+            expect(enableReturn.bids?.requestBid?.has('A')).toBeTruthy();
+            expect(enableReturn.bids?.requestBid?.has('B')).toBeTruthy();
             done();
         }
     });
@@ -171,8 +171,8 @@ test("enable will return the current requesting events ( blocked and pending inc
         enable(thread2());
     }, ({event}) => {
         if(event('A').isPending) {
-            expect(enableReturn.bids?.request?.has('A')).toBeTruthy();
-            expect(enableReturn.bids?.request?.has('B')).toBeTruthy();
+            expect(enableReturn.bids?.requestBid?.has('A')).toBeTruthy();
+            expect(enableReturn.bids?.requestBid?.has('B')).toBeTruthy();
             done();
         }
     });
@@ -203,7 +203,7 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
 
     testScenarios((enable) => {
         const enableReturn = enable(thread1());
-        if(enableReturn.bids?.request?.has('B') || enableReturn.bids?.askFor?.has('FIN')) {
+        if(enableReturn.bids?.requestBid?.has('B') || enableReturn.bids?.askForBid?.has('FIN')) {
             enable(thread2());
             enable(thread3());
         }
@@ -211,8 +211,8 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
         if(event('B').dispatch) {
             expect(thread1init).toBe(1);
             expect(thread2init).toBe(2);
-            expect(thread.get('thread3')?.bids?.askFor?.has('C')).toBeTruthy();
-            expect(thread.get('thread2')?.bids?.askFor?.has('B')).toBeTruthy();
+            expect(thread.get('thread3')?.bids?.askForBid?.has('C')).toBeTruthy();
+            expect(thread.get('thread2')?.bids?.askForBid?.has('B')).toBeTruthy();
             done();
         }
     });

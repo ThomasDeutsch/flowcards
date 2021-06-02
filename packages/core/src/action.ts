@@ -1,31 +1,20 @@
 import { RequestingBidType, PlacedBid, PlacedRequestingBid} from './bid';
 import { EventId } from './event-map';
 import { BThreadId } from './bthread';
-import { PendingBid } from './pending-bid';
+import { PendingBid } from './pending-Bid';
 
 
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
-
-
-export enum ActionType {
-    requested = "requested",
-    ui = "ui",
-    resolved = "resolved",
-    rejected = "rejected",
-    resolvedExtend = "resolvedExtend"
-}
-
+export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
 interface Action {
     type: ActionType;
     eventId: EventId;
     payload?: unknown;
 }
-
-
 export interface UIAction extends Action {
     id?: number,
-    type: ActionType.ui,
+    type: "uiAction",
     eventId: EventId;
     payload?: unknown;
 }
@@ -33,7 +22,7 @@ export interface UIAction extends Action {
 
 export interface RequestedAction extends Action {
     id: number,
-    type: ActionType.requested,
+    type: "requestedAction",
     bidType: RequestingBidType;
     bThreadId: BThreadId;
     resolveActionId?: number | 'pending';
@@ -42,7 +31,7 @@ export interface RequestedAction extends Action {
 
 export interface ResolveAction extends Action {
     id?: number,
-    type: ActionType.resolved | ActionType.rejected;
+    type: "resolveAction" | "rejectedAction";
     requestActionId: number;
     pendingDuration: number;
     resolvedRequestingBid: PlacedBid;
@@ -51,7 +40,7 @@ export interface ResolveAction extends Action {
 
 export interface ResolveExtendAction extends Action {
     id?: number,
-    type: ActionType.resolvedExtend;
+    type: "resolvedExtendAction";
     pendingDuration: number;
     requestActionId: number;
     extendingBThreadId: BThreadId;
@@ -74,7 +63,7 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
     if(bid === undefined) return undefined;
     return {
         id: currentActionId,
-        type: ActionType.requested,
+        type: "requestedAction",
         bidType: bid.type as RequestingBidType,
         bThreadId: bid.bThreadId,
         eventId: bid.eventId,
@@ -83,7 +72,7 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
 }
 
 
-export function getResolveAction(responseType: ActionType.rejected | ActionType.resolved, pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveAction {
+export function getResolveAction(responseType: "rejectedAction" | "resolveAction", pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveAction {
     return {
         id: undefined,
         type: responseType,
@@ -99,7 +88,7 @@ export function getResolveAction(responseType: ActionType.rejected | ActionType.
 export function getResolveExtendAction(pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveExtendAction {
     return {
         id: undefined,
-        type: ActionType.resolvedExtend,
+        type: "resolvedExtendAction",
         eventId: pendingBid.eventId,
         payload: data,
         extendingBThreadId: pendingBid.bThreadId,

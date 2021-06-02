@@ -33,7 +33,7 @@ export interface ScenariosContext {
         currentActionId: number;
         inReplay: boolean;
         isPaused: boolean;
-        testResults: Map<number, any>;  // TODO: replace any with a defined type
+        testResults?: Record<number, any>;  // TODO: replace any with a defined type
     }
 }
 
@@ -41,7 +41,7 @@ export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, AnyActionWithId>;
 export interface CurrentReplay extends Replay {
     isPaused: boolean;
-    testResults: Map<number, any>;
+    testResults: Record<number, any>;
 }
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
 export type UIActionDispatch = (bid: PlacedBid, payload: any) => void;
@@ -58,7 +58,7 @@ export class UpdateLoop {
     private readonly _getCachedEvent: GetCachedEvent = (eventId: EventId) => this._eventCache.get(eventId);
     private readonly _eventInfos= new EventMap<EventInfo>();
     private readonly _uiActionCB: UIActionDispatch;
-    private readonly _testResults = new Map<number, any[]>();
+    private _testResults: Record<number, any[]> | undefined;
     private _replay?: CurrentReplay;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];    
     
@@ -68,7 +68,7 @@ export class UpdateLoop {
         this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._bThreadBids, this._bThreadStateMap, this._getCachedEvent, resolveActionCB, this._logger);
         this._uiActionCB = (bid: PlacedBid, payload: any) => {
             const uiAction: UIAction = {
-                type: ActionType.ui,
+                type: "uiAction",
                 eventId: bid.eventId,
                 payload: payload
             }
@@ -82,7 +82,7 @@ export class UpdateLoop {
         this._bThreadMap.forEach(bThread => bThread.destroy());
         this._bThreadMap.clear();
         this._eventCache.clear();
-        this._testResults.clear();
+        delete this._testResults;
         this._logger.resetLog();
     }
 
@@ -113,7 +113,7 @@ export class UpdateLoop {
         const actions = this._replay.actions;
         if(actions.length > 0 && actions[0].id === actionId) {
             const action = this._replay.actions.shift()!;
-            if(action.type === ActionType.requested && action.payload === GET_VALUE_FROM_BTHREAD) {
+            if(action.type === "requestedAction" && action.payload === GET_VALUE_FROM_BTHREAD) {
                 action.payload = this._bThreadMap.get(action.bThreadId)?.currentBids?.pendingBidMap.get(action.eventId)?.payload;
             }
             return action;
@@ -141,19 +141,24 @@ export class UpdateLoop {
 
     private _runContextTests(): void {
         if(this._replay === undefined) return;
-        const tests = this._replay.tests?.get(this._currentActionId);
+        const tests = this._replay.tests?.[this._currentActionId];
         if(tests === undefined || tests.length === 0) return;
         const results: ContextTestResult[] = [];
         tests.forEach(scenarioTest => {
             try { 
                 const result = scenarioTest(this._getContext());
-                results.push(result)
+                if(result) results.push(result);
             } catch(error) {
                 this._replay!.isPaused = true;
                 results.push({isValid: false, details: error});
+                throw(error);
             }
         });
-        this._testResults.set(this._currentActionId, results);
+        if(results) {
+            if(!this._testResults) this._testResults = {};
+            this._testResults[this._currentActionId] = results;
+        }
+        
     }
 
     private _getQueuedAction(): UIAction | ResolveAction | ResolveExtendAction | undefined {
@@ -162,10 +167,9 @@ export class UpdateLoop {
         return {...action, id: this._currentActionId}
     }
 
-    private _pauseReplay(action: AnyAction, check: UIActionCheck | ReactionCheck) {
+    private _pauseReplay() {
         this._replay!.isPaused = true;
-        const results = this._testResults.get(this._currentActionId) || [];
-        this._testResults.set(this._currentActionId, [...results, {type: 'action-validation', message: check, action: action}]);        
+        this._runContextTests();       
     }
 
     private _runLoop(): ScenariosContext {
@@ -184,11 +188,11 @@ export class UpdateLoop {
             if(maybeAction === undefined) return this._getContext();
             const action = toActionWithId(maybeAction, this._currentActionId);
 
-            if (action.type === ActionType.ui) {
+            if (action.type === "uiAction") {
                 uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
                 if(uiActionCheck !== UIActionCheck.OK) {
                     if(this._replay) { 
-                        this._pauseReplay(maybeAction, uiActionCheck);
+                        this._pauseReplay();
                         return this._getContext(); 
                     }
                     continue;
@@ -196,7 +200,7 @@ export class UpdateLoop {
                 this._logger.logAction(action);
                 advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
             }
-            else if (action.type === ActionType.requested) {
+            else if (action.type === "requestedAction") {
                 if(this._replay && action.payload === undefined) {
                     const currentBid = this._bThreadMap.get(action.bThreadId)?.getCurrentBid(action.bidType, action.eventId);
                     action.payload = currentBid?.payload;
@@ -210,22 +214,22 @@ export class UpdateLoop {
                 this._logger.logAction(action);
                 reactionCheck = advanceRequestedAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
             }
-            else if (action.type === ActionType.resolved) {
+            else if (action.type === "resolveAction") {
                 this._logger.logAction(action);
                 reactionCheck = advanceResolveAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
             }
-            else if (action.type === ActionType.resolvedExtend) {
+            else if (action.type === "resolvedExtendAction") {
                 this._logger.logAction(action);
                 reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
             }
-            else if (action.type === ActionType.rejected) {
+            else if (action.type === "rejectedAction") {
                 this._logger.logAction(action);
                 reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }
             if(reactionCheck !== ReactionCheck.OK) {
                 console.warn('BThreadReactionError: ', reactionCheck, action);
                 if(this._replay) {
-                    this._pauseReplay(action, uiActionCheck);
+                    this._pauseReplay();
                     return this._getContext(); 
                 }
             }
