@@ -73,7 +73,7 @@ test("a set is a request, that will be cachedd.23j ", (done) => {
 
 
 
-test("a set is a request, that will be ,cachedd.23j ", (done) => {
+test("a test-hook can be added to the replay.", (done) => {
     const thread1 = scenario({id: 'flow1'}, function* () {
         const pl1 = yield bp.askFor("count1");
         const pl2 = yield bp.request("count2", 1);
@@ -89,6 +89,7 @@ test("a set is a request, that will be ,cachedd.23j ", (done) => {
             expect(debug.isPaused).toBe(true);
             expect(debug.inReplay).toBe(false);
             expect(debug.currentActionId).toBe(2);
+            expect(debug.testResults.get(1)).toBe(2);
             done();
         }
     });
@@ -98,6 +99,9 @@ test("a set is a request, that will be ,cachedd.23j ", (done) => {
             {id: 0, type: ActionType.ui, eventId: {name: 'count1'}, payload: 'replayPayload1'},
             {id: 2, type: ActionType.ui, eventId: {name: 'count2'}, payload: 'replayPayload3'}
         ],
+        tests: {
+            1: [(context) => ({isValid: context.event('count2').isPending, details: ''})]
+        }
     })
 });
 

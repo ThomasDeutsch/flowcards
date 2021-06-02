@@ -7,7 +7,7 @@ import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { allPlacedBids, AllPlacedBids, AnyAction, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay } from './index';
+import { allPlacedBids, AllPlacedBids, AnyAction, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay, ContextTestResult } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplainCB, CombinedValidationCB } from './validation';
 import { isThenable } from './utils';
 
@@ -141,15 +141,16 @@ export class UpdateLoop {
 
     private _runContextTests(): void {
         if(this._replay === undefined) return;
-        const tests = this._replay.tests?.get(this._currentActionId);
+        const tests = this._replay.tests?.[this._currentActionId];
         if(tests === undefined || tests.length === 0) return;
-        const results: any[] = [];
+        const results: ContextTestResult[] = [];
         tests.forEach(scenarioTest => {
             try { 
-                results.push(scenarioTest(this._getContext()));
+                const result = scenarioTest(this._getContext());
+                results.push(result)
             } catch(error) {
                 this._replay!.isPaused = true;
-                results.push(error);
+                results.push({isValid: false, details: error});
             }
         });
         this._testResults.set(this._currentActionId, results);
@@ -173,7 +174,6 @@ export class UpdateLoop {
             if(this._replay?.breakpoints?.has(this._currentActionId)) this._replay.isPaused = true;
             if(this._replay?.isPaused === true) return this._getContext();
         }
-
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
         let uiActionCheck = UIActionCheck.OK;
