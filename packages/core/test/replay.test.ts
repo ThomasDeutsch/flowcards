@@ -99,9 +99,9 @@ test("a test-hook can be added to the replay.", (done) => {
             {id: 0, type: ActionType.ui, eventId: {name: 'count1'}, payload: 'replayPayload1'},
             {id: 2, type: ActionType.ui, eventId: {name: 'count2'}, payload: 'replayPayload3'}
         ],
-        tests: {
-            1: [(context) => ({isValid: context.event('count2').isPending, details: ''})]
-        }
+        // tests: {
+        //     1: [(context) => ({isValid: context.event('count2').isPending, details: ''})]
+        // }
     })
 });
 
