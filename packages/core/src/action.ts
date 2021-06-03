@@ -35,7 +35,7 @@ export interface ResolveAction extends Action {
     type: "resolveAction" | "rejectedAction";
     requestActionId: number;
     pendingDuration: number;
-    resolvedRequestingBid: {bidType: BidType, bThreadId: BThreadId};
+    resolvedRequestingBid: {type: BidType, bThreadId: BThreadId};
 }
 
 
@@ -81,7 +81,7 @@ export function getResolveAction(responseType: "rejectedAction" | "resolveAction
         payload: data,
         requestActionId: pendingBid.actionId,
         pendingDuration: pendingDuration,
-        resolvedRequestingBid: {bidType: pendingBid.type, bThreadId: pendingBid.bThreadId}
+        resolvedRequestingBid: {type: pendingBid.type, bThreadId: pendingBid.bThreadId}
     }
 }
 
