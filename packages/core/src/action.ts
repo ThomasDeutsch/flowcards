@@ -2,6 +2,7 @@ import { RequestingBidType, PlacedBid, PlacedRequestingBid} from './bid';
 import { EventId } from './event-map';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-Bid';
+import { BidType } from '.';
 
 
 export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
@@ -34,7 +35,7 @@ export interface ResolveAction extends Action {
     type: "resolveAction" | "rejectedAction";
     requestActionId: number;
     pendingDuration: number;
-    resolvedRequestingBid: PlacedBid;
+    resolvedRequestingBid: {bidType: BidType, bThreadId: BThreadId};
 }
 
 
@@ -44,7 +45,7 @@ export interface ResolveExtendAction extends Action {
     pendingDuration: number;
     requestActionId: number;
     extendingBThreadId: BThreadId;
-    extendedRequestingBid?: PlacedBid;
+    extendedRequestingBid?: {type: BidType, bThreadId: BThreadId};
 }
 
 
@@ -80,7 +81,7 @@ export function getResolveAction(responseType: "rejectedAction" | "resolveAction
         payload: data,
         requestActionId: pendingBid.actionId,
         pendingDuration: pendingDuration,
-        resolvedRequestingBid: pendingBid
+        resolvedRequestingBid: {bidType: pendingBid.type, bThreadId: pendingBid.bThreadId}
     }
 }
 

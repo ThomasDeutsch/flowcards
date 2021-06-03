@@ -141,8 +141,7 @@ test("a resolved set will update the value", (done) => {
 
     testScenarios((enable) => {
         enable(thread1());
-    }, ({event, log, scenario})=> {
-        console.log(log.actions);
+    }, ({event, scenario})=> {
         if(scenario.get('t1')!.isCompleted) {
             expect(event('A')?.value).toEqual('...SECOND');
             done();
