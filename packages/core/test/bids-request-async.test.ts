@@ -37,11 +37,11 @@ test("a pending event is different from another pending-event if the name OR key
     testScenarios((enable) => {
         enable(thread2());
         enable(thread1()); 
-    }, ({event, thread}) => {
+    }, ({event, scenario}) => {
         if(event({name: 'A', key: 1}).isPending) {
             expect(event('A').isPending).toBeDefined();
         } else if(event('A').isPending) {
-            expect(thread.get('requestingThreadTwo')?.isCompleted).toBeTruthy();
+            expect(scenario.get('requestingThreadTwo')?.isCompleted).toBeTruthy();
             done();
         }
     });
@@ -58,10 +58,10 @@ test("pending-events with the same name but different keys can be run in paralle
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({event, thread}) => {
+    }, ({event, scenario}) => {
         if(event({name: 'A', key: 1}).isPending && event({name: 'A', key: 2}).isPending) {
-            expect(thread.get('requestingThreadOne')?.isCompleted).toBeFalsy();
-            expect(thread.get('requestingThreadTwo')?.isCompleted).toBeFalsy();
+            expect(scenario.get('requestingThreadOne')?.isCompleted).toBeFalsy();
+            expect(scenario.get('requestingThreadTwo')?.isCompleted).toBeFalsy();
             done();
         }
     });
@@ -100,8 +100,8 @@ test("multiple async-requests can be run sequentially", (done) => {
 
     testScenarios((enable) => {
         enable(flow1());
-    }, (({thread}) => {
-        if(thread.get('flow1')?.isCompleted) {
+    }, (({scenario}) => {
+        if(scenario.get('flow1')?.isCompleted) {
             expect(threadResetCounter).toEqual(0);
             done();
         }
@@ -131,8 +131,8 @@ test("for multiple active promises in one yield, only one resolve will progress 
         enable(thread1());
         enable(thread2());
         enable(thread3());
-    }, ({thread}) => {
-        if(thread.get('requestingThread')?.isCompleted) {
+    }, ({scenario}) => {
+        if(scenario.get('requestingThread')?.isCompleted) {
             expect(progressed2).not.toBe(progressed3);
             done();
         }
@@ -156,9 +156,9 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
         if(t1.pendingBids.has('A')) {
             enable(thread2());
         }
-    }, (({thread}) => {
-        if(thread.get('thread1')?.isCompleted) {
-            expect(thread.get('thread2')?.isCompleted).toBeTruthy();
+    }, (({scenario}) => {
+        if(scenario.get('thread1')?.isCompleted) {
+            expect(scenario.get('thread2')?.isCompleted).toBeTruthy();
             done();
         }
     }));
@@ -180,9 +180,9 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
         if(t1.pendingBids.has('A')) {
             enable(thread2());
         }
-    }, (({thread}) => {
-        if(thread.get('thread1')?.isCompleted) {
-            expect(thread.get('thread2')?.isCompleted).toBeFalsy();
+    }, (({scenario}) => {
+        if(scenario.get('thread1')?.isCompleted) {
+            expect(scenario.get('thread2')?.isCompleted).toBeFalsy();
             done();
         }
     }));
@@ -201,10 +201,10 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({event, thread}) => {
+    }, ({event, scenario}) => {
         if(event('A').isPending) {
             expect(event('B').validate(1).isValid).toBe(false);
-        } else if( thread.get('requestingThread')?.isCompleted) {
+        } else if( scenario.get('requestingThread')?.isCompleted) {
             expect(event('B').validate().isValid).toBe(true);
             done();
         }

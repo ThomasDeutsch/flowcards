@@ -23,7 +23,7 @@ test("when a promise resolves, the cache gets updated", (done) => {
 
     testScenarios((enable) => {
         enable(thread1());
-    }, ({event, log, thread}) => {
+    }, ({event}) => {
         if(event('fin11').dispatch) {
             expect(event('EVENTXXS')?.value).toEqual("resolved value");
             done();
@@ -141,9 +141,9 @@ test("a resolved set will update the value", (done) => {
 
     testScenarios((enable) => {
         enable(thread1());
-    }, ({event, log, thread})=> {
+    }, ({event, log, scenario})=> {
         console.log(log.actions);
-        if(thread.get('t1')!.isCompleted) {
+        if(scenario.get('t1')!.isCompleted) {
             expect(event('A')?.value).toEqual('...SECOND');
             done();
         }

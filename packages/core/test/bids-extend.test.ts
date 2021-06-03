@@ -272,10 +272,10 @@ test("an extend will wait for the pending-event to finish before it extends.", (
     testScenarios((enable) => {
         enable(requestingThread());
         enable(extendingThread());
-    }, ({event, thread}) => {
-        if(thread.get('extendingThread')?.isCompleted) {
+    }, ({event, scenario}) => {
+        if(scenario.get('extendingThread')?.isCompleted) {
             expect(event('A').isPending).toBeTruthy();
-            expect(thread.get('requestingThread')?.isCompleted).toBeFalsy();
+            expect(scenario.get('requestingThread')?.isCompleted).toBeFalsy();
             done();
         }
     });

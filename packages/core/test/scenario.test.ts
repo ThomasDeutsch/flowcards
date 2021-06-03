@@ -49,9 +49,9 @@ test("the bThreadState is returned by the scenarios function", () => {
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2({prop1: 912, prop2: 'test'}));
-    }, ({thread}) => {
-        expect(thread.get('thread1')?.isCompleted).toBeTruthy();
-        expect(thread.get('thread2')?.isCompleted).toBeFalsy();
+    }, ({scenario}) => {
+        expect(scenario.get('thread1')?.isCompleted).toBeTruthy();
+        expect(scenario.get('thread2')?.isCompleted).toBeFalsy();
     });
   });
 
@@ -68,8 +68,8 @@ test("the bThreadState is returned by the scenarios function", () => {
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({thread}) => {
-        expect(thread.get('thread1')?.orderIndex).toBe(0);
-        expect(thread.get('thread2')?.orderIndex).toBe(1);
+    }, ({scenario}) => {
+        expect(scenario.get('thread1')?.orderIndex).toBe(0);
+        expect(scenario.get('thread2')?.orderIndex).toBe(1);
     });
   });

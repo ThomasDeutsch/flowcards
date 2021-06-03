@@ -37,8 +37,8 @@ test("a thread will accept an optional key", () => {
     testScenarios((enable) => {
         enable(thread(undefined), 0);
         enable(threadB(undefined),'foo');
-    }, ({thread}) => {
-        expect(thread.get({name: 'thread2', key: 'foo'})?.id.key).toBe('foo'); // BThreadState will contain the BThreadKey
+    }, ({scenario}) => {
+        expect(scenario.get({name: 'thread2', key: 'foo'})?.id.key).toBe('foo'); // BThreadState will contain the BThreadKey
     });
 
     expect(receivedKeyA).toBe(0); 
@@ -207,12 +207,12 @@ test("a BThread is destroyed, if the flow is not enabled and the destroy-flag is
             enable(thread2());
             enable(thread3());
         }
-    }, ({event, thread}) => {
+    }, ({event, scenario}) => {
         if(event('B').dispatch) {
             expect(thread1init).toBe(1);
             expect(thread2init).toBe(2);
-            expect(thread.get('thread3')?.bids?.askForBid?.has('C')).toBeTruthy();
-            expect(thread.get('thread2')?.bids?.askForBid?.has('B')).toBeTruthy();
+            expect(scenario.get('thread3')?.bids?.askForBid?.has('C')).toBeTruthy();
+            expect(scenario.get('thread2')?.bids?.askForBid?.has('B')).toBeTruthy();
             done();
         }
     });

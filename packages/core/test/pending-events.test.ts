@@ -23,9 +23,9 @@ test("a pending event can not be requested by another thread", (done) => {
     testScenarios((enable) => {
         enable(thread2());
         enable(thread1());
-    }, ({event, thread}) => {
+    }, ({event, scenario}) => {
         expect(event('A').isPending).toBeTruthy();
-        expect(thread.get('thread2')?.isCompleted).toBeFalsy();
+        expect(scenario.get('thread2')?.isCompleted).toBeFalsy();
         done();
     });
 });
@@ -125,8 +125,8 @@ test("If one pending-event is resolved, other promises for this event are cancel
     testScenarios((enable) => {
         enable(threadOne());
         enable(thread2());
-    }, ({log, thread}) => {
-        if(thread.get('t2')?.isCompleted) {
+    }, ({log, scenario}) => {
+        if(scenario.get('t2')?.isCompleted) {
             expect(log.actions.filter(a => a.type === 'requestedAction').length).toBe(3);
             expect(log.actions.filter(a => a.type === 'resolveAction').length).toBe(2); // 3 requested, but only 2 resolved because 1 got cancelled
             done();
@@ -161,8 +161,8 @@ test("rejected pending events will not progress waiting BThreads", done => {
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
-    }, ({thread}) => {
-        if(thread.get({name: 'requestingThread'})?.isCompleted) {
+    }, ({scenario}) => {
+        if(scenario.get({name: 'requestingThread'})?.isCompleted) {
             expect(wasCatched).toBe(true);
             expect(thread1Progressed).toBe(false);
             done(); 

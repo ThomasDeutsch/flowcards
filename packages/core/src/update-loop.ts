@@ -1,4 +1,4 @@
-import { ActionType, GET_VALUE_FROM_BTHREAD, getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyActionWithId, toActionWithId } from './action';
+import { GET_VALUE_FROM_BTHREAD, getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyActionWithId, toActionWithId } from './action';
 import { BThreadBids } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
@@ -7,7 +7,7 @@ import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { allPlacedBids, AllPlacedBids, AnyAction, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay, ContextTestResult } from './index';
+import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, Replay, ContextTestResult } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplainCB, CombinedValidationCB } from './validation';
 import { isThenable } from './utils';
 
@@ -27,8 +27,9 @@ export interface EventInfo {
 
 export interface ScenariosContext {
     event: (eventName: string | EventId) => EventInfo;
-    thread: BThreadMap<BThreadState>;
+    scenario: BThreadMap<BThreadState>;
     log: Logger;
+    bids: AllPlacedBids;
     debug: {
         currentActionId: number;
         inReplay: boolean;
@@ -128,8 +129,9 @@ export class UpdateLoop {
     private _getContext(): ScenariosContext {
         return { 
             event: this._getEventInfo.bind(this),
-            thread: this._bThreadStateMap,
+            scenario: this._bThreadStateMap,
             log: this._logger,
+            bids: this._allPlacedBids,
             debug: {
                 currentActionId: this._currentActionId,
                 inReplay: this._isInReplay(),

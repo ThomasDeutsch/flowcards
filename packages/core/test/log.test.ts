@@ -3,7 +3,7 @@ import { testScenarios } from './testutils';
 import { scenario } from '../src/scenario';
 import { delay } from './testutils';
 import { BThreadContext } from '../src/bthread';
-import { BThreadReactionType, ScaffoldingResultType } from "../src";
+import { ScaffoldingResultType } from "../src";
 
 test("log will contain a list of executed actions (sorted)", () => {
     const flow1 = scenario(
@@ -56,8 +56,8 @@ test("the actions in a log will contain info, if and when the promise got resolv
 
   testScenarios((enable) => {
       enable(thread1());
-  }, ({log, thread}) => {
-    if(thread.get({name: 'thread1'})?.isCompleted) {
+  }, ({log, scenario}) => {
+    if(scenario.get({name: 'thread1'})?.isCompleted) {
       expect(log.actions[1]?.payload).toEqual('value');
       done();
     }
@@ -74,8 +74,8 @@ test("scaffolding results are logged", (done) => {
 
   testScenarios((enable) => {
       enable(thread1());
-  }, ({log, thread}) => {
-    if(thread.get({name: 'thread1'})?.bids.askForBid?.get({name: 'heyho'})) {
+  }, ({log, scenario}) => {
+    if(scenario.get({name: 'thread1'})?.bids.askForBid?.get({name: 'heyho'})) {
       const history = log.bThreadScaffoldingHistory.get('thread1');
       expect(history!.get(0)).toEqual(ScaffoldingResultType.enabled);
       done();
@@ -91,8 +91,8 @@ test("pending events are logged", (done) => {
 
   testScenarios((enable) => {
       enable(thread1());
-  }, ({log, thread}) => {
-    if(thread.get({name: 'thread1'})?.isCompleted) {
+  }, ({log, scenario}) => {
+    if(scenario.get({name: 'thread1'})?.isCompleted) {
       const history = log.bThreadReactionHistory.get('thread1');
       expect(history?.size).toEqual(2);
       done();

@@ -12,8 +12,8 @@ test("a requested event that is not blocked will advance", () => {
 
     testScenarios((enable) => {
         enable(requestingThread());
-    }, ({thread})=> {
-        const state = thread.get({name: 'thread1'});
+    }, ({scenario})=> {
+        const state = scenario.get({name: 'thread1'});
         expect(state).toBeDefined();
         expect(state?.isCompleted).toBe(true);
         expect(state?.progressionCount).toBe(1);
@@ -40,8 +40,8 @@ test("a request will also advance waiting threads", () => {
         enable(requestingThread());
         enable(askingThread());
         enable(waitingThread());
-    }, ({thread}) => {
-        const thread1 = thread.get({name: 'thread1'});
+    }, ({scenario}) => {
+        const thread1 = scenario.get({name: 'thread1'});
         expect(thread1).toBeDefined();
     });
 });
