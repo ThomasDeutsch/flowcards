@@ -1,7 +1,6 @@
 import * as bp from "../src/index";
 import { testScenarios, delay } from "./testutils";
 import { scenario } from '../src/scenario';
-import { ActionType, BidType } from "../src/index";
 
 test("a set is a request, that will be cached. ", (done) => {
     const thread1 = scenario({id: 'flow1'}, function* () {
