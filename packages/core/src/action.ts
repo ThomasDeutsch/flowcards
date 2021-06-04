@@ -56,7 +56,7 @@ export type AnyActionWithId = RequireOne<AnyAction, 'id'>;
 
 export function toActionWithId(action: AnyAction, id: number): AnyActionWithId {
     if(action.id !== undefined) return action as AnyActionWithId;
-    return {...action, id: id};
+    return {id: id, ...action};
 }
 
 
