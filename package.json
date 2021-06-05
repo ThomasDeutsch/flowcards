@@ -2,7 +2,7 @@
   "name": "flowcards",
   "private": true,
   "scripts": {
-    "test": "lerna run test",
+    "test": "node --trace-warnings node_modules/.bin/jest --no-cache --detectOpenHandles --unhandled-rejections=strict",
     "new-version": "lerna version --conventional-commits --yes",
     "bootstrap": "lerna bootstrap --hoist",
     "build": "lerna run build",
