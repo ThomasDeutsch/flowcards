@@ -173,7 +173,7 @@ export class UpdateLoop {
     }
 
     public runScaffolding(): ScenariosContext {
-        //if(this._replay && this._replay.actions.length === 0) delete this._replay;
+        //if(this._replay && this._replay.actions.length === 0) delete this._replay; TODO: keep this?
         this._scaffold(this._currentActionId);
         this._allPlacedBids = allPlacedBids(this._bThreadBids);
         return this._runLoop();

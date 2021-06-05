@@ -42,19 +42,18 @@ export class Scenarios {
         this._clearBufferOnNextTick();
     }
 
-    private _clearBufferOnNextTick = () => {
+    private _clearBufferOnNextTick(): void {
         Promise.resolve().then(() => { // next tick
-            if(this._bufferedActions.length > 0) {
-                this._updateLoop.setActionQueue(this._bufferedActions);
-                this._bufferedActions.length = 0;
-                const context = this._updateLoop.runScaffolding();
-                this._updateCb?.(context);
-            }
+            if(this._bufferedActions.length === 0) return
+            this._updateLoop.setActionQueue(this._bufferedActions);
+            this._bufferedActions.length = 0;
+            const context = this._updateLoop.runScaffolding();
+            this._updateCb?.(context);
         }).catch(e => console.error(e));
     }
 
     public startReplay(replay: Replay): void {
-        const context = replay.start(this._updateLoop);
-        this._updateCb?.(context);
+        if(!this._updateCb) return;
+        replay.start(this._updateLoop, this._updateCb);
     }
 }

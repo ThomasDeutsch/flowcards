@@ -1,4 +1,4 @@
-import { RequestingBidType, PlacedBid, PlacedRequestingBid} from './bid';
+import { RequestingBidType, PlacedRequestingBid} from './bid';
 import { EventId } from './event-map';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-Bid';
@@ -20,7 +20,6 @@ export interface UIAction extends Action {
     payload?: unknown;
 }
 
-
 export interface RequestedAction extends Action {
     id: number,
     type: "requestedAction",
@@ -29,7 +28,6 @@ export interface RequestedAction extends Action {
     resolveActionId?: number | 'pending';
 }
 
-
 export interface ResolveAction extends Action {
     id?: number,
     type: "resolveAction" | "rejectedAction";
@@ -37,7 +35,6 @@ export interface ResolveAction extends Action {
     pendingDuration: number;
     resolvedRequestingBid: {type: BidType, bThreadId: BThreadId};
 }
-
 
 export interface ResolveExtendAction extends Action {
     id?: number,
@@ -98,5 +95,3 @@ export function getResolveExtendAction(pendingBid: PendingBid, pendingDuration: 
         extendedRequestingBid: pendingBid.extendedRequestingBid
     }
 }
-
-

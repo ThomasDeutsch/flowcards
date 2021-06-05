@@ -1,7 +1,5 @@
-import { ContextTest, ScenariosContext, UpdateLoop } from "./index";
+import { ContextTest, UpdateCallback, UpdateLoop } from "./index";
 import { AnyActionWithId, GET_VALUE_FROM_BTHREAD } from "./action";
-
-type ReplayMap = Map<number, AnyActionWithId>;
 
 export class Replay {
     private _actions: AnyActionWithId[] = [];
@@ -11,6 +9,7 @@ export class Replay {
     private _payloadOverride: Record<number, { usePayload: boolean, payload: unknown }> = {};
     private _isPaused = false;
     private _updateLoop?: UpdateLoop;
+    private _updateCb?: UpdateCallback
 
     public enablePayloadOverride(actionId: number, payload: unknown): void {
         this._payloadOverride[actionId] = { usePayload: true, payload: payload };
@@ -63,19 +62,16 @@ export class Replay {
         this._isPaused = true;
     }
 
+    public resume(): void {
+        this._isPaused = false;
+        this._updateCb!(this._updateLoop!.runScaffolding());
+    }
 
-    // public togglePaused(): ScenariosContext | undefined {
-    //     if(this._replay) {
-    //         //this._replay.isPaused = !this._replay.isPaused
-    //         return this.runScaffolding();
-    //     }
-    //     return undefined;
-    // }
-
-    public start(updateLoop: UpdateLoop): ScenariosContext {
+    public start(updateLoop: UpdateLoop, updateCb: UpdateCallback): void {
         this._updateLoop = updateLoop;
+        this._updateCb = updateCb;
         this._currentReplay = [...this._actions];
-        return this._updateLoop.startReplay(this);
+        this._updateCb(this._updateLoop.startReplay(this));
     }
 
     public getNextReplayAction(actionId: number): AnyActionWithId | undefined {
