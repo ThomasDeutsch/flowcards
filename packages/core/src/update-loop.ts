@@ -119,40 +119,40 @@ export class UpdateLoop {
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
             if(maybeAction === undefined) return this._getContext();
             const action = toActionWithId(maybeAction, this._currentActionId);
-
-            if (action.type === "uiAction") {
-                uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
-                if(uiActionCheck !== UIActionCheck.OK) {
-                    if(this._replay?.isRunning) {
-                        this._replay.pause();
-                        return this._getContext();
+            switch(action.type) {
+                case "uiAction":
+                    uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
+                    if(uiActionCheck !== UIActionCheck.OK) {
+                        if(this._replay?.isRunning) {
+                            this._replay.pause();
+                            return this._getContext();
+                        }
+                        continue;
                     }
-                    continue;
-                }
-                this._logger.logAction(action);
-                advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
-            }
-            else if (action.type === "requestedAction") {
-                if(typeof action.payload === "function") {
-                    action.payload = action.payload(this._getCachedEvent(action.eventId));
-                }
-                if(isThenable(action.payload)) {
-                    action.resolveActionId = 'pending';
-                }
-                this._logger.logAction(action);
-                reactionCheck = advanceRequestedAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
-            }
-            else if (action.type === "resolveAction") {
-                this._logger.logAction(action);
-                reactionCheck = advanceResolveAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
-            }
-            else if (action.type === "resolvedExtendAction") {
-                this._logger.logAction(action);
-                reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
-            }
-            else if (action.type === "rejectedAction") {
-                this._logger.logAction(action);
-                reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
+                    this._logger.logAction(action);
+                    advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
+                    break;
+                case "requestedAction":
+                    if(typeof action.payload === "function") {
+                        action.payload = action.payload(this._getCachedEvent(action.eventId));
+                    }
+                    if(isThenable(action.payload)) {
+                        action.resolveActionId = 'pending';
+                    }
+                    this._logger.logAction(action);
+                    reactionCheck = advanceRequestedAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
+                    break;
+                case "resolveAction":
+                    this._logger.logAction(action);
+                    reactionCheck = advanceResolveAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
+                    break;
+                case "resolvedExtendAction":
+                    this._logger.logAction(action);
+                    reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
+                    break;
+                case "rejectedAction":
+                    this._logger.logAction(action);
+                    reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }
             if(reactionCheck !== ReactionCheck.OK) {
                 console.warn('BThreadReactionError: ', reactionCheck, action);
