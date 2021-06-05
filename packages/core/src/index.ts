@@ -1,7 +1,8 @@
-import { AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
+import { ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
+import { Replay } from './replay';
 
 export * from './scenario';
 export * from './bthread';
@@ -17,25 +18,12 @@ export * from './extend-context';
 
 export type UpdateCallback = (newContext: ScenariosContext) => void;
 export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
-export type DispatchCommand = (command: Replay | ContextChange) => void;
 export type ContextTestResult = {isValid: boolean, details: unknown};
 export type ContextTest = (context: ScenariosContext) => ContextTestResult | void;
-
-export interface Replay {
-    type: 'replay';
-    actions: AnyActionWithId[];
-    breakpoints?: Set<number>;
-    tests?: Record<number, ContextTest[]>;
-}
-
-export interface ContextChange {
-    type: 'appContextChange';
-}
-
+export type StartReplay = (replay: Replay) => void;
 
 export class Scenarios {
     private _bufferedActions: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
-    private _latestReplay?: Replay;
     private _updateLoop: UpdateLoop;
     private _updateCb?: UpdateCallback;
     public initialScenariosContext: ScenariosContext;
@@ -54,45 +42,19 @@ export class Scenarios {
         this._clearBufferOnNextTick();
     }
 
-    private _maybeCallUpdateCb(context: ScenariosContext) {
-        if(this._updateCb) this._updateCb(context); // call update callback!
-    }
-
     private _clearBufferOnNextTick = () => {
         Promise.resolve().then(() => { // next tick
-            if(this._latestReplay) {
-                this._bufferedActions.length = 0;
-                this._maybeCallUpdateCb(this._updateLoop.startReplay({...this._latestReplay}));
-                delete this._latestReplay;
-            }
-            else if(this._bufferedActions.length > 0) {
+            if(this._bufferedActions.length > 0) {
                 this._updateLoop.setActionQueue(this._bufferedActions);
                 this._bufferedActions.length = 0;
-                this._maybeCallUpdateCb(this._updateLoop.runScaffolding())
-            } 
-        });
+                const context = this._updateLoop.runScaffolding();
+                this._updateCb?.(context);
+            }
+        }).catch(e => console.error(e));
     }
 
-    private _dispatch(command: Replay | ContextChange): void {
-        switch(command.type) {
-            case 'appContextChange': {
-                //TODO: make context change replayable
-                // for this, the logger needs to be placed in this Scenarios Class
-                // a method needs to be added to the logger
-                // 
-                this._maybeCallUpdateCb(this._updateLoop.runScaffolding());
-                break;
-            }
-            case 'replay': {
-                if(command.actions === undefined || command.actions.length === 0) {
-                    console.warn('replay was dispatched without replay actions - replay was aborted');
-                    return;
-                }
-                this._latestReplay = {...command};
-                this._clearBufferOnNextTick();
-            }
-        }
+    public startReplay(replay: Replay): void {
+        const context = replay.start(this._updateLoop);
+        this._updateCb?.(context);
     }
-    
-    public get dispatch(): DispatchCommand { return this._dispatch.bind(this) }
 }

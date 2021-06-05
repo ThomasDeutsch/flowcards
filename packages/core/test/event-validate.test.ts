@@ -120,7 +120,7 @@ test("a blocked askFor Event will return a validation with the blocking bThread 
 });
 
 
-test("a pending askFor Event will return a validation with the pending bThread Id", () => {
+test("a pending askFor Event will return a validation with the pending bThread Id", (done) => {
     const askingThread = scenario(null, function* () {
         yield bp.askFor({name: 'A'});
     })
@@ -136,5 +136,6 @@ test("a pending askFor Event will return a validation with the pending bThread I
         expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
         expect(event({name: 'A'}).validate(1).failed[0].type).toBe('pending');
         expect(event({name: 'A'}).validate(1).failed[0].details).toBe('event is pending by BThread: requestingBThread');
+        done();
     });
 });
