@@ -47,7 +47,7 @@ export class UpdateLoop {
     private readonly _logger: Logger;
     private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<any>>();
-    private readonly _getCachedEvent: GetCachedEvent = (eventId: EventId) => this._eventCache.get(eventId);
+    private readonly _getCachedEvent: GetCachedEvent = (eventId: EventId | string) => this._eventCache.get(toEventId(eventId));
     private readonly _eventInfos= new EventMap<EventInfo>();
     private readonly _uiActionCB: UIActionDispatch;
     private _testResults: Record<number, any[]> | undefined;
@@ -71,13 +71,13 @@ export class UpdateLoop {
     private _getEventInfo(event: string | EventId): EventInfo {
         const eventId = toEventId(event);
         const eventInfo = this._eventInfos.get(eventId);
-        if(eventInfo && eventInfo.lastUpdate === this._currentActionId - 1) return eventInfo;
+        if(eventInfo && eventInfo.lastUpdate === this._currentActionId) return eventInfo;
         const askForBid = getHighestPrioAskForBid(this._allPlacedBids, eventId);
         const bidContext = this._allPlacedBids.get(eventId);
         const cachedEvent = this._getCachedEvent(eventId);
         const newEventInfo: EventInfo = eventInfo || {} as EventInfo;
         const validateCheck = askForValidationExplainCB(askForBid, bidContext);
-        newEventInfo.lastUpdate = this._currentActionId - 1,
+        newEventInfo.lastUpdate = this._currentActionId,
         newEventInfo.dispatch = (askForBid && bidContext && !bidContext.pendingBy && !bidContext.blockedBy) ? (payload: any) => {
             validateCheck(payload).isValid && this._uiActionCB(askForBid, payload);
         } : undefined;
@@ -186,6 +186,7 @@ export class UpdateLoop {
         this._bThreadMap.forEach(bThread => bThread.destroy());
         this._bThreadMap.clear();
         this._eventCache.clear();
+        this._eventInfos.clear();
         delete this._testResults;
         this._logger.resetLog();
         return this.runScaffolding();

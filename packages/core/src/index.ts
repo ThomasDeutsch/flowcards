@@ -54,6 +54,7 @@ export class Scenarios {
 
     public startReplay(replay: Replay): void {
         if(!this._updateCb) return;
+        this._bufferedActions.length = 0;
         replay.start(this._updateLoop, this._updateCb);
     }
 }
