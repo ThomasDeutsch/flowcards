@@ -4,7 +4,7 @@ import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
 import { EventId, EventMap } from './event-map';
 import { BidType } from './bid';
-import { ActionType, AnyActionWithId, RequestedAction } from './action';
+import { AnyActionWithId, RequestedAction } from './action';
 
 export enum BThreadReactionType {
     init = 'init',
@@ -63,7 +63,7 @@ export class Logger {
             requestAction.resolveActionId = action.id;
         }
         if(action.type === "requestedAction") {
-            a.payload = undefined; // do not save the promise object 
+            a.payload = undefined; // do not save the promise object
         }
         this._actions.push(a);
     }

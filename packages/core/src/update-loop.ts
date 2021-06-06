@@ -106,7 +106,7 @@ export class UpdateLoop {
     }
 
     private _runLoop(): ScenariosContext {
-        if(this._replay?.isRunning) {
+        if(this._replay) {
             //this._runContextTests(); TODO
             this._replay.pauseOnBreakpoint(this._currentActionId);
             if(this._replay.isPaused) return this._getContext();
@@ -115,7 +115,9 @@ export class UpdateLoop {
         let reactionCheck = ReactionCheck.OK;
         let uiActionCheck = UIActionCheck.OK;
         do {
-            const maybeAction = this._getQueuedAction()
+            const maybeAction =
+                this._replay?.getNextReplayAction(this._currentActionId)
+                || this._getQueuedAction()
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
             if(maybeAction === undefined) return this._getContext();
             const action = toActionWithId(maybeAction, this._currentActionId);

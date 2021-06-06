@@ -1,15 +1,36 @@
 import { ContextTest, UpdateCallback, UpdateLoop } from "./index";
 import { AnyActionWithId, GET_VALUE_FROM_BTHREAD } from "./action";
 
+export interface PayloadOverride {
+    usePayload: boolean;
+    payload: unknown;
+}
+export interface SerializedReplay {
+    actions: AnyActionWithId[];
+    title?: string;
+    breakBefore?: number[];
+    payloadOverride?: Record<number, PayloadOverride>;
+}
 export class Replay {
-    private _actions: AnyActionWithId[] = [];
-    private _currentReplay: AnyActionWithId[] = [];
-    private _breakBefore = new Set<number>();
-    private _tests?: Record<number, ContextTest[]> = {};
-    private _payloadOverride: Record<number, { usePayload: boolean, payload: unknown }> = {};
-    private _isPaused = false;
     private _updateLoop?: UpdateLoop;
-    private _updateCb?: UpdateCallback
+    private _updateCb?: UpdateCallback;
+    private _actions: AnyActionWithId[] = [];
+    private _breakBefore = new Map<number, boolean>();
+    private _payloadOverride: Record<number, PayloadOverride> = {};
+    private _remainingReplayActions?: AnyActionWithId[];
+    private _tests?: Record<number, ContextTest[]> = {};
+    private _isPaused = false;
+    public title = "";
+
+    constructor(serializedReplay: SerializedReplay) {
+        this.title = serializedReplay.title || "";
+        this._actions = [...serializedReplay.actions];
+        this._breakBefore = new Map();
+        serializedReplay.breakBefore?.forEach(actionId => {
+            this._breakBefore.set(actionId, false);
+        })
+        this._payloadOverride = {...serializedReplay.payloadOverride};
+    }
 
     public enablePayloadOverride(actionId: number, payload: unknown): void {
         this._payloadOverride[actionId] = { usePayload: true, payload: payload };
@@ -18,14 +39,14 @@ export class Replay {
         this._payloadOverride[actionId].usePayload = false;
     }
     public toggleBreakBefore(actionId: number): void {
-        this._breakBefore.has(actionId) ? this._breakBefore.delete(actionId) : this._breakBefore.add(actionId);
+        this._breakBefore.get(actionId) === false ? this._breakBefore.set(actionId, true) : this._breakBefore.set(actionId, false);
     }
     public loadActions(actions: AnyActionWithId[]): void {
         this._actions = [...actions];
     }
 
     public get isRunning(): boolean {
-        return this._currentReplay.length > 0;
+        return this._remainingReplayActions?.length !== 0;
     }
 
     // public runContextTests(): void {
@@ -53,9 +74,14 @@ export class Replay {
     }
 
     public pauseOnBreakpoint(actionId: number): void {
-        if(this._breakBefore.has(actionId)) {
+        if(this._breakBefore.get(actionId) === false) {
+            this._breakBefore.set(actionId, true);
             this.pause();
         }
+    }
+
+    public get isCompleted(): boolean {
+        return !!(this._remainingReplayActions && this._remainingReplayActions.length === 0);
     }
 
     public pause(): void {
@@ -63,6 +89,7 @@ export class Replay {
     }
 
     public resume(): void {
+        if(this.isCompleted) return;
         this._isPaused = false;
         this._updateCb!(this._updateLoop!.runScaffolding());
     }
@@ -70,14 +97,17 @@ export class Replay {
     public start(updateLoop: UpdateLoop, updateCb: UpdateCallback): void {
         this._updateLoop = updateLoop;
         this._updateCb = updateCb;
-        this._currentReplay = [...this._actions];
+        this._remainingReplayActions = [...this._actions];
         this._updateCb(this._updateLoop.startReplay(this));
     }
 
     public getNextReplayAction(actionId: number): AnyActionWithId | undefined {
-        if(!this._updateLoop) return undefined;
-        if(this._currentReplay.length > 0 && this._currentReplay[0].id === actionId) {
-            const action = this._currentReplay.shift()!;
+        if(this.isCompleted) return undefined;
+        if(!this._updateLoop || this._remainingReplayActions === undefined) return undefined;
+        if(this._remainingReplayActions.length > 0 && this._remainingReplayActions[0].id === actionId) {
+            const action = this._remainingReplayActions.shift()!;
+            const payloadOverride = this._payloadOverride[actionId];
+            if(payloadOverride?.usePayload) action.payload = payloadOverride.payload;
             if(action.type === "requestedAction" && action.payload === GET_VALUE_FROM_BTHREAD) {
                 action.payload = this._updateLoop.getBid(action.bThreadId, action.bidType, action.eventId)?.payload;
             }
