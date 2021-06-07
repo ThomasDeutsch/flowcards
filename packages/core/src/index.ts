@@ -60,4 +60,9 @@ export class Scenarios {
 
     public startReplay = this._startReplay.bind(this);
 
+    public onDepsChanged(): void {
+        const context = this._updateLoop.runScaffolding();
+        this._updateCb?.(context);
+        // TODO: make dependency-change replayable!
+    }
 }
