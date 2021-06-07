@@ -15,6 +15,7 @@ export * from './event-map';
 export * from './logger';
 export * from './action';
 export * from './extend-context';
+export * from './replay';
 
 export type UpdateCallback = (newContext: ScenariosContext) => void;
 export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
