@@ -54,9 +54,12 @@ export class Scenarios {
     }
 
     private _startReplay(replay: Replay): void {
-        if(!this._updateCb) return;
-        this._bufferedActions.length = 0;
-        replay.start(this._updateLoop, this._updateCb);
+        Promise.resolve().then(() => { // next tick
+            if(!this._updateCb) return;
+            this._bufferedActions.length = 0;
+            replay.start(this._updateLoop, this._updateCb);
+        }).catch(e => console.error(e));
+
     }
 
     public startReplay = this._startReplay.bind(this);
