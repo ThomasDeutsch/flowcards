@@ -305,9 +305,6 @@ export function delay(ms: number, value?: any): Promise<any> {
           enable(flow3());
         }
       }, () => {
-          if(replay.isRunning) {
-              console.log('TEST: ')
-          }
         if(replay.isCompleted) {
             expect(2).toBe(2);
             done();

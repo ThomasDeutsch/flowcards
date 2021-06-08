@@ -50,6 +50,10 @@ export class Replay {
         this._actions = [...actions];
     }
 
+    public getRemainingActions(): AnyActionWithId[] {
+        return this._remainingReplayActions || [];
+    }
+
     public get isRunning(): boolean {
         return this._remainingReplayActions?.length !== 0;
     }
