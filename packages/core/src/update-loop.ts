@@ -114,7 +114,6 @@ export class UpdateLoop {
         }
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
-        let uiActionCheck = UIActionCheck.OK;
         do {
             const maybeAction =
                 this._replay?.getNextReplayAction(this._currentActionId)
@@ -123,8 +122,8 @@ export class UpdateLoop {
             if(maybeAction === undefined) return this._getContext();
             const action = toActionWithId(maybeAction, this._currentActionId);
             switch(action.type) {
-                case "uiAction":
-                    uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
+                case "uiAction": {
+                    const uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
                     if(uiActionCheck !== UIActionCheck.OK) {
                         if(this._replay?.isRunning) {
                             this._replay.pause();
@@ -135,6 +134,7 @@ export class UpdateLoop {
                     this._logger.logAction(action);
                     advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
                     break;
+                }
                 case "requestedAction":
                     if(typeof action.payload === "function") {
                         action.payload = action.payload(this._getCachedEvent(action.eventId));
