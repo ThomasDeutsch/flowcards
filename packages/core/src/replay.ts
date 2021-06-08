@@ -22,7 +22,9 @@ export class Replay {
     private _tests?: Record<number, ContextTest[]> = {};
     private _isPaused = false;
     public title = "";
-    private _replayFinishedCB?: ReplayFinishedCB
+    private _replayFinishedCB?: ReplayFinishedCB;
+    private _isCompleted = false;
+    public get isCompleted(): boolean { return this._isCompleted}
 
     constructor(serializedReplay: SerializedReplay, replayFinishedCB?: ReplayFinishedCB) {
         this.title = serializedReplay.title || "";
@@ -83,10 +85,6 @@ export class Replay {
         }
     }
 
-    public get isCompleted(): boolean {
-        return !!(this._remainingReplayActions && this._remainingReplayActions.length === 0);
-    }
-
     public pause(): void {
         this._isPaused = true;
     }
@@ -98,16 +96,23 @@ export class Replay {
     }
 
     public start(updateLoop: UpdateLoop, updateCb: UpdateCallback): void {
+        this._isCompleted = false;
         this._updateLoop = updateLoop;
         this._updateCb = updateCb;
         this._remainingReplayActions = [...this._actions];
         this._updateCb(this._updateLoop.startReplay(this));
     }
 
+    private _completeRun() {
+        this._isCompleted = true;
+        this._remainingReplayActions = undefined;
+        this._replayFinishedCB?.();
+    }
+
     public getNextReplayAction(actionId: number): AnyActionWithId | undefined {
-        if(this.isCompleted) {
-            this._replayFinishedCB?.();
-            return undefined;
+        if(this.isCompleted) return undefined;
+        if(this._remainingReplayActions?.length === 0) {
+            this._completeRun();
         }
         if(!this._updateLoop || this._remainingReplayActions === undefined) return undefined;
         if(this._remainingReplayActions.length > 0 && this._remainingReplayActions[0].id === actionId) {
