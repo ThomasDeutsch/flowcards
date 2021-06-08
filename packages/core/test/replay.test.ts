@@ -24,6 +24,29 @@ test("a replay can be started", (done) => {
     startReplay(replay);
 });
 
+
+test("after the replay completed, a callback-function is called", (done) => {
+    const thread1 = scenario({id: 's1'}, function* () {
+        const bid = yield bp.askFor("A");
+        expect(bid.payload).toBe(1);
+    });
+
+    const replay = new Replay({actions: [{id: 0, type: 'uiAction', payload: 1, eventId: {name: 'A'}}]}, () => {
+        expect(1).toBe(1);
+        done();
+    })
+
+    const [_, startReplay] = testScenarios((enable) => {
+        enable(thread1());
+    }, ({scenario}) => {
+        if(replay.isCompleted) {
+            expect(scenario.get('s1')?.isCompleted).toBe(true);
+        }
+    });
+
+    startReplay(replay);
+});
+
 test("a running replay can be paused using a breakpoint", (done) => {
     const thread1 = scenario({id: 's1'}, function* () {
         let bid = yield bp.askFor("A");
