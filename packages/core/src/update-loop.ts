@@ -110,7 +110,7 @@ export class UpdateLoop {
             //this._runContextTests(); TODO
             const breakpointHit = this._replay.pauseOnBreakpoint(this._currentActionId);
             if(breakpointHit) return this._getContext();
-            if(this._replay.runCompleted()) return this._getContext();
+            if(this._replay.completeSuccessfulRun()) return this._getContext();
         }
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
@@ -126,7 +126,7 @@ export class UpdateLoop {
                     const uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
                     if(uiActionCheck !== UIActionCheck.OK) {
                         if(this._replay?.isRunning) {
-                            this._replay.pause();
+                            this._replay.abort(uiActionCheck);
                             return this._getContext();
                         }
                         continue;
@@ -160,7 +160,7 @@ export class UpdateLoop {
             if(reactionCheck !== ReactionCheck.OK) {
                 console.warn('BThreadReactionError: ', reactionCheck, action);
                 if(this._replay?.isRunning) {
-                    this._replay.pause();
+                    this._replay.abort(reactionCheck);
                     return this._getContext();
                 }
             }

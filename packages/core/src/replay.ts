@@ -25,6 +25,9 @@ export class Replay {
     private _replayFinishedCB?: ReplayFinishedCB;
     private _isCompleted = false;
     public get isCompleted(): boolean { return this._isCompleted}
+    private _abortMessage = "";
+    public get abortMessage(): string { return this.abortMessage }
+    public get isAborted(): boolean { return !!this.abortMessage}
 
     constructor(serializedReplay: SerializedReplay, replayFinishedCB?: ReplayFinishedCB) {
         this.title = serializedReplay.title || "";
@@ -89,7 +92,7 @@ export class Replay {
         this._updateCb(this._updateLoop.startReplay(this));
     }
 
-    public runCompleted(): boolean {
+    public completeSuccessfulRun(): boolean {
         if(this._remainingReplayActions?.length === 0) {
             this._isCompleted = true;
             this._remainingReplayActions = undefined;
@@ -99,6 +102,14 @@ export class Replay {
             return true;
         }
         return false;
+    }
+
+    public abort(failedCheck: string): void {
+        this._abortMessage = failedCheck;
+        this._isCompleted = true;
+        Promise.resolve().then(() => { // call CB on next tick, because then a new ScenariosContext will be ready.
+            this._replayFinishedCB?.();
+        });
     }
 
     public getNextReplayAction(actionId: number): AnyActionWithId | undefined {
