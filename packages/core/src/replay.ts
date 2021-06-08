@@ -1,6 +1,7 @@
 import { ContextTest, UpdateCallback, UpdateLoop } from "./index";
 import { AnyActionWithId, GET_VALUE_FROM_BTHREAD } from "./action";
 
+export type ReplayFinishedCB = () => void;
 export interface PayloadOverride {
     usePayload: boolean;
     payload: unknown;
@@ -21,8 +22,9 @@ export class Replay {
     private _tests?: Record<number, ContextTest[]> = {};
     private _isPaused = false;
     public title = "";
+    private _replayFinishedCB?: ReplayFinishedCB
 
-    constructor(serializedReplay: SerializedReplay) {
+    constructor(serializedReplay: SerializedReplay, replayFinishedCB?: ReplayFinishedCB) {
         this.title = serializedReplay.title || "";
         this._actions = [...serializedReplay.actions];
         this._breakBefore = new Map();
@@ -30,6 +32,7 @@ export class Replay {
             this._breakBefore.set(actionId, false);
         })
         this._payloadOverride = {...serializedReplay.payloadOverride};
+        this._replayFinishedCB = replayFinishedCB
     }
 
     public enablePayloadOverride(actionId: number, payload: unknown): void {
@@ -102,7 +105,10 @@ export class Replay {
     }
 
     public getNextReplayAction(actionId: number): AnyActionWithId | undefined {
-        if(this.isCompleted) return undefined;
+        if(this.isCompleted) {
+            this._replayFinishedCB?.();
+            return undefined;
+        }
         if(!this._updateLoop || this._remainingReplayActions === undefined) return undefined;
         if(this._remainingReplayActions.length > 0 && this._remainingReplayActions[0].id === actionId) {
             const action = this._remainingReplayActions.shift()!;
@@ -110,6 +116,9 @@ export class Replay {
             if(payloadOverride?.usePayload) action.payload = payloadOverride.payload;
             if(action.type === "requestedAction" && action.payload === GET_VALUE_FROM_BTHREAD) {
                 action.payload = this._updateLoop.getBid(action.bThreadId, action.bidType, action.eventId)?.payload;
+            }
+            else if(action.type === "requestedAction" && action.resolveActionId) {
+                action.payload = new Promise(() => null); // a promise that will never resolve
             }
             return action;
         }

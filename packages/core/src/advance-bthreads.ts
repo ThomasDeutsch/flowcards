@@ -87,7 +87,7 @@ export function advanceUiAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: 
 export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, eventCache: EventMap<CachedItem<any>>, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): ReactionCheck {
     const extendingBThread = bThreadMap.get(action.extendingBThreadId);
     if(!extendingBThread) return ReactionCheck.ExtendingBThreadNotFound;
-    const resolveCheck = extendingBThread.deleteResolvedExtend(action); 
+    const resolveCheck = extendingBThread.deleteResolvedExtend(action);
     if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
     if(action.extendedRequestingBid) {
         const requestingBThread = bThreadMap.get(action.extendedRequestingBid.bThreadId);
@@ -105,7 +105,7 @@ export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache
     if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
     unblockEventId(allPlacedBids, action.eventId);
     if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
-    const resolveCheck = requestingBThread.progressResolved(eventCache, action); 
+    const resolveCheck = requestingBThread.progressResolved(eventCache, action);
     if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
     progressWaitingBThreads(allPlacedBids, bThreadMap, ['askForBid', 'waitForBid'], action);
     return ReactionCheck.OK;

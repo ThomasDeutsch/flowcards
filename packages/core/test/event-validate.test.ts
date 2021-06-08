@@ -126,16 +126,18 @@ test("a pending askFor Event will return a validation with the pending bThread I
     })
 
     const blockingThead = scenario({id: 'requestingBThread'}, function* () {
-        yield bp.request({name: 'A'}, delay(5000, 'val'));
+        yield bp.request({name: 'A'}, delay(10, 'val'));
     })
 
     testScenarios((enable) => {
         enable(askingThread());
         enable(blockingThead());
     }, ({event}) => {
-        expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
-        expect(event({name: 'A'}).validate(1).failed[0].type).toBe('pending');
-        expect(event({name: 'A'}).validate(1).failed[0].details).toBe('event is pending by BThread: requestingBThread');
-        done();
+        if(event({name: 'A'}).isPending) {
+            expect(event({name: 'A'}).validate(1).failed.length).toBe(1);
+            expect(event({name: 'A'}).validate(1).failed[0].type).toBe('pending');
+            expect(event({name: 'A'}).validate(1).failed[0].details).toBe('event is pending by BThread: requestingBThread');
+            done();
+        }
     });
 });
