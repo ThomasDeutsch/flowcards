@@ -58,35 +58,17 @@ export class Replay {
         return this._remainingReplayActions?.length !== 0;
     }
 
-    // public runContextTests(): void {
-    //     const tests = this._tests[this._currentActionId];
-    //     if(tests === undefined || tests.length === 0) return;
-    //     const results: ContextTestResult[] = [];
-    //     tests.forEach(scenarioTest => {
-    //         try {
-    //             const result = scenarioTest(this._getContext());
-    //             if(result) results.push(result);
-    //         } catch(error) {
-    //             this._replay!.isPaused = true;
-    //             results.push({isValid: false, details: error});
-    //             throw(error);
-    //         }
-    //     });
-    //     if(results) {
-    //         if(!this._testResults) this._testResults = {};
-    //         this._testResults[this._currentActionId] = results;
-    //     }
-    // }
-
     public get isPaused(): boolean {
         return this._isPaused;
     }
 
-    public pauseOnBreakpoint(actionId: number): void {
+    public pauseOnBreakpoint(actionId: number): boolean {
         if(this._breakBefore.get(actionId) === false) {
             this._breakBefore.set(actionId, true);
             this.pause();
+            return true;
         }
+        return false;
     }
 
     public pause(): void {
@@ -107,17 +89,20 @@ export class Replay {
         this._updateCb(this._updateLoop.startReplay(this));
     }
 
-    private _completeRun() {
-        this._isCompleted = true;
-        this._remainingReplayActions = undefined;
-        this._replayFinishedCB?.();
+    public runCompleted(): boolean {
+        if(this._remainingReplayActions?.length === 0) {
+            this._isCompleted = true;
+            this._remainingReplayActions = undefined;
+            Promise.resolve().then(() => { // call CB on next tick, because then a new ScenariosContext will be ready.
+                this._replayFinishedCB?.();
+            });
+            return true;
+        }
+        return false;
     }
 
     public getNextReplayAction(actionId: number): AnyActionWithId | undefined {
         if(this.isCompleted) return undefined;
-        if(this._remainingReplayActions?.length === 0) {
-            this._completeRun();
-        }
         if(!this._updateLoop || this._remainingReplayActions === undefined) return undefined;
         if(this._remainingReplayActions.length > 0 && this._remainingReplayActions[0].id === actionId) {
             const action = this._remainingReplayActions.shift()!;

@@ -108,8 +108,9 @@ export class UpdateLoop {
     private _runLoop(): ScenariosContext {
         if(this._replay) {
             //this._runContextTests(); TODO
-            this._replay.pauseOnBreakpoint(this._currentActionId);
-            if(this._replay.isPaused) return this._getContext();
+            const breakpointHit = this._replay.pauseOnBreakpoint(this._currentActionId);
+            if(breakpointHit) return this._getContext();
+            if(this._replay.runCompleted()) return this._getContext();
         }
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
