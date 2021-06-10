@@ -12,7 +12,6 @@ import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplain
 import { isThenable } from './utils';
 import { Replay } from './replay';
 
-
 export interface EventInfo {
     lastUpdate: number;
     dispatch?: (payload?: any) => void;
@@ -31,6 +30,7 @@ export interface ScenariosContext {
     scenario: BThreadMap<BThreadState>;
     log: Logger;
     bids: AllPlacedBids;
+    replay?: Replay;
 }
 
 export type UpdateLoopFunction = () => ScenariosContext;
@@ -50,8 +50,6 @@ export class UpdateLoop {
     private readonly _getCachedEvent: GetCachedEvent = (eventId: EventId | string) => this._eventCache.get(toEventId(eventId));
     private readonly _eventInfos= new EventMap<EventInfo>();
     private readonly _uiActionCB: UIActionDispatch;
-    private _testResults: Record<number, any[]> | undefined;
-    private _replay?: Replay;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
 
     constructor(stagingFunction: StagingFunction, internalDispatch: InternalDispatch, logger: Logger) {
@@ -90,12 +88,13 @@ export class UpdateLoop {
         return newEventInfo
     }
 
-    private _getContext(): ScenariosContext {
+    private _getContext(replay?: Replay): ScenariosContext {
         return {
             event: this._getEventInfo.bind(this),
             scenario: this._bThreadStateMap,
             log: this._logger,
-            bids: this._allPlacedBids
+            bids: this._allPlacedBids,
+            replay: replay
         }
     }
 
@@ -105,29 +104,24 @@ export class UpdateLoop {
         return {...action, id: this._currentActionId}
     }
 
-    private _runLoop(): ScenariosContext {
-        if(this._replay) {
-            //this._runContextTests(); TODO
-            const breakpointHit = this._replay.pauseOnBreakpoint(this._currentActionId);
-            if(breakpointHit) return this._getContext();
-            if(this._replay.completeSuccessfulRun()) return this._getContext();
-        }
+    private _runLoop(replay?: Replay): ScenariosContext {
+        replay?.completeSuccessfulRun();
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
         do {
             const maybeAction =
-                this._replay?.getNextReplayAction(this._currentActionId)
+                replay?.getNextReplayAction(this.getBid, this._currentActionId)
                 || this._getQueuedAction()
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
-            if(maybeAction === undefined) return this._getContext();
+            if(maybeAction === undefined) return this._getContext(replay);
             const action = toActionWithId(maybeAction, this._currentActionId);
             switch(action.type) {
                 case "uiAction": {
                     const uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
                     if(uiActionCheck !== UIActionCheck.OK) {
-                        if(this._replay?.isRunning) {
-                            this._replay.abort(uiActionCheck);
-                            return this._getContext();
+                        if(replay?.state === 'running') {
+                            replay.abortRun(uiActionCheck);
+                            return this._getContext(replay);
                         }
                         continue;
                     }
@@ -159,14 +153,14 @@ export class UpdateLoop {
             }
             if(reactionCheck !== ReactionCheck.OK) {
                 console.warn('BThreadReactionError: ', reactionCheck, action);
-                if(this._replay?.isRunning) {
-                    this._replay.abort(reactionCheck);
-                    return this._getContext();
+                if(replay?.state === 'running') {
+                    replay?.abortRun(reactionCheck);
+                    return this._getContext(replay);
                 }
             }
          } while (reactionCheck !== ReactionCheck.OK);
          this._currentActionId++;
-         return this.runScaffolding();
+         return this.runScaffolding(replay);
     }
 
     // public ----------------------------------------------------------------------
@@ -175,25 +169,23 @@ export class UpdateLoop {
         actions.forEach(action => this._actionQueue.push(action));
     }
 
-    public runScaffolding(): ScenariosContext {
-        //if(this._replay && this._replay.actions.length === 0) delete this._replay; TODO: keep this?
+    public runScaffolding(replay?: Replay): ScenariosContext {
+        //if(replay) this.startReplay();
         this._scaffold(this._currentActionId);
         this._allPlacedBids = allPlacedBids(this._bThreadBids);
-        return this._runLoop();
+        return this._runLoop(replay);
     }
 
-    public startReplay(replay: Replay): ScenariosContext {
-        this._replay = replay;
-        this._currentActionId = 0;
-        this._actionQueue.length = 0;
-        this._bThreadMap.forEach(bThread => bThread.destroy());
-        this._bThreadMap.clear();
-        this._eventCache.clear();
-        this._eventInfos.clear();
-        delete this._testResults;
-        this._logger.resetLog();
-        return this.runScaffolding();
-    }
+    // public startReplay(): void {
+    //     this._currentActionId = 0;
+    //     this._actionQueue.length = 0;
+    //     this._bThreadMap.forEach(bThread => bThread.destroy());
+    //     this._bThreadMap.clear();
+    //     this._eventCache.clear();
+    //     this._eventInfos.clear();
+    //     delete this._testResults;
+    //     this._logger.resetLog();
+    // }
 
     public getBid(bThreadId: BThreadId, bidType: BidType, eventId: EventId): PlacedBid | undefined {
         return this._bThreadMap.get(bThreadId)?.getCurrentBid(bidType, eventId);

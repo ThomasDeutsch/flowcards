@@ -1,4 +1,4 @@
-  
+
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { scenario } from '../src/scenario';
@@ -84,7 +84,7 @@ test("bids can be extended by a validation-bid  ", () => {
         waitBAdvanced = true;
     })
 
-    const [context] = testScenarios((enable) => {
+    const context = testScenarios((enable) => {
         enable(threadA());
         enable(threadB());
     }, () => {

@@ -1,8 +1,8 @@
 import { useState, useRef, useMemo } from "react";
-import { Scenarios, UpdateCallback, StagingFunction, ScenariosContext, StartReplay } from "@flowcards/core";
+import { Scenarios, UpdateCallback, StagingFunction, ScenariosContext } from "@flowcards/core";
 export * from '@flowcards/core';
 
-export function useScenarios(stagingFunction: StagingFunction, dependencies?: any[]): [ScenariosContext, StartReplay] {
+export function useScenarios(stagingFunction: StagingFunction, dependencies?: any[]): ScenariosContext {
     const [context, setContext] = useState<ScenariosContext>();
     const scenariosRef = useRef<Scenarios | null>(null);
     if(scenariosRef.current === null) {
@@ -15,5 +15,5 @@ export function useScenarios(stagingFunction: StagingFunction, dependencies?: an
         }
     }, dependencies);
 
-    return [context || scenariosRef.current.initialScenariosContext, scenariosRef.current.startReplay];
+    return context || scenariosRef.current.initialScenariosContext;
 }

@@ -9,7 +9,6 @@ export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
 interface Action {
-    type: ActionType;
     eventId: EventId;
     payload?: unknown;
 }
@@ -45,10 +44,21 @@ export interface ResolveExtendAction extends Action {
     extendedRequestingBid?: {type: BidType, bThreadId: BThreadId};
 }
 
+interface ResolveActionWithId extends ResolveAction {
+    id: number;
+}
+
+interface ResolveExtendActionWithId extends ResolveExtendAction {
+    id: number;
+}
+
+interface UiActionWithId extends UIAction {
+    id: number;
+}
+
 
 export type AnyAction = UIAction | RequestedAction | ResolveAction | ResolveExtendAction;
-type RequireOne<T, K extends keyof T> = T & {[P in K]-?: T[P]};
-export type AnyActionWithId = RequireOne<AnyAction, 'id'>;
+export type AnyActionWithId = ResolveActionWithId | ResolveExtendActionWithId | UiActionWithId | RequestedAction;
 
 
 export function toActionWithId(action: AnyAction, id: number): AnyActionWithId {

@@ -91,7 +91,7 @@ test("multiple dispatches are batched", (done) => {
         yield [bp.request("asyncRequest2", () => delay(100)), bp.askFor("X"), bp.askFor("Z")];
     });
 
-    const [{event}] = testScenarios((enable) => {
+    const {event} = testScenarios((enable) => {
         enable(thread1());
     });
     expect(event('X').dispatch).toBeDefined();

@@ -1,4 +1,4 @@
-import { ResolveAction, ResolveExtendAction, UIAction } from './action';
+import { AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
@@ -19,9 +19,6 @@ export * from './replay';
 
 export type UpdateCallback = (newContext: ScenariosContext) => void;
 export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
-export type ContextTestResult = {isValid: boolean, details: unknown};
-export type ContextTest = (context: ScenariosContext) => ContextTestResult | void;
-export type StartReplay = (replay: Replay) => void;
 
 export class Scenarios {
     private _bufferedActions: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
@@ -30,10 +27,11 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
     private _logger: Logger;
 
-    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false) {
+    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, replayActions?: AnyActionWithId[]) {
         this._logger = new Logger();
         this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
-        this.initialScenariosContext = this._updateLoop.runScaffolding();
+        const replay = replayActions ? new Replay(replayActions) : undefined;
+        this.initialScenariosContext = this._updateLoop.runScaffolding(replay);
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
     }
@@ -52,14 +50,6 @@ export class Scenarios {
             this._updateCb?.(context);
         }).catch(e => console.error(e));
     }
-
-    private _startReplay(replay: Replay): void {
-        if(!this._updateCb) return;
-        this._bufferedActions.length = 0;
-        replay.start(this._updateLoop, this._updateCb);
-    }
-
-    public startReplay = this._startReplay.bind(this);
 
     public onDepsChanged(): void {
         const context = this._updateLoop.runScaffolding();
