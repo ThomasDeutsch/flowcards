@@ -10,7 +10,7 @@ import { setupScaffolding, StagingFunction } from './scaffolding';
 import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, BThreadId, BidType } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplainCB, CombinedValidationCB } from './validation';
 import { isThenable } from './utils';
-import { Replay } from './replay';
+import { Replay, ReplayState, ReplayStatus } from './replay';
 
 export interface EventInfo {
     lastUpdate: number;
@@ -30,7 +30,7 @@ export interface ScenariosContext {
     scenario: BThreadMap<BThreadState>;
     log: Logger;
     bids: AllPlacedBids;
-    replay?: Replay;
+    replay?: ReplayStatus;
 }
 
 export type UpdateLoopFunction = () => ScenariosContext;
@@ -94,7 +94,7 @@ export class UpdateLoop {
             scenario: this._bThreadStateMap,
             log: this._logger,
             bids: this._allPlacedBids,
-            replay: replay
+            replay: replay?.getReplayStatus()
         }
     }
 
@@ -176,16 +176,15 @@ export class UpdateLoop {
         return this._runLoop(replay);
     }
 
-    // public startReplay(): void {
-    //     this._currentActionId = 0;
-    //     this._actionQueue.length = 0;
-    //     this._bThreadMap.forEach(bThread => bThread.destroy());
-    //     this._bThreadMap.clear();
-    //     this._eventCache.clear();
-    //     this._eventInfos.clear();
-    //     delete this._testResults;
-    //     this._logger.resetLog();
-    // }
+    public reset(): void {
+        this._currentActionId = 0;
+        this._actionQueue.length = 0;
+        this._bThreadMap.forEach(bThread => bThread.destroy());
+        this._bThreadMap.clear();
+        this._eventCache.clear();
+        this._eventInfos.clear();
+        this._logger.resetLog();
+    }
 
     public getBid(bThreadId: BThreadId, bidType: BidType, eventId: EventId): PlacedBid | undefined {
         return this._bThreadMap.get(bThreadId)?.getCurrentBid(bidType, eventId);

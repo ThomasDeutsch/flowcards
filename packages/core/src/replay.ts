@@ -9,7 +9,11 @@ export interface PayloadOverride {
 }
 
 export type ReplayState = 'running' | "aborted" | "completed";
-type GetBidFn = (bThreadId: BThreadId, bidType: BidType, eventId: EventId) => PlacedBid | undefined
+type GetBidFn = (bThreadId: BThreadId, bidType: BidType, eventId: EventId) => PlacedBid | undefined;
+export interface ReplayStatus {
+    state: ReplayState;
+    abortMessage: string;
+}
 
 export class Replay {
     private _actions: AnyActionWithId[] = [];
@@ -48,5 +52,12 @@ export class Replay {
             return action;
         }
         return undefined;
+    }
+
+    public getReplayStatus(): ReplayStatus {
+        return {
+            state: this.state,
+            abortMessage: this.abortMessage
+        }
     }
 }

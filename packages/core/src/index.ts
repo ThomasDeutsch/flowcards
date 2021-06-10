@@ -27,10 +27,10 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
     private _logger: Logger;
 
-    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, replayActions?: AnyActionWithId[]) {
+    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActions?: AnyActionWithId[]) {
         this._logger = new Logger();
         this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
-        const replay = replayActions ? new Replay(replayActions) : undefined;
+        const replay = initialActions ? new Replay(initialActions) : undefined;
         this.initialScenariosContext = this._updateLoop.runScaffolding(replay);
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
@@ -49,6 +49,14 @@ export class Scenarios {
             const context = this._updateLoop.runScaffolding();
             this._updateCb?.(context);
         }).catch(e => console.error(e));
+    }
+
+    public reset(initialActions?: AnyActionWithId[]): void {
+        this._bufferedActions.length = 0;
+        const replay = initialActions ? new Replay(initialActions) : undefined;
+        this._updateLoop.reset();
+        const context = this._updateLoop.runScaffolding(replay);
+        this._updateCb?.(context);
     }
 
     public onDepsChanged(): void {
