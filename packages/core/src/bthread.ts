@@ -11,7 +11,7 @@ import { ResolveActionCB } from './update-loop';
 import { BidsByType, toBidsByType } from '.';
 import { ReactionCheck } from './validation';
 
-
+export type ErrorInfo = {event: EventId, error: any}
 export type BThreadGenerator = Generator<BidOrBids, any, ProgressedBid>;
 type BThreadProps = Record<string, unknown>;
 export type BThreadGeneratorFunction = (props: any) => BThreadGenerator;
@@ -23,7 +23,7 @@ export interface ScenarioInfo {
 
 export type BThreadKey = string | number;
 export type BThreadId = {
-    name: string; 
+    name: string;
     key?: BThreadKey
 };
 
@@ -134,7 +134,7 @@ export class BThread {
     }
 
 
-    private _processNextBid(placedBid: PlacedBid, payload: any): void {
+    private _processNextBid(placedBid: PlacedBid, payload: any, error?: ErrorInfo): void {
         const cancelledBids = this._cancelPendingRequests();
         let progressedBid: ProgressedBid = {
             ...placedBid,
@@ -144,11 +144,16 @@ export class BThread {
         if(progressedBid.type === 'extendBid') {
             progressedBid = {
                 ...progressedBid,
-                payload: payload.value, // payload 
+                payload: payload.value, // payload
                 resolve: payload.resolve.bind(payload) // resolve FN
             }
         }
-        const next = this._thread.next(progressedBid); // progress BThread to next bid
+        let next;
+        if(error) {
+            next = this._thread.throw(error); // progress BThread to next bid
+        } else {
+            next = this._thread.next(progressedBid); // progress BThread to next bid
+        }
         this._state.progressionCount++;
         this._state.latestProgressedBid = {...placedBid};
         if (next.done) {
@@ -187,11 +192,11 @@ export class BThread {
         return true;
     }
 
-    private _progressBid(bid: PlacedBid, payload: any, eventCache?: EventMap<CachedItem<any>>): void {
-        if((bid.type === 'setBid') && eventCache) {
+    private _progressBid(bid: PlacedBid, payload: any, eventCache?: EventMap<CachedItem<any>>, error?: ErrorInfo): void {
+        if(!error && (bid.type === 'setBid') && eventCache) {
             setEventCache(eventCache, bid.eventId, payload);
         }
-        this._processNextBid(bid, payload);
+        this._processNextBid(bid, payload, error);
         this._logger.logReaction(BThreadReactionType.progress ,this.id, this._state, bid);
     }
 
@@ -210,17 +215,17 @@ export class BThread {
 
     public addPendingRequest(action: RequestedAction): void{
         const pendingBid: PendingBid = {
-            bThreadId: this.id, 
-            type: action.bidType, 
-            eventId: action.eventId, 
-            actionId: action.id!, 
+            bThreadId: this.id,
+            type: action.bidType,
+            eventId: action.eventId,
+            actionId: action.id!,
             payload: action.payload,
         };
         this._pendingRequests.set(action.eventId, pendingBid);
         this._addPendingBid(pendingBid);
     }
 
-    private _addPendingBid(pendingBid: PendingBid): void { 
+    private _addPendingBid(pendingBid: PendingBid): void {
         this._setCurrentBids();
         const startTime = new Date().getTime();
         if(pendingBid.type !== 'extendBid') {
@@ -232,19 +237,19 @@ export class BThread {
             const response = (pendingBid.type === 'extendBid') ? getResolveExtendAction(pendingBid, requestDuration, data) : getResolveAction("resolveAction", pendingBid, requestDuration, data);
             this._resolveActionCB(response);
         }).catch((e: Error): void => {
-            if(this._validateBid(pendingBid) === false) return; 
+            if(this._validateBid(pendingBid) === false) return;
             const requestDuration = new Date().getTime() - startTime;
-            const response = getResolveAction("rejectedAction", pendingBid, requestDuration, e);
+            const response = getResolveAction("rejectAction", pendingBid, requestDuration, e);
             this._resolveActionCB(response);
         });
     }
 
     public rejectPending(action: ResolveAction): ReactionCheck {
-        this._thread.throw({event: action.eventId, error: action.payload});
         const bid = this._pendingRequests.get(action.eventId);
         if(bid === undefined) return ReactionCheck.BThreadWithoutMatchingBid;
         if(!this._pendingRequests.deleteSingle(action.eventId)) return ReactionCheck.PendingBidNotFound;
-        this._progressBid(bid, action.payload);
+        this._pendingRequests.clear();
+        this._progressBid(bid, action.payload, undefined, {event: action.eventId, error: action.payload});
         this._logger.logReaction(BThreadReactionType.error, this.id, this._state, this._currentBids?.pendingBidMap.get(action.eventId));
         this._setCurrentBids();
         return ReactionCheck.OK;
@@ -257,7 +262,7 @@ export class BThread {
         return ReactionCheck.OK;
     }
 
-    public deleteResolvedExtend(action: ResolveExtendAction): ReactionCheck {  
+    public deleteResolvedExtend(action: ResolveExtendAction): ReactionCheck {
         const bid = this._pendingExtends.get(action.eventId);
         if(bid === undefined) return ReactionCheck.BThreadWithoutMatchingBid;
         if(this._pendingExtends.deleteSingle(action.eventId) === false) return ReactionCheck.PendingBidNotFound;

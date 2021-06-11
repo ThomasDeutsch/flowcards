@@ -111,7 +111,6 @@ export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, eventCache
     return ReactionCheck.OK;
 }
 
-
 export function advanceRejectAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: ResolveAction): ReactionCheck {
     const requestingBThread = bThreadMap.get(action.resolvedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;

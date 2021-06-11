@@ -29,7 +29,7 @@ export interface RequestedAction extends Action {
 
 export interface ResolveAction extends Action {
     id?: number,
-    type: "resolveAction" | "rejectedAction";
+    type: "resolveAction" | "rejectAction";
     requestActionId: number;
     pendingDuration: number;
     resolvedRequestingBid: {type: BidType, bThreadId: BThreadId};
@@ -80,7 +80,7 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
 }
 
 
-export function getResolveAction(responseType: "rejectedAction" | "resolveAction", pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveAction {
+export function getResolveAction(responseType: "rejectAction" | "resolveAction", pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveAction {
     return {
         id: undefined,
         type: responseType,

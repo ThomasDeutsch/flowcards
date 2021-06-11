@@ -22,6 +22,23 @@ test("a replay is started immediatly", (done) => {
 });
 
 
+test("an async request can be mocked", (done) => {
+    const thread1 = scenario({id: 's1'}, function* () {
+        yield bp.request("A");
+    });
+
+    const myActions: AnyActionWithId[] = [{id: 0, type: 'requestedAction', payload: () => delay(20000, null), eventId: {name: 'A'}, bidType: 'requestBid', bThreadId: {name: 's1'} }];
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event}) => {
+        expect(event('A')?.isPending).toBe(true);
+        done();
+
+    }, myActions);
+});
+
+
 export function delay(ms: number, value?: any): Promise<any> {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
   }

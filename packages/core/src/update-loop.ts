@@ -147,7 +147,7 @@ export class UpdateLoop {
                     this._logger.logAction(action);
                     reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
                     break;
-                case "rejectedAction":
+                case "rejectAction":
                     this._logger.logAction(action);
                     reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }

@@ -119,7 +119,7 @@ test("If one pending-event is resolved, other promises for this event are cancel
     const thread2 = scenario({id: 't2'}, function* (): any  {
         const bid = yield [bp.askFor('A'), bp.request("C", () => delay(400))];
         expect(bid.eventId.name).toBe("C");
-        
+
     })
 
     testScenarios((enable) => {
@@ -144,7 +144,7 @@ test("rejected pending events will not progress waiting BThreads", done => {
     let thread1Progressed = false;
     let wasCatched = false;
     const thread1 = scenario({id: 'waitingThread'}, function* () {
-        yield bp.askFor("A"); 
+        yield bp.askFor("A");
         thread1Progressed = true;
     });
 
@@ -165,7 +165,7 @@ test("rejected pending events will not progress waiting BThreads", done => {
         if(scenario.get({name: 'requestingThread'})?.isCompleted) {
             expect(wasCatched).toBe(true);
             expect(thread1Progressed).toBe(false);
-            done(); 
+            done();
         }
     });
 });
@@ -174,7 +174,7 @@ test("if a pending event is rejected, the lower-prio thread will use its request
     const thread1 = scenario(null, function* () {
         const bid = yield bp.request("A", 1);
         expect(bid.payload).toBe(1);
-        done(); 
+        done();
     });
 
     const thread2 = scenario(null, function* () {
@@ -217,20 +217,49 @@ test("if a thread extends an already existing pending-event, it will trigger tha
     let thread1Progressed = false;
     const thread1 = scenario(null, function* () {
         yield bp.request("A", () => delay(500, 'requestedValue'));
-        thread1Progressed = true;  
+        thread1Progressed = true;
     });
 
     const thread2 = scenario(null, function* () {
         yield bp.request("Y", () => delay(100));
         const extend = yield bp.extend("A");
         expect(extend.payload).toBe('requestedValue');
-        
+
         expect(thread1Progressed).toBe(false);
         done();
     });
-    
+
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
+    });
+});
+
+test("after a scenario has a rejected promise, it will place its next bid", done => {
+    const thread1 = scenario(null, function* () {
+        const bid = yield bp.request("A", 1);
+        expect(bid.payload).toBe(1);
+        done();
+    });
+
+    const thread2 = scenario({id: 's2'}, function* () {
+        try{
+            yield bp.request("A", () => rejectedPromise(1, 'error details'));
+        } catch(e) {
+            const bid = yield bp.set("X", 100);
+            expect(bid.payload).toBe(100);
+            console.log('bid: ', bid);
+
+        }
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({event, scenario}) => {
+        if(scenario.get('s2')?.isCompleted) {
+            expect(event('X').value).toBe(100);
+            done();
+        }
     });
 });
