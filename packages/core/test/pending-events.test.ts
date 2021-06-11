@@ -237,10 +237,11 @@ test("if a thread extends an already existing pending-event, it will trigger tha
 
 test("after a scenario has a rejected promise, it will place its next bid", done => {
     const thread1 = scenario(null, function* () {
-        const bid = yield bp.request("A", 1);
+        const bid = yield bp.waitFor("A");
         expect(bid.payload).toBe(1);
         done();
     });
+
 
     const thread2 = scenario({id: 's2'}, function* () {
         try{
@@ -248,8 +249,6 @@ test("after a scenario has a rejected promise, it will place its next bid", done
         } catch(e) {
             const bid = yield bp.set("X", 100);
             expect(bid.payload).toBe(100);
-            console.log('bid: ', bid);
-
         }
     });
 

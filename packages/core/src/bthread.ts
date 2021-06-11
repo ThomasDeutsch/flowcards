@@ -160,7 +160,6 @@ export class BThread {
             delete this._nextBidOrBids;
             delete this._currentBids;
             this._state.isCompleted = true;
-            this._state.section = undefined;
             this._state.bids = {};
             this._state.pendingBids = new EventMap();
         } else {

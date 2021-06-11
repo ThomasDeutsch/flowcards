@@ -16,8 +16,8 @@ test("a thread will accept an optional array of arguments", () => {
         enable(thread({a: 'A', b: 'B', c: 'C'}));
     });
     expect(receivedArgs[0]).toBe("A");
-    expect(receivedArgs[1]).toBe("B"); 
-    expect(receivedArgs[2]).toBe("C"); 
+    expect(receivedArgs[1]).toBe("B");
+    expect(receivedArgs[2]).toBe("C");
 });
 
 
@@ -41,7 +41,7 @@ test("a thread will accept an optional key", () => {
         expect(scenario.get({name: 'thread2', key: 'foo'})?.id.key).toBe('foo'); // BThreadState will contain the BThreadKey
     });
 
-    expect(receivedKeyA).toBe(0); 
+    expect(receivedKeyA).toBe(0);
     expect(receivedKeyB).toBe("foo");
 });
 
@@ -59,7 +59,7 @@ test("if no key is provided, the default key value is undefined", () => {
         enable(thread());
     });
 
-    expect(receivedKeyA).toBeUndefined(); 
+    expect(receivedKeyA).toBeUndefined();
 });
 
 test("enable will return the current thread waits", () => {
@@ -120,7 +120,7 @@ test("enable will return the the state of completion", () => {
     });
 });
 
-test("the section will be deleted if the thread completes", () => {
+test("the section will not be deleted if the thread completes", () => {
     let threadState: BThreadState;
 
     const thread = scenario(null, function* (this: BThreadContext) {
@@ -132,7 +132,7 @@ test("the section will be deleted if the thread completes", () => {
         threadState = enable(thread());
     }, () => {
         expect(threadState?.isCompleted).toEqual(true);
-        expect(threadState?.section).toBeUndefined();
+        expect(threadState?.section).toEqual('my state value');
     });
 });
 

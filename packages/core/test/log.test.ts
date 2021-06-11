@@ -22,7 +22,7 @@ test("log will contain a list of executed actions (sorted)", () => {
           yield bp.set("agbAccepted", "true");
         }
       );
-      
+
       const flow2 = scenario(
         {
           id: "flow2",
@@ -100,3 +100,21 @@ test("pending events are logged", (done) => {
     }
   });
 });
+
+test("a set payload is logged", (done) => {
+
+    const thread1 = scenario({id: 'thread1', description: 'myThread1'}, function* () {
+        yield bp.set('request1', 1000);
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({log, scenario}) => {
+      if(scenario.get({name: 'thread1'})?.isCompleted) {
+        expect(log.actions.length).toEqual(1);
+        expect(log.actions[0].payload).toEqual(1000);
+        done();
+
+      }
+    });
+  });

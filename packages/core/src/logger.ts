@@ -62,7 +62,7 @@ export class Logger {
             const requestAction = this._actions[action.requestActionId] as RequestedAction;
             requestAction.resolveActionId = action.id;
         }
-        if(action.type === "requestedAction") {
+        if(action.type === "requestedAction" && action.resolveActionId === 'pending') {
             a.payload = undefined; // do not save the promise object
         }
         this._actions.push(a);
