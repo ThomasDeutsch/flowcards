@@ -48,7 +48,6 @@ export class UpdateLoop {
     private readonly _scaffold: (loopCount: number) => void;
     private readonly _eventCache = new EventMap<CachedItem<unknown>>();
     private readonly _getCachedEvent = <T>(eventId: string | EventId) => getEventCache<T>(this._eventCache, eventId);
-
     private readonly _eventInfos= new EventMap<EventInfo<unknown>>();
     private readonly _uiActionCB: UIActionDispatch;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
@@ -171,7 +170,6 @@ export class UpdateLoop {
     }
 
     public runScaffolding(replay?: Replay): ScenariosContext {
-        //if(replay) this.startReplay();
         this._scaffold(this._currentActionId);
         this._allPlacedBids = allPlacedBids(this._bThreadBids);
         return this._runLoop(replay);
