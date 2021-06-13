@@ -41,17 +41,17 @@ test("the bThreadState is returned by the scenarios function", () => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.request("eventOne");
     });
-  
+
     const thread2 = scenario({id: 'thread2'}, function* ({prop1: number, prop2: string}) {
         yield bp.askFor("eventTwo");
     })
-  
+
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2({prop1: 912, prop2: 'test'}));
     }, ({scenario}) => {
-        expect(scenario.get('thread1')?.isCompleted).toBeTruthy();
-        expect(scenario.get('thread2')?.isCompleted).toBeFalsy();
+        expect(scenario('thread1')?.isCompleted).toBeTruthy();
+        expect(scenario('thread2')?.isCompleted).toBeFalsy();
     });
   });
 
@@ -60,16 +60,16 @@ test("the bThreadState is returned by the scenarios function", () => {
     const thread1 = scenario({id: 'thread1'}, function* () {
         yield bp.request("eventOne");
     });
-  
+
     const thread2 = scenario({id: 'thread2'}, function* () {
         yield bp.askFor("eventTwo");
     })
-  
+
     testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
     }, ({scenario}) => {
-        expect(scenario.get('thread1')?.orderIndex).toBe(0);
-        expect(scenario.get('thread2')?.orderIndex).toBe(1);
+        expect(scenario('thread1')?.orderIndex).toBe(0);
+        expect(scenario('thread2')?.orderIndex).toBe(1);
     });
   });

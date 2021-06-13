@@ -16,7 +16,7 @@ test("a replay is started immediatly", (done) => {
         enable(thread1());
     }, ({scenario, replay}) => {
         if(replay?.state === 'completed') {
-            expect(scenario.get('s1')?.isCompleted).toBe(true);
+            expect(scenario('s1')?.isCompleted).toBe(true);
         }
     }, myActions);
 });

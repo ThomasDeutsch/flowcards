@@ -217,7 +217,7 @@ test("event-info can be typed", (done) => {
     testScenarios((enable) => {
         enable(thread1());
     }, ({event, scenario}) => {
-        if(scenario.get("thread1")?.isCompleted) {
+        if(scenario("thread1")?.isCompleted) {
             const value = event<number>("eventOne")?.value;
             expect(typeof value).toBe('number');
             done();

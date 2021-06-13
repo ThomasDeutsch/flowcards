@@ -76,7 +76,7 @@ test("sets can be extended", () => {
 
 
 test("the cache function will return the history and the current value", () => {
-   
+
     const thread1 = scenario(null, function* () {
         yield bp.set('A', 'first');
         yield bp.set('A', 'second');
@@ -142,7 +142,7 @@ test("a resolved set will update the value", (done) => {
     testScenarios((enable) => {
         enable(thread1());
     }, ({event, scenario})=> {
-        if(scenario.get('t1')!.isCompleted) {
+        if(scenario('t1')!.isCompleted) {
             expect(event('A')?.value).toEqual('...SECOND');
             done();
         }

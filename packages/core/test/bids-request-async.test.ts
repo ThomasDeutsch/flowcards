@@ -36,12 +36,12 @@ test("a pending event is different from another pending-event if the name OR key
 
     testScenarios((enable) => {
         enable(thread2());
-        enable(thread1()); 
+        enable(thread1());
     }, ({event, scenario}) => {
         if(event({name: 'A', key: 1}).isPending) {
             expect(event('A').isPending).toBeDefined();
         } else if(event('A').isPending) {
-            expect(scenario.get('requestingThreadTwo')?.isCompleted).toBeTruthy();
+            expect(scenario('requestingThreadTwo')?.isCompleted).toBeTruthy();
             done();
         }
     });
@@ -60,8 +60,8 @@ test("pending-events with the same name but different keys can be run in paralle
         enable(thread2());
     }, ({event, scenario}) => {
         if(event({name: 'A', key: 1}).isPending && event({name: 'A', key: 2}).isPending) {
-            expect(scenario.get('requestingThreadOne')?.isCompleted).toBeFalsy();
-            expect(scenario.get('requestingThreadTwo')?.isCompleted).toBeFalsy();
+            expect(scenario('requestingThreadOne')?.isCompleted).toBeFalsy();
+            expect(scenario('requestingThreadTwo')?.isCompleted).toBeFalsy();
             done();
         }
     });
@@ -101,7 +101,7 @@ test("multiple async-requests can be run sequentially", (done) => {
     testScenarios((enable) => {
         enable(flow1());
     }, (({scenario}) => {
-        if(scenario.get('flow1')?.isCompleted) {
+        if(scenario('flow1')?.isCompleted) {
             expect(threadResetCounter).toEqual(0);
             done();
         }
@@ -112,7 +112,7 @@ test("multiple async-requests can be run sequentially", (done) => {
 test("for multiple active promises in one yield, only one resolve will progress the BThread", (done) => {
     let progressed2 = false;
     let progressed3 = false;
-    
+
     const thread1 = scenario({id: 'requestingThread'}, function* () {
         yield [bp.request("HEYYA", () => delay(1000)), bp.request("HEYYB", () => delay(1000))];
     });
@@ -132,7 +132,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
         enable(thread2());
         enable(thread3());
     }, ({scenario}) => {
-        if(scenario.get('requestingThread')?.isCompleted) {
+        if(scenario('requestingThread')?.isCompleted) {
             expect(progressed2).not.toBe(progressed3);
             done();
         }
@@ -148,7 +148,7 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
     });
 
     const thread2 = scenario({id: 'thread2'}, function*() {
-        yield bp.request("B", () => delay(300)); 
+        yield bp.request("B", () => delay(300));
     });
 
     testScenarios((enable) => {
@@ -157,8 +157,8 @@ test("if a thread gets disabled, before the pending-event resolves, the pending-
             enable(thread2());
         }
     }, (({scenario}) => {
-        if(scenario.get('thread1')?.isCompleted) {
-            expect(scenario.get('thread2')?.isCompleted).toBeTruthy();
+        if(scenario('thread1')?.isCompleted) {
+            expect(scenario('thread2')?.isCompleted).toBeTruthy();
             done();
         }
     }));
@@ -181,8 +181,8 @@ test("given the destoryOnDisable option, pending events will be canceled on dest
             enable(thread2());
         }
     }, (({scenario}) => {
-        if(scenario.get('thread1')?.isCompleted) {
-            expect(scenario.get('thread2')?.isCompleted).toBeFalsy();
+        if(scenario('thread1')?.isCompleted) {
+            expect(scenario('thread2')?.isCompleted).toBeFalsy();
             done();
         }
     }));
@@ -204,7 +204,7 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
     }, ({event, scenario}) => {
         if(event('A').isPending) {
             expect(event('B').validate(1).isValid).toBe(false);
-        } else if( scenario.get('requestingThread')?.isCompleted) {
+        } else if( scenario('requestingThread')?.isCompleted) {
             expect(event('B').validate().isValid).toBe(true);
             done();
         }

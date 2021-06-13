@@ -33,7 +33,7 @@ test("requests can be extended", () => {
         expect(progressedRequest).toBe(false);
         expect(setupCount).toEqual(2);
     }
- );  
+ );
 });
 
 
@@ -59,7 +59,7 @@ test("after the extend resolved, the event is no longer pending", (done) => {
             done();
         }
     }
- );  
+ );
 });
 
 test("if an extend is not applied, than the next extend will get the event", () => {
@@ -199,7 +199,7 @@ test("extends will extend requests", () => {
 
     const thread2 = scenario(null, function* () {
         extended = yield bp.extend("A");
-    }); 
+    });
 
     testScenarios((enable) => {
         enable(thread1());
@@ -211,7 +211,7 @@ test("extends will extend requests", () => {
 
 
 test("the last extend that is enabled has the highest priority", () => {
-    let advancedThread1 = false, 
+    let advancedThread1 = false,
     advancedThread2 = false;
 
     const requestThread = scenario(null, function* () {
@@ -222,7 +222,7 @@ test("the last extend that is enabled has the highest priority", () => {
         yield bp.extend("A");
         advancedThread1 = true;
     });
-    
+
     const extendThread2 = scenario(null, function* () {
         yield bp.extend("A");
         advancedThread2 = true;
@@ -273,9 +273,9 @@ test("an extend will wait for the pending-event to finish before it extends.", (
         enable(requestingThread());
         enable(extendingThread());
     }, ({event, scenario}) => {
-        if(scenario.get('extendingThread')?.isCompleted) {
+        if(scenario('extendingThread')?.isCompleted) {
             expect(event('A').isPending).toBeTruthy();
-            expect(scenario.get('requestingThread')?.isCompleted).toBeFalsy();
+            expect(scenario('requestingThread')?.isCompleted).toBeFalsy();
             done();
         }
     });
@@ -307,7 +307,7 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
     }, ({event}) => {
         if(event('fin').dispatch) {
             done();
-        }  
+        }
     });
 });
 
@@ -356,7 +356,7 @@ test("multiple extends will resolve after another. After all extends complete, t
         expect(bid.payload).toBe('super extend1 extend2');
         yield bp.askFor('fin');
     });
-    
+
     testScenarios((enable) => {
         enable(requestingThread());
         enable(extendingThread());
@@ -365,7 +365,7 @@ test("multiple extends will resolve after another. After all extends complete, t
     }, ({event}) => {
         if(event('fin').dispatch) {
             done();
-        }  
+        }
     });
 });
 
@@ -390,7 +390,7 @@ test("an extend will be resolved in the same cycle", () => {
     }, ({event}) => {
         expect(event('A').isPending).toBeFalsy();
         expect(requestedValue).toEqual(2);
-        expect(loopCount).toEqual(2); // 1: init, 2: request + extend 
+        expect(loopCount).toEqual(2); // 1: init, 2: request + extend
     });
 });
 

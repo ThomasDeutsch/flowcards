@@ -1,13 +1,20 @@
 import { BThreadId } from './bthread';
 
+export function toBThreadId(id: string | BThreadId): BThreadId {
+    if(typeof id === 'string') {
+        return {name: id}
+    }
+    else return id;
+}
+
 export class BThreadMap<T> {
     private _map: Map<string, T> = new Map();
 
-    public static toIdString(bThreadId: BThreadId): string { 
+    public static toIdString(bThreadId: BThreadId): string {
         return bThreadId.key !== undefined ? `${bThreadId.name}__${bThreadId.key}` : bThreadId.name
     }
 
-    public static toThreadId(idString: string): BThreadId { 
+    public static toThreadId(idString: string): BThreadId {
         const [name, key] = idString.split('__');
         return {name: name, key: key};
     }
@@ -43,7 +50,7 @@ export class BThreadMap<T> {
     public forEach(callbackFn: (value: T, key: string, map: Map<string, T>) => void): void {
         this._map.forEach(callbackFn);
     }
-    
+
     public clone(): BThreadMap<T> {
         const clone = new BThreadMap<T>();
         this._map.forEach((value, key) => {

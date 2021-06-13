@@ -2,15 +2,15 @@ import { getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyAc
 import { BThreadBids } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
-import { CachedItem, GetCachedEvent, getEventCache } from './event-cache';
+import { CachedItem, getEventCache } from './event-cache';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
-import { BThreadMap } from './bthread-map';
+import { BThreadMap, toBThreadId } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
 import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, BThreadId, BidType } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplainCB, CombinedValidationCB } from './validation';
 import { isThenable } from './utils';
-import { Replay, ReplayState, ReplayStatus } from './replay';
+import { Replay, ReplayStatus } from './replay';
 
 export interface EventInfo<T> {
     lastUpdate: number;
@@ -27,7 +27,7 @@ export interface EventInfo<T> {
 
 export interface ScenariosContext {
     event: <T = any>(eventName: string | EventId) => EventInfo<T>;
-    scenario: BThreadMap<BThreadState>;
+    scenario: (scenarioId: string | BThreadId) => BThreadState | undefined;
     log: Logger;
     bids: AllPlacedBids;
     replay?: ReplayStatus;
@@ -92,7 +92,7 @@ export class UpdateLoop {
     private _getContext(replay?: Replay): ScenariosContext {
         return {
             event: this._getEventInfo.bind(this),
-            scenario: this._bThreadStateMap,
+            scenario: (id) => this._bThreadStateMap?.get(toBThreadId(id)),
             log: this._logger,
             bids: this._allPlacedBids,
             replay: replay?.getReplayStatus()

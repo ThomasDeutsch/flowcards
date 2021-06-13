@@ -13,7 +13,7 @@ test("a requested event that is not blocked will advance", () => {
     testScenarios((enable) => {
         enable(requestingThread());
     }, ({scenario})=> {
-        const state = scenario.get({name: 'thread1'});
+        const state = scenario({name: 'thread1'});
         expect(state).toBeDefined();
         expect(state?.isCompleted).toBe(true);
         expect(state?.progressionCount).toBe(1);
@@ -41,7 +41,7 @@ test("a request will also advance waiting threads", () => {
         enable(askingThread());
         enable(waitingThread());
     }, ({scenario}) => {
-        const thread1 = scenario.get({name: 'thread1'});
+        const thread1 = scenario({name: 'thread1'});
         expect(thread1).toBeDefined();
     });
 });
@@ -201,7 +201,7 @@ test("events can be blocked", () => {
     });
 
     testScenarios((enable) => {
-        
+
         enable(requestThread());
         enable(waitingThread());
         enable(blockingThread());
@@ -384,7 +384,7 @@ test("with multiple askFor for the same eventId, highest priority request is sel
 
     const requestingThread = scenario({id: 'thread3'}, function*() {
         yield bp.request('eventA', 11);
-    }); 
+    });
 
     testScenarios((enable) => {
         enable(askingThreadLow());
