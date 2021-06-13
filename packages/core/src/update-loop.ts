@@ -2,7 +2,7 @@ import { getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyAc
 import { BThreadBids } from './bid';
 import { BThread, BThreadState } from './bthread';
 import { EventMap, EventId, toEventId } from './event-map';
-import { CachedItem, GetCachedEvent } from './event-cache';
+import { CachedItem, GetCachedEvent, getEventCache } from './event-cache';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { BThreadMap } from './bthread-map';
@@ -12,11 +12,11 @@ import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplain
 import { isThenable } from './utils';
 import { Replay, ReplayState, ReplayStatus } from './replay';
 
-export interface EventInfo {
+export interface EventInfo<T> {
     lastUpdate: number;
     dispatch?: (payload?: any) => void;
     validate: CombinedValidationCB<unknown>;
-    value?: unknown;
+    value?: T;
     history: unknown[];
     isPending: boolean;
     isBlocked: boolean;
@@ -26,7 +26,7 @@ export interface EventInfo {
 // -----------------------------------------------------------------------------------
 
 export interface ScenariosContext {
-    event: (eventName: string | EventId) => EventInfo;
+    event: <T = any>(eventName: string | EventId) => EventInfo<T>;
     scenario: BThreadMap<BThreadState>;
     log: Logger;
     bids: AllPlacedBids;
@@ -46,9 +46,10 @@ export class UpdateLoop {
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _logger: Logger;
     private readonly _scaffold: (loopCount: number) => void;
-    private readonly _eventCache = new EventMap<CachedItem<any>>();
-    private readonly _getCachedEvent: GetCachedEvent = (eventId: EventId | string) => this._eventCache.get(toEventId(eventId));
-    private readonly _eventInfos= new EventMap<EventInfo>();
+    private readonly _eventCache = new EventMap<CachedItem<unknown>>();
+    private readonly _getCachedEvent = <T>(eventId: string | EventId) => getEventCache<T>(this._eventCache, eventId);
+
+    private readonly _eventInfos= new EventMap<EventInfo<unknown>>();
     private readonly _uiActionCB: UIActionDispatch;
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
 
@@ -66,14 +67,14 @@ export class UpdateLoop {
         }
     }
 
-    private _getEventInfo(event: string | EventId): EventInfo {
+    private _getEventInfo<T = any>(event: string | EventId): EventInfo<T> {
         const eventId = toEventId(event);
-        const eventInfo = this._eventInfos.get(eventId);
-        if(eventInfo && eventInfo.lastUpdate === this._currentActionId) return eventInfo;
+        const eventInfo = this._eventInfos.get(eventId) as EventInfo<T> | undefined;
+        if(eventInfo && eventInfo.lastUpdate === this._currentActionId) return eventInfo as EventInfo<T>;
         const askForBid = getHighestPrioAskForBid(this._allPlacedBids, eventId);
         const bidContext = this._allPlacedBids.get(eventId);
-        const cachedEvent = this._getCachedEvent(eventId);
-        const newEventInfo: EventInfo = eventInfo || {} as EventInfo;
+        const cachedEvent = this._getCachedEvent<T>(eventId);
+        const newEventInfo: EventInfo<T> = eventInfo || {} as EventInfo<T>;
         const validateCheck = askForValidationExplainCB(askForBid, bidContext);
         newEventInfo.lastUpdate = this._currentActionId,
         newEventInfo.dispatch = (askForBid && bidContext && !bidContext.pendingBy && !bidContext.blockedBy) ? (payload: any) => {

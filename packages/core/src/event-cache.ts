@@ -1,11 +1,11 @@
-import { EventMap, EventId } from './event-map';
+import { EventMap, EventId, toEventId } from './event-map';
 
 export interface CachedItem<T> {
     value: T;
     history: T[];
 }
 
-export type GetCachedEvent = (eventId: EventId | string) => CachedItem<unknown> | undefined;
+export type GetCachedEvent<T> = (eventId: EventId | string) => CachedItem<T> | undefined;
 
 export function setEventCache<T>(eventCache: EventMap<CachedItem<unknown>>, event: EventId, payload?: T): void {
     const val = eventCache.get(event);
@@ -28,4 +28,10 @@ export function setEventCache<T>(eventCache: EventMap<CachedItem<unknown>>, even
         }
         eventCache.set(event, newCachedVal);
     }
+}
+
+
+export function getEventCache<T>(eventCache: EventMap<CachedItem<unknown>>, eventId: EventId | string): CachedItem<T> | undefined {
+    const value = eventCache.get(toEventId(eventId));
+    return value as CachedItem<T>;
 }

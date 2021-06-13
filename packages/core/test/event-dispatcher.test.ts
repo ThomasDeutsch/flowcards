@@ -209,4 +209,18 @@ test("dispatches will be bundled, but invalid dispatches will be ignored", (done
     });
 });
 
+test("event-info can be typed", (done) => {
+    const thread1 = scenario({id: 'thread1'}, function* () {
+        yield bp.set("eventOne", 1);
+    });
 
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event, scenario}) => {
+        if(scenario.get("thread1")?.isCompleted) {
+            const value = event<number>("eventOne")?.value;
+            expect(typeof value).toBe('number');
+            done();
+        }
+    });
+});
