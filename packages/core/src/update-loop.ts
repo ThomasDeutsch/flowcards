@@ -12,7 +12,7 @@ import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplain
 import { isThenable } from './utils';
 import { Replay, ReplayStatus } from './replay';
 
-export interface EventInfo<T> {
+export interface EventInfo<T = any> {
     lastUpdate: number;
     dispatch?: (payload?: any) => void;
     validate: CombinedValidationCB<unknown>;
