@@ -5,7 +5,7 @@ import { EventMap, EventId, toEventId } from './event-map';
 import { CachedItem, getEventCache } from './event-cache';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
-import { BThreadMap, toBThreadId } from './bthread-map';
+import { BThreadMap } from './bthread-map';
 import { setupScaffolding, StagingFunction } from './scaffolding';
 import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, BThreadId, BidType } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplainCB, CombinedValidationCB } from './validation';
@@ -91,7 +91,7 @@ export class UpdateLoop {
     private _getContext(replay?: Replay): ScenariosContext {
         return {
             event: this._getEventInfo.bind(this),
-            scenario: (id) => this._bThreadStateMap?.get(toBThreadId(id)),
+            scenario: (id) => this._bThreadStateMap?.get(id),
             log: this._logger,
             bids: this._allPlacedBids,
             replay: replay?.getReplayStatus()

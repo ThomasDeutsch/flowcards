@@ -1,12 +1,5 @@
 import { BThreadId } from './bthread';
 
-export function toBThreadId(id: string | BThreadId): BThreadId {
-    if(typeof id === 'string') {
-        return {name: id}
-    }
-    else return id;
-}
-
 export class BThreadMap<T> {
     private _map: Map<string, T> = new Map();
 
