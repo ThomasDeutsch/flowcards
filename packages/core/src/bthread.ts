@@ -139,7 +139,8 @@ export class BThread {
         let progressedBid: ProgressedBid = {
             ...placedBid,
             cancelledBids: cancelledBids,
-            payload: payload
+            payload: payload,
+            is: (eventId: EventId | string) => sameEventId(progressedBid.eventId, toEventId(eventId))
         }
         if(progressedBid.type === 'extendBid') {
             progressedBid = {
@@ -155,7 +156,7 @@ export class BThread {
             next = this._thread.next(progressedBid); // progress BThread to next bid
         }
         this._state.progressionCount++;
-        this._state.latestProgressedBid = {...placedBid};
+        this._state.latestProgressedBid = {...progressedBid};
         if (next.done) {
             delete this._nextBidOrBids;
             delete this._currentBids;

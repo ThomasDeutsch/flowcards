@@ -23,6 +23,7 @@ export interface PlacedBid extends Bid {
 export interface ProgressedBid extends PlacedBid {
     cancelledBids?: EventMap<PlacedBid>;
     resolve?: (payload?: unknown) => void;
+    is: (eventId: EventId | string) => boolean;
 }
 
 export type RequestingBidType = 'requestBid' | "setBid" | 'triggerBid';
@@ -65,10 +66,10 @@ export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
     const pendingEvents = new EventMap<BThreadId>();
     const blockedEvents = new EventMap<PlacedBid[]>();
     allBThreadBids.forEach(({placedBids, pendingBidMap}) => {
-        pendingBidMap.allValues?.forEach(bid => { 
+        pendingBidMap.allValues?.forEach(bid => {
             pendingEvents.set(bid.eventId, bid.bThreadId);
         });
-        placedBids.forEach(bid => { 
+        placedBids.forEach(bid => {
             if(bid.type === 'blockBid') {
                 blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid]);
             }
@@ -79,7 +80,7 @@ export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
         placedBids.forEach(bid => {
             if(bid.type === 'blockBid') return;
             const placedBidsForEventId = bidsByEventId.get(bid.eventId) || {
-                blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)), 
+                blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)),
                 pendingBy: pendingEvents.get(bid.eventId),
                 bids: []
             } as PlacedBidContext
@@ -155,7 +156,7 @@ type cachedItemFn = (cachedItem: CachedItem<unknown>) => void;
 export function request(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
     return {
         type: 'requestBid',
-        eventId: toEventId(event), 
+        eventId: toEventId(event),
         payload: payload
     };
 }
@@ -163,7 +164,7 @@ export function request(event: string | EventId, payload?: unknown | cachedItemF
 export function set(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
     return {
         type: 'setBid',
-        eventId: toEventId(event), 
+        eventId: toEventId(event),
         payload: payload
     };
 }
@@ -171,53 +172,53 @@ export function set(event: string | EventId, payload?: unknown | cachedItemFn): 
 export function trigger(event: string | EventId, payload?: unknown): Bid {
     return {
         type: 'triggerBid',
-        eventId: toEventId(event), 
+        eventId: toEventId(event),
         payload: payload
     };
 }
 
 export function askFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
-    return { 
+    return {
         type: 'askForBid',
-        eventId: toEventId(event), 
+        eventId: toEventId(event),
         payloadValidationCB: payloadValidationCB
     };
 }
 
 export function waitFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
-    return { 
+    return {
         type: 'waitForBid',
-        eventId: toEventId(event), 
+        eventId: toEventId(event),
         payloadValidationCB: payloadValidationCB
     };
 }
 
 export function onPending(event: string | EventId): Bid {
-    return { 
+    return {
         type: 'onPendingBid',
         eventId: toEventId(event)
     };
 }
 
 export function block(event: string | EventId): Bid {
-    return { 
+    return {
         type: 'blockBid',
         eventId: toEventId(event)
     };
 }
 
 export function extend<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
-    return { 
+    return {
         type: 'extendBid',
-        eventId: toEventId(event), 
+        eventId: toEventId(event),
         payloadValidationCB: payloadValidationCB
     };
 }
 
 export function validate<T = string>(event: string | EventId, payloadValidationCB: PayloadValidationCB<T>): Bid {
-    return { 
+    return {
         type: 'validateBid',
-        eventId: toEventId(event), 
+        eventId: toEventId(event),
         payloadValidationCB: payloadValidationCB
     };
 }
