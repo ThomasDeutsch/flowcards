@@ -1,4 +1,4 @@
-import { ActionType, AnyAction, ResolveAction, ResolveExtendAction, getResolveAction, getResolveExtendAction, RequestedAction } from './action';
+import { AnyAction, ResolveAction, ResolveExtendAction, getResolveAction, getResolveExtendAction, RequestedAction } from './action';
 import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids, ProgressedBid } from './bid';
 import { EventMap, EventId, toEventId, sameEventId } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
@@ -45,6 +45,7 @@ export interface BThreadState {
     latestProgressedBid?: ProgressedBid;
     pendingBids: EventMap<PendingBid>;
     bids: BidsByType;
+    cancelledBids?: EventMap<PlacedBid>;
 }
 
 export function isSameBThreadId(a?: BThreadId, b?: BThreadId): boolean {
@@ -142,6 +143,7 @@ export class BThread {
             payload: payload,
             is: (eventId: EventId | string) => sameEventId(progressedBid.eventId, toEventId(eventId))
         }
+        this._state.cancelledBids = cancelledBids;
         if(progressedBid.type === 'extendBid') {
             progressedBid = {
                 ...progressedBid,
