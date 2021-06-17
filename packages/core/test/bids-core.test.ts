@@ -427,14 +427,13 @@ test("an allOf behaviour can be implemented", (done) => {
         })];
         do {
             const progrssedBid = yield bids;
-            bids = bids.filter(bid => !progrssedBid.is(bid.eventId))
-        } while(bids.length !== 0);
+            bids = progrssedBid.remainingBids;
+        } while(bids);
     });
 
     testScenarios((enable) => {
         enable(requestingThread());
-    }, ({scenario, event, log})=> {
-        console.log('actions: ', log.actions);
+    }, ({scenario, event})=> {
         expect(event('A').value).toBe(1);
         if(scenario('thread1')?.isCompleted) {
             expect(event('B').value).toBe(3);

@@ -141,6 +141,7 @@ export class BThread {
         let progressedBid: ProgressedBid = {
             ...placedBid,
             payload: payload,
+            remainingBids: remainingBids.length > 0 ? remainingBids : undefined,
             is: (eventId: EventId | string) => sameEventId(progressedBid.eventId, toEventId(eventId))
         }
         if(progressedBid.type === 'extendBid') {
