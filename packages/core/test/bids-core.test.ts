@@ -421,7 +421,7 @@ test("requesting the same bid multiple times is not allowed and will throw a war
 test("an allOf behaviour can be implemented", (done) => {
     let timesPromiseWasCreated = 0;
     const requestingThread = scenario({id: 'thread1', }, function*() {
-        let bids = [bp.set("A", 1), bp.set('B', (unresolved) => {
+        let bids = [bp.set("A", 1), bp.set('B', () => {
             timesPromiseWasCreated++;
             return delay(200, 3);
         })];

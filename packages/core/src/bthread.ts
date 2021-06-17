@@ -8,7 +8,7 @@ import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType, BThreadReactionType } from './logger';
 import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
-import { BidsByType, toBidsByType } from '.';
+import { Bid, BidsByType, toBidsByType } from '.';
 import { ReactionCheck } from './validation';
 
 export type ErrorInfo = {event: EventId, error: any}
@@ -115,7 +115,7 @@ export class BThread {
         };
     }
 
-    private _setCurrentBids() {
+    private _setCurrentBids(): void {
         const pending = this._pendingRequests.clone().merge(this._pendingExtends);
         this._currentBids = getPlacedBidsForBThread(this.id, this._nextBidOrBids, pending);
         this._state.pendingBids = pending;
@@ -123,10 +123,10 @@ export class BThread {
     }
 
 
-    private _cancelPendingRequests(eventId: EventId): EventMap<PlacedBid> | undefined {
+    private _cancelPendingRequests(eventId?: EventId): EventMap<PlacedBid> | undefined {
         const cancelledBids = new EventMap<PlacedBid>();
         this._pendingRequests.forEach((id, pendingBid) => {
-            if(!sameEventId(eventId, id)) {
+            if(!eventId || !sameEventId(eventId, id)) {
                 cancelledBids.set(id, pendingBid);
                 this._pendingRequests.deleteSingle(id);
             }
@@ -137,14 +137,12 @@ export class BThread {
 
 
     private _processNextBid(placedBid: PlacedBid, payload: any, error?: ErrorInfo): void {
-        const cancelledBids = this._cancelPendingRequests(placedBid.eventId);
+        const remainingBids = this._currentBids!.placedBids.filter(bid => !sameEventId(bid.eventId, placedBid.eventId));
         let progressedBid: ProgressedBid = {
             ...placedBid,
-            cancelledBids: cancelledBids,
             payload: payload,
             is: (eventId: EventId | string) => sameEventId(progressedBid.eventId, toEventId(eventId))
         }
-        this._state.cancelledBids = cancelledBids;
         if(progressedBid.type === 'extendBid') {
             progressedBid = {
                 ...progressedBid,
@@ -159,8 +157,9 @@ export class BThread {
             next = this._thread.next(progressedBid); // progress BThread to next bid
         }
         this._state.progressionCount++;
-        this._state.latestProgressedBid = {...progressedBid};
+        this._state.latestProgressedBid = progressedBid;
         if (next.done) {
+            this._pendingRequests.clear();
             delete this._nextBidOrBids;
             delete this._currentBids;
             this._state.isCompleted = true;
@@ -170,9 +169,15 @@ export class BThread {
             this._nextBidOrBids = next.value;
         }
         this._setCurrentBids();
+        this._pendingRequests.forEach(pendingEventId => {
+            if(!remainingBids.some(rb => sameEventId(pendingEventId, rb.eventId))) {
+                this._pendingRequests.deleteSingle(pendingEventId);
+            }
+        })
     }
 
     private _resetBThread(props: BThreadProps) {
+        this._cancelPendingRequests();
         this._pendingExtends = new EventMap();
         this._currentProps = props;
         this._state.isCompleted = false;
@@ -188,11 +193,11 @@ export class BThread {
         if(!this._thread) return false; // thread was deleted
         if(pendingBid === undefined) return false;
         if(pendingBid.type === 'extendBid') {
-            if(pendingBid.actionId !== this._pendingExtends.get(pendingBid.eventId)?.actionId) return false;
+            if(this._pendingExtends.has(pendingBid.eventId)) return true;
         } else {
-            if(pendingBid.actionId !== this._pendingRequests.get(pendingBid.eventId)?.actionId) return false;
+            if(this._pendingRequests.has(pendingBid.eventId)) return true;
         }
-        return true;
+        return false;
     }
 
     private _progressBid(bid: PlacedBid, payload: any, eventCache?: EventMap<CachedItem<any>>, error?: ErrorInfo): void {
@@ -216,13 +221,13 @@ export class BThread {
         return true;
     }
 
-    public addPendingRequest(action: RequestedAction): void{
+    public addPendingRequest(action: RequestedAction): void {
         const pendingBid: PendingBid = {
             bThreadId: this.id,
             type: action.bidType,
             eventId: action.eventId,
             actionId: action.id!,
-            payload: action.payload,
+            payload: action.payload
         };
         this._pendingRequests.set(action.eventId, pendingBid);
         this._addPendingBid(pendingBid);
