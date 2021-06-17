@@ -324,12 +324,12 @@ test("if a thread has multiple requests, the last request has the highest priori
     let requestProgressed = false;
 
     const requestingThread = scenario({id: 'thread1'}, function*() {
-        const requestBid4 = bp.request({name: 'A', key: 4});
-        const requestBid1 = bp.request({name: 'A', key: 1});
-        const bid = yield [requestBid1, bp.request({name: 'A', key: 3}), requestBid4];
+        const bid = yield [bp.request({name: 'A', key: 1}), bp.request({name: 'A', key: 3}), bp.request({name: 'A', key: 4})];
         expect(bid.eventId.key).toEqual(4);
-        expect(bid.is(requestBid1)).toBe(false);
-        expect(bid.is(requestBid4)).toBe(true);
+        expect(bid.is({name: 'A', key: 4})).toBe(true);
+        expect(bid.is({name: 'A', key: 3})).toBe(false);
+        expect(bid.is({name: 'A', key: 2})).toBe(false);
+        expect(bid.is({name: 'A', key: 1})).toBe(false);
         requestProgressed = true;
     });
 
