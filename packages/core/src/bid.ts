@@ -23,7 +23,7 @@ export interface PlacedBid extends Bid {
 export interface ProgressedBid extends PlacedBid {
     cancelledBids?: EventMap<PlacedBid>;
     resolve?: (payload?: unknown) => void;
-    is: (eventId: EventId | string) => boolean;
+    is: (bid: Bid) => boolean;
 }
 
 export type RequestingBidType = 'requestBid' | "setBid" | 'triggerBid';
@@ -45,7 +45,11 @@ export type BidOrBids =  Bid | (Bid | undefined)[] | undefined;
 export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pendingBidMap: EventMap<PendingBid>): BThreadBids {
     const placedBids: PlacedBid[] = utils.toArray(bidOrBids)
         .filter(utils.notUndefined)
-        .map(bid => ({...bid, bThreadId: bThreadId}));
+        .map(bid => {
+            const placedBid = bid as PlacedBid; // keep the reference
+            placedBid.bThreadId =bThreadId;
+            return placedBid;
+        });
     return {
         pendingBidMap: pendingBidMap,
         placedBids: placedBids

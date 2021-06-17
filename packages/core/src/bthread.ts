@@ -8,7 +8,7 @@ import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType, BThreadReactionType } from './logger';
 import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
-import { BidsByType, toBidsByType } from '.';
+import { Bid, BidsByType, PlacedBidContext, toBidsByType } from '.';
 import { ReactionCheck } from './validation';
 
 export type ErrorInfo = {event: EventId, error: any}
@@ -137,19 +137,14 @@ export class BThread {
 
     private _processNextBid(placedBid: PlacedBid, payload: any, error?: ErrorInfo): void {
         const cancelledBids = this._cancelPendingRequests();
-        let progressedBid: ProgressedBid = {
-            ...placedBid,
-            cancelledBids: cancelledBids,
-            payload: payload,
-            is: (eventId: EventId | string) => sameEventId(progressedBid.eventId, toEventId(eventId))
-        }
+        const progressedBid = placedBid as ProgressedBid;
+        progressedBid.cancelledBids = cancelledBids,
+        progressedBid.payload = payload;
+        progressedBid.is = (bid: Bid) => Object.is(bid, placedBid);
         this._state.cancelledBids = cancelledBids;
         if(progressedBid.type === 'extendBid') {
-            progressedBid = {
-                ...progressedBid,
-                payload: payload.value, // payload
-                resolve: payload.resolve.bind(payload) // resolve FN
-            }
+            progressedBid.payload = payload.value, // payload
+            progressedBid.resolve = payload.resolve.bind(payload) // resolve FN
         }
         let next;
         if(error) {
@@ -158,7 +153,7 @@ export class BThread {
             next = this._thread.next(progressedBid); // progress BThread to next bid
         }
         this._state.progressionCount++;
-        this._state.latestProgressedBid = {...progressedBid};
+        this._state.latestProgressedBid = progressedBid;
         if (next.done) {
             delete this._nextBidOrBids;
             delete this._currentBids;
