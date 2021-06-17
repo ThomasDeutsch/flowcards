@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { testScenarios } from "./testutils";
+import { delay, testScenarios } from "./testutils";
 import { scenario } from '../src/scenario';
 
 
@@ -398,5 +398,48 @@ test("with multiple askFor for the same eventId, highest priority request is sel
         expect(lowerPrioProgressed).toBe(true);
         expect(higherPrioProgressed).toBe(false);
 
+    });
+});
+
+
+test("requesting the same bid multiple times is not allowed and will throw a warning", () => {
+    const requestingThread = scenario({id: 'thread1', }, function*() {
+        yield [bp.request("A"), bp.request("A")]
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+    }, ({scenario})=> {
+        const state = scenario({name: 'thread1'});
+        expect(state).toBeDefined();
+        expect(state?.isCompleted).toBe(true);
+        expect(state?.progressionCount).toBe(1);
+    });
+});
+
+
+test("an allOf behaviour can be implemented", (done) => {
+    let timesPromiseWasCreated = 0;
+    const requestingThread = scenario({id: 'thread1', }, function*() {
+        let bids = [bp.set("A", 1), bp.set('B', (unresolved) => {
+            timesPromiseWasCreated++;
+            return delay(200, 3);
+        })];
+        do {
+            const progrssedBid = yield bids;
+            bids = bids.filter(bid => !progrssedBid.is(bid.eventId))
+        } while(bids.length !== 0);
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+    }, ({scenario, event, log})=> {
+        console.log('actions: ', log.actions);
+        expect(event('A').value).toBe(1);
+        if(scenario('thread1')?.isCompleted) {
+            expect(event('B').value).toBe(3);
+            expect(timesPromiseWasCreated).toBe(1);
+            done();
+        }
     });
 });

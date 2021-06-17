@@ -123,20 +123,21 @@ export class BThread {
     }
 
 
-    private _cancelPendingRequests(eventId?: EventId): EventMap<PlacedBid> | undefined {
+    private _cancelPendingRequests(eventId: EventId): EventMap<PlacedBid> | undefined {
         const cancelledBids = new EventMap<PlacedBid>();
         this._pendingRequests.forEach((id, pendingBid) => {
-            if(eventId === undefined || !sameEventId(eventId, id)) {
+            if(!sameEventId(eventId, id)) {
                 cancelledBids.set(id, pendingBid);
                 this._pendingRequests.deleteSingle(id);
             }
-        })
+        });
+        this._pendingRequests.clear();
         return cancelledBids.size() > 0 ? cancelledBids : undefined;
     }
 
 
     private _processNextBid(placedBid: PlacedBid, payload: any, error?: ErrorInfo): void {
-        const cancelledBids = this._cancelPendingRequests();
+        const cancelledBids = this._cancelPendingRequests(placedBid.eventId);
         let progressedBid: ProgressedBid = {
             ...placedBid,
             cancelledBids: cancelledBids,
