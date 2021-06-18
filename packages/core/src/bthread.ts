@@ -61,10 +61,10 @@ export class BThread {
     private readonly _logger: Logger;
     private _currentProps: BThreadProps;
     private _thread: BThreadGenerator;
-    private _currentBids: PlacedBid[] = [];
+    private _placedBids: PlacedBid[] = [];
     public get bThreadBids(): BThreadBids | undefined {
-        if(this._state.pendingBids.size() === 0 && this._currentBids.length === 0) return undefined
-        return {pendingBidMap: this._state.pendingBids, placedBids: this._currentBids }}
+        if(this._state.pendingBids.size() === 0 && this._placedBids.length === 0) return undefined
+        return {pendingBidMap: this._state.pendingBids, placedBids: this._placedBids }}
     private _nextBidOrBids?: BidOrBids;
     public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingBid> = new EventMap();
@@ -122,15 +122,15 @@ export class BThread {
     }
 
     private _setCurrentBids(): void {
-        this._currentBids = getPlacedBidsForBThread(this.id, this._nextBidOrBids);
+        this._placedBids = getPlacedBidsForBThread(this.id, this._nextBidOrBids);
         this._pendingRequests.forEach(requestBidEventId => {         // remove all pending requests, that are not placed.
-            if(!this._currentBids.some(placedBid => sameEventId(requestBidEventId, placedBid.eventId))) {
+            if(!this._placedBids.some(placedBid => sameEventId(requestBidEventId, placedBid.eventId))) {
                 this._pendingRequests.deleteSingle(requestBidEventId);
             }
         })
         const allPendingBids = this._pendingRequests.clone().merge(this._pendingExtends);
         this._state.pendingBids = allPendingBids;
-        this._state.bids = toBidsByType({pendingBidMap: allPendingBids, placedBids: this._currentBids})
+        this._state.bids = toBidsByType({pendingBidMap: allPendingBids, placedBids: this._placedBids})
     }
 
     private _cancelPendingRequests(eventId?: EventId): EventMap<PlacedBid> | undefined {
@@ -147,7 +147,7 @@ export class BThread {
 
 
     private _processNextBid(placedBid: PlacedBid, payload: any, error?: ErrorInfo): void {
-        const remainingBids = this._currentBids.filter(bid => !sameEventId(bid.eventId, placedBid.eventId));
+        const remainingBids = this._placedBids.filter(bid => !sameEventId(bid.eventId, placedBid.eventId));
         let progressedBid: ProgressedBid = {
             ...placedBid,
             payload: payload,
@@ -172,7 +172,7 @@ export class BThread {
         if (next.done) {
             this._pendingRequests.clear();
             delete this._nextBidOrBids;
-            this._currentBids = [];
+            this._placedBids = [];
             this._state.isCompleted = true;
             this._state.bids = {};
             this._state.pendingBids = new EventMap();
@@ -217,7 +217,7 @@ export class BThread {
     // --- public
 
     public getCurrentBid(bidType: BidType, eventId: EventId): PlacedBid | undefined {
-        return this._currentBids.find(placedBid => placedBid.type === bidType && sameEventId(placedBid.eventId, eventId))
+        return this._placedBids.find(placedBid => placedBid.type === bidType && sameEventId(placedBid.eventId, eventId))
     }
 
     public resetOnPropsChange(nextProps: BThreadProps): boolean {
@@ -315,7 +315,7 @@ export class BThread {
     public destroy(): void {
         this._pendingExtends.clear();
         this._pendingRequests.clear();
-        this._currentBids = [];
+        this._placedBids = [];
         this._logger.logScaffoldingResult(ScaffoldingResultType.destroyed, this.id);
     }
 }
