@@ -40,7 +40,7 @@ export function setupScaffolding(
             else logger.logScaffoldingResult(ScaffoldingResultType.enabled, bThreadId);
         }
         bThread = bThreadMap.get(bThreadId)!;
-        if(bThread.currentBids !== undefined) bThreadBids.push(bThread.currentBids);
+        if(bThread.bThreadBids !== undefined) bThreadBids.push(bThread.bThreadBids);
         bThreadStateMap.set(bThreadId, bThread.state);
         bThreadOrderIndex++;
         return bThread.state;

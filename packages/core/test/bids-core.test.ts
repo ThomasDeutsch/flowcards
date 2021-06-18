@@ -427,8 +427,8 @@ test("an allOf behaviour can be implemented", (done) => {
         })];
         do {
             const progrssedBid = yield bids;
-            bids = progrssedBid.remainingBids;
-        } while(bids);
+            bids = progrssedBid.remainingBids || [];
+        } while(bids.length > 0);
     });
 
     testScenarios((enable) => {
@@ -438,6 +438,57 @@ test("an allOf behaviour can be implemented", (done) => {
         if(scenario('thread1')?.isCompleted) {
             expect(event('B').value).toBe(3);
             expect(timesPromiseWasCreated).toBe(1);
+            done();
+        }
+    });
+});
+
+
+test("a pending event is cancelled, if the next bid is not asking for the pending event id", (done) => {
+    const requestingThread = scenario({id: 'thread1', }, function*() {
+        yield [bp.set("A", 1), bp.set('B', delay(200, 1))];
+        yield bp.request('cancel');
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+    }, ({scenario, event})=> {
+        if(scenario('thread1')?.isCompleted) {
+            expect(event('B').isPending).toBe(false);
+            done();
+        }
+    });
+});
+
+test("a pending event is cancelled, if the thread completes", (done) => {
+    const requestingThread = scenario({id: 'thread1', }, function*() {
+        yield [bp.set("A", 1), bp.set('B', delay(200, 1))];
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+    }, ({scenario, event})=> {
+        if(scenario('thread1')?.isCompleted) {
+            expect(event('B').isPending).toBe(false);
+            done();
+        }
+    });
+});
+
+
+test("a pending event will not remain pending if the bid is not asked for while in pending state.", (done) => {
+    const requestingThread = scenario({id: 'thread1', }, function*() {
+        yield [bp.set("A", 1), bp.set('B', () => delay(2000, 1))];
+        yield [bp.set('B'), bp.request('continue')];
+        yield [bp.askFor('fin')]
+
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread());
+    }, ({event})=> {
+        if(event('fin').dispatch) {
+            expect(event('B').isPending).toBe(false);
             done();
         }
     });

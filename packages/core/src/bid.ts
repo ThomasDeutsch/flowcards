@@ -42,7 +42,7 @@ export type BThreadBids = {
 export type BidOrBids =  Bid | (Bid | undefined)[] | undefined;
 
 
-export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids, pendingBidMap: EventMap<PendingBid>): BThreadBids {
+export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids): PlacedBid[] {
     const placedBids: PlacedBid[] = utils.toArray(bidOrBids)
         .filter(utils.notUndefined)
         .map(bid => {
@@ -50,10 +50,7 @@ export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBi
             pb.bThreadId = bThreadId;
             return pb;
         });
-    return {
-        pendingBidMap: pendingBidMap,
-        placedBids: placedBids
-    }
+    return placedBids;
 }
 
 // bids from multiple BThreads
