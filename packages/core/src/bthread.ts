@@ -1,5 +1,5 @@
 import { AnyAction, ResolveAction, ResolveExtendAction, getResolveAction, getResolveExtendAction, RequestedAction } from './action';
-import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids, ProgressedBid } from './bid';
+import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids, ProgressedBid, BidsByType, toBidsByType } from './bid';
 import { EventMap, EventId, toEventId, sameEventId } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
 import * as utils from './utils';
@@ -8,7 +8,6 @@ import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType, BThreadReactionType } from './logger';
 import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
-import { Bid, BidsByType, request, toBidsByType } from '.';
 import { ReactionCheck } from './validation';
 
 export type ErrorInfo = {event: EventId, error: any}
@@ -64,7 +63,7 @@ export class BThread {
     private _placedBids: PlacedBid[] = [];
     public get bThreadBids(): BThreadBids | undefined {
         if(this._state.pendingBids.size() === 0 && this._placedBids.length === 0) return undefined
-        return {pendingBidMap: this._state.pendingBids, placedBids: this._placedBids }}
+        return {pendingBidMap: this._state.pendingBids, placedBids: this._placedBids.reverse() }}
     private _nextBidOrBids?: BidOrBids;
     public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingBid> = new EventMap();
