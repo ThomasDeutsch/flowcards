@@ -40,6 +40,10 @@ export class BThreadMap<T> {
         return this._map.clear()
     }
 
+    public keys(): BThreadId[] {
+        return [...this._map.keys()].map(BThreadMap.toThreadId);
+    }
+
     public forEach(callbackFn: (value: T, key: string, map: Map<string, T>) => void): void {
         this._map.forEach(callbackFn);
     }
