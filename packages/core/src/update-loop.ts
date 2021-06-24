@@ -22,11 +22,13 @@ export interface EventInfo<T = any> {
     isBlocked: boolean;
 }
 
+export type GetEventInfo = <T = any>(eventName: string | EventId) => EventInfo<T>;
+
 // update loop
 // -----------------------------------------------------------------------------------
 
 export interface ScenariosContext {
-    event: <T = any>(eventName: string | EventId) => EventInfo<T>;
+    event: GetEventInfo;
     scenario: (scenarioId: string | BThreadId) => BThreadState | undefined;
     log: Logger;
     bids: AllPlacedBids;

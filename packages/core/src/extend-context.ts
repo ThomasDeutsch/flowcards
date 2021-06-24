@@ -11,9 +11,9 @@ export class ExtendContext {
         this._value = payload;
     }
 
-    public resolve(value?: unknown): void { 
+    public resolve(value?: unknown): void {
         delete this._promise;
-        this._isCompleted = true; 
+        this._isCompleted = true;
         this._resolveFn?.(value);
         this._value = value;
     }

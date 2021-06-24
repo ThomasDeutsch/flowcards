@@ -1,10 +1,9 @@
 import { PlacedBid } from './bid';
-import { ActionType, AllPlacedBids, AnyAction, BidType, getHighestPrioAskForBid, PlacedBidContext } from '.';
+import { AllPlacedBids, AnyAction, getHighestPrioAskForBid, PlacedBidContext } from '.';
 import { notUndefined } from './utils';
 
-
 export enum UIActionCheck {
-    OK = 'OK',  
+    OK = 'OK',
     EventIsBlocked = 'EventIsBlocked',
     EventIsPending = 'EventIsPending',
     HasInvalidPayload = 'HasInvalidPayload',
@@ -74,7 +73,7 @@ export function askForValidationExplainCB(bid?: PlacedBid, bidContext?: PlacedBi
 }
 
 export function validateAskedFor(action: AnyAction, allPlacedBids: AllPlacedBids): UIActionCheck {
-    if((action.type === "requestedAction" && action.bidType !== 'triggerBid') || 
+    if((action.type === "requestedAction" && action.bidType !== 'triggerBid') ||
       (action.type !== "uiAction")) return UIActionCheck.OK;
     const bidContext = allPlacedBids.get(action.eventId);
     if(bidContext === undefined) return UIActionCheck.NoPlacedBidForEventId;
