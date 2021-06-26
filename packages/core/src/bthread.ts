@@ -45,6 +45,7 @@ export interface BThreadState {
     pendingBids: EventMap<PendingBid>;
     bids: BidsByType;
     cancelledBids?: EventMap<PlacedBid>;
+    currentProps?: BThreadProps;
 }
 
 export function isSameBThreadId(a?: BThreadId, b?: BThreadId): boolean {
@@ -73,6 +74,15 @@ export class BThread {
 
     public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, resolveActionCB: ResolveActionCB, logger: Logger) {
         this.id = id;
+        this.idString = BThreadMap.toIdString(id);
+        this._resolveActionCB = resolveActionCB;
+        this._generatorFunction = generatorFunction.bind(this._getBThreadContext());
+        this._currentProps = props;
+        this._thread = this._generatorFunction(this._currentProps);
+        this._logger = logger;
+        const next = this._thread.next();
+        this._nextBidOrBids = next.value;
+        this._setCurrentBids();
         this._state = {
             id: id,
             orderIndex: orderIndex,
@@ -83,19 +93,11 @@ export class BThread {
             progressionCount: 0,
             latestProgressedBid: undefined,
             pendingBids: new EventMap(),
-            bids: {}
-
+            bids: {},
+            currentProps: this._currentProps
         };
-        this.idString = BThreadMap.toIdString(id);
-        this._resolveActionCB = resolveActionCB;
-        this._generatorFunction = generatorFunction.bind(this._getBThreadContext());
-        this._currentProps = props;
-        this._thread = this._generatorFunction(this._currentProps);
-        this._logger = logger;
-        const next = this._thread.next();
-        this._nextBidOrBids = next.value;
-        this._setCurrentBids();
         this._logger.logReaction(BThreadReactionType.init, this.id, this._state);
+
     }
 
      // --- private
@@ -185,6 +187,7 @@ export class BThread {
         this._cancelPendingRequests();
         this._pendingExtends = new EventMap();
         this._currentProps = props;
+        this._state.currentProps = this._currentProps;
         this._state.isCompleted = false;
         this._state.progressionCount = -1;
         delete this._state.section;
