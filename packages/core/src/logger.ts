@@ -67,7 +67,7 @@ export class Logger {
     }
 
     public logBThreadStateMap(bThreadStateMap: BThreadMap<BThreadState>): void {
-        this.bThreadStateHistory.set(this._currentActionId(), bThreadStateMap);
+        this.bThreadStateHistory.set(this._currentActionId(), bThreadStateMap.clone());
     }
 
     public resetLog(): void {
