@@ -3,7 +3,6 @@ import { testScenarios } from './testutils';
 import { scenario } from '../src/scenario';
 import { delay } from './testutils';
 import { BThreadContext } from '../src/bthread';
-import { ScaffoldingResultType } from "../src";
 
 test("log will contain a list of executed actions (sorted)", () => {
     const flow1 = scenario(
@@ -63,24 +62,6 @@ test("the actions in a log will contain info, if and when the promise got resolv
     }
   });
 
-});
-
-
-test("scaffolding results are logged", (done) => {
-
-  const thread1 = scenario({id: 'thread1', description: 'myThread1'}, function* () {
-      yield bp.askFor('heyho');
-  });
-
-  testScenarios((enable) => {
-      enable(thread1());
-  }, ({log, scenario}) => {
-    if(scenario({name: 'thread1'})?.bids.askForBid?.get({name: 'heyho'})) {
-      const history = log.bThreadScaffoldingHistory.get('thread1');
-      expect(history!.get(0)).toEqual(ScaffoldingResultType.enabled);
-      done();
-    }
-  });
 });
 
 test("pending events are logged", (done) => {

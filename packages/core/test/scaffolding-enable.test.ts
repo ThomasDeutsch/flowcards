@@ -25,12 +25,12 @@ test("a thread will accept an optional key", () => {
     let receivedKeyA, receivedKeyB;
 
     const thread = scenario(null, function* (this: BThreadContext) {
-        receivedKeyA = this.key;
+        receivedKeyA = this.getKey();
         yield bp.askFor('A');
     });
 
     const threadB = scenario({id: 'thread2'}, function* (this: BThreadContext) {
-        receivedKeyB = this.key;
+        receivedKeyB = this.getKey();
         yield bp.askFor('A');
     });
 
@@ -51,7 +51,7 @@ test("if no key is provided, the default key value is undefined", () => {
     let receivedKeyA;
 
     const thread = scenario(null, function* (this: BThreadContext) {
-        receivedKeyA = this.key;
+        receivedKeyA = this.getKey();
         yield bp.askFor('A');
     });
 

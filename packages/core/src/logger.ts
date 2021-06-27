@@ -3,7 +3,6 @@ import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
 import { BThreadId, BThreadState } from './bthread';
 import { EventId, EventMap } from './event-map';
-import { BidType } from './bid';
 import { AnyActionWithId, RequestedAction } from './action';
 
 export enum BThreadReactionType {
@@ -18,42 +17,22 @@ export interface BThreadReaction {
     reactionType: BThreadReactionType;
     actionId: number;
     selectedBid?: PlacedBid;
-    bids: Partial<Record<BidType, EventMap<PlacedBid>>>;
-    section?: string;
-    isCompleted: boolean;
-    progressionCount: number;
-}
-
-export enum ScaffoldingResultType {
-    enabled = 'enabled',
-    disabled = 'disabled',
-    reset = 'reset',
-    destroyed = 'destroyed',
 }
 
 export class Logger {
-    private _actionId = 0;
-    public set actionId(id: number) {
-        this._actionId = id;
-    }
     private _actions: AnyActionWithId[] = [];
     public get actions(): AnyActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
-    public bThreadScaffoldingHistory = new BThreadMap<Map<number, ScaffoldingResultType>>();
     public pendingEventIdHistory = new Map<number, Set<EventId> | undefined>();
+    public bThreadStateHistory = new Map<number, BThreadMap<BThreadState>>();
 
-    public logScaffoldingResult(type: ScaffoldingResultType, bThreadId: BThreadId): void {
-        let bThreadHistory = this.bThreadScaffoldingHistory.get(bThreadId);
-        if(bThreadHistory === undefined) {
-            bThreadHistory = this.bThreadScaffoldingHistory.set(bThreadId, new Map()).get(bThreadId);
-        }
-        bThreadHistory!.set(this._actionId, type);
+    private _currentActionId(): number {
+        return utils.latest(this._actions)?.id || 0;
     }
 
     public logPendingEventIds(pending: EventMap<PlacedBid[]> | undefined): void {
         const eventIds = pending?.allKeys;
-        const currentActionId = utils.latest(this._actions)?.id || 0;
-        this.pendingEventIdHistory.set(currentActionId, eventIds);
+        this.pendingEventIdHistory.set(this._currentActionId(), eventIds);
     }
 
     public logAction(action: AnyActionWithId): void {
@@ -77,24 +56,24 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logReaction(reactionType: BThreadReactionType, bThreadId: BThreadId, state: BThreadState, bid?: PlacedBid): void {
+    public logReaction(reactionType: BThreadReactionType, bThreadId: BThreadId, bid?: PlacedBid): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentActionId = utils.latest(this._actions)?.id || 0;
+        const currentActionId = this._currentActionId();
         bThreadReactions.set(currentActionId, {
             reactionType: reactionType,
             actionId: currentActionId,
-            selectedBid: bid,
-            progressionCount: state.progressionCount,
-            bids: state.bids,
-            section: state.section,
-            isCompleted: state.isCompleted
+            selectedBid: bid
         });
     }
 
+    public logBThreadStateMap(bThreadStateMap: BThreadMap<BThreadState>): void {
+        this.bThreadStateHistory.set(this._currentActionId(), bThreadStateMap);
+    }
+
     public resetLog(): void {
-        this._actionId = 0;
         this._actions = [];
         this.bThreadReactionHistory = new BThreadMap();
-        this.bThreadScaffoldingHistory = new BThreadMap();
+        this.pendingEventIdHistory = new Map();
+        this.bThreadStateHistory = new Map();
     }
 }

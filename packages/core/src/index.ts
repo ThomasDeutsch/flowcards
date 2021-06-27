@@ -27,10 +27,10 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
     private _logger: Logger;
 
-    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActions?: AnyActionWithId[]) {
+    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
         this._logger = new Logger();
         this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
-        const replay = initialActions ? new Replay(initialActions) : undefined;
+        const replay = Array.isArray(initialActionsOrReplay) ? new Replay(initialActionsOrReplay) : initialActionsOrReplay
         this.initialScenariosContext = this._updateLoop.runScaffolding(replay);
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
@@ -51,9 +51,9 @@ export class Scenarios {
         }).catch(e => console.error(e));
     }
 
-    public reset(initialActions?: AnyActionWithId[]): void {
+    public reset(initialActionsOrReplay?: AnyActionWithId[] | Replay): void {
         this._bufferedActions.length = 0;
-        const replay = initialActions ? new Replay(initialActions) : undefined;
+        const replay = Array.isArray(initialActionsOrReplay) ? new Replay(initialActionsOrReplay) : initialActionsOrReplay
         this._updateLoop.reset();
         const context = this._updateLoop.runScaffolding(replay);
         this._updateCb?.(context);

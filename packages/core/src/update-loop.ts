@@ -10,7 +10,7 @@ import { setupScaffolding, StagingFunction } from './scaffolding';
 import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryEventId, getHighestPrioAskForBid, InternalDispatch, PlacedBid, BThreadId, BidType } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor, askForValidationExplainCB, CombinedValidationCB } from './validation';
 import { isThenable } from './utils';
-import { Replay, ReplayStatus } from './replay';
+import { Replay } from './replay';
 
 export interface EventInfo<T = any> {
     lastUpdate: number;
@@ -30,9 +30,10 @@ export type GetEventInfo = <T = any>(eventName: string | EventId) => EventInfo<T
 export interface ScenariosContext {
     event: GetEventInfo;
     scenario: (scenarioId: string | BThreadId) => BThreadState | undefined;
+    allScenarioIds: BThreadId[],
     log: Logger;
     bids: AllPlacedBids;
-    replay?: ReplayStatus;
+    replay?: Replay;
 }
 
 export type UpdateLoopFunction = () => ScenariosContext;
@@ -47,7 +48,7 @@ export class UpdateLoop {
     private readonly _bThreadStateMap = new BThreadMap<BThreadState>();
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _logger: Logger;
-    private readonly _scaffold: (loopCount: number) => void;
+    private readonly _scaffold: () => void;
     private readonly _eventCache = new EventMap<CachedItem<unknown>>();
     private readonly _getCachedEvent = <T>(eventId: string | EventId) => getEventCache<T>(this._eventCache, eventId);
     private readonly _eventInfos= new EventMap<EventInfo<unknown>>();
@@ -94,9 +95,10 @@ export class UpdateLoop {
         return {
             event: this._getEventInfo.bind(this),
             scenario: (id) => this._bThreadStateMap?.get(id),
+            allScenarioIds: this._bThreadStateMap.keys(),
             log: this._logger,
             bids: this._allPlacedBids,
-            replay: replay?.getReplayStatus()
+            replay: replay
         }
     }
 
@@ -172,7 +174,7 @@ export class UpdateLoop {
     }
 
     public runScaffolding(replay?: Replay): ScenariosContext {
-        this._scaffold(this._currentActionId);
+        this._scaffold();
         this._allPlacedBids = allPlacedBids(this._bThreadBids);
         return this._runLoop(replay);
     }
