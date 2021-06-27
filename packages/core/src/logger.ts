@@ -6,7 +6,6 @@ import { EventId, EventMap } from './event-map';
 import { AnyActionWithId, RequestedAction } from './action';
 
 export enum BThreadReactionType {
-    init = 'init',
     progress = 'progress',
     error = 'error',
     newPending = 'newPending',
@@ -17,6 +16,7 @@ export interface BThreadReaction {
     reactionType: BThreadReactionType;
     actionId: number;
     selectedBid?: PlacedBid;
+    section?: string
 }
 
 export class Logger {

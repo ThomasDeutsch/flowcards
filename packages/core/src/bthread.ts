@@ -101,7 +101,6 @@ export class BThread {
         const next = this._thread.next();
         this._nextBidOrBids = next.value;
         this._setCurrentBids();
-        this._logger.logReaction(BThreadReactionType.init, this.id);
     }
 
      // --- private

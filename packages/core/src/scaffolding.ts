@@ -49,7 +49,7 @@ export function setupScaffolding(
             } else {
                 bThread.setEnabledState(false);
             }
-            bThreadStateMap.set(bThread.id, bThread.state);
+            bThreadStateMap.set(bThread.id, {...bThread.state});
         });
         if(destroyOnDisableThreadIds.size > 0)
             destroyOnDisableThreadIds.forEach((bThreadId) => {
