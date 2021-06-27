@@ -30,7 +30,7 @@ export type GetEventInfo = <T = any>(eventName: string | EventId) => EventInfo<T
 export interface ScenariosContext {
     event: GetEventInfo;
     scenario: (scenarioId: string | BThreadId) => BThreadState | undefined;
-    allScenarioIds: BThreadId[],
+    scenarioStateMap: BThreadMap<BThreadState>,
     log: Logger;
     bids: AllPlacedBids;
     replay?: Replay;
@@ -95,7 +95,7 @@ export class UpdateLoop {
         return {
             event: this._getEventInfo.bind(this),
             scenario: (id) => this._bThreadStateMap?.get(id),
-            allScenarioIds: this._bThreadStateMap.keys(),
+            scenarioStateMap: this._bThreadStateMap,
             log: this._logger,
             bids: this._allPlacedBids,
             replay: replay
