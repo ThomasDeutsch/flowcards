@@ -54,7 +54,6 @@ export function isSameBThreadId(a?: BThreadId, b?: BThreadId): boolean {
 }
 
 export class BThread {
-    public readonly idString: string;
     public readonly id: BThreadId;
     private readonly _resolveActionCB: ResolveActionCB;
     private readonly _generatorFunction: BThreadGeneratorFunction;
@@ -74,15 +73,7 @@ export class BThread {
 
     public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, resolveActionCB: ResolveActionCB, logger: Logger) {
         this.id = id;
-        this.idString = BThreadMap.toIdString(id);
-        this._resolveActionCB = resolveActionCB;
-        this._generatorFunction = generatorFunction.bind(this._getBThreadContext());
         this._currentProps = props;
-        this._thread = this._generatorFunction(this._currentProps);
-        this._logger = logger;
-        const next = this._thread.next();
-        this._nextBidOrBids = next.value;
-        this._setCurrentBids();
         this._state = {
             id: id,
             orderIndex: orderIndex,
@@ -96,6 +87,13 @@ export class BThread {
             bids: {},
             currentProps: this._currentProps
         };
+        this._resolveActionCB = resolveActionCB;
+        this._generatorFunction = generatorFunction.bind(this._getBThreadContext());
+        this._thread = this._generatorFunction(this._currentProps);
+        this._logger = logger;
+        const next = this._thread.next();
+        this._nextBidOrBids = next.value;
+        this._setCurrentBids();
         this._logger.logReaction(BThreadReactionType.init, this.id, this._state);
 
     }
