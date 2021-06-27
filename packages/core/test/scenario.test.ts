@@ -54,22 +54,3 @@ test("the bThreadState is returned by the scenarios function", () => {
         expect(scenario('thread2')?.isCompleted).toBeFalsy();
     });
   });
-
-  test("the bThreadState contains an orderIndex, the first enabled BThread will have an index of 0", () => {
-
-    const thread1 = scenario({id: 'thread1'}, function* () {
-        yield bp.request("eventOne");
-    });
-
-    const thread2 = scenario({id: 'thread2'}, function* () {
-        yield bp.askFor("eventTwo");
-    })
-
-    testScenarios((enable) => {
-        enable(thread1());
-        enable(thread2());
-    }, ({scenario}) => {
-        expect(scenario('thread1')?.orderIndex).toBe(0);
-        expect(scenario('thread2')?.orderIndex).toBe(1);
-    });
-  });

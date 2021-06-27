@@ -23,33 +23,29 @@ export function setupScaffolding(
 (currentActionId: number) => void {
     const enabledBThreadIds = new BThreadMap<BThreadId>();
     const destroyOnDisableThreadIds = new BThreadMap<BThreadId>();
-    let bThreadOrderIndex = 0;
 
     function enableBThread([scenarioInfo, generatorFunction, props]: Scenario<BThreadGeneratorFunction>, key?: BThreadKey): BThreadState {
         const bThreadId: BThreadId = {name: scenarioInfo.id, key: key};
         enabledBThreadIds.set(bThreadId, bThreadId);
         let bThread = bThreadMap.get(bThreadId)
         if (bThread) {
-            bThread.orderIndex = bThreadOrderIndex;
             const wasReset = bThread.resetOnPropsChange(props);
             if(wasReset) logger.logScaffoldingResult(ScaffoldingResultType.reset, bThreadId);
             else logger.logScaffoldingResult(ScaffoldingResultType.enabled, bThreadId);
         } else {
-            bThreadMap.set(bThreadId, new BThread(bThreadId, scenarioInfo, bThreadOrderIndex, generatorFunction, props, resolveActionCB, logger));
+            bThreadMap.set(bThreadId, new BThread(bThreadId, scenarioInfo, generatorFunction, props, resolveActionCB, logger));
             if(scenarioInfo.destroyOnDisable) destroyOnDisableThreadIds.set(bThreadId, bThreadId);
             else logger.logScaffoldingResult(ScaffoldingResultType.enabled, bThreadId);
         }
         bThread = bThreadMap.get(bThreadId)!;
         if(bThread.bThreadBids !== undefined) bThreadBids.push(bThread.bThreadBids);
         bThreadStateMap.set(bThreadId, bThread.state);
-        bThreadOrderIndex++;
         return bThread.state;
     }
 
     function scaffold(beforeActionId: number) {
         logger.actionId = beforeActionId;
         bThreadBids.length = 0;
-        bThreadOrderIndex = 0;
         enabledBThreadIds.clear();
         stagingFunction(enableBThread, getCachedEvent); // do the staging
         bThreadMap.forEach(bThread => {

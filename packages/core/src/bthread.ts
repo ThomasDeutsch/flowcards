@@ -4,7 +4,6 @@ import { EventMap, EventId, toEventId, sameEventId } from './event-map';
 import { setEventCache, CachedItem } from './event-cache';
 import * as utils from './utils';
 import { ExtendContext } from './extend-context';
-import { BThreadMap } from './bthread-map';
 import { Logger, ScaffoldingResultType, BThreadReactionType } from './logger';
 import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
@@ -39,7 +38,6 @@ export interface BThreadState {
     destroyOnDisable?: boolean;
     isCompleted: boolean;
     description?: string;
-    orderIndex: number;
     progressionCount: number;
     latestProgressedBid?: ProgressedBid;
     pendingBids: EventMap<PendingBid>;
@@ -65,18 +63,16 @@ export class BThread {
         if(this._state.pendingBids.size() === 0 && this._placedBids.length === 0) return undefined
         return {pendingBidMap: this._state.pendingBids, placedBids: this._placedBids.reverse() }}
     private _nextBidOrBids?: BidOrBids;
-    public set orderIndex(val: number) { this._state.orderIndex = val; }
     private _pendingRequests: EventMap<PendingBid> = new EventMap();
     private _pendingExtends: EventMap<PendingBid> = new EventMap();
     private _state: BThreadState;
     public get state(): BThreadState { return this._state; }
 
-    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, orderIndex: number, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, resolveActionCB: ResolveActionCB, logger: Logger) {
+    public constructor(id: BThreadId, scenarioInfo: ScenarioInfo, generatorFunction: BThreadGeneratorFunction, props: BThreadProps, resolveActionCB: ResolveActionCB, logger: Logger) {
         this.id = id;
         this._currentProps = props;
         this._state = {
             id: id,
-            orderIndex: orderIndex,
             destroyOnDisable: scenarioInfo.destroyOnDisable,
             description: scenarioInfo.description,
             section: undefined,
