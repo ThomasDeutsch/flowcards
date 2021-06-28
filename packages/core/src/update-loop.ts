@@ -28,6 +28,7 @@ export type GetEventInfo = <T = any>(eventName: string | EventId) => EventInfo<T
 // -----------------------------------------------------------------------------------
 
 export interface ScenariosContext {
+    id: number;
     event: GetEventInfo;
     scenario: (scenarioId: string | BThreadId) => BThreadState | undefined;
     scenarioStateMap: BThreadMap<BThreadState>,
@@ -95,6 +96,7 @@ export class UpdateLoop {
 
     private _getContext(replay?: Replay): ScenariosContext {
         const newContext: ScenariosContext = {
+            id: this._currentActionId,
             event: this._getEventInfo.bind(this),
             scenario: (id) => this._bThreadStateMap?.get(id),
             scenarioStateMap: this._bThreadStateMap,
