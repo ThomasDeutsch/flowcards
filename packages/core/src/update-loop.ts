@@ -91,8 +91,10 @@ export class UpdateLoop {
         return newEventInfo
     }
 
+    private _context: ScenariosContext | undefined;
+
     private _getContext(replay?: Replay): ScenariosContext {
-        return {
+        const newContext: ScenariosContext = {
             event: this._getEventInfo.bind(this),
             scenario: (id) => this._bThreadStateMap?.get(id),
             scenarioStateMap: this._bThreadStateMap,
@@ -100,6 +102,12 @@ export class UpdateLoop {
             bids: this._allPlacedBids,
             replay: replay
         }
+        if(this._context === undefined) {
+            this._context = newContext
+        } else {
+            Object.assign(this._context, newContext);
+        }
+        return this._context;
     }
 
     private _getQueuedAction(): UIAction | ResolveAction | ResolveExtendAction | undefined {
