@@ -92,10 +92,8 @@ export class UpdateLoop {
         return newEventInfo
     }
 
-    private _context: ScenariosContext | undefined;
-
     private _getContext(replay?: Replay): ScenariosContext {
-        const newContext: ScenariosContext = {
+        return {
             id: this._currentActionId,
             event: this._getEventInfo.bind(this),
             scenario: (id) => this._bThreadStateMap?.get(id),
@@ -104,12 +102,6 @@ export class UpdateLoop {
             bids: this._allPlacedBids,
             replay: replay
         }
-        if(this._context === undefined) {
-            this._context = newContext
-        } else {
-            Object.assign(this._context, newContext);
-        }
-        return this._context;
     }
 
     private _getQueuedAction(): UIAction | ResolveAction | ResolveExtendAction | undefined {
@@ -134,7 +126,8 @@ export class UpdateLoop {
                     const uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
                     if(uiActionCheck !== UIActionCheck.OK) {
                         if(replay?.state === 'running') {
-                            replay.abortRun(uiActionCheck);
+                            console.error('Invalid Replay Action: ', reactionCheck, action);
+                            replay.abortRun(action, uiActionCheck);
                             return this._getContext(replay);
                         }
                         continue;
@@ -166,9 +159,9 @@ export class UpdateLoop {
                     reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }
             if(reactionCheck !== ReactionCheck.OK) {
-                console.warn('BThreadReactionError: ', reactionCheck, action);
+                console.error('Scenario-ReactionvError: ', reactionCheck, action);
                 if(replay?.state === 'running') {
-                    replay?.abortRun(reactionCheck);
+                    replay?.abortRun(action, reactionCheck);
                     return this._getContext(replay);
                 }
             }
