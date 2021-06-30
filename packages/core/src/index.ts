@@ -30,7 +30,9 @@ export class Scenarios {
     constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
         this._logger = new Logger();
         this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
-        const replay = Array.isArray(initialActionsOrReplay) ? new Replay(initialActionsOrReplay) : initialActionsOrReplay
+        let replay: Replay | undefined;
+            if(Array.isArray(initialActionsOrReplay)) replay = new Replay(initialActionsOrReplay);
+            else if (initialActionsOrReplay instanceof Replay) replay = initialActionsOrReplay;
         this.initialScenariosContext = this._updateLoop.runScaffolding(replay);
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
