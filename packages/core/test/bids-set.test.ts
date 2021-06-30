@@ -15,6 +15,21 @@ test("a set is a request, that will be cached. ", () => {
     });
 });
 
+
+test("an array can be set", () => {
+    const thread1 = scenario(null, function* () {
+        yield bp.set("count", [2]);
+    })
+
+
+    testScenarios((enable, ) => {
+        enable(thread1());
+    }, ({event}) => {
+        expect(Array.isArray(event("count").value)).toBeTruthy();
+    });
+});
+
+
 test("when a promise resolves, the cache gets updated", (done) => {
     const thread1 = scenario({id: 't1'}, function* () {
         const x = yield bp.set("EVENTXXS", () => delay(100, 'resolved value'));
