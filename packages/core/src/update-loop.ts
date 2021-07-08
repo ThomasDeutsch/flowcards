@@ -117,8 +117,8 @@ export class UpdateLoop {
         do {
             const maybeAction =
                 replay?.getNextReplayAction(this.getBid, this._currentActionId)
-                || this._getQueuedAction()
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
+                || this._getQueuedAction();
             if(maybeAction === undefined) return this._getContext(replay);
             const action = toActionWithId(maybeAction, this._currentActionId);
             switch(action.type) {
