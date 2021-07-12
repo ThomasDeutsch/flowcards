@@ -7,8 +7,8 @@ test("a set is a request, that will be cached. ", () => {
         yield bp.set("count", 2);
     })
 
-
-    testScenarios((enable, ) => {
+    testScenarios((enable, event) => {
+        event<string>('A').value
         enable(thread1());
     }, ({event}) => {
         expect(event("count").value).toEqual(2);

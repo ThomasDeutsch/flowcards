@@ -5,7 +5,7 @@ export interface CachedItem<T> {
     history: T[];
 }
 
-export type GetCachedEvent<T> = (eventId: EventId | string) => CachedItem<T> | undefined;
+export type GetCachedEvent<T = any> = (eventId: EventId | string) => CachedItem<T> | undefined;
 
 export function setEventCache<T>(eventCache: EventMap<CachedItem<unknown>>, event: EventId, payload?: T): void {
     const val = eventCache.get(event);

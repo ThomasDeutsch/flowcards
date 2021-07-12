@@ -1,13 +1,15 @@
 import { BThreadBids } from './bid';
 import { BThread, BThreadState, BThreadId, BThreadKey } from './bthread';
-import { GetCachedEvent } from './event-cache';
+import { CachedItem, GetCachedEvent } from './event-cache';
 import { Logger } from './logger';
 import { BThreadMap } from './bthread-map';
 import { Scenario } from './scenario';
 import { ResolveActionCB } from './update-loop';
 import { BThreadGeneratorFunction } from '.';
+import { EventId } from './event-map';
 
-export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState, getCachedEvent: GetCachedEvent<unknown>) => void;
+
+export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState, getCachedEvent: <T>(eventId: EventId | string) => CachedItem<T> | undefined) => void;
 
 
 // enable, disable or delete bThreads
@@ -17,7 +19,7 @@ export function setupScaffolding(
     bThreadMap: BThreadMap<BThread>,
     bThreadBids: BThreadBids[],
     bThreadStateMap: BThreadMap<BThreadState>,
-    getCachedEvent: GetCachedEvent<unknown>,
+    getCachedEvent: GetCachedEvent,
     resolveActionCB: ResolveActionCB,
     logger: Logger):
 () => void {
