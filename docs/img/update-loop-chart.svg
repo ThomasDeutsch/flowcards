@@ -1,104 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generator: Adobe Illustrator 25.2.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
 <svg version="1.1" id="Ebene_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="812px" height="873.2px" viewBox="0 0 812 873.2" style="enable-background:new 0 0 812 873.2;" xml:space="preserve">
+	 width="1116.8px" height="810.1px" viewBox="0 0 1116.8 810.1" style="enable-background:new 0 0 1116.8 810.1;"
+	 xml:space="preserve">
 <style type="text/css">
 	.st0{opacity:0.26;fill:#A6FFE8;stroke:#067700;stroke-miterlimit:10;enable-background:new    ;}
 	.st1{opacity:0.13;fill:#028925;enable-background:new    ;}
 	.st2{opacity:0.36;fill:#FFDEFE;stroke:#9F00A3;stroke-miterlimit:10;enable-background:new    ;}
-	.st3{fill:#9B0B9B;}
+	.st3{fill:#028925;}
 	.st4{font-family:'MyriadPro-Regular';}
-	.st5{font-size:33px;}
-	.st6{fill:#028925;}
-	.st7{font-size:24px;}
-	.st8{fill:none;stroke:#000000;stroke-miterlimit:10;}
-	.st9{stroke:#000000;stroke-miterlimit:10;}
-	.st10{fill:#FFFFFF;stroke:#000000;stroke-miterlimit:10;}
-	.st11{font-family:'HelveticaNeue-Light';}
-	.st12{font-size:12px;}
-	.st13{fill:none;}
-	.st14{font-family:'ArialMT';}
-	.st15{letter-spacing:-1;}
-	.st16{fill:#FFFFFF;stroke:#000000;}
-	.st17{enable-background:new    ;}
+	.st5{font-size:24px;}
+	.st6{stroke:#000000;stroke-miterlimit:10;}
+	.st7{fill:none;}
+	.st8{font-family:'ArialMT';}
+	.st9{font-size:12px;}
+	.st10{fill:none;stroke:#000000;stroke-miterlimit:10;}
+	.st11{fill:#FFFFFF;stroke:#000000;}
+	.st12{fill:#FFFFFF;stroke:#000000;stroke-miterlimit:10;}
+	.st13{fill:#FFE45F;stroke:#000000;}
+	.st14{enable-background:new    ;}
+	.st15{fill:#FFE45F;stroke:#846B00;stroke-miterlimit:10;}
+	.st16{fill:#D6D6D6;stroke:#000000;stroke-miterlimit:10;}
+	.st17{font-size:17px;}
+	.st18{fill:#6E80FF;}
 </style>
-<rect x="294.2" y="23" class="st0" width="489.8" height="821.4"/>
-<rect x="315" y="181.4" class="st1" width="451" height="638.6"/>
-<rect x="23.2" y="23" class="st2" width="250.8" height="821.4"/>
-<text transform="matrix(1 0 0 1 40.38 62)" class="st3 st4 st5">UI</text>
-<text transform="matrix(1 0 0 1 305.5 62)" class="st6 st4 st5">S</text>
-<text transform="matrix(1 0 0 1 321.97 62)" class="st6 st4 st5">c</text>
-<text transform="matrix(1 0 0 1 336.55 62)" class="st6 st4 st5">ena</text>
-<text transform="matrix(1 0 0 1 387.31 62)" class="st6 st4 st5">r</text>
-<text transform="matrix(1 0 0 1 398.23 62)" class="st6 st4 st5">ios</text>
-<text transform="matrix(1 0 0 1 624 213.63)" class="st6 st4 st7">upd</text>
-<text transform="matrix(1 0 0 1 664.42 213.63)" class="st6 st4 st7">a</text>
-<text transform="matrix(1 0 0 1 675.89 213.63)" class="st6 st4 st7">t</text>
-<text transform="matrix(1 0 0 1 683.69 213.63)" class="st6 st4 st7">e</text>
-<text transform="matrix(1 0 0 1 696.38 213.63)" class="st6 st4 st7">-loop</text>
-<path class="st8" d="M594,376.3v-33.6"/>
-<path class="st9" d="M594,337.4l3.5,7l-3.5-1.8l-3.5,1.8L594,337.4z"/>
-<path class="st9" d="M255.8,426.3l7-3.5l-1.8,3.5l1.8,3.5L255.8,426.3z"/>
-<path class="st10" d="M594,376.3l60,50l-60,50l-60-50L594,376.3z"/>
-<text transform="matrix(1 0 0 1 565.55 424.26)" class="st11 st12">start </text>
-<text transform="matrix(1 0 0 1 591.77 424.26)" class="st11 st12">r</text>
-<text transform="matrix(1 0 0 1 595.33 424.26)" class="st11 st12">eplay</text>
-<text transform="matrix(1 0 0 1 573.44 438.66)" class="st11 st12">action ?</text>
-<rect x="594" y="356.3" class="st13" width="40" height="20"/>
-<text transform="matrix(1 0 0 1 603.71 369.76)" class="st14 st12 st15">Y</text>
-<text transform="matrix(1 0 0 1 610.61 369.76)" class="st14 st12">es</text>
-<rect x="594" y="476.3" class="st13" width="30" height="20"/>
-<text transform="matrix(1 0 0 1 600.83 489.76)" class="st14 st12">No</text>
-<rect x="418" y="476.3" class="st13" width="30" height="20"/>
-<text transform="matrix(1 0 0 1 334.88 417.8125)" class="st14 st12">No</text>
-<path class="st8" d="M516.7,546.3V570"/>
-<path class="st9" d="M516.7,575.2l-3.5-7l3.5,1.8l3.5-1.8L516.7,575.2z"/>
-<path class="st8" d="M517.7,616.3V634"/>
-<path class="st9" d="M517.7,639.2l-3.5-7l3.5,1.8l3.5-1.8L517.7,639.2z"/>
-<path class="st16" d="M378.7,576.3h278c3.3,0,6,2.7,6,6v28c0,3.3-2.7,6-6,6h-278c-3.3,0-6-2.7-6-6v-28
-	C372.7,579,375.4,576.3,378.7,576.3z"/>
-<text transform="matrix(1 0 0 1 491.5637 599.8483)" class="st14 st12">log action</text>
-<path class="st16" d="M384.7,640.3h266c6.6,0,12,5.4,12,12v56c0,6.6-5.4,12-12,12h-266c-6.6,0-12-5.4-12-12v-56
-	C372.7,645.7,378.1,640.3,384.7,640.3z"/>
-<text transform="matrix(1 0 0 1 419.5137 683.8483)" class="st14 st12">advance scenarios and log reactions</text>
-<path class="st9" d="M494.1,246.3l7-3.5l-1.8,3.5l1.8,3.5L494.1,246.3z"/>
-<rect x="478" y="406.3" class="st13" width="40" height="20"/>
-<text transform="matrix(1 0 0 1 487.71 419.76)" class="st14 st12 st15">Y</text>
-<text transform="matrix(1 0 0 1 494.61 419.76)" class="st14 st12">es</text>
-<path class="st8" d="M418,156.3v53.6"/>
-<path class="st9" d="M418,215.1l-3.5-7l3.5,1.8l3.5-1.8L418,215.1z"/>
-<path class="st16" d="M350.5,106.3h135c4.1,0,7.5,3.4,7.5,7.5v35c0,4.1-3.4,7.5-7.5,7.5h-135c-4.1,0-7.5-3.4-7.5-7.5v-35
+<rect x="294.2" y="23" class="st0" width="393.3" height="692.9"/>
+<rect x="315" y="181.4" class="st1" width="329" height="520.5"/>
+<rect x="46.8" y="23" class="st2" width="227.2" height="491.9"/>
+<text transform="matrix(1 0 0 1 505.9128 209.8998)" class="st3 st4 st5">upd</text>
+<text transform="matrix(1 0 0 1 546.3328 209.8998)" class="st3 st4 st5">a</text>
+<text transform="matrix(1 0 0 1 557.8029 209.8998)" class="st3 st4 st5">t</text>
+<text transform="matrix(1 0 0 1 565.6028 209.8998)" class="st3 st4 st5">e</text>
+<text transform="matrix(1 0 0 1 578.2928 209.8998)" class="st3 st4 st5">-loop</text>
+<path class="st6" d="M256.8,427.3l7-3.5l-1.8,3.5l1.8,3.5L256.8,427.3z"/>
+<rect x="594" y="476.3" class="st7" width="30" height="20"/>
+<rect x="418" y="476.3" class="st7" width="30" height="20"/>
+<text transform="matrix(1 0 0 1 334.88 417.8125)" class="st8 st9">No</text>
+<path class="st10" d="M418,476.4v23.7"/>
+<path class="st6" d="M418,505.3l-3.5-7l3.5,1.8l3.5-1.8L418,505.3z"/>
+<path class="st10" d="M419,546.4v17.7"/>
+<path class="st6" d="M419,569.3l-3.5-7l3.5,1.8l3.5-1.8L419,569.3z"/>
+<path class="st11" d="M346.1,506.4H491c1.7,0,3.1,2.7,3.1,6v28c0,3.3-1.4,6-3.1,6H346.1c-1.7,0-3.1-2.7-3.1-6v-28
+	C343,509.1,344.4,506.4,346.1,506.4z"/>
+<text transform="matrix(1 0 0 1 392.8637 529.9782)" class="st8 st9">log action</text>
+<path class="st6" d="M493.4,261.8l7-3.5l-1.8,3.5l1.8,3.5L493.4,261.8z"/>
+<rect x="417.1" y="476.3" class="st7" width="40" height="20"/>
+<text transform="matrix(1 0 0 1 426.7796 489.76)" class="st8 st9">Y</text>
+<text transform="matrix(1 0 0 1 433.6796 489.76)" class="st8 st9">es</text>
+<path class="st10" d="M418,156.3v53.6"/>
+<path class="st6" d="M418,215.1l-3.5-7l3.5,1.8l3.5-1.8L418,215.1z"/>
+<path class="st11" d="M350.5,106.3h135c4.1,0,7.5,3.4,7.5,7.5v35c0,4.1-3.4,7.5-7.5,7.5h-135c-4.1,0-7.5-3.4-7.5-7.5v-35
 	C343,109.6,346.4,106.3,350.5,106.3z"/>
-<text transform="matrix(1 0 0 1 396.16 134.76)" class="st14 st12">initialize</text>
-<path class="st16" d="M82.2,399h163.5c4.6,0,8.2,3.7,8.2,8.2v38.5c0,4.6-3.7,8.2-8.2,8.2H82.2c-4.6,0-8.2-3.7-8.2-8.2v-38.5
+<text transform="matrix(1 0 0 1 385.2901 134.8917)" class="st8 st9">action buffer</text>
+<path class="st11" d="M82.2,399h163.5c4.6,0,8.2,3.7,8.2,8.2v38.5c0,4.6-3.7,8.2-8.2,8.2H82.2c-4.6,0-8.2-3.7-8.2-8.2v-38.5
 	C74,402.7,77.7,399,82.2,399z"/>
-<text transform="matrix(1 0 0 1 114.31 424.0403)" class="st14 st12">call update-cb with</text>
-<text transform="matrix(1 0 0 1 131.98 438.4403)" class="st14 st12">new context</text>
-<path class="st8" d="M254,243.8v2.5h82.6"/>
-<path class="st9" d="M341.9,246.3l-7,3.5l1.8-3.5l-1.8-3.5L341.9,246.3z"/>
-<path class="st16" d="M82.2,216.3h163.5c4.6,0,8.2,3.7,8.2,8.2V263c0,4.6-3.7,8.2-8.2,8.2H82.2c-4.6,0-8.2-3.7-8.2-8.2v-38.5
-	C74,220,77.7,216.3,82.2,216.3z"/>
-<text transform="matrix(1 0 0 1 123.47 246.76)" class="st14 st12">dispatch action</text>
-<path class="st8" d="M355.2,426.8h-95.9"/>
-<path class="st8" d="M478,426.3h49.6"/>
-<path class="st9" d="M532.9,426.3l-7,3.5l1.8-3.5l-1.8-3.5L532.9,426.3z"/>
-<path class="st10" d="M418,376.3l60,50l-60,50l-60-50L418,376.3z"/>
-<text transform="matrix(1 0 0 1 388.98 424.26)" class="st14 st12">next action</text>
-<text transform="matrix(1 0 0 1 396.99 438.66)" class="st14 st12"> exists?</text>
-<path class="st8" d="M418,334.6v35.3"/>
-<path class="st9" d="M418,375.1l-3.5-7l3.5,1.8l3.5-1.8L418,375.1z"/>
-<path class="st16" d="M352,216.3h132c5,0,9,4,9,9v42c0,5-4,9-9,9H352c-5,0-9-4-9-9v-42C343,220.3,347,216.3,352,216.3z"/>
-<text transform="matrix(1 0 0 1 369.8 242.76)" class="st17"><tspan x="0" y="0" class="st14 st12">run scaffolding &amp;</tspan><tspan x="0" y="14.4" class="st14 st12">get all placed bids</tspan></text>
-<path class="st8" d="M594,296.3v-43.6"/>
-<path class="st9" d="M594,247.4l3.5,7l-3.5-1.8l-3.5,1.8L594,247.4z"/>
-<path class="st16" d="M530,296.3h128c3.3,0,6,2.7,6,6v28c0,3.3-2.7,6-6,6H530c-3.3,0-6-2.7-6-6v-28C524,298.9,526.7,296.3,530,296.3
+<text transform="matrix(1 0 0 1 114.31 424.0403)" class="st8 st9">call update-cb with</text>
+<text transform="matrix(1 0 0 1 131.98 438.4403)" class="st8 st9">new context</text>
+<path class="st10" d="M240.6,127.3v2.1h95.1"/>
+<path class="st6" d="M340.9,129.3l-7,3.5l1.8-3.5l-1.8-3.5L340.9,129.3z"/>
+<path class="st11" d="M75.3,103.8h163.5c4.6,0,8.2,3.7,8.2,8.2v38.5c0,4.6-3.7,8.2-8.2,8.2H75.3c-4.6,0-8.2-3.7-8.2-8.2V112
+	C67.1,107.5,70.8,103.8,75.3,103.8z"/>
+<text transform="matrix(1 0 0 1 116.5795 134.31)" class="st8 st9">dispatch action</text>
+<path class="st10" d="M359.2,426.8h-95.9"/>
+<path class="st12" d="M418,376.3l60,50l-60,50l-60-50L418,376.3z"/>
+<text transform="matrix(1 0 0 1 388.98 424.26)" class="st8 st9">next action</text>
+<text transform="matrix(1 0 0 1 396.99 438.66)" class="st8 st9"> exists?</text>
+<path class="st10" d="M418,334.6v35.3"/>
+<path class="st6" d="M418,375.1l-3.5-7l3.5,1.8l3.5-1.8L418,375.1z"/>
+<path class="st13" d="M352,216.3h132c5,0,9,4,9,9v42c0,5-4,9-9,9H352c-5,0-9-4-9-9v-42C343,220.3,347,216.3,352,216.3z"/>
+<text transform="matrix(1 0 0 1 361.884 243.0549)" class="st8 st9">run staging function &amp;</text>
+<text transform="matrix(1 0 0 1 369.8 257.16)" class="st8 st9">get all placed bids</text>
+<path class="st11" d="M354,294.6h128c3.3,0,6,2.7,6,6v28c0,3.3-2.7,6-6,6H354c-3.3,0-6-2.7-6-6v-28C348,297.2,350.7,294.6,354,294.6
 	z"/>
-<text transform="matrix(1 0 0 1 538.8 319.76)" class="st14 st12">delete BThreads &amp;...</text>
-<path class="st16" d="M354,294.6h128c3.3,0,6,2.7,6,6v28c0,3.3-2.7,6-6,6H354c-3.3,0-6-2.7-6-6v-28C348,297.2,350.7,294.6,354,294.6
-	z"/>
-<text transform="matrix(1 0 0 1 368.0002 312.0236)" class="st17"><tspan x="0" y="0" class="st14 st12">get next action from </tspan><tspan x="0" y="14.4" class="st14 st12">bid or dispatch</tspan></text>
-<path class="st8" d="M417.5,276.3v11"/>
-<path class="st9" d="M417.5,292.5l-3.5-7l3.5,1.8l3.5-1.8L417.5,292.5z"/>
-<path class="st8" d="M594,475.5v33.6h-77.3v37.2"/>
-<polyline class="st8" points="518,720.3 518,780.7 707.6,780.7 707.6,245.3 499.4,245.3 "/>
+<text transform="matrix(1 0 0 1 378.8965 319.0999)" class="st8 st9">get next action</text>
+<path class="st10" d="M417.5,276.3v11"/>
+<path class="st6" d="M417.5,292.5l-3.5-7l3.5,1.8l3.5-1.8L417.5,292.5z"/>
+<polyline class="st10" points="420.7,635.3 420.7,676.9 615,676.9 613.8,262.7 498.6,261.8 "/>
+<path class="st10" d="M529.1,132.5l0-2.9l-35,0.2"/>
+<path class="st6" d="M493.4,129.7l7-3.5l-1.8,3.5l1.8,3.5L493.4,129.7z"/>
+<path class="st11" d="M353.4,573.3h132c5,0,9,4,9,9v42c0,5-4,9-9,9h-132c-5,0-9-4-9-9v-42C344.4,577.3,348.4,573.3,353.4,573.3z"/>
+<text transform="matrix(1 0 0 1 369.1366 600.5758)" class="st14"><tspan x="0" y="0" class="st8 st9">advance scenarios</tspan><tspan x="10.3" y="14.4" class="st8 st9">&amp; log reactions</tspan></text>
+<path class="st11" d="M535.6,104.5h119.2c3.6,0,6.6,3.4,6.6,7.5v35c0,4.1-3,7.5-6.6,7.5H535.6c-3.6,0-6.6-3.4-6.6-7.5v-35
+	C529,107.8,532,104.5,535.6,104.5z"/>
+<text transform="matrix(1 0 0 1 558.6206 126.9037)" class="st14"><tspan x="0" y="0" class="st8 st9">optional initail </tspan><tspan x="-3" y="14.4" class="st8 st9">actions (replay)</tspan></text>
+<rect x="738.5" y="24" class="st15" width="327.1" height="398.2"/>
+<text transform="matrix(1 0 0 1 750.6002 59.7687)" class="st4 st5">Staging Function</text>
+<rect x="750.6" y="100.6" class="st16" width="136.1" height="28.1"/>
+<text transform="matrix(1 0 0 1 752.4922 96.2213)" class="st4 st9">Scenarios</text>
+<rect x="756.5" y="108.3" class="st16" width="136.1" height="28.1"/>
+<rect x="763.8" y="117.4" class="st16" width="136.1" height="28.1"/>
+<rect x="772" y="125.5" class="st16" width="136.1" height="28.1"/>
+<text transform="matrix(1 0 0 1 307.5553 51.3197)" class="st4 st5">Scenarios</text>
+<text transform="matrix(1 0 0 1 60.9604 54.3502)" class="st4 st5">UI</text>
+<text transform="matrix(1 0 0 1 748.4796 182.8556)"><tspan x="0" y="0" class="st4 st17">The staging function will dictate what </tspan><tspan x="0" y="17" class="st4 st17">scenarios are enabled - and therefore</tspan><tspan x="0" y="34" class="st4 st17">allowed to place bids.</tspan><tspan x="0" y="51" class="st4 st17"> </tspan><tspan x="0" y="68" class="st4 st17">By placing a bid, a scenario is able to </tspan><tspan x="0" y="85" class="st4 st17">request, block, wait-for or extend events.</tspan><tspan x="0" y="102" class="st4 st17"> </tspan><tspan x="0" y="119" class="st4 st17">Scenarios do not know anything about </tspan><tspan x="0" y="136" class="st4 st17">each other.  The bid-api is the only way for</tspan><tspan x="0" y="153" class="st4 st17">them to communicate.</tspan><tspan x="0" y="187" class="st4 st17">The Staging-Function is able to pass props</tspan><tspan x="0" y="204" class="st4 st17">to the scenarios.</tspan><tspan x="0" y="221" class="st4 st17">If a prop changes, the scenario will be reset.</tspan></text>
+<text transform="matrix(1 0 0 1 752.7885 453.9139)"><tspan x="0" y="0" class="st4 st17">Bid-API</tspan><tspan x="0" y="34" class="st4 st17">Requesting Bids</tspan><tspan x="0" y="51" class="st4 st17">- request </tspan><tspan x="66.3" y="51" class="st18 st4 st17"> request an event to happen</tspan><tspan x="0" y="68" class="st4 st17">- set  </tspan><tspan x="36.9" y="68" class="st18 st4 st17">same as request, but save the value</tspan><tspan x="0" y="85" class="st4 st17">- trigger   </tspan><tspan x="67.9" y="85" class="st18 st4 st17">trigger an UI-event that was asked for</tspan><tspan x="0" y="119" class="st4 st17">Blocking Bids</tspan><tspan x="0" y="136" class="st4 st17">- block  </tspan><tspan x="54.6" y="136" class="st18 st4 st17">block an event from happening    </tspan><tspan x="0" y="153" class="st4 st17">- validate   </tspan><tspan x="75.9" y="153" class="st18 st4 st17">block an event with an invalid payload</tspan><tspan x="0" y="187" class="st4 st17">Waiting Bids</tspan><tspan x="0" y="204" class="st4 st17">- waitFor  </tspan><tspan x="69.5" y="204" class="st18 st4 st17">wait for an event to happen</tspan><tspan x="0" y="221" class="st4 st17">- askFor </tspan><tspan x="58.5" y="221" class="st18 st4 st17">enable and wait for an UI-event  </tspan><tspan x="0" y="238" class="st4 st17">- onPending  </tspan><tspan x="94.3" y="238" class="st18 st4 st17">wait for a pending event</tspan><tspan x="0" y="272" class="st4 st17">Extending Bids</tspan><tspan x="0" y="289" class="st4 st17">- extend   </tspan><tspan x="69.2" y="289" class="st18 st4 st17">extend an event</tspan></text>
+<text transform="matrix(1 0 0 1 987.0956 130.7852)" class="st4 st17">bids</text>
+<path class="st10" d="M927,126.9h42.7"/>
+<path class="st6" d="M974.8,126.9l-7,3.5l1.8-3.5l-1.8-3.5L974.8,126.9z"/>
 </svg>
