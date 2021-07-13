@@ -80,20 +80,20 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
 }
 
 
-export function getResolveAction(responseType: "rejectAction" | "resolveAction", pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveAction {
+export function getResolveAction(responseType: "rejectAction" | "resolveAction", pendingBid: PendingBid, data: unknown): ResolveAction {
     return {
         id: undefined,
         type: responseType,
         eventId: pendingBid.eventId,
         payload: data,
         requestActionId: pendingBid.actionId,
-        pendingDuration: pendingDuration,
+        pendingDuration: new Date().getTime() - pendingBid.startTime,
         resolvedRequestingBid: {type: pendingBid.type, bThreadId: pendingBid.bThreadId}
     }
 }
 
 
-export function getResolveExtendAction(pendingBid: PendingBid, pendingDuration: number, data: unknown): ResolveExtendAction {
+export function getResolveExtendAction(pendingBid: PendingBid, data: unknown): ResolveExtendAction {
     return {
         id: undefined,
         type: "resolvedExtendAction",
@@ -101,7 +101,7 @@ export function getResolveExtendAction(pendingBid: PendingBid, pendingDuration: 
         payload: data,
         extendingBThreadId: pendingBid.bThreadId,
         requestActionId: pendingBid.actionId,
-        pendingDuration: pendingDuration,
+        pendingDuration: new Date().getTime() - pendingBid.startTime,
         extendedRequestingBid: pendingBid.extendedRequestingBid
     }
 }

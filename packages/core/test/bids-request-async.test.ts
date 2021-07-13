@@ -211,7 +211,50 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
     });
 });
 
+test("a canceled request will not progress a pending event with the same event-id", (done) => {
+    const thread1 = scenario({id: 'requestingThread'}, function* (this: BThreadContext) {
+        yield [bp.request("A", () => delay(200, '1')), bp.askFor('cancel')];
+        yield bp.request("B");
+        const x = yield bp.request("A", () => delay(500, '2'));
+        expect(x.payload).toBe('2');
+    });
+
+    const thread2 = scenario({id: 'cancelThread'}, function* () {
+        yield bp.trigger('cancel');
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+        enable(thread2());
+    }, ({event, scenario}) => {
+        if(scenario('requestingThread')?.isCompleted) {
+            done();
+        }
+    });
+});
 
 
+// TODO: test: a resolve/reject can not be blocked
 
-// TODO: a resolve/reject can not be blocked
+
+test("a pending event can be canceled by calling cancelPending", (done) => {
+    const thread1 = scenario({id: 'requestingThread'}, function* (this: BThreadContext) {
+        try {
+            yield bp.request("A", () => delay(9999, '1'));
+        } catch(e) {
+            console.log('error: ', e.error)
+            expect(e.error).toEqual('custom error message');
+            expect(e.event.name).toEqual('A');
+            done();
+        }
+    });
+
+    testScenarios((enable) => {
+        enable(thread1());
+    }, ({event}) => {
+        if(event('A')?.isPending) {
+            expect(event('A')?.cancelPending).toBeDefined();
+            event('A')?.cancelPending?.('custom error message');
+        }
+    });
+});

@@ -8,7 +8,6 @@ test("a set is a request, that will be cached. ", () => {
     })
 
     testScenarios((enable, event) => {
-        event<string>('A').value
         enable(thread1());
     }, ({event}) => {
         expect(event("count").value).toEqual(2);

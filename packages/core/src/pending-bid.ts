@@ -6,6 +6,7 @@ import { ExtendContext } from "./extend-context";
 
 export interface PendingBid extends PlacedBid {
     actionId: number;
+    startTime: number;
     extendedRequestingBid?: {type: BidType, bThreadId: BThreadId};
 }
 
@@ -19,6 +20,7 @@ export function toExtendPendingBid(extendedAction: AnyAction, extendContext: Ext
             bThreadId: extendedAction.bThreadId
         }: undefined,
         eventId: extendedAction.eventId,
-        payload: extendContext.promise
+        payload: extendContext.promise,
+        startTime: new Date().getTime()
     }
 }

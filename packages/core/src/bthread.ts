@@ -200,15 +200,17 @@ export class BThread {
         this._setCurrentBids();
     }
 
-    private _validateBid(pendingBid: PendingBid) {
+    private _isValidBid(pendingBid?: PendingBid): boolean {
         if(!this._thread) return false; // thread was deleted
         if(pendingBid === undefined) return false;
+        let pending: PendingBid | undefined;
         if(pendingBid.type === 'extendBid') {
-            if(this._pendingExtends.has(pendingBid.eventId)) return true;
+            pending = this._pendingExtends.get(pendingBid.eventId);
         } else {
-            if(this._pendingRequests.has(pendingBid.eventId)) return true;
+            pending = this._pendingRequests.get(pendingBid.eventId);
         }
-        return false;
+        if(pending === undefined) return false;
+        return pending.actionId === pendingBid.actionId ? true : false;
     }
 
     private _progressBid(bid: PlacedBid, payload: any, eventCache?: EventMap<CachedItem<any>>, error?: ErrorInfo): void {
@@ -241,7 +243,8 @@ export class BThread {
             type: action.bidType,
             eventId: action.eventId,
             actionId: action.id!,
-            payload: action.payload
+            payload: action.payload,
+            startTime: new Date().getTime()
         };
         this._pendingRequests.set(action.eventId, pendingBid);
         this._addPendingBid(pendingBid);
@@ -249,21 +252,26 @@ export class BThread {
 
     private _addPendingBid(pendingBid: PendingBid): void {
         this._setCurrentBids();
-        const startTime = new Date().getTime();
         if(pendingBid.type !== 'extendBid') {
             this._logger.logReaction(BThreadReactionType.newPending, this.id, pendingBid);
         }
         pendingBid.payload.then((data: any): void => {
-            if(this._validateBid(pendingBid) === false) return;
-            const requestDuration = new Date().getTime() - startTime;
-            const response = (pendingBid.type === 'extendBid') ? getResolveExtendAction(pendingBid, requestDuration, data) : getResolveAction("resolveAction", pendingBid, requestDuration, data);
+            if(this._isValidBid(pendingBid) === false) return;
+            const response = (pendingBid.type === 'extendBid') ? getResolveExtendAction(pendingBid, data) : getResolveAction("resolveAction", pendingBid, data);
             this._resolveActionCB(response);
         }).catch((e: Error): void => {
-            if(this._validateBid(pendingBid) === false) return;
-            const requestDuration = new Date().getTime() - startTime;
-            const response = getResolveAction("rejectAction", pendingBid, requestDuration, e);
+            if(this._isValidBid(pendingBid) === false) return;
+            const response = getResolveAction("rejectAction", pendingBid, e);
             this._resolveActionCB(response);
         });
+    }
+
+    public cancelPending(eventId: EventId | string, message: string): boolean {
+        const pendingBid = this._pendingRequests.get(toEventId(eventId));
+        if(this._isValidBid(pendingBid) === false) return false;
+        const response = getResolveAction("rejectAction", pendingBid!, message);
+        this._resolveActionCB(response);
+        return true;
     }
 
     public rejectPending(action: ResolveAction): ReactionCheck {

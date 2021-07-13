@@ -20,6 +20,7 @@ export interface EventInfo<T = any> {
     history: unknown[];
     isPending: boolean;
     isBlocked: boolean;
+    cancelPending?: (message: string) => boolean
 }
 
 export type GetEventInfo = <T = any>(eventName: string | EventId) => EventInfo<T>;
@@ -79,15 +80,17 @@ export class UpdateLoop {
         const cachedEvent = this._getCachedEvent<T>(eventId);
         const newEventInfo: EventInfo<T> = eventInfo || {} as EventInfo<T>;
         const validateCheck = askForValidationExplainCB(askForBid, bidContext);
-        newEventInfo.lastUpdate = this._currentActionId,
+        newEventInfo.lastUpdate = this._currentActionId;
         newEventInfo.dispatch = (askForBid && bidContext && !bidContext.pendingBy && !bidContext.blockedBy) ? (payload: any) => {
             validateCheck(payload).isValid && this._uiActionCB(askForBid, payload);
         } : undefined;
         newEventInfo.validate = validateCheck;
-        newEventInfo.value = cachedEvent?.value,
-        newEventInfo.history = cachedEvent?.history || [],
-        newEventInfo.isPending = !!bidContext?.pendingBy,
-        newEventInfo.isBlocked = !!bidContext?.blockedBy
+        newEventInfo.value = cachedEvent?.value;
+        newEventInfo.history = cachedEvent?.history || [];
+        const pendingByThread = bidContext?.pendingBy ? this._bThreadMap.get(bidContext?.pendingBy) : undefined;
+        newEventInfo.isPending = !!pendingByThread;
+        newEventInfo.cancelPending = pendingByThread !== undefined ? (message: string) => pendingByThread.cancelPending(eventId, message) : undefined,
+        newEventInfo.isBlocked = !!bidContext?.blockedBy;
         this._eventInfos.set(eventId, newEventInfo);
         return newEventInfo
     }
