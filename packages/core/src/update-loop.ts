@@ -119,7 +119,7 @@ export class UpdateLoop {
         let reactionCheck = ReactionCheck.OK;
         do {
             const maybeAction =
-                replay?.getNextReplayAction(this.getBid, this._currentActionId)
+                replay?.getNextReplayAction(this.getBid.bind(this), this._currentActionId)
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
                 || this._getQueuedAction();
             if(maybeAction === undefined) return this._getContext(replay);

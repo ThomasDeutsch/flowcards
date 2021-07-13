@@ -14,7 +14,7 @@ test("an onPending-wait is progressed, when the event receives the pending state
         thread2completed = true;
     })
 
-    testScenarios((enable, ) => {
+    testScenarios((enable) => {
         enable(thread1());
         enable(thread2());
     }, ({event}) => {

@@ -1,5 +1,5 @@
 import { BidType, BThreadId, PlacedBid} from "./index";
-import { AnyActionWithId, GET_VALUE_FROM_BTHREAD } from "./action";
+import { AnyActionWithId } from "./action";
 import { EventId } from "./event-map";
 
 export type ReplayFinishedCB = () => void;
@@ -47,7 +47,7 @@ export class Replay {
         if(this._state !== 'running') return undefined;
         if(this._actions.length > 0 && this._actions[0].id === actionId) {
             const action = this._actions.shift()!;
-            if(action.type === "requestedAction" && action.payload === GET_VALUE_FROM_BTHREAD) {
+            if(action.type === "requestedAction" && !Object.keys(action).some((p) => p === 'payload')) {
                 action.payload = getBid(action.bThreadId, action.bidType, action.eventId)?.payload;
             }
             else if(action.type === "requestedAction" && action.resolveActionId) {

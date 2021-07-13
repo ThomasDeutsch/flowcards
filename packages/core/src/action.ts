@@ -4,8 +4,6 @@ import { BThreadId } from './bthread';
 import { PendingBid } from './pending-Bid';
 import { BidType } from '.';
 
-
-export const GET_VALUE_FROM_BTHREAD: unique symbol = Symbol('getValueFromBThread')
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
 interface Action {

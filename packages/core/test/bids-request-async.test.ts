@@ -242,7 +242,6 @@ test("a pending event can be canceled by calling cancelPending", (done) => {
         try {
             yield bp.request("A", () => delay(9999, '1'));
         } catch(e) {
-            console.log('error: ', e.error)
             expect(e.error).toEqual('custom error message');
             expect(e.event.name).toEqual('A');
             done();
