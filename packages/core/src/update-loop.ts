@@ -114,7 +114,6 @@ export class UpdateLoop {
     }
 
     private _runLoop(replay?: Replay): ScenariosContext {
-        replay?.completeSuccessfulRun();
         const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryEventId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
         do {
@@ -122,21 +121,20 @@ export class UpdateLoop {
                 replay?.getNextReplayAction(this.getBid.bind(this), this._currentActionId)
                 || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
                 || this._getQueuedAction();
-            if(maybeAction === undefined) return this._getContext(replay);
+            if(maybeAction === undefined) {
+                return this._getContext(replay);
+            }
             const action = toActionWithId(maybeAction, this._currentActionId);
             switch(action.type) {
                 case "uiAction": {
-                    const uiActionCheck = validateAskedFor(maybeAction, this._allPlacedBids);
+                    const uiActionCheck = validateAskedFor(action, this._allPlacedBids);
+                    replay?.abortReplayOnInvalidAction(action, uiActionCheck);
                     if(uiActionCheck !== UIActionCheck.OK) {
-                        if(replay?.state === 'running') {
-                            console.error('Invalid Replay Action: ', reactionCheck, action);
-                            replay.abortRun(action, uiActionCheck);
-                            return this._getContext(replay);
-                        }
+                        console.warn('invalid action: ', uiActionCheck, action);
                         continue;
                     }
                     this._logger.logAction(action);
-                    advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
                     break;
                 }
                 case "requestedAction":
@@ -146,28 +144,30 @@ export class UpdateLoop {
                     if(isThenable(action.payload)) {
                         action.resolveActionId = 'pending';
                     }
+                    replay?.abortReplayOnInvalidAction(action);
                     this._logger.logAction(action);
                     reactionCheck = advanceRequestedAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
                     break;
                 case "resolveAction":
+                    replay?.abortReplayOnInvalidAction(action);
                     this._logger.logAction(action);
                     reactionCheck = advanceResolveAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
                     break;
                 case "resolvedExtendAction":
+                    replay?.abortReplayOnInvalidAction(action);
                     this._logger.logAction(action);
                     reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._eventCache, this._allPlacedBids, action);
                     break;
                 case "rejectAction":
+                    replay?.abortReplayOnInvalidAction(action);
                     this._logger.logAction(action);
                     reactionCheck = advanceRejectAction(this._bThreadMap, this._allPlacedBids, action);
             }
             if(reactionCheck !== ReactionCheck.OK) {
-                console.error('Scenario-ReactionvError: ', reactionCheck, action);
-                if(replay?.state === 'running') {
-                    replay?.abortRun(action, reactionCheck);
-                    return this._getContext(replay);
-                }
+                console.error('Scenario-Reaction-Error: ', reactionCheck, action);
+                replay?.abortReplayOnInvalidReaction(action, reactionCheck);
             }
+            replay?.checkIfCompleted(action);
          } while (reactionCheck !== ReactionCheck.OK);
          this._currentActionId++;
          return this.runScaffolding(replay);

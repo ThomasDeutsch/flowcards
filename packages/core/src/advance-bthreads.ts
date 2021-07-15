@@ -77,10 +77,10 @@ export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, eventCac
 }
 
 
-export function advanceUiAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: UIAction): void {
-    if(extendAction(allPlacedBids, bThreadMap, action)) return;
+export function advanceUiAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: UIAction): ReactionCheck {
+    if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
     progressWaitingBThreads(allPlacedBids, bThreadMap, ["askForBid", "waitForBid"], action);
-    return;
+    return ReactionCheck.OK;
 }
 
 
