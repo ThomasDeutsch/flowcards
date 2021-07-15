@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { scenario } from '../src/scenario';
-import { AnyActionWithId, BThreadContext } from "../src";
+import { AnyActionWithId, BThreadContext, ReplayAction } from "../src";
 
 test("a replay is started immediatly", (done) => {
     const thread1 = scenario({id: 's1'}, function* () {
@@ -51,7 +51,7 @@ export function delay(ms: number, value?: any): Promise<any> {
       while(true) {
         this.section('login process');
         const bid = yield bp.askFor("login", (value: string) => ({isValid: value !== undefined && value.length > 3, details: 'user-name needs more than 3 characters'}));
-        yield bp.request("loginUser", () => delay(5000, bid.payload));
+        yield bp.request("loginUser", () => delay(300, bid.payload));
         yield bp.set("userLoggedIn", bid.payload);
         this.section('user logged in');
         yield bp.askFor('logout');
@@ -67,11 +67,11 @@ export function delay(ms: number, value?: any): Promise<any> {
     function*(this: BThreadContext) {
       this.section('product-list');
       let bid = yield bp.askFor('select ticket', (value: number) => ({isValid: value !== undefined && value > 0 && value <= 10, details: 'ticket id between 0 and 10'}));
-      yield bp.request('get ticket details', () => delay(2000, 'ticket details'));
+      yield bp.request('get ticket details', () => delay(200, 'ticket details'));
       this.section('ticket-details: ' + bid.payload);
       bid = yield [bp.askFor('reserve ticket'), bp.askFor('back to product-list')];
       if(bid.eventId.name === 'reserve ticket') {
-        yield bp.request('api reserve ticket', () => delay(2000));
+        yield bp.request('api reserve ticket', () => delay(200));
         yield bp.set('ticket reserved');
       }
     }
@@ -265,4 +265,373 @@ export function delay(ms: number, value?: any): Promise<any> {
             done();
         }
     }, myActions);
+});
+
+
+const myActions2: ReplayAction[] = [
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "login"
+      },
+      "payload": "Thomas",
+      "id": 0,
+      "replay": true
+    },
+    {
+      "id": 1,
+      "type": "requestedAction",
+      "bidType": "requestBid",
+      "bThreadId": {
+        "name": "Scenario 1 - user login"
+      },
+      "eventId": {
+        "name": "loginUser"
+      },
+      "resolveActionId": 2,
+      "replay": false
+    },
+    {
+      "id": 2,
+      "type": "resolveAction",
+      "eventId": {
+        "name": "loginUser"
+      },
+      "payload": "Thomas",
+      "requestActionId": 1,
+      "pendingDuration": 5010,
+      "resolvedRequestingBid": {
+        "type": "requestBid",
+        "bThreadId": {
+          "name": "Scenario 1 - user login"
+        }
+      },
+      "replay": false
+    },
+    {
+      "id": 3,
+      "type": "requestedAction",
+      "bidType": "setBid",
+      "bThreadId": {
+        "name": "Scenario 1 - user login"
+      },
+      "eventId": {
+        "name": "userLoggedIn"
+      },
+      "replay": false
+    },
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "select ticket"
+      },
+      "payload": "1",
+      "id": 4,
+      "replay": true
+    },
+    {
+      "id": 5,
+      "type": "requestedAction",
+      "bidType": "requestBid",
+      "bThreadId": {
+        "name": "Scenario 2 - reserve ticket"
+      },
+      "eventId": {
+        "name": "get ticket details"
+      },
+      "resolveActionId": 6,
+      "replay": false
+    },
+    {
+      "id": 6,
+      "type": "resolveAction",
+      "eventId": {
+        "name": "get ticket details"
+      },
+      "payload": "ticket details",
+      "requestActionId": 5,
+      "pendingDuration": 2001,
+      "resolvedRequestingBid": {
+        "type": "requestBid",
+        "bThreadId": {
+          "name": "Scenario 2 - reserve ticket"
+        }
+      },
+      "replay": false
+    },
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "reserve ticket"
+      },
+      "id": 7,
+      "replay": true
+    },
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "confirm reservation"
+      },
+      "id": 8,
+      "replay": true
+    },
+    {
+      "id": 9,
+      "type": "resolvedExtendAction",
+      "eventId": {
+        "name": "reserve ticket"
+      },
+      "payload": "ok",
+      "extendingBThreadId": {
+        "name": "Scenario 4 - confirm reservation"
+      },
+      "requestActionId": 7,
+      "pendingDuration": 2663,
+      "replay": false
+    },
+    {
+      "id": 10,
+      "type": "requestedAction",
+      "bidType": "requestBid",
+      "bThreadId": {
+        "name": "Scenario 2 - reserve ticket"
+      },
+      "eventId": {
+        "name": "api reserve ticket"
+      },
+      "resolveActionId": 11,
+      "replay": false
+    },
+    {
+      "id": 11,
+      "type": "resolveAction",
+      "eventId": {
+        "name": "api reserve ticket"
+      },
+      "requestActionId": 10,
+      "pendingDuration": 2000,
+      "resolvedRequestingBid": {
+        "type": "requestBid",
+        "bThreadId": {
+          "name": "Scenario 2 - reserve ticket"
+        }
+      },
+      "replay": false
+    },
+    {
+      "id": 12,
+      "type": "requestedAction",
+      "bidType": "setBid",
+      "bThreadId": {
+        "name": "Scenario 2 - reserve ticket"
+      },
+      "eventId": {
+        "name": "ticket reserved"
+      },
+      "replay": false
+    }
+]
+
+test("a complex app can be replayed - with only ui-actions as replay-actions", (done) => {
+    testScenarios((enable) => {
+        const isUserLoggedIn = enable(flow1()).section === ('user logged in');
+        if(isUserLoggedIn) {
+          enable(flow2());
+          enable(flow4())
+        } else {
+          enable(flow3());
+        }
+      }, ({replay}) => {
+        if(replay?.state === 'completed') {
+            expect(2).toBe(2);
+            done();
+        }
+    }, myActions2);
+});
+
+
+const myActions3: ReplayAction[] = [
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "login"
+      },
+      "payload": "Thomas",
+      "id": 0,
+      "replay": true
+    },
+    {
+      "id": 1,
+      "type": "requestedAction",
+      "bidType": "requestBid",
+      "bThreadId": {
+        "name": "Scenario 1 - user login"
+      },
+      "eventId": {
+        "name": "loginUser"
+      },
+      "resolveActionId": 2,
+      "replay": false
+    },
+    {
+      "id": 2,
+      "type": "resolveAction",
+      "eventId": {
+        "name": "loginUser"
+      },
+      "payload": "Thomas",
+      "requestActionId": 1,
+      "pendingDuration": 5010,
+      "resolvedRequestingBid": {
+        "type": "requestBid",
+        "bThreadId": {
+          "name": "Scenario 1 - user login"
+        }
+      },
+      "replay": false
+    },
+    {
+      "id": 3,
+      "type": "requestedAction",
+      "bidType": "setBid",
+      "bThreadId": {
+        "name": "Scenario 1 - user login - wrong"
+      },
+      "eventId": {
+        "name": "userLoggedIn"
+      },
+      "replay": false
+    },
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "select ticket"
+      },
+      "payload": "1",
+      "id": 4,
+      "replay": true
+    },
+    {
+      "id": 5,
+      "type": "requestedAction",
+      "bidType": "requestBid",
+      "bThreadId": {
+        "name": "Scenario 2 - reserve ticket"
+      },
+      "eventId": {
+        "name": "get ticket details"
+      },
+      "resolveActionId": 6,
+      "replay": false
+    },
+    {
+      "id": 6,
+      "type": "resolveAction",
+      "eventId": {
+        "name": "get ticket details"
+      },
+      "payload": "ticket details",
+      "requestActionId": 5,
+      "pendingDuration": 2001,
+      "resolvedRequestingBid": {
+        "type": "requestBid",
+        "bThreadId": {
+          "name": "Scenario 2 - reserve ticket"
+        }
+      },
+      "replay": false
+    },
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "reserve ticket"
+      },
+      "id": 7,
+      "replay": true
+    },
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "confirm reservation"
+      },
+      "id": 8,
+      "replay": true
+    },
+    {
+      "id": 9,
+      "type": "resolvedExtendAction",
+      "eventId": {
+        "name": "reserve ticket"
+      },
+      "payload": "ok",
+      "extendingBThreadId": {
+        "name": "Scenario 4 - confirm reservation"
+      },
+      "requestActionId": 7,
+      "pendingDuration": 2663,
+      "replay": false
+    },
+    {
+      "id": 10,
+      "type": "requestedAction",
+      "bidType": "requestBid",
+      "bThreadId": {
+        "name": "Scenario 2 - reserve ticket"
+      },
+      "eventId": {
+        "name": "api reserve ticket"
+      },
+      "resolveActionId": 11,
+      "replay": false
+    },
+    {
+      "id": 11,
+      "type": "resolveAction",
+      "eventId": {
+        "name": "api reserve ticket"
+      },
+      "requestActionId": 10,
+      "pendingDuration": 2000,
+      "resolvedRequestingBid": {
+        "type": "requestBid",
+        "bThreadId": {
+          "name": "Scenario 2 - reserve ticket"
+        }
+      },
+      "replay": false
+    },
+    {
+      "id": 12,
+      "type": "requestedAction",
+      "bidType": "setBid",
+      "bThreadId": {
+        "name": "Scenario 2 - reserve ticket"
+      },
+      "eventId": {
+        "name": "ticket reserved"
+      },
+      "replay": false
+    }
+]
+
+test("an aborted replay will provide an abort-info object", (done) => {
+    testScenarios((enable) => {
+        const isUserLoggedIn = enable(flow1()).section === ('user logged in');
+        if(isUserLoggedIn) {
+          enable(flow2());
+          enable(flow4())
+        } else {
+          enable(flow3());
+        }
+      }, ({replay}) => {
+          if(replay?.state === 'aborted') {
+            console.log('ABORT INFO: ', replay.abortInfo);
+            expect(2).toBe(2);
+            done();
+          }
+        if(replay?.state === 'completed') {
+            expect(1).toBe(2);
+            done();
+        }
+    }, myActions3);
 });

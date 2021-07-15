@@ -1,4 +1,4 @@
-import { BidType, BThreadId, PlacedBid, RequestedAction} from "./index";
+import { Bid, BidType, BThreadId, PlacedBid, RequestedAction} from "./index";
 import { AnyActionWithId } from "./action";
 import { EventId } from "./event-map";
 import { UIActionCheck } from "./validation";
@@ -16,6 +16,8 @@ export interface AbortReplayInfo {
 export type ReplayState = 'running' | "aborted" | "completed";
 type GetBidFn = (bThreadId: BThreadId, bidType: BidType, eventId: EventId) => PlacedBid | undefined;
 
+export type ReplayAction = AnyActionWithId & { replay?: boolean }
+
 
 export enum ReplayActionCheck {
     OK = 'OK',
@@ -31,6 +33,9 @@ export enum ReplayActionCheck {
     RequestedByWrongScenario = 'RequestedByWrongScenario'
 }
 
+function sameId(a: EventId | BThreadId, b: EventId | BThreadId): boolean {
+    return a.name === b.name && a.key === b.key;
+}
 
 function getResult(action: AnyActionWithId, replayAction?: AnyActionWithId): ReplayActionCheck {
     if(!replayAction) return ReplayActionCheck.ActionIdNotPartOfReplay;
@@ -39,17 +44,21 @@ function getResult(action: AnyActionWithId, replayAction?: AnyActionWithId): Rep
     if(replayAction.eventId.key !== action.eventId.key) return ReplayActionCheck.EventKeyNotMatching;
     if(action.type === 'requestedAction') {
         const ra = replayAction as RequestedAction;
-        if(action.bThreadId !== ra.bThreadId) return ReplayActionCheck.RequestedByWrongScenario;
+        if(!sameId(action.bThreadId, ra.bThreadId)) return ReplayActionCheck.RequestedByWrongScenario;
         if(action.bidType !== ra.bidType) return ReplayActionCheck.BidTypesNotMatching;
     }
     if(action.type === 'rejectAction' || action.type === 'resolveAction') {
         const ra = replayAction as any;
-        if(action.resolvedRequestingBid !== ra.resolvedRequestingBid) return ReplayActionCheck.ResolvedBidNotMatching;
+        if(!sameId(action.resolvedRequestingBid.bThreadId,ra.resolvedRequestingBid.bThreadId) ||
+            action.resolvedRequestingBid.type !== ra.resolvedRequestingBid.type ) return ReplayActionCheck.ResolvedBidNotMatching;
     }
     if(action.type === 'resolvedExtendAction') {
         const ra = replayAction as any;
-        if(action.extendedRequestingBid !== ra.extendedRequestingBid) return ReplayActionCheck.ExtendedBidNotMatching;
-        if(action.extendingBThreadId !== ra.extendingBThreadId) return ReplayActionCheck.ExtendingScenarioNotMatching;
+        if(action.extendedRequestingBid !== undefined && ra.extendedRequestingBid !== undefined) {
+            if(!sameId(action.extendedRequestingBid!.bThreadId, ra.extendedRequestingBid!.bThreadId)) return ReplayActionCheck.ExtendedBidNotMatching;
+            if(action.extendedRequestingBid!.type !== ra.extendedRequestingBid!.type) return ReplayActionCheck.ExtendedBidNotMatching;
+        }
+        if(!sameId(action.extendingBThreadId, ra.extendingBThreadId)) return ReplayActionCheck.ExtendingScenarioNotMatching;
     }
     return ReplayActionCheck.OK;
 }
@@ -60,10 +69,10 @@ export class Replay {
     public get state(): ReplayState { return this._state }
     private _abortInfo?: AbortReplayInfo;
     public get abortInfo(): AbortReplayInfo | undefined { return this._abortInfo }
-    private _actions: Map<number, AnyActionWithId> = new Map();
+    private _actions: Map<number, ReplayAction> = new Map();
     private _lastActionId: number;
 
-    constructor(actions: AnyActionWithId[]) {
+    constructor(actions: ReplayAction[]) {
         actions.forEach(action => this._actions.set(action.id, action));
         this._lastActionId = actions[actions.length-1].id;
     }
@@ -83,6 +92,7 @@ export class Replay {
         } else {
             const replayAction = this._actions.get(action.id);
             result = getResult(action, replayAction);
+            if(result !== 'OK') console.log('DIFF: ', replayAction, action)
         }
         if(result !== 'OK') {
             this._abortInfo = {
@@ -97,6 +107,7 @@ export class Replay {
         if(this._state !== 'running') return undefined;
         if(this._actions.has(actionId)) {
             const action = this._actions.get(actionId)!;
+            if(action.replay === false) return undefined;
             if(action.type === "requestedAction" && !Object.keys(action).some((p) => p === 'payload')) {
                 action.payload = getBid(action.bThreadId, action.bidType, action.eventId)?.payload;
             }
