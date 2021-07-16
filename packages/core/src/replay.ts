@@ -15,8 +15,7 @@ export interface AbortReplayInfo {
 
 export type ReplayState = 'running' | "aborted" | "completed";
 type GetBidFn = (bThreadId: BThreadId, bidType: BidType, eventId: EventId) => PlacedBid | undefined;
-
-export type ReplayAction = AnyActionWithId & { replay?: boolean }
+export type ReplayAction = AnyActionWithId & { replay?: boolean, testCb?: (payload: unknown) => void }
 
 
 export enum ReplayActionCheck {
@@ -37,11 +36,14 @@ function sameId(a: EventId | BThreadId, b: EventId | BThreadId): boolean {
     return a.name === b.name && a.key === b.key;
 }
 
-function getResult(action: AnyActionWithId, replayAction?: AnyActionWithId): ReplayActionCheck {
+function getActionCheckResult(action: AnyActionWithId, replayAction?: ReplayAction): ReplayActionCheck {
     if(!replayAction) return ReplayActionCheck.ActionIdNotPartOfReplay;
     if(replayAction.type !== action.type) return ReplayActionCheck.ActionTypesNotMatching;
     if(replayAction.eventId.name !== action.eventId.name) return ReplayActionCheck.EventNameNotMatching;
     if(replayAction.eventId.key !== action.eventId.key) return ReplayActionCheck.EventKeyNotMatching;
+    if(replayAction.testCb) {
+        replayAction.testCb(action.payload); // jest.expect will throw an exception if test failed
+    }
     if(action.type === 'requestedAction') {
         const ra = replayAction as RequestedAction;
         if(!sameId(action.bThreadId, ra.bThreadId)) return ReplayActionCheck.RequestedByWrongScenario;
@@ -86,13 +88,13 @@ export class Replay {
     }
 
     public abortReplayOnInvalidAction(action: AnyActionWithId, uiActionCheck?: UIActionCheck): void {
+        if(this._state !== 'running') return;
         let result = 'OK';
         if(uiActionCheck && uiActionCheck !== UIActionCheck.OK) {
             result = uiActionCheck;
         } else {
             const replayAction = this._actions.get(action.id);
-            result = getResult(action, replayAction);
-            if(result !== 'OK') console.log('DIFF: ', replayAction, action)
+            result = getActionCheckResult(action, replayAction);
         }
         if(result !== 'OK') {
             this._abortInfo = {

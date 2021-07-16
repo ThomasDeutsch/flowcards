@@ -625,7 +625,6 @@ test("an aborted replay will provide an abort-info object", (done) => {
         }
       }, ({replay}) => {
           if(replay?.state === 'aborted') {
-            console.log('ABORT INFO: ', replay.abortInfo);
             expect(2).toBe(2);
             done();
           }
@@ -634,4 +633,65 @@ test("an aborted replay will provide an abort-info object", (done) => {
             done();
         }
     }, myActions3);
+});
+
+
+const myActions4: ReplayAction[] = [
+    {
+      "type": "uiAction",
+      "eventId": {
+        "name": "login"
+      },
+      "payload": "Thomas",
+      "id": 0,
+      "replay": true
+    },
+    {
+      "id": 1,
+      "type": "requestedAction",
+      "bidType": "requestBid",
+      "bThreadId": {
+        "name": "Scenario 1 - user login"
+      },
+      "eventId": {
+        "name": "loginUser"
+      },
+      "resolveActionId": 2,
+      "replay": false
+    },
+    {
+      "id": 2,
+      "type": "resolveAction",
+      "eventId": {
+        "name": "loginUser"
+      },
+      "testCb": (payload) => expect(payload).toBe('Thomas'),
+      "requestActionId": 1,
+      "pendingDuration": 5010,
+      "resolvedRequestingBid": {
+        "type": "requestBid",
+        "bThreadId": {
+          "name": "Scenario 1 - user login"
+        }
+      },
+      "replay": false
+    }
+]
+
+
+test("an expect-check can be placed in the Replay itself", (done) => {
+    testScenarios((enable) => {
+        const isUserLoggedIn = enable(flow1()).section === ('user logged in');
+        if(isUserLoggedIn) {
+          enable(flow2());
+          enable(flow4())
+        } else {
+          enable(flow3());
+        }
+      }, ({replay}) => {
+        if(replay?.state === 'completed') {
+            expect(2).toBe(2);
+            done();
+        }
+    }, myActions4);
 });
