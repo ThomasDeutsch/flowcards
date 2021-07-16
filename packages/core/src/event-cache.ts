@@ -8,19 +8,17 @@ export interface CachedItem<T> {
 export type GetCachedEvent<T = any> = (eventId: EventId | string) => CachedItem<T> | undefined;
 
 export function setEventCache<T>(eventCache: EventMap<CachedItem<unknown>>, event: EventId, payload?: T): void {
-    const val = eventCache.get(event);
-    if(val === undefined) {
+    const current = eventCache.get(event);
+    if(current === undefined) {
         const newCachedVal = {
             history: [payload],
             value: payload
         }
         eventCache.set(event, newCachedVal);
     } else {
-        const newCachedVal = {
-            history: [...val.history, payload],
-            value: payload
-        }
-        eventCache.set(event, newCachedVal);
+        current.history.push(payload)
+        current.value = payload;
+        eventCache.set(event, current);
     }
 }
 
