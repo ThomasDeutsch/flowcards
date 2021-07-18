@@ -1,7 +1,6 @@
 import { AnyAction, ResolveAction, ResolveExtendAction, getResolveAction, getResolveExtendAction, RequestedAction } from './action';
 import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids, ProgressedBid, BidsByType, toBidsByType } from './bid';
 import { EventMap, EventId, toEventId, sameEventId } from './event-map';
-import { setEventCache, CachedItem } from './event-cache';
 import * as utils from './utils';
 import { ExtendContext } from './extend-context';
 import { Logger, BThreadReactionType } from './logger';
@@ -213,9 +212,9 @@ export class BThread {
         return pending.actionId === pendingBid.actionId ? true : false;
     }
 
-    private _progressBid(bid: PlacedBid, payload: any, eventCache?: EventMap<CachedItem<any>>, error?: ErrorInfo): void {
-        if(!error && (bid.type === 'setBid') && eventCache) {
-            setEventCache(eventCache, bid.eventId, payload);
+    private _progressBid(bid: PlacedBid, payload: any, setValue?: (v: any) => void, error?: ErrorInfo): void {
+        if(!error && (bid.type === 'setBid') && setValue) {
+            setValue(payload);
         }
         this._processNextBid(bid, payload, error);
         this._logger.logReaction(BThreadReactionType.progress ,this.id, bid);
@@ -285,10 +284,10 @@ export class BThread {
         return ReactionCheck.OK;
     }
 
-    public progressResolved(eventCache: EventMap<CachedItem<any>>, action: ResolveExtendAction | ResolveAction): ReactionCheck {
+    public progressResolved(setValue: (v: any) => void, action: ResolveExtendAction | ResolveAction): ReactionCheck {
         const bid = this._pendingRequests.get(action.eventId);
         if(bid === undefined) return ReactionCheck.RequestingBThreadNotFound;
-        this._progressBid(bid, action.payload, eventCache);
+        this._progressBid(bid, action.payload, setValue);
         return ReactionCheck.OK;
     }
 
@@ -301,10 +300,10 @@ export class BThread {
         return ReactionCheck.OK
     }
 
-    public progressRequested(eventCache: EventMap<CachedItem<any>>, bidType: BidType, eventId: EventId, payload: unknown): ReactionCheck {
+    public progressRequested(setValue: (v: any) => void, bidType: BidType, eventId: EventId, payload: unknown): ReactionCheck {
         const bid = this.getCurrentBid(bidType, eventId);
         if(bid === undefined) return ReactionCheck.BThreadWithoutMatchingBid;
-        this._progressBid(bid, payload, eventCache);
+        this._progressBid(bid, payload, setValue);
         return ReactionCheck.OK;
     }
 

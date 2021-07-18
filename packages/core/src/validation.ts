@@ -21,20 +21,21 @@ export enum ReactionCheck {
     ExtendedRequestingBThreadNotFound = "ExtendedRequestingBThreadNotFound",
 }
 
-export type PayloadValidationReturn<T> = boolean | {isValid: boolean, details?: T};
-export type PayloadValidationCB<T> = (payload?: any) => PayloadValidationReturn<T>;
+export type PayloadValidationReturn = boolean | {isValid: boolean, details?: string};
+export type PayloadValidationCB<P> = (payload?: P) => PayloadValidationReturn;
 
 
-function isValidReturn(val: PayloadValidationReturn<unknown>): boolean {
+function isValidReturn(val: PayloadValidationReturn): boolean {
     return val === true || (typeof val === 'object' && val.isValid === true);
 }
 
-function getResultDetails(result: PayloadValidationReturn<unknown>): unknown | undefined {
+function getResultDetails(result: PayloadValidationReturn): string | undefined {
     return (typeof result === 'object' ? result.details : undefined)
 }
 
-export type ValidationItem<T> = {type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation', details: T}
-export type CombinedValidationCB<T> = (payload?: any) => {isValid: boolean, passed: ValidationItem<T>[], failed: ValidationItem<T>[]}
+export type ValidationItem = { type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation', details?: string }
+export type CombinedValidation = {isValid: boolean, passed: ValidationItem[], failed: ValidationItem[]}
+export type CombinedValidationCB<P> = (payload?: P) => CombinedValidation;
 
 export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, payload?: unknown): boolean {
     if(bid === undefined || bidContext === undefined) return false;
@@ -42,13 +43,13 @@ export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, 
     return [bid.payloadValidationCB, ...validations].filter(notUndefined).every(validationCB => isValidReturn(validationCB(payload)))
 }
 
-export function askForValidationExplainCB(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<unknown> {
-    if(bid === undefined || bidContext === undefined) return (payload?: any) => ({
+export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
+    if(bid === undefined || bidContext === undefined) return (payload?: P) => ({
         isValid: false, passed: [], failed: [{type: 'noAskForBid', details: 'event is not asked for'}]
     });
     return (payload) => {
-        const failed: ValidationItem<unknown>[] = [];
-        const passed: ValidationItem<unknown>[] = [];
+        const failed: ValidationItem[] = [];
+        const passed: ValidationItem[] = [];
         if (bidContext.blockedBy) {
             failed.push({type: 'blocked', details: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId.name).join(', ')}`})
         }

@@ -3,11 +3,11 @@ import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
 import { Replay } from './replay';
+import { ScenarioEvent } from './scenario-event';
 
 export * from './scenario';
 export * from './bthread';
 export * from './update-loop';
-export * from './event-cache';
 export * from './event-map';
 export * from "./bid";
 export * from "./scaffolding";
@@ -27,9 +27,9 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
     private _logger: Logger;
 
-    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
+    constructor(events: Record<string, ScenarioEvent>, stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
         this._logger = new Logger();
-        this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
+        this._updateLoop = new UpdateLoop(events, stagingFunction, this._internalDispatch.bind(this), this._logger);
         let replay: Replay | undefined;
         if(Array.isArray(initialActionsOrReplay)) {
             replay = new Replay(initialActionsOrReplay);

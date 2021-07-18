@@ -1,10 +1,10 @@
-import { EventMap, EventId, toEventId } from './event-map';
+import { EventMap, EventId } from './event-map';
 import * as utils from './utils';
 import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
 import { AnyAction } from '.';
 import { combinedIsValid, PayloadValidationCB } from './validation';
-import { CachedItem } from './event-cache';
+import { ScenarioEvent } from './scenario-event';
 
 
 export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" | "setBid" |  "waitForBid" | "onPendingBid" | "validateBid";
@@ -13,7 +13,7 @@ export interface Bid {
     type: BidType;
     eventId: EventId;
     payload?: any;
-    payloadValidationCB?: PayloadValidationCB<unknown>;
+    payloadValidationCB?: PayloadValidationCB<any>;
 }
 
 export interface PlacedBid extends Bid {
@@ -150,76 +150,42 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
 }
 
 
-type cachedItemFn = (cachedItem: CachedItem<unknown>) => void;
+type updatePayloadCb<T> = (payload: T) => T;
 
 // bids user-API --------------------------------------------------------------------
 
-export function request(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
-    return {
-        type: 'requestBid',
-        eventId: toEventId(event),
-        payload: payload
-    };
+export function request<P>(event: ScenarioEvent<P>, payload?: P | updatePayloadCb<P>): Bid {
+    return { type: 'requestBid', eventId: event.id, payload: payload };
 }
 
-export function set(event: string | EventId, payload?: unknown | cachedItemFn): Bid {
-    return {
-        type: 'setBid',
-        eventId: toEventId(event),
-        payload: payload
-    };
+export function set<P>(event: ScenarioEvent<P>, payload?: P | updatePayloadCb<P>): Bid {
+    return { type: 'setBid', eventId: event.id, payload: payload };
 }
 
-export function trigger(event: string | EventId, payload?: unknown): Bid {
-    return {
-        type: 'triggerBid',
-        eventId: toEventId(event),
-        payload: payload
-    };
+export function trigger<P>(event: ScenarioEvent<P>, payload?: P): Bid {
+    return { type: 'triggerBid', eventId: event.id, payload: payload };
 }
 
-export function askFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
-    return {
-        type: 'askForBid',
-        eventId: toEventId(event),
-        payloadValidationCB: payloadValidationCB
-    };
+export function askFor<P>(event: ScenarioEvent<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'askForBid', eventId: event.id, payloadValidationCB: payloadValidationCB };
 }
 
-export function waitFor<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
-    return {
-        type: 'waitForBid',
-        eventId: toEventId(event),
-        payloadValidationCB: payloadValidationCB
-    };
+export function waitFor<P>(event: ScenarioEvent<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'waitForBid', eventId: event.id, payloadValidationCB: payloadValidationCB };
 }
 
-export function onPending(event: string | EventId): Bid {
-    return {
-        type: 'onPendingBid',
-        eventId: toEventId(event)
-    };
+export function onPending<P>(event: ScenarioEvent<P>): Bid {
+    return { type: 'onPendingBid', eventId: event.id };
 }
 
-export function block(event: string | EventId): Bid {
-    return {
-        type: 'blockBid',
-        eventId: toEventId(event)
-    };
+export function extend<P>(event: ScenarioEvent<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'extendBid', eventId: event.id, payloadValidationCB: payloadValidationCB };
 }
 
-export function extend<T = string>(event: string | EventId, payloadValidationCB?: PayloadValidationCB<T>): Bid {
-    return {
-        type: 'extendBid',
-        eventId: toEventId(event),
-        payloadValidationCB: payloadValidationCB
-    };
+export function block<P>(event: ScenarioEvent<P>): Bid {
+    return { type: 'blockBid', eventId: event.id };
 }
 
-export function validate<T = string>(event: string | EventId, payloadValidationCB: PayloadValidationCB<T>): Bid {
-    return {
-        type: 'validateBid',
-        eventId: toEventId(event),
-        payloadValidationCB: payloadValidationCB
-    };
+export function validate<P>(event: ScenarioEvent<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'validateBid', eventId: event.id, payloadValidationCB: payloadValidationCB };
 }
