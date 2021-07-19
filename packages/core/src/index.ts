@@ -31,7 +31,10 @@ export class Scenarios {
         this._logger = new Logger();
         this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
         let replay: Replay | undefined;
-        if(Array.isArray(initialActionsOrReplay)) {
+        if(initialActionsOrReplay === undefined || Array.isArray(initialActionsOrReplay) && initialActionsOrReplay.length === 0)  {
+            replay = undefined;
+        }
+        else if(Array.isArray(initialActionsOrReplay)) {
             replay = new Replay(initialActionsOrReplay);
         }
         else if (initialActionsOrReplay instanceof Replay) {
