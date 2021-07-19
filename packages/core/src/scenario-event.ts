@@ -6,8 +6,8 @@ import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB, Pa
 export interface ScenarioEventOptions<P> {
     initialValue?: P;
     key?: number | string;
-    description: string;
-    validateCb: (value: P) => PayloadValidationReturn;
+    description?: string;
+    validateCb?: (value: P) => PayloadValidationReturn;
 }
 
 export type ValueUpdateCb<P> = (value: P) => P
@@ -17,7 +17,7 @@ export class ScenarioEvent<P = void> {
     public readonly key?: number | string;
     public readonly initialValue?: P;
     public readonly description?: string
-    private readonly _ownValidate: (value: P) => PayloadValidationReturn;
+    private readonly _ownValidate?: (value: P) => PayloadValidationReturn;
     private _updatedOn?: number;
     private _bidContext?: PlacedBidContext;
     private _askForBid?: PlacedBid;
@@ -26,12 +26,13 @@ export class ScenarioEvent<P = void> {
     private _uiActionCb?: (payload?: P) => void;
     private _value?: P;
 
-    constructor(name: string, options: ScenarioEventOptions<P>) {
+    constructor(name: string, options?: ScenarioEventOptions<P>) {
         this.name = name;
-        this.key = options.key;
-        this.initialValue = options.initialValue;
-        this.description = options.description;
-        this._ownValidate = options.validateCb
+        this.key = options?.key;
+        this.initialValue = options?.initialValue;
+        this._value = options?.initialValue;
+        this.description = options?.description;
+        this._ownValidate = options?.validateCb
     }
 
     public get id(): EventId {

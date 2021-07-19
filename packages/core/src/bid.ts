@@ -6,8 +6,7 @@ import { AnyAction } from '.';
 import { combinedIsValid, PayloadValidationCB } from './validation';
 import { ScenarioEvent } from './scenario-event';
 
-
-export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" | "setBid" |  "waitForBid" | "onPendingBid" | "validateBid";
+export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" |  "waitForBid" | "onPendingBid" | "validateBid";
 
 export interface Bid {
     type: BidType;
@@ -26,7 +25,7 @@ export interface ProgressedBid extends PlacedBid {
     remainingBids?: PlacedBid[];
 }
 
-export type RequestingBidType = 'requestBid' | "setBid" | 'triggerBid';
+export type RequestingBidType = 'requestBid' | 'triggerBid';
 
 export interface PlacedRequestingBid extends PlacedBid {
     type: RequestingBidType;
@@ -102,7 +101,7 @@ export function unblockEventId(allPlacedBids: AllPlacedBids, eventId: EventId): 
 }
 
 function isRequestingBid(bid: Bid): boolean {
-    return (bid.type === 'requestBid') || (bid.type === 'setBid') || (bid.type === 'triggerBid')
+    return (bid.type === 'requestBid') || (bid.type === 'triggerBid')
 }
 
 export type BidsByType = Partial<Record<BidType, EventMap<PlacedBid>>>;
@@ -158,9 +157,9 @@ export function request<P>(event: ScenarioEvent<P>, payload?: P | updatePayloadC
     return { type: 'requestBid', eventId: event.id, payload: payload };
 }
 
-export function set<P>(event: ScenarioEvent<P>, payload?: P | updatePayloadCb<P>): Bid {
-    return { type: 'setBid', eventId: event.id, payload: payload };
-}
+// export function set<P>(event: ScenarioEvent<P>, payload?: P | updatePayloadCb<P>): Bid {
+//     return { type: 'setBid', eventId: event.id, payload: payload };
+// }
 
 export function trigger<P>(event: ScenarioEvent<P>, payload?: P): Bid {
     return { type: 'triggerBid', eventId: event.id, payload: payload };

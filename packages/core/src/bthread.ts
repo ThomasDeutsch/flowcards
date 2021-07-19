@@ -213,7 +213,7 @@ export class BThread {
     }
 
     private _progressBid(bid: PlacedBid, payload: any, setValue?: (v: any) => void, error?: ErrorInfo): void {
-        if(!error && (bid.type === 'setBid') && setValue) {
+        if(!error && setValue) {
             setValue(payload);
         }
         this._processNextBid(bid, payload, error);

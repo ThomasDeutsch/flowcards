@@ -27,11 +27,14 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
     private _logger: Logger;
 
-    constructor(events: Record<string, ScenarioEvent>, stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
+    constructor(events: Record<string, ScenarioEvent<any>>, stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
         this._logger = new Logger();
         this._updateLoop = new UpdateLoop(events, stagingFunction, this._internalDispatch.bind(this), this._logger);
         let replay: Replay | undefined;
-        if(Array.isArray(initialActionsOrReplay)) {
+        if(initialActionsOrReplay === undefined)  {
+            replay = undefined;
+        }
+        else if(Array.isArray(initialActionsOrReplay)) {
             replay = new Replay(initialActionsOrReplay);
         }
         else if (initialActionsOrReplay instanceof Replay) {

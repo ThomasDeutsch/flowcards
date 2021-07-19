@@ -108,15 +108,15 @@ export class UpdateLoop {
                         action.resolveActionId = 'pending';
                     }
                     this._logger.logAction(action);
-                    reactionCheck = advanceRequestedAction(this._bThreadMap, event.__setValue, this._allPlacedBids, action);
+                    reactionCheck = advanceRequestedAction(this._bThreadMap, event.__setValue.bind(event), this._allPlacedBids, action);
                     break;
                 case "resolveAction":
                     this._logger.logAction(action);
-                    reactionCheck = advanceResolveAction(this._bThreadMap, event.__setValue, this._allPlacedBids, action);
+                    reactionCheck = advanceResolveAction(this._bThreadMap, event.__setValue.bind(event), this._allPlacedBids, action);
                     break;
                 case "resolvedExtendAction":
                     this._logger.logAction(action);
-                    reactionCheck = advanceResolveExtendAction(this._bThreadMap, event.__setValue, this._allPlacedBids, action);
+                    reactionCheck = advanceResolveExtendAction(this._bThreadMap, event.__setValue.bind(event), this._allPlacedBids, action);
                     break;
                 case "rejectAction":
                     this._logger.logAction(action);
