@@ -21,7 +21,7 @@ export enum ReactionCheck {
     ExtendedRequestingBThreadNotFound = "ExtendedRequestingBThreadNotFound",
 }
 
-export type PayloadValidationReturn = boolean | {isValid: boolean, details?: string};
+export type PayloadValidationReturn = boolean | {isValid: boolean, reason?: string};
 export type PayloadValidationCB<P> = (payload?: P) => PayloadValidationReturn;
 
 
@@ -30,11 +30,11 @@ function isValidReturn(val: PayloadValidationReturn): boolean {
 }
 
 function getResultDetails(result: PayloadValidationReturn): string | undefined {
-    return (typeof result === 'object' ? result.details : undefined)
+    return (typeof result === 'object' ? result.reason : undefined)
 }
 
-export type ValidationItem = { type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation', details?: string }
-export type CombinedValidation = {isValid: boolean, passed: ValidationItem[], failed: ValidationItem[]}
+export type CombinedValidationItem = { type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation' | 'eventPayloadValidation', reason?: string }
+export type CombinedValidation = {isValid: boolean, passed: CombinedValidationItem[], failed: CombinedValidationItem[]}
 export type CombinedValidationCB<P> = (payload?: P) => CombinedValidation;
 
 export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, payload?: unknown): boolean {
@@ -43,28 +43,36 @@ export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, 
     return [bid.payloadValidationCB, ...validations].filter(notUndefined).every(validationCB => isValidReturn(validationCB(payload)))
 }
 
-export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
+export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: PlacedBidContext, eventValidateCb?: (value: any) => PayloadValidationReturn): CombinedValidationCB<P> {
     if(bid === undefined || bidContext === undefined) return (payload?: P) => ({
-        isValid: false, passed: [], failed: [{type: 'noAskForBid', details: 'event is not asked for'}]
+        isValid: false, passed: [], failed: [{type: 'noAskForBid', reason: 'event is not asked for'}]
     });
     return (payload) => {
-        const failed: ValidationItem[] = [];
-        const passed: ValidationItem[] = [];
+        const failed: CombinedValidationItem[] = [];
+        const passed: CombinedValidationItem[] = [];
         if (bidContext.blockedBy) {
-            failed.push({type: 'blocked', details: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId.name).join(', ')}`})
+            failed.push({type: 'blocked', reason: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId.name).join(', ')}`})
         }
         if (bidContext.pendingBy) {
-            failed.push({type: 'pending', details: `event is pending by BThread: ${bidContext.pendingBy.name}${bidContext.pendingBy.key ? '-' + bidContext.pendingBy.key: ''}`})
+            failed.push({type: 'pending', reason: `event is pending by BThread: ${bidContext.pendingBy.name}${bidContext.pendingBy.key ? '-' + bidContext.pendingBy.key: ''}`})
         }
         const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
         [bid.payloadValidationCB, ...validations].filter(notUndefined).map(validationCB => {
             const result = validationCB(payload);
             if(isValidReturn(result)) {
-                passed.push({type: 'payloadValidation', details: getResultDetails(result)})
+                passed.push({type: 'payloadValidation', reason: getResultDetails(result)})
             } else {
-                failed.push({type: 'payloadValidation', details: getResultDetails(result)})
+                failed.push({type: 'payloadValidation', reason: getResultDetails(result)})
             }
         })
+        const eventValidationResult = eventValidateCb?.(payload);
+        if(eventValidationResult !== undefined) {
+            if(isValidReturn(eventValidationResult)) {
+                passed.push({type: 'eventPayloadValidation', reason: getResultDetails(eventValidationResult)})
+            } else {
+                failed.push({type: 'eventPayloadValidation', reason: getResultDetails(eventValidationResult)})
+            }
+        }
         return {
             isValid: failed.length === 0,
             passed: passed,

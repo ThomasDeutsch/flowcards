@@ -1,42 +1,36 @@
 import { InternalDispatch, PlacedBid, UIAction } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid, PlacedBidContext } from "./bid";
-import { EventId } from "./event-map";
+import { EventId, EventKey } from "./event-map";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB, PayloadValidationReturn } from "./validation";
 
-export interface ScenarioEventOptions<P> {
-    initialValue?: P;
-    key?: number | string;
-    description?: string;
-    validateCb?: (value: P) => PayloadValidationReturn;
+export interface EventIdWithValue<P> extends EventId {
+    value?: P;
 }
 
 export type ValueUpdateCb<P> = (value: P) => P
 
 export class ScenarioEvent<P = void> {
     public readonly name: string;
-    public readonly key?: number | string;
     public readonly initialValue?: P;
     public readonly description?: string
-    private readonly _ownValidate?: (value: P) => PayloadValidationReturn;
+    private readonly _validateCb?: (value: P) => PayloadValidationReturn;
     private _updatedOn?: number;
     private _bidContext?: PlacedBidContext;
     private _askForBid?: PlacedBid;
-    private _validateCheck?: CombinedValidationCB<P>;
+    private _validateCheck: CombinedValidationCB<P> = askForValidationExplainCB();
     private _cancelPendingCb?: (message: string) => boolean;
     private _uiActionCb?: (payload?: P) => void;
     private _value?: P;
+    private _valueByKey = new Map<EventKey, P>()
 
-    constructor(name: string, options?: ScenarioEventOptions<P>) {
+    constructor(name: string, initialValue?: P, validateCb?: (value: P) => PayloadValidationReturn) {
         this.name = name;
-        this.key = options?.key;
-        this.initialValue = options?.initialValue;
-        this._value = options?.initialValue;
-        this.description = options?.description;
-        this._ownValidate = options?.validateCb
+        this._value = initialValue;
+        this._validateCb = validateCb;
     }
 
     public get id(): EventId {
-        return { name: this.name, key: this.key }
+        return { name: this.name }
     }
 
     public get updatedOn(): number | undefined {
@@ -45,6 +39,10 @@ export class ScenarioEvent<P = void> {
 
     public get value(): P | undefined {
         return this._value;
+    }
+
+    public key(key: EventKey): EventIdWithValue<P> {
+        return { name: this.name, key: key, value: this._valueByKey.get(key) }
     }
 
     public __setUIActionCb(internalDispatch: InternalDispatch): void {
@@ -58,19 +56,23 @@ export class ScenarioEvent<P = void> {
         }
     }
 
-    public __update(currentActionId: number, allPlacedBids: AllPlacedBids, cancelPendingCb: (message: string) => boolean): void {
+    public __update(currentActionId: number, allPlacedBids: AllPlacedBids, cancelPendingCb?: (message: string) => boolean): void {
         this._updatedOn = currentActionId;
         this._bidContext = allPlacedBids.get(this.id);
         this._askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
-        this._validateCheck = askForValidationExplainCB(this._askForBid, this._bidContext);
+        this._validateCheck = askForValidationExplainCB(this._askForBid, this._bidContext, this._validateCb);
         this._cancelPendingCb = cancelPendingCb;
     }
 
-    public __setValue(v: P): void {
-        this._value = v;
+    public __setValue(nextValue: P, key?: EventKey): void {
+        if(key !== undefined) {
+            this._valueByKey.set(key, nextValue);
+            return;
+        }
+        this._value = nextValue;
     }
 
-    public validate(value?: P): CombinedValidation | undefined {
+    public validate(value?: P): CombinedValidation {
         return this._validateCheck?.(value);
     }
 
@@ -93,8 +95,6 @@ export class ScenarioEvent<P = void> {
     public get isBlocked(): boolean {
         return !!this._bidContext?.blockedBy;
     }
-
-
 }
 
 

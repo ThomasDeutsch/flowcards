@@ -1,6 +1,6 @@
 import { notUndefined } from './utils';
 
-export type EventKey = string | number;
+export type EventKey = string | number | undefined;
 type EventIteratorFunction<T> = (e: EventId, value: T) => any;
 
 export interface EventId {

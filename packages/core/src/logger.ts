@@ -44,6 +44,8 @@ export class Logger {
         if(action.type === "requestedAction" && action.resolveActionId === 'pending') {
             a.payload = undefined; // do not save the promise object
         }
+        // TODO: create a copy of payload with: JSON.parse(JSON.stringify(food));
+        // TODO: Make the logger optional.
         this._actions.push(a);
     }
 
