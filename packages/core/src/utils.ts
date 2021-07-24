@@ -1,10 +1,10 @@
 // EQUALITY / DUCK-TYPING --------------------
 
-export function getChangedProps(nextDeps: Record<string, any>, prevDeps?: Record<string, unknown>): string[] | undefined {
+export function getChangedProps(nextDeps?: Record<string, any>, prevDeps?: Record<string, unknown>): string[] | undefined {
     if ((prevDeps === undefined || prevDeps === null)) {
         if(prevDeps === nextDeps) return undefined;
         return Object.keys(nextDeps);
-    } 
+    }
     const result = {...prevDeps};
     for (const key in nextDeps) {
         if((key in prevDeps) && Object.is(nextDeps[key], prevDeps[key])) {
@@ -18,7 +18,7 @@ export function getChangedProps(nextDeps: Record<string, any>, prevDeps?: Record
 
 // promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function isThenable(p?: any): boolean { 
+export function isThenable(p?: any): boolean {
     return p !== undefined && p !== null && (typeof p === "object" || typeof p === "function") && typeof p.then === "function";
 }
 
@@ -53,4 +53,3 @@ export function uuidv4(): string {
       return v.toString(16);
     });
   }
-  

@@ -1,6 +1,6 @@
-import { Bid, BidType, BThreadId, PlacedBid, RequestedAction} from "./index";
+import { BidType, PlacedBid, RequestedAction} from "./index";
 import { AnyActionWithId } from "./action";
-import { EventId } from "./event-map";
+import { NameKeyId } from "./name-key-map";
 import { UIActionCheck } from "./validation";
 
 export type ReplayFinishedCB = () => void;
@@ -14,7 +14,7 @@ export interface AbortReplayInfo {
 }
 
 export type ReplayState = 'running' | "aborted" | "completed";
-type GetBidFn = (bThreadId: BThreadId, bidType: BidType, eventId: EventId) => PlacedBid | undefined;
+type GetBidFn = (bThreadId: NameKeyId, bidType: BidType, eventId: NameKeyId) => PlacedBid | undefined;
 export type ReplayAction = AnyActionWithId & { replay?: boolean, testCb?: (payload: unknown) => void }
 
 
@@ -32,7 +32,7 @@ export enum ReplayActionCheck {
     RequestedByWrongScenario = 'RequestedByWrongScenario'
 }
 
-function sameId(a: EventId | BThreadId, b: EventId | BThreadId): boolean {
+function sameId(a: NameKeyId | NameKeyId, b: NameKeyId | NameKeyId): boolean {
     return a.name === b.name && a.key === b.key;
 }
 
@@ -60,7 +60,7 @@ function getActionCheckResult(action: AnyActionWithId, replayAction?: ReplayActi
             if(!sameId(action.extendedRequestingBid!.bThreadId, ra.extendedRequestingBid!.bThreadId)) return ReplayActionCheck.ExtendedBidNotMatching;
             if(action.extendedRequestingBid!.type !== ra.extendedRequestingBid!.type) return ReplayActionCheck.ExtendedBidNotMatching;
         }
-        if(!sameId(action.extendingBThreadId, ra.extendingBThreadId)) return ReplayActionCheck.ExtendingScenarioNotMatching;
+        if(!sameId(action.extendingNameKeyId, ra.extendingNameKeyId)) return ReplayActionCheck.ExtendingScenarioNotMatching;
     }
     return ReplayActionCheck.OK;
 }

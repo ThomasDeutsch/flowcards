@@ -1,66 +1,93 @@
 import { BThreadBids } from './bid';
-import { BThread, BThreadState, BThreadId, BThreadKey } from './bthread';
+import { BThread, BThreadState } from './bthread';
 import { Logger } from './logger';
-import { BThreadMap } from './bthread-map';
-import { Scenario } from './scenario';
-import { ResolveActionCB } from './update-loop';
-import { BThreadGeneratorFunction } from '.';
-import { EventMap } from './event-map';
+import { EnableScenarioInfo } from './scenario';
+import { BThreadMap, ResolveActionCB } from './update-loop';
+import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
+import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
-export type StagingFunction = (enable: (scenario: Scenario<BThreadGeneratorFunction>, key?: BThreadKey) => BThreadState) => void;
 
-// enable, disable or delete bThreads
-// ---------------------------------------------------------------------------------------------------------------------------------------------------------
+export type EnableScenario = (scenario: EnableScenarioInfo<any>) => BThreadState;
+export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
+export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
+
+
 export function setupScaffolding(
     stagingFunction: StagingFunction,
-    bThreadMap: BThreadMap<BThread>,
+    bThreadMap: BThreadMap,
+    scenarioEventMap: NameKeyMap<ScenarioEvent>,
     bThreadBids: BThreadBids[],
-    bThreadStateMap: BThreadMap<BThreadState>,
-    resolveActionCB: ResolveActionCB,
-    scenarioEventMap: EventMap<ScenarioEvent>,
+    internalDispatch: InternalDispatch,
     logger: Logger):
 () => void {
-    const enabledBThreadIds = new BThreadMap<BThreadId>();
-    const destroyOnDisableThreadIds = new BThreadMap<BThreadId>();
+    const enabledScenarioIds = new NameKeyMap<NameKeyId>();
+    const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
+    const enabledEventIds = new NameKeyMap<NameKeyId>();
 
-    function enableBThread([scenarioInfo, generatorFunction, props]: Scenario<BThreadGeneratorFunction>, key?: BThreadKey): BThreadState {
-        const bThreadId: BThreadId = {name: scenarioInfo.id, key: key};
-        enabledBThreadIds.set(bThreadId, bThreadId);
-        let bThread = bThreadMap.get(bThreadId)
+    function enableBThread<P>(info: EnableScenarioInfo<P>): BThreadState {
+        enabledScenarioIds.set(info.id, info.id);
+        let bThread = bThreadMap.get(info.id) as BThread<P>;
         if (bThread) {
-            bThread.resetOnPropsChange(props);
+            if(info.nextProps) {
+                bThread.resetBThread(info.generatorFunction, info.nextProps) ;
+            }
         } else {
-            bThreadMap.set(bThreadId, new BThread(bThreadId, scenarioInfo, generatorFunction, props, resolveActionCB, scenarioEventMap, logger));
-            if(scenarioInfo.destroyOnDisable) destroyOnDisableThreadIds.set(bThreadId, bThreadId);
+            bThread = new BThread<P>({
+                id: info.id,
+                generatorFunction: info.generatorFunction,
+                props: info.nextProps,
+                resolveActionCB: (action: ResolveAction | ResolveExtendAction) => internalDispatch(action),
+                scenarioEventMap,
+                logger});
+            bThreadMap.set(info.id, bThread);
+            if(info.destroyOnDisable) destroyOnDisableThreadIds.set(info.id, info.id);
         }
-        bThread = bThreadMap.get(bThreadId)!;
         if(bThread.bThreadBids !== undefined) bThreadBids.push(bThread.bThreadBids);
+        info.updateStateCb(bThread.state);
         return bThread.state;
+    }
+
+    function enableEvents(...events: ScenarioEvent<any>[]): void {
+        events.forEach(event => {
+            enabledEventIds.set(event.id, event.id);
+            if(scenarioEventMap.has(event.id) === false) {
+                event.__setUIActionCb(internalDispatch);
+                scenarioEventMap.set(event.id, event);
+            }
+        });
     }
 
     function scaffold() {
         bThreadBids.length = 0;
-        enabledBThreadIds.clear();
-        stagingFunction(enableBThread); // do the staging
-        bThreadMap.forEach(bThread => {
-            if(enabledBThreadIds.has(bThread.id)) {
-                bThread.setEnabledState(true);
+        enabledScenarioIds.clear();
+        enabledEventIds.clear();
+        stagingFunction(enableBThread, enableEvents); // do the staging
+        // set enable state for scenarios
+        bThreadMap.allValues?.forEach(bThread => {
+            if(enabledScenarioIds.has(bThread.id)) {
+                bThread.setEnabled(true);
             } else {
-                bThread.setEnabledState(false);
+                bThread.setEnabled(false);
             }
-            bThreadStateMap.set(bThread.id, {...bThread.state});
+        });
+        // set enable state for events
+        scenarioEventMap.allValues?.forEach(event => {
+            if(enabledEventIds.has(event.id)) {
+                event.setEnabled(true);
+            } else {
+                event.setEnabled(false);
+                scenarioEventMap.deleteSingle(event.id);
+            }
         });
         if(destroyOnDisableThreadIds.size > 0)
             destroyOnDisableThreadIds.forEach((bThreadId) => {
-            if(enabledBThreadIds.has(bThreadId) === false) {
+            if(enabledScenarioIds.has(bThreadId) === false) {
                 bThreadMap.get(bThreadId)?.destroy();
-                bThreadMap.delete(bThreadId);
-                bThreadStateMap.delete(bThreadId);
-                destroyOnDisableThreadIds.delete(bThreadId);
+                bThreadMap.deleteSingle(bThreadId);
+                destroyOnDisableThreadIds.deleteSingle(bThreadId);
             }
         });
-        logger.logBThreadStateMap(bThreadStateMap);
     }
     return scaffold;
 }

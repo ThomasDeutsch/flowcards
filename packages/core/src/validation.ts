@@ -7,7 +7,7 @@ export enum UIActionCheck {
     EventIsBlocked = 'EventIsBlocked',
     EventIsPending = 'EventIsPending',
     HasInvalidPayload = 'HasInvalidPayload',
-    NoPlacedBidForEventId = 'NoPlacedBidForEventId',
+    NoPlacedBidForNameKeyId = 'NoPlacedBidForNameKeyId',
     NoMatchingAskForBid = 'NoMatchingAskForBid'
 }
 
@@ -43,7 +43,7 @@ export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, 
     return [bid.payloadValidationCB, ...validations].filter(notUndefined).every(validationCB => isValidReturn(validationCB(payload)))
 }
 
-export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: PlacedBidContext, eventValidateCb?: (value: any) => PayloadValidationReturn): CombinedValidationCB<P> {
+export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
     if(bid === undefined || bidContext === undefined) return (payload?: P) => ({
         isValid: false, passed: [], failed: [{type: 'noAskForBid', reason: 'event is not asked for'}]
     });
@@ -65,14 +65,6 @@ export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: Place
                 failed.push({type: 'payloadValidation', reason: getResultDetails(result)})
             }
         })
-        const eventValidationResult = eventValidateCb?.(payload);
-        if(eventValidationResult !== undefined) {
-            if(isValidReturn(eventValidationResult)) {
-                passed.push({type: 'eventPayloadValidation', reason: getResultDetails(eventValidationResult)})
-            } else {
-                failed.push({type: 'eventPayloadValidation', reason: getResultDetails(eventValidationResult)})
-            }
-        }
         return {
             isValid: failed.length === 0,
             passed: passed,
@@ -85,7 +77,7 @@ export function validateAskedFor(action: AnyAction, allPlacedBids: AllPlacedBids
     if((action.type === "requestedAction" && action.bidType !== 'triggerBid') ||
       (action.type !== "uiAction")) return UIActionCheck.OK;
     const bidContext = allPlacedBids.get(action.eventId);
-    if(bidContext === undefined) return UIActionCheck.NoPlacedBidForEventId;
+    if(bidContext === undefined) return UIActionCheck.NoPlacedBidForNameKeyId;
     if(bidContext.blockedBy) return UIActionCheck.EventIsBlocked;
     if(bidContext.pendingBy) return UIActionCheck.EventIsPending;
     // re-check the dispatched action, because this action comes from a buffer, it could be that the user was able

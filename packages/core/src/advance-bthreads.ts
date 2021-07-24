@@ -1,13 +1,12 @@
 import { BidType, getMatchingBids, PlacedBid } from './bid';
-import { BThread } from './bthread';
-import { BThreadMap } from './bthread-map';
-import { EventId } from './event-map';
+import { NameKeyId } from './name-key-map';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
-import { AllPlacedBids, unblockEventId } from '.';
+import { AllPlacedBids, unblockNameKeyId } from '.';
 import { combinedIsValid, ReactionCheck } from './validation';
+import { BThreadMap } from './update-loop';
 
 
-export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId, payload: unknown): PlacedBid[] | undefined {
+export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: NameKeyId, payload: unknown): PlacedBid[] | undefined {
     const matchingBids = getMatchingBids(allPlacedBids, types, eventId);
     if(matchingBids === undefined) return undefined;
     const progressingBids: PlacedBid[] = [];
@@ -25,7 +24,7 @@ export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[
 }
 
 
-function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThread>, types: BidType[], action: AnyAction): void {
+function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, types: BidType[], action: AnyAction): void {
     const bids = getProgressingBids(allPlacedBids, types, action.eventId, action.payload);
     if(bids === undefined) return;
     bids.forEach(bid => {
@@ -35,7 +34,7 @@ function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap: BThre
 }
 
 
-function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThread>, extendedAction: AnyAction): boolean {
+function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, extendedAction: AnyAction): boolean {
     const matchingExtendBids = getMatchingBids(allPlacedBids, ["extendBid"], extendedAction.eventId);
     if(matchingExtendBids === undefined) return false;
     while(matchingExtendBids && matchingExtendBids.length > 0) {
@@ -59,7 +58,7 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap<BThre
 }
 
 
-export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: RequestedAction): ReactionCheck {
+export function advanceRequestedAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RequestedAction): ReactionCheck {
     const requestingBThread = bThreadMap.get(action.bThreadId);
     if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
     if(action.resolveActionId === 'pending') {
@@ -76,15 +75,15 @@ export function advanceRequestedAction(bThreadMap: BThreadMap<BThread>, allPlace
 }
 
 
-export function advanceUiAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: UIAction): ReactionCheck {
+export function advanceUiAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: UIAction): ReactionCheck {
     if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
     progressWaitingBThreads(allPlacedBids, bThreadMap, ["askForBid", "waitForBid"], action);
     return ReactionCheck.OK;
 }
 
 
-export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): ReactionCheck {
-    const extendingBThread = bThreadMap.get(action.extendingBThreadId);
+export function advanceResolveExtendAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): ReactionCheck {
+    const extendingBThread = bThreadMap.get(action.extendingNameKeyId);
     if(!extendingBThread) return ReactionCheck.ExtendingBThreadNotFound;
     const resolveCheck = extendingBThread.deleteResolvedExtend(action);
     if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
@@ -93,16 +92,16 @@ export function advanceResolveExtendAction(bThreadMap: BThreadMap<BThread>, allP
         if(requestingBThread === undefined) return ReactionCheck.ExtendedRequestingBThreadNotFound;
         requestingBThread.progressRequested(action.extendedRequestingBid.type, action.eventId, action.payload);
     }
-    unblockEventId(allPlacedBids, action.eventId);
+    unblockNameKeyId(allPlacedBids, action.eventId);
     progressWaitingBThreads(allPlacedBids, bThreadMap, ['askForBid', 'waitForBid'], action);
     return ReactionCheck.OK;
 }
 
 
-export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, allPlacedBids: AllPlacedBids, action: ResolveAction): ReactionCheck {
+export function advanceResolveAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveAction): ReactionCheck {
     const requestingBThread = bThreadMap.get(action.resolvedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
-    unblockEventId(allPlacedBids, action.eventId);
+    unblockNameKeyId(allPlacedBids, action.eventId);
     if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
     const resolveCheck = requestingBThread.progressResolved(action.eventId, action.payload);
     if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
@@ -110,7 +109,7 @@ export function advanceResolveAction(bThreadMap: BThreadMap<BThread>, allPlacedB
     return ReactionCheck.OK;
 }
 
-export function advanceRejectAction(bThreadMap: BThreadMap<BThread>, action: ResolveAction): ReactionCheck {
+export function advanceRejectAction(bThreadMap: BThreadMap, action: ResolveAction): ReactionCheck {
     const requestingBThread = bThreadMap.get(action.resolvedRequestingBid.bThreadId);
     if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
     return requestingBThread.rejectPending(action.eventId, action.payload);

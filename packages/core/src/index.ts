@@ -3,15 +3,14 @@ import { ScenariosContext, UpdateLoop } from './update-loop';
 import { StagingFunction } from './scaffolding';
 import { Logger } from './logger';
 import { Replay } from './replay';
-import { ScenarioEvent } from './scenario-event';
 
 export * from './scenario';
 export * from './bthread';
 export * from './update-loop';
-export * from './event-map';
+export * from './name-key-map';
 export * from "./bid";
 export * from "./scaffolding";
-export * from './event-map';
+export * from './name-key-map';
 export * from './logger';
 export * from './action';
 export * from './extend-context';
@@ -27,9 +26,9 @@ export class Scenarios {
     public initialScenariosContext: ScenariosContext;
     private _logger: Logger;
 
-    constructor(events: Record<string, ScenarioEvent<any>>, stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
+    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
         this._logger = new Logger();
-        this._updateLoop = new UpdateLoop(events, stagingFunction, this._internalDispatch.bind(this), this._logger);
+        this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
         let replay: Replay | undefined;
         if(initialActionsOrReplay === undefined)  {
             replay = undefined;

@@ -1,20 +1,20 @@
-import { BThreadId } from "./bthread";
-import { ActionType, AnyAction } from "./action";
+import { AnyAction } from "./action";
 import { PlacedBid, BidType } from "./bid";
+import { NameKeyId } from "./name-key-map";
 import { ExtendContext } from "./extend-context";
 
 
 export interface PendingBid extends PlacedBid {
     actionId: number;
     startTime: number;
-    extendedRequestingBid?: {type: BidType, bThreadId: BThreadId};
+    extendedRequestingBid?: {type: BidType, bThreadId: NameKeyId};
 }
 
-export function toExtendPendingBid(extendedAction: AnyAction, extendContext: ExtendContext, extendingBThreadId: BThreadId): PendingBid {
+export function toExtendPendingBid(extendedAction: AnyAction, extendContext: ExtendContext, extendingNameKeyId: NameKeyId): PendingBid {
     return {
         actionId: extendedAction.id!,
         type: 'extendBid',
-        bThreadId: extendingBThreadId,
+        bThreadId: extendingNameKeyId,
         extendedRequestingBid: (extendedAction.type === 'requestedAction') ? {
             type: extendedAction.bidType,
             bThreadId: extendedAction.bThreadId

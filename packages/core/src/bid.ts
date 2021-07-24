@@ -1,22 +1,21 @@
-import { EventMap, EventId } from './event-map';
+import { NameKeyId, NameKeyMap } from './name-key-map';
 import * as utils from './utils';
-import { BThreadId } from './bthread';
 import { PendingBid } from './pending-bid';
 import { AnyAction, BThreadGenerator } from '.';
 import { combinedIsValid, PayloadValidationCB } from './validation';
-import { EventIdWithValue, ScenarioEvent } from './scenario-event';
+import { ScenarioEvent } from './scenario-event';
 
 export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" |  "waitForBid" | "onPendingBid" | "validateBid";
 
 export interface Bid {
     type: BidType;
-    eventId: EventId;
+    eventId: NameKeyId;
     payload?: any;
     payloadValidationCB?: PayloadValidationCB<any>;
 }
 
 export interface PlacedBid extends Bid {
-    bThreadId: BThreadId;
+    bThreadId: NameKeyId;
 }
 
 export type RequestingBidType = 'requestBid' | 'triggerBid';
@@ -29,13 +28,13 @@ export interface PlacedRequestingBid extends PlacedBid {
 // --------------------------------------------------------------------------------------------------------------------
 
 export type BThreadBids = {
-    pendingBidMap: EventMap<PendingBid>
-    placedBids: PlacedBid[]
+    pendingBidMap: NameKeyMap<PendingBid>;
+    placedBids: PlacedBid[];
 }
 export type BidOrBids =  Bid | (Bid | undefined)[] | undefined;
 
 
-export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBids): PlacedBid[] {
+export function getPlacedBidsForBThread(bThreadId: NameKeyId, bidOrBids: BidOrBids): PlacedBid[] {
     const placedBids: PlacedBid[] = utils.toArray(bidOrBids)
         .filter(utils.notUndefined)
         .map(bid => {
@@ -50,15 +49,15 @@ export function getPlacedBidsForBThread(bThreadId: BThreadId, bidOrBids: BidOrBi
 // --------------------------------------------------------------------------------------------------------------------
 export type PlacedBidContext = {
     blockedBy?: [PlacedBid];
-    pendingBy?: BThreadId;
+    pendingBy?: NameKeyId;
     validatedBy?: PlacedBid[];
     bids: PlacedBid[];
 }
-export type AllPlacedBids = EventMap<PlacedBidContext>;
+export type AllPlacedBids = NameKeyMap<PlacedBidContext>;
 
 export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
-    const pendingEvents = new EventMap<BThreadId>();
-    const blockedEvents = new EventMap<PlacedBid[]>();
+    const pendingEvents = new NameKeyMap<NameKeyId>();
+    const blockedEvents = new NameKeyMap<PlacedBid[]>();
     allBThreadBids.forEach(({placedBids, pendingBidMap}) => {
         pendingBidMap.allValues?.forEach(bid => {
             pendingEvents.set(bid.eventId, bid.bThreadId);
@@ -69,27 +68,27 @@ export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
             }
         });
     });
-    const bidsByEventId: AllPlacedBids = new EventMap();
+    const bidsByNameKeyId: AllPlacedBids = new NameKeyMap();
     allBThreadBids.forEach(({placedBids}) => {
         placedBids.forEach(bid => {
             if(bid.type === 'blockBid') return;
-            const placedBidsForEventId = bidsByEventId.get(bid.eventId) || {
+            const placedBidsForNameKeyId = bidsByNameKeyId.get(bid.eventId) || {
                 blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)),
                 pendingBy: pendingEvents.get(bid.eventId),
                 bids: []
             } as PlacedBidContext
             if(bid.type === 'validateBid') {
-                placedBidsForEventId.validatedBy = [...(placedBidsForEventId.validatedBy || []), bid];
+                placedBidsForNameKeyId.validatedBy = [...(placedBidsForNameKeyId.validatedBy || []), bid];
             } else {
-                placedBidsForEventId.bids.push(bid);
+                placedBidsForNameKeyId.bids.push(bid);
             }
-            bidsByEventId.set(bid.eventId, placedBidsForEventId);
+            bidsByNameKeyId.set(bid.eventId, placedBidsForNameKeyId);
         });
     });
-    return bidsByEventId;
+    return bidsByNameKeyId;
 }
 
-export function unblockEventId(allPlacedBids: AllPlacedBids, eventId: EventId): void {
+export function unblockNameKeyId(allPlacedBids: AllPlacedBids, eventId: NameKeyId): void {
     const context = allPlacedBids.get(eventId)!;
     allPlacedBids.set(eventId, {...context, blockedBy: undefined});
 }
@@ -98,19 +97,19 @@ function isRequestingBid(bid: Bid): boolean {
     return (bid.type === 'requestBid') || (bid.type === 'triggerBid')
 }
 
-export type BidsByType = Partial<Record<BidType, EventMap<PlacedBid>>>;
+export type BidsByType = Partial<Record<BidType, NameKeyMap<PlacedBid>>>;
 
 export function toBidsByType(bThreadBids: BThreadBids): BidsByType {
     return bThreadBids.placedBids.reduce((bidsByType, bid) => {
         if(bidsByType[bid.type] === undefined) {
-            bidsByType[bid.type] = new EventMap<PlacedBid>();
+            bidsByType[bid.type] = new NameKeyMap<PlacedBid>();
         }
         bidsByType[bid.type]?.set(bid.eventId, bid);
         return bidsByType;
     }, {} as BidsByType);
 }
 
-export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
+export function getHighestPriorityValidRequestingBidForEveryNameKeyId(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
     const requestingBids: PlacedRequestingBid[] = []
     allPlacedBids.forEach((eventId, bidContext) => {
         if(bidContext.blockedBy || bidContext.pendingBy) return;
@@ -124,7 +123,7 @@ export function getHighestPriorityValidRequestingBidForEveryEventId(allPlacedBid
     return requestingBids.length > 0 ? requestingBids : undefined;
 }
 
-export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: EventId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {
+export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: NameKeyId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {
     const bidContext = allPlacedBids.get(eventId);
     if(!bidContext) return undefined
     return bidContext.bids.reverse().find(bid => {
@@ -134,7 +133,7 @@ export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: E
     });
 }
 
-export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: EventId): PlacedBid[] | undefined {
+export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: NameKeyId): PlacedBid[] | undefined {
     let bids = allPlacedBids.get(eventId)?.bids || [];
     if(eventId.key !== undefined) bids = [...bids, ...(allPlacedBids.get({name: eventId.name})?.bids || [])];
     if(bids.length === 0) return undefined;
@@ -143,48 +142,48 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
 }
 
 
-type UpdatePayloadCb<T> = (payload?: T) => T | Promise<T>;
+type UpdatePayloadCb<T> = () => T | Promise<T>;
 
-function getEventId<P>(event: ScenarioEvent<P> | EventIdWithValue<P>): EventId {
+function getNameKeyId<P>(event: ScenarioEvent<P> | NameKeyId): NameKeyId {
     return 'id' in event ? event.id : {name: event.name, key: event.key}
 }
 
 // bids user-API --------------------------------------------------------------------
 
-export function request<P>(event: ScenarioEvent<P> | EventIdWithValue<P>, payload?: P | UpdatePayloadCb<P>): Bid {
+export function request<P>(event: ScenarioEvent<P> | NameKeyId, payload?: P | UpdatePayloadCb<P>): Bid {
     return {
         type: 'requestBid',
-        eventId: getEventId(event),
+        eventId: getNameKeyId(event),
         payload: payload
     };
 }
 
-export function trigger<P>(event: ScenarioEvent<P> | EventIdWithValue<P>, payload?: P): Bid {
-    return { type: 'triggerBid', eventId: getEventId(event), payload: payload };
+export function trigger<P>(event: ScenarioEvent<P> | NameKeyId, payload?: P): Bid {
+    return { type: 'triggerBid', eventId: getNameKeyId(event), payload: payload };
 }
 
-export function askFor<P>(event: ScenarioEvent<P> | EventIdWithValue<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
-    return { type: 'askForBid', eventId: getEventId(event), payloadValidationCB: payloadValidationCB };
+export function askFor<P>(event: ScenarioEvent<P> | NameKeyId, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'askForBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
-export function waitFor<P>(event: ScenarioEvent<P> | EventIdWithValue<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
-    return { type: 'waitForBid', eventId: getEventId(event), payloadValidationCB: payloadValidationCB };
+export function waitFor<P>(event: ScenarioEvent<P> | NameKeyId, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'waitForBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
-export function onPending<P>(event: ScenarioEvent<P> | EventIdWithValue<P>): Bid {
-    return { type: 'onPendingBid', eventId: getEventId(event) };
+export function onPending<P>(event: ScenarioEvent<P> | NameKeyId): Bid {
+    return { type: 'onPendingBid', eventId: getNameKeyId(event) };
 }
 
-export function extend<P>(event: ScenarioEvent<P> | EventIdWithValue<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
-    return { type: 'extendBid', eventId: getEventId(event), payloadValidationCB: payloadValidationCB };
+export function extend<P>(event: ScenarioEvent<P> | NameKeyId, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'extendBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
-export function block<P>(event: ScenarioEvent<P> | EventIdWithValue<P>): Bid {
-    return { type: 'blockBid', eventId: getEventId(event) };
+export function block<P>(event: ScenarioEvent<P> | NameKeyId): Bid {
+    return { type: 'blockBid', eventId: getNameKeyId(event) };
 }
 
-export function validate<P>(event: ScenarioEvent<P> | EventIdWithValue<P>, payloadValidationCB?: PayloadValidationCB<P>): Bid {
-    return { type: 'validateBid', eventId: getEventId(event), payloadValidationCB: payloadValidationCB };
+export function validate<P>(event: ScenarioEvent<P> | NameKeyId, payloadValidationCB?: PayloadValidationCB<P>): Bid {
+    return { type: 'validateBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
 export function* allOf(...bids: Bid[]): BThreadGenerator {

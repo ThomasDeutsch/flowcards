@@ -1,19 +1,18 @@
 import { RequestingBidType, PlacedRequestingBid} from './bid';
-import { EventId } from './event-map';
-import { BThreadId } from './bthread';
+import { NameKeyId } from './name-key-map';
 import { PendingBid } from './pending-Bid';
 import { BidType } from '.';
 
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
 interface Action {
-    eventId: EventId;
+    eventId: NameKeyId;
     payload?: unknown;
 }
 export interface UIAction extends Action {
     id?: number,
     type: "uiAction",
-    eventId: EventId;
+    eventId: NameKeyId;
     payload?: unknown;
 }
 
@@ -21,7 +20,7 @@ export interface RequestedAction extends Action {
     id: number,
     type: "requestedAction",
     bidType: RequestingBidType;
-    bThreadId: BThreadId;
+    bThreadId: NameKeyId;
     resolveActionId?: number | 'pending';
 }
 
@@ -30,7 +29,7 @@ export interface ResolveAction extends Action {
     type: "resolveAction" | "rejectAction";
     requestActionId: number;
     pendingDuration: number;
-    resolvedRequestingBid: {type: BidType, bThreadId: BThreadId};
+    resolvedRequestingBid: {type: BidType, bThreadId: NameKeyId};
 }
 
 export interface ResolveExtendAction extends Action {
@@ -38,8 +37,8 @@ export interface ResolveExtendAction extends Action {
     type: "resolvedExtendAction";
     pendingDuration: number;
     requestActionId: number;
-    extendingBThreadId: BThreadId;
-    extendedRequestingBid?: {type: BidType, bThreadId: BThreadId};
+    extendingNameKeyId: NameKeyId;
+    extendedRequestingBid?: {type: BidType, bThreadId: NameKeyId};
 }
 
 interface ResolveActionWithId extends ResolveAction {
@@ -97,7 +96,7 @@ export function getResolveExtendAction(pendingBid: PendingBid, data: unknown): R
         type: "resolvedExtendAction",
         eventId: pendingBid.eventId,
         payload: data,
-        extendingBThreadId: pendingBid.bThreadId,
+        extendingNameKeyId: pendingBid.bThreadId,
         requestActionId: pendingBid.actionId,
         pendingDuration: new Date().getTime() - pendingBid.startTime,
         extendedRequestingBid: pendingBid.extendedRequestingBid

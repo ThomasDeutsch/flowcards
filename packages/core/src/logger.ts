@@ -1,8 +1,7 @@
 import { PlacedBid } from './bid';
-import { BThreadMap } from './bthread-map';
 import * as utils from './utils';
-import { BThreadId, BThreadState } from './bthread';
-import { EventId, EventMap } from './event-map';
+import { BThreadState } from './bthread';
+import { NameKeyId, NameKeyMap } from './name-key-map';
 import { AnyActionWithId, RequestedAction } from './action';
 
 export enum BThreadReactionType {
@@ -22,17 +21,17 @@ export interface BThreadReaction {
 export class Logger {
     private _actions: AnyActionWithId[] = [];
     public get actions(): AnyActionWithId[] { return this._actions; }
-    public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
-    public pendingEventIdHistory = new Map<number, Set<EventId> | undefined>();
-    public bThreadStateHistory = new Map<number, BThreadMap<BThreadState>>();
+    public bThreadReactionHistory = new NameKeyMap<Map<number, BThreadReaction>>();
+    public pendingNameKeyIdHistory = new Map<number, Set<NameKeyId> | undefined>();
+    public bThreadStateHistory = new Map<number, NameKeyMap<BThreadState>>();
 
     private _currentActionId(): number {
         return utils.latest(this._actions)?.id || 0;
     }
 
-    public logPendingEventIds(pending: EventMap<PlacedBid[]> | undefined): void {
+    public logPendingNameKeyIds(pending: NameKeyMap<PlacedBid[]> | undefined): void {
         const eventIds = pending?.allKeys;
-        this.pendingEventIdHistory.set(this._currentActionId(), eventIds);
+        this.pendingNameKeyIdHistory.set(this._currentActionId(), eventIds);
     }
 
     public logAction(action: AnyActionWithId): void {
@@ -49,7 +48,7 @@ export class Logger {
         this._actions.push(a);
     }
 
-    private _getBThreadReactions(bThreadId: BThreadId): Map<number, BThreadReaction> {
+    private _getBThreadReactions(bThreadId: NameKeyId): Map<number, BThreadReaction> {
         let bThreadReactions = this.bThreadReactionHistory.get(bThreadId);
         if(bThreadReactions === undefined) {
             bThreadReactions = new Map<number, BThreadReaction>()
@@ -58,7 +57,7 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logReaction(reactionType: BThreadReactionType, bThreadId: BThreadId, bid?: PlacedBid): void {
+    public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentActionId = this._currentActionId();
         bThreadReactions.set(currentActionId, {
@@ -68,14 +67,14 @@ export class Logger {
         });
     }
 
-    public logBThreadStateMap(bThreadStateMap: BThreadMap<BThreadState>): void {
+    public logBThreadStateMap(bThreadStateMap: NameKeyMap<BThreadState>): void {
         this.bThreadStateHistory.set(this._currentActionId(), bThreadStateMap.clone());
     }
 
     public resetLog(): void {
         this._actions = [];
-        this.bThreadReactionHistory = new BThreadMap();
-        this.pendingEventIdHistory = new Map();
+        this.bThreadReactionHistory = new NameKeyMap();
+        this.pendingNameKeyIdHistory = new Map();
         this.bThreadStateHistory = new Map();
     }
 }
