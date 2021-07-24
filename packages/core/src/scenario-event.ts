@@ -50,7 +50,7 @@ export class ScenarioEvent<P = void> {
         }
     }
 
-    public setEnabled(isEnabled: boolean): void {
+    public setIsEnabled(isEnabled: boolean): void {
         this._isEnabled = isEnabled;
     }
 
@@ -96,6 +96,10 @@ export class ScenarioEvent<P = void> {
 
     public get isBlocked(): boolean {
         return !!this._bidContext?.blockedBy;
+    }
+
+    public get isEnabled(): boolean {
+        return this._isEnabled;
     }
 }
 

@@ -1,14 +1,19 @@
+import { Scenario } from "../src";
 import * as bp from "../src/bid";
-import { delay, testScenarios } from "./testutils";
-import { Scenario } from '../src/scenario';
 import { ScenarioEvent } from "../src/scenario-event";
+import { delay, testScenarios } from "./testutils";
 
 // REQUESTS & WAITS
 //-------------------------------------------------------------------------
 test("a requested event that is not blocked will advance", () => {
     const eventA = new ScenarioEvent<number>('A');
 
-    const requestingThread = new Scenario<Record<string, number>>('thread1', function*(context) {
+    interface TestProps {
+        a: number
+    }
+    // TODO: remove id from Scenario constructor and use the property name
+    // For this, use an Object
+    const requestingThread = new Scenario<TestProps>('thread1', function*(context) {
         const progress = yield bp.request(eventA, 1);
         expect(progress.event).toBe(eventA);
         expect(context.a).toEqual(123);
@@ -24,33 +29,33 @@ test("a requested event that is not blocked will advance", () => {
 });
 
 
-// test("a request will also advance waiting Scenarios", () => {
-//     const eventA = new ScenarioEvent<number>('A')
+test("a request will also advance waiting Scenarios", () => {
+    const eventA = new ScenarioEvent<number>('A')
 
-//     const requestingThread = new Scenario<undefined, number>('thread1', function*() {
-//         const progress = yield bp.request(eventA, 1);
-//         this.setValue(progress.payload);
-//     });
+    const requestingThread = new Scenario('thread1', function*() {
+        yield bp.request(eventA, 1);
+    });
 
-//     const askingThread = new Scenario('askingThread', function*() {
-//         yield bp.askFor(eventA);
-//     });
+    const askingThread = new Scenario('askingThread', function*() {
+        yield bp.askFor(eventA);
+    });
 
-//     const waitingThread = new Scenario('waitingThread', function*() {
-//         yield bp.waitFor(eventA);
-//     });
+    const waitingThread = new Scenario('waitingThread', function*() {
+        yield bp.waitFor(eventA);
+    });
 
-//     testScenarios({eventA}, (enable) => {
-//         enable(requestingThread.context());
-//         enable(askingThread.context());
-//         enable(waitingThread.context());
-//     }, () => {
-//         expect(requestingThread.value).toBe(1);
-//         expect(requestingThread.isCompleted).toBeTruthy();
-//         expect(askingThread.isCompleted).toBeTruthy();
-//         expect(waitingThread.isCompleted).toBeTruthy();
-//     });
-// });
+    testScenarios((s, e) => {
+        e(eventA);
+        s(requestingThread.context());
+        s(askingThread.context());
+        s(waitingThread.context());
+    }, () => {
+        expect(eventA.value).toBe(1);
+        expect(requestingThread.isCompleted).toBeTruthy();
+        expect(askingThread.isCompleted).toBeTruthy();
+        expect(waitingThread.isCompleted).toBeTruthy();
+    });
+});
 
 
 // test("waits will return the value that has been requested", () => {
@@ -63,37 +68,37 @@ test("a requested event that is not blocked will advance", () => {
 //     const receiveThread = new Scenario('receiveThread', function* () {
 //         const progress = yield bp.waitFor(eventA);
 //         expect(progress.event).toBe(eventA);
-//         expect(progress.payload).toBe(1000);
+//         expect(progress.event.value).toBe(1000);
 //     });
 
-//     testScenarios({eventA}, (enable) => {
-//         enable(requestThread.context());
-//         enable(receiveThread.context());
+//     testScenarios((s, e) => {
+//         e(eventA);
+//         s(requestThread.context());
+//         s(receiveThread.context());
 //     });
 // });
 
 
 // test("multiple requests will return information about the progressed Scenario", () => {
-//     const testEvent = {
-//         A: new ScenarioEvent<number>('A'),
-//         B: new ScenarioEvent<number>('B')
-//     }
+//     const eventA = new ScenarioEvent<number>('A');
+//     const eventB = new ScenarioEvent<number>('B');
 
-//     const requestThread = scenario(null, function* () {
-//         const progress = yield [bp.request(testEvent.A, 1000), bp.request(testEvent.B, 2000)];
-//         expect(progress.event).toBe(testEvent.B);
+//     const requestThread = new Scenario('request', function* () {
+//         const progress = yield [bp.request(eventA, 1000), bp.request(eventB, 2000)];
+//         expect(progress.event).toBe(eventB);
 //         expect(progress.remainingBids?.length).toEqual(1);
-//         expect(progress.remainingBids?.[0]?.eventId.name).toBe(testEvent.A.id.name)
+//         expect(progress.remainingBids?.[0]?.eventId.name).toBe(eventA.id.name)
 //     });
 
-//     const receiveThreadB = scenario(null, function* () {
-//         const progress = yield bp.askFor(testEvent.B);
-//         expect(progress.event).toBe(testEvent.B);
+//     const receiveThreadB = new Scenario('receive', function* () {
+//         const progress = yield bp.askFor(eventA);
+//         expect(progress.event).toBe(eventB);
 //     });
 
-//     testScenarios(testEvent, (enable) => {
-//         enable(requestThread());
-//         enable(receiveThreadB());
+//     testScenarios((s, e) => {
+//         e(eventA, eventB);
+//         s(requestThread.context());
+//         s(receiveThreadB.context());
 //     });
 // });
 

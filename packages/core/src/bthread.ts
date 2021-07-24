@@ -52,7 +52,7 @@ export interface BThreadParameters<P> {
     resolveActionCB: ResolveActionCB;
     scenarioEventMap: NameKeyMap<ScenarioEvent>;
     logger: Logger;
-    props?: P;
+    props: P;
 }
 
 export class BThread<P> {
@@ -90,7 +90,7 @@ export class BThread<P> {
         this._resolveActionCB = params.resolveActionCB;
         this._state = this._createState();
         this._utils = this._createBThreadUtils();
-        this._thread = params.generatorFunction.bind(this._utils)(params.props!);
+        this._thread = params.generatorFunction.bind(this._utils)(params.props);
         const next = this._thread.next();
         this._nextBidOrBids = next.value as BidOrBids;
         this._setCurrentBids();
@@ -174,7 +174,7 @@ export class BThread<P> {
 
     // --- public
 
-    public resetBThread(generatorFunction: BThreadGeneratorFunction<P>, nextProps: P): void {
+    public resetBThread(generatorFunction: BThreadGeneratorFunction<any>, nextProps: any): void {
         this._cancelPendingRequests();
         this._pendingExtends = new NameKeyMap();
         this._state = this._createState();

@@ -37,13 +37,20 @@ export class UpdateLoop {
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _logger: Logger;
     private readonly _scaffold: () => void;
-    private readonly _scenarioEventMap: EventMap = new NameKeyMap<ScenarioEvent<any>>();
+    private readonly _eventMap: EventMap = new NameKeyMap<ScenarioEvent<any>>();
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _replay?: Replay;
 
     constructor(stagingFunction: StagingFunction, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
-        this._scaffold = setupScaffolding(stagingFunction, this._bThreadMap, this._scenarioEventMap, this._bThreadBids, internalDispatch, this._logger);
+        this._scaffold = setupScaffolding({
+            stagingFunction,
+            bThreadMap: this._bThreadMap,
+            eventMap: this._eventMap,
+            bThreadBids: this._bThreadBids,
+            internalDispatch,
+            logger: this._logger}
+        );
     }
 
     private _getContext(): ScenariosContext {
@@ -126,8 +133,8 @@ export class UpdateLoop {
     public runScaffolding(replay?: Replay): ScenariosContext {
         if(replay) this._replay = replay;
         this._scaffold();
-        this._allPlacedBids = allPlacedBids(this._bThreadBids);
-        this._scenarioEventMap.forEach((id, event) => {
+        this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
+        this._eventMap.forEach((id, event) => {
             const bidContext = this._allPlacedBids.get(id);
             const pendingByBThread = bidContext?.pendingBy ? this._bThreadMap.get(bidContext.pendingBy) : undefined;
             const cancelPending = pendingByBThread ? (message: string) => pendingByBThread.cancelPending(id, message) : undefined;
@@ -141,7 +148,7 @@ export class UpdateLoop {
         this._actionQueue.length = 0;
         this._bThreadMap.allValues?.forEach(bThread => bThread.destroy());
         this._bThreadMap.clear();
-        this._scenarioEventMap.clear();
+        this._eventMap.clear();
         this._logger.resetLog();
     }
 

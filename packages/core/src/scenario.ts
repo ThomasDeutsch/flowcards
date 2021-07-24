@@ -11,9 +11,9 @@ export interface EnableScenarioInfo<P> {
     updateStateCb: (state: BThreadState) => void;
 }
 
-export type BThreadGeneratorFunction<P> = (this: BThreadUtils, props: P) => BThreadGenerator;
+export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadUtils, props: P) => BThreadGenerator;
 
-export class Scenario<P extends Record<string, any>> {
+export class Scenario<P = void> {
     public readonly id: NameKeyId;
     private _generatorFunction: BThreadGeneratorFunction<P>;
     private _currentProps?: P;
@@ -26,10 +26,10 @@ export class Scenario<P extends Record<string, any>> {
         this.destroyOnDisable = !!destroyOnDisable;
     }
 
-    public context(props?: P): EnableScenarioInfo<P> {
-        const changedProps = getChangedProps(this._currentProps, props);
+    public context(...params: P extends void ? [] : [P]): EnableScenarioInfo<P> {
+        const changedProps = getChangedProps(this._currentProps || undefined, params[0] || undefined);
         if(changedProps) {
-            this._currentProps = props;
+            this._currentProps = params[0];
         }
         return {
             id: this.id,

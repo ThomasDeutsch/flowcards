@@ -1,19 +1,28 @@
-// import * as bp from "../src/bid";
-// import { testScenarios } from "./testutils";
-// import { scenario } from '../src/scenario';
-// import { ScenarioEvent } from "../src/scenario-event";
+import * as bp from "../src/bid";
+import { testScenarios } from "./testutils";
+import { ScenarioEvent } from "../src/scenario-event";
+import { Scenario } from "../src";
 
-// test("an event can have an initial value", () => {
-//     const eventA = new ScenarioEvent('A', 10);
+// interface ScenarioProps {
+//     a: number
+// }
+// test("an event needs to be enabled in order to be requested", () => {
+//     // TODO: REMOVE event id and use property name
+//     // For this, pass events as object into this.
+//     const eventA = new ScenarioEvent<number>('A');
+//     const eventB = new ScenarioEvent<number>('B');
 
-//     const requestingThread = scenario({id: 'thread1'}, function*() {
-//         yield bp.request(eventA, (a) => (a || 0) + 1);
+//     const requestingThread = new Scenario<ScenarioProps>('1', function*() {
+//         yield bp.request(eventA);
+//         yield bp.request(eventB);
 //     });
 
-//     testScenarios({eventA}, (enable) => {
-//         enable(requestingThread());
+//     testScenarios((enable, event) => {
+//         event(eventA);
+//         enable(requestingThread.context({a: 1}));
 //     }, ()=> {
-//         expect(eventA.value).toBe(11)
+//         expect(eventB.isEnabled).toBe(false)
+//         expect(requestingThread.isCompleted).toBe(false)
 //     });
 // });
 

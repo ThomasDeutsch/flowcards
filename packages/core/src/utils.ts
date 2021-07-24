@@ -1,6 +1,6 @@
 // EQUALITY / DUCK-TYPING --------------------
 
-export function getChangedProps(nextDeps?: Record<string, any>, prevDeps?: Record<string, unknown>): string[] | undefined {
+export function getChangedProps(nextDeps?: Record<string, any>, prevDeps?: Record<string, any>): string[] | undefined {
     if ((prevDeps === undefined || prevDeps === null)) {
         if(prevDeps === nextDeps) return undefined;
         return Object.keys(nextDeps);

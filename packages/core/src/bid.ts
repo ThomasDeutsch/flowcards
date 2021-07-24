@@ -4,6 +4,7 @@ import { PendingBid } from './pending-bid';
 import { AnyAction, BThreadGenerator } from '.';
 import { combinedIsValid, PayloadValidationCB } from './validation';
 import { ScenarioEvent } from './scenario-event';
+import { EventMap } from './update-loop';
 
 export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" |  "waitForBid" | "onPendingBid" | "validateBid";
 
@@ -55,7 +56,7 @@ export type PlacedBidContext = {
 }
 export type AllPlacedBids = NameKeyMap<PlacedBidContext>;
 
-export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
+export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap): AllPlacedBids {
     const pendingEvents = new NameKeyMap<NameKeyId>();
     const blockedEvents = new NameKeyMap<PlacedBid[]>();
     allBThreadBids.forEach(({placedBids, pendingBidMap}) => {
@@ -72,6 +73,7 @@ export function allPlacedBids(allBThreadBids: BThreadBids[]): AllPlacedBids {
     allBThreadBids.forEach(({placedBids}) => {
         placedBids.forEach(bid => {
             if(bid.type === 'blockBid') return;
+            if(!eventMap.has(bid.eventId)) return;
             const placedBidsForNameKeyId = bidsByNameKeyId.get(bid.eventId) || {
                 blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)),
                 pendingBy: pendingEvents.get(bid.eventId),
