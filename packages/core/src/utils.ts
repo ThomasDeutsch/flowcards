@@ -53,3 +53,16 @@ export function uuidv4(): string {
       return v.toString(16);
     });
   }
+
+
+export function executeForEach<T>(fn: (a: T) => void, coll: Record<string, T> | T[]): void {
+    if(Array.isArray(coll)) {
+        coll.forEach(item => {
+            fn(item);
+        });
+    } else {
+        Object.keys(coll).forEach((item) => {
+            fn(coll[item])
+        })
+    }
+}

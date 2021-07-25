@@ -174,7 +174,7 @@ export class BThread<P> {
 
     // --- public
 
-    public resetBThread(generatorFunction: BThreadGeneratorFunction<any>, nextProps: any): void {
+    public resetBThread(generatorFunction: BThreadGeneratorFunction<any>, nextProps: P): void {
         this._cancelPendingRequests();
         this._pendingExtends = new NameKeyMap();
         this._state = this._createState();

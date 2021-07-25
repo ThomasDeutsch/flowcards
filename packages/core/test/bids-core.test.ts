@@ -6,23 +6,26 @@ import { delay, testScenarios } from "./testutils";
 // REQUESTS & WAITS
 //-------------------------------------------------------------------------
 test("a requested event that is not blocked will advance", () => {
-    const eventA = new ScenarioEvent<number>('A');
-
     interface TestProps {
         a: number
     }
-    // TODO: remove id from Scenario constructor and use the property name
-    // For this, use an Object
+
+    const basicEvents = {
+        eventA: new ScenarioEvent<number>('A'),
+        eventB: new ScenarioEvent<number>('B')
+    }
+
     const requestingThread = new Scenario<TestProps>('thread1', function*(context) {
-        const progress = yield bp.request(eventA, 1);
-        expect(progress.event).toBe(eventA);
+        const progress = yield bp.request(basicEvents.eventA, 1);
+        expect(progress.event).toBe(basicEvents.eventA);
         expect(context.a).toEqual(123);
+        expect(typeof context.a).toEqual('number');
         expect(this.key).toBe(undefined);
     });
 
     testScenarios((s, e) => {
-        e(eventA);
-        s(requestingThread, {a: 1});
+        e(basicEvents);
+        s(requestingThread, {a: 123});
     }, ()=> {
         expect(requestingThread.isCompleted).toBe(true);
     });
@@ -30,7 +33,7 @@ test("a requested event that is not blocked will advance", () => {
 
 
 test("a request will also advance waiting Scenarios", () => {
-    const eventA = new ScenarioEvent<number>('A')
+    const eventA = new ScenarioEvent<number>('A');
 
     const requestingThread = new Scenario('thread1', function*() {
         yield bp.request(eventA, 1);
@@ -45,10 +48,10 @@ test("a request will also advance waiting Scenarios", () => {
     });
 
     testScenarios((s, e) => {
-        e(eventA);
-        s(requestingThread.context());
-        s(askingThread.context());
-        s(waitingThread.context());
+        e([eventA]);
+        s(requestingThread);
+        s(askingThread);
+        s(waitingThread);
     }, () => {
         expect(eventA.value).toBe(1);
         expect(requestingThread.isCompleted).toBeTruthy();
