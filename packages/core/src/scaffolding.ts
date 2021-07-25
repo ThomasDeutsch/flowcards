@@ -6,9 +6,10 @@ import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
 import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
+import { getChangedProps } from './utils';
 
 
-export type EnableScenario = (scenario: EnableScenarioInfo<any>) => BThreadState;
+export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadState;
 export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
 
@@ -27,27 +28,28 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
     const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
     const enabledEventIds = new NameKeyMap<NameKeyId>();
 
-    function enableBThread<P>(info: EnableScenarioInfo<P>): BThreadState {
-        enabledScenarioIds.set(info.id, info.id);
-        let bThread = props.bThreadMap.get(info.id) as BThread<P>;
+    const enableBThread: EnableScenario = <P>(...[scenario, scenarioProps]: [Scenario<P>, P] | [Scenario<P>]) => {
+        enabledScenarioIds.set(scenario.id, scenario.id);
+        let bThread = props.bThreadMap.get(scenario.id) as BThread<P>;
         if (bThread) {
-            if(info.nextProps) {
-                //TODO: log prop change!
-                bThread.resetBThread(info.generatorFunction, info.nextProps) ;
+            const changedProps = getChangedProps(scenario.currentProps || undefined, scenarioProps || undefined);
+            if(changedProps) {
+                scenario.__updateCurrentProps(scenarioProps);
+                bThread.resetBThread(scenario.generatorFunction, scenarioProps);
             }
         } else {
             bThread = new BThread<P>({
-                id: info.id,
-                generatorFunction: info.generatorFunction,
-                props: info.nextProps!,
+                id: scenario.id,
+                generatorFunction: scenario.generatorFunction,
+                props: scenario.currentProps!,
                 resolveActionCB: resolveActionCb,
                 scenarioEventMap: props.eventMap,
                 logger: props.logger});
-            props.bThreadMap.set(info.id, bThread);
-            if(info.destroyOnDisable) destroyOnDisableThreadIds.set(info.id, info.id);
+            props.bThreadMap.set(scenario.id, bThread);
+            if(scenario.destroyOnDisable) destroyOnDisableThreadIds.set(scenario.id, scenario.id);
         }
         if(bThread.bThreadBids !== undefined) props.bThreadBids.push(bThread.bThreadBids);
-        info.updateStateCb(bThread.state);
+        scenario.__updateState(bThread.state);
         return bThread.state;
     }
 

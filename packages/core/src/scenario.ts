@@ -1,7 +1,6 @@
 
 import { BThreadGenerator, BThreadState, BThreadUtils } from './bthread';
 import { NameKeyId, toNameKeyId } from './name-key-map';
-import { getChangedProps } from './utils';
 
 export interface EnableScenarioInfo<P> {
     id: NameKeyId;
@@ -26,22 +25,20 @@ export class Scenario<P = void> {
         this.destroyOnDisable = !!destroyOnDisable;
     }
 
-    public context(...params: P extends void ? [] : [P]): EnableScenarioInfo<P> {
-        const changedProps = getChangedProps(this._currentProps || undefined, params[0] || undefined);
-        if(changedProps) {
-            this._currentProps = params[0];
-        }
-        return {
-            id: this.id,
-            generatorFunction: this._generatorFunction,
-            destroyOnDisable: this.destroyOnDisable,
-            nextProps: changedProps ? this._currentProps : undefined,
-            updateStateCb: this._updateState.bind(this)
-        };
+    public __updateCurrentProps(p: P | undefined): void {
+        this._currentProps = p;
     }
 
-    private _updateState(bThreadState: BThreadState): void {
+    public __updateState(bThreadState: BThreadState): void {
         this._bThreadState = bThreadState;
+    }
+
+    public get generatorFunction(): BThreadGeneratorFunction<P> {
+        return this._generatorFunction;
+    }
+
+    public get currentProps(): P | undefined {
+        return this._currentProps;
     }
 
     public get isEnabled(): boolean {

@@ -22,7 +22,7 @@ test("a requested event that is not blocked will advance", () => {
 
     testScenarios((s, e) => {
         e(eventA);
-        s(requestingThread.context({a: 123}));
+        s(requestingThread, {a: 1});
     }, ()=> {
         expect(requestingThread.isCompleted).toBe(true);
     });
