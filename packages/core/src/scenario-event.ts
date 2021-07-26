@@ -1,6 +1,7 @@
-import { InternalDispatch, PlacedBid, UIAction } from ".";
+import { PlacedBid } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid, PlacedBidContext } from "./bid";
-import { NameKeyId, Key } from "./name-key-map";
+import { NameKeyId } from "./name-key-map";
+import { UIActionDispatch } from "./scaffolding";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
 
 export type ValueUpdateCb<P> = (value: P) => P;
@@ -11,6 +12,7 @@ export interface EventIdWithValue<P> extends NameKeyId {
 
 export class ScenarioEvent<P = void> {
     public readonly name: string;
+    public readonly key?: string;
     public readonly initialValue?: P;
     public readonly description?: string
     private _updatedOn?: number;
@@ -18,40 +20,35 @@ export class ScenarioEvent<P = void> {
     private _askForBid?: PlacedBid;
     private _validateCheck?: CombinedValidationCB<P>;
     private _cancelPendingCb?: (message: string) => boolean;
-    private _uiActionCb?: (payload?: P) => void;
+    private _uiActionCb?: UIActionDispatch;
     private _isEnabled = false;
     private _value?: P;
-    private _valueByKey = new Map<Key, P>();
     private _initialValue?: P;
     private _areBThreadsProgressing?: () => boolean;
 
-    constructor(name: string, initialValue?: P) {
+    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
         this._initialValue = initialValue;
         this._value = initialValue;
-        this.name = name;
+        if(typeof nameOrNameKey === 'string') {
+            this.name = nameOrNameKey;
+        } else {
+            this.name = nameOrNameKey.name;
+            this.key = nameOrNameKey.key?.toString();
+        }
+
     }
 
     public get id(): NameKeyId {
-        return { name: this.name }
+        return this.key ? { name: this.name, key: this.key } : { name: this.name };
     }
 
     public get updatedOn(): number | undefined {
         return this._updatedOn;
     }
-    public key(key: Key): EventIdWithValue<P> {
-        return { name: this.name, key: key, value: this._valueByKey.get(key) }
-    }
 
-    public __setUIActionCb(internalDispatch: InternalDispatch, areBThreadsProgressing: () => boolean): void {
+    public __setUIActionCb(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean): void {
         this._areBThreadsProgressing = areBThreadsProgressing.bind(this);
-        this._uiActionCb = (payload?: P) => {
-            const uiAction: UIAction = {
-                type: "uiAction",
-                eventId: this.id,
-                payload: payload
-            }
-            internalDispatch(uiAction);
-        }
+        this._uiActionCb = uiActionDispatch;
     }
 
     public disable(resetValue = false): void {
@@ -65,7 +62,6 @@ export class ScenarioEvent<P = void> {
         this._isEnabled = true;
     }
 
-
     public __update(currentActionId: number, allPlacedBids: AllPlacedBids, cancelPendingCb?: (message: string) => boolean): void {
         this._updatedOn = currentActionId;
         this._bidContext = allPlacedBids.get(this.id);
@@ -78,11 +74,7 @@ export class ScenarioEvent<P = void> {
         return this._value;
     }
 
-    public __setValue(nextValue: P, key?: Key): void {
-        if(key !== undefined) {
-            this._valueByKey.set(key, nextValue);
-            return;
-        }
+    public __setValue(nextValue: P): void {
         this._value = nextValue;
     }
 
@@ -92,7 +84,7 @@ export class ScenarioEvent<P = void> {
 
     public dispatch(payload: P): boolean {
         if(this.validate(payload).isValid === false) return false;
-        this._uiActionCb!(payload);
+        this._uiActionCb!(this.id, payload);
         return true;
     }
 
@@ -113,4 +105,48 @@ export class ScenarioEvent<P = void> {
     }
 }
 
+export class ScenarioEventKeyed<P = void> {
+    public readonly name: string;
+    private _initialValue?: P;
+    private _eventByKey: Record<string, ScenarioEvent<P>> = {};
 
+    constructor(name: string, initialValue?: P) {
+        this._initialValue = initialValue;
+        this.name = name;
+    }
+
+    public get id(): NameKeyId {
+        return { name: this.name }
+    }
+
+    public key(k: string | number): ScenarioEvent<P> {
+        const key = k.toString();
+        let event = this._eventByKey[key];
+        if(event === undefined) {
+            event = this._eventByKey[key] = new ScenarioEvent<P>({name: this.name, key: key}, this._initialValue);
+        }
+        return event;
+    }
+
+    public keys(...keys: (string | number)[]): ScenarioEvent<P>[] {
+        return keys.map(key => this.key(key.toString()));
+    }
+
+    public allKeys(): string[] {
+        return Object.entries(this._eventByKey).map(([k]) => k);
+    }
+
+    public enable(): void {
+        Object.entries(this._eventByKey).forEach(([_, e]) => e.enable());
+    }
+
+    public disable(onDisable?: 'resetValues' | 'resetKeys'): void {
+        if(onDisable == 'resetValues') {
+            Object.entries(this._eventByKey).forEach(([_, e]) => e.disable(true));
+        } else if(onDisable === "resetKeys") {
+            this._eventByKey = {}
+        } else {
+            Object.entries(this._eventByKey).forEach(([_, e]) => e.disable());
+        }
+    }
+}

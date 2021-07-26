@@ -3,7 +3,7 @@ import * as utils from './utils';
 import { PendingBid } from './pending-bid';
 import { AnyAction, BThreadGenerator } from '.';
 import { combinedIsValid, PayloadValidationCB } from './validation';
-import { ScenarioEvent } from './scenario-event';
+import { ScenarioEvent, ScenarioEventKeyed } from './scenario-event';
 import { EventMap } from './update-loop';
 
 export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" |  "waitForBid" | "onPendingBid" | "validateBid";
@@ -147,7 +147,7 @@ export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], 
 
 type UpdatePayloadCb<T> = () => T | Promise<T>;
 
-function getNameKeyId<P>(event: ScenarioEvent<P> | NameKeyId): NameKeyId {
+function getNameKeyId<P>(event: ScenarioEvent<P> | ScenarioEventKeyed<P> | NameKeyId ): NameKeyId {
     return 'id' in event ? event.id : {name: event.name, key: event.key}
 }
 
@@ -181,7 +181,7 @@ export function extend<P>(event: ScenarioEvent<P> | NameKeyId, payloadValidation
     return { type: 'extendBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
-export function block<P>(event: ScenarioEvent<P> | NameKeyId): Bid {
+export function block<P>(event: ScenarioEvent<P> | ScenarioEventKeyed<P> | NameKeyId): Bid {
     return { type: 'blockBid', eventId: getNameKeyId(event) };
 }
 

@@ -24,7 +24,6 @@ export interface ScenariosContext {
 export type UpdateLoopFunction = () => ScenariosContext;
 export type ReplayMap = Map<number, AnyActionWithId>;
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
-export type UIActionDispatch = (bid: PlacedBid, payload: any) => void;
 export type BThreadMap = NameKeyMap<BThread<any>>;
 export type EventMap = NameKeyMap<ScenarioEvent<any>>
 

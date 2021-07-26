@@ -139,7 +139,7 @@ export class BThread<P> {
             next = this._thread.throw(props.error); // progress BThread to next bid
         } else {
             const progressInfo: ScenarioProgressInfo = {
-                event: this._event.get({name: props.eventId.name})!,
+                event: this._event.get(props.eventId)!,
                 eventId: props.eventId,
                 remainingBids: this._placedBids.filter(bid => !sameNameKeyId(bid.eventId, props.bid.eventId))
             }
@@ -247,7 +247,7 @@ export class BThread<P> {
     public progressResolved(eventId: NameKeyId, payload: any): ReactionCheck {
         const bid = this._pendingRequests.get(eventId);
         if(bid === undefined) return ReactionCheck.RequestingBThreadNotFound;
-        this._event.get({name: eventId.name})?.__setValue(payload, eventId.key);
+        this._event.get(eventId)?.__setValue(payload);
         this._processNextBid({bid, eventId});
         return ReactionCheck.OK;
     }
@@ -264,7 +264,7 @@ export class BThread<P> {
     public progressRequested(bidType: BidType, eventId: NameKeyId, payload: any): ReactionCheck {
         const bid = this.getCurrentBid(bidType, eventId);
         if(bid === undefined) return ReactionCheck.BThreadWithoutMatchingBid;
-        this._event.get({name: eventId.name})?.__setValue(payload, eventId.key);
+        this._event.get(eventId)?.__setValue(payload);
         this._processNextBid({bid, eventId});
         return ReactionCheck.OK;
     }

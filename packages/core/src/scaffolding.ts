@@ -4,7 +4,7 @@ import { Logger } from './logger';
 import { Scenario } from './scenario';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
-import { ScenarioEvent } from './scenario-event';
+import { ScenarioEvent, ScenarioEventKeyed } from './scenario-event';
 import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 import * as utils from './utils';
 
@@ -12,6 +12,8 @@ import * as utils from './utils';
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadState;
 export type EnableScenarioEvents = (events: ScenarioEvent<any>[] | Record<string, ScenarioEvent<any>>) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
+export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
+
 
 export interface ScaffoldingProps {
     stagingFunction: StagingFunction;
@@ -25,9 +27,17 @@ export interface ScaffoldingProps {
 
 export function setupScaffolding(props: ScaffoldingProps): () => void {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
+    const uiActionCb = (eventId: NameKeyId, payload?: any): void => {
+        props.internalDispatch({
+            type: "uiAction",
+            eventId: eventId,
+            payload: payload
+        })
+    }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
     const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
     const enabledEventIds = new NameKeyMap<NameKeyId>();
+    
 
     const enableScenario: EnableScenario = <P>(...[scenario, scenarioProps]: [Scenario<P>, P] | [Scenario<P>]) => {
         enabledScenarioIds.set(scenario.id, scenario.id);
@@ -49,7 +59,7 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
             props.bThreadMap.set(scenario.id, bThread);
             if(scenario.destroyOnDisable) destroyOnDisableThreadIds.set(scenario.id, scenario.id);
         }
-        if(bThread.bThreadBids !== undefined) props.bThreadBids.push(bThread.bThreadBids);
+        if(bThread.bThreadBids !== undefined) props.bThreadBids.unshift(bThread.bThreadBids);
         scenario.__updateState(bThread.state);
         return bThread.state;
     }
@@ -57,7 +67,7 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
     function setupEvent(event: ScenarioEvent<any>) {
         enabledEventIds.set(event.id, event.id);
         if(props.eventMap.has(event.id) === false) {
-            event.__setUIActionCb(props.internalDispatch, props.areBThreadsProgressing);
+            event.__setUIActionCb(uiActionCb, props.areBThreadsProgressing);
             props.eventMap.set(event.id, event);
         }
     }
