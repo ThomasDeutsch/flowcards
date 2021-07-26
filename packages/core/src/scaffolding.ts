@@ -19,6 +19,7 @@ export interface ScaffoldingProps {
     eventMap: EventMap;
     bThreadBids: BThreadBids[];
     internalDispatch: InternalDispatch;
+    areBThreadsProgressing: () => boolean;
     logger: Logger;
 }
 
@@ -56,7 +57,7 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
     function setupEvent(event: ScenarioEvent<any>) {
         enabledEventIds.set(event.id, event.id);
         if(props.eventMap.has(event.id) === false) {
-            event.__setUIActionCb(props.internalDispatch);
+            event.__setUIActionCb(props.internalDispatch, props.areBThreadsProgressing);
             props.eventMap.set(event.id, event);
         }
     }
@@ -81,9 +82,9 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
         // set enable state for events
         props.eventMap.allValues?.forEach(event => {
             if(enabledEventIds.has(event.id)) {
-                event.setIsEnabled(true);
+                event.enable();
             } else {
-                event.setIsEnabled(false);
+                event.disable();
                 props.eventMap.deleteSingle(event.id);
             }
         });

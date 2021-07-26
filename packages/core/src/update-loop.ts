@@ -5,7 +5,7 @@ import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryNameKeyId, InternalDispatch, PlacedBid, BidType, PlacedBidContext } from './index';
+import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryNameKeyId, InternalDispatch, PlacedBid, BidType, PlacedBidContext, AnyAction, UiActionWithId } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor } from './validation';
 import { isThenable } from './utils';
 import { Replay } from './replay';
@@ -14,7 +14,6 @@ import { ScenarioEvent } from './scenario-event';
 
 // update loop
 // -----------------------------------------------------------------------------------
-
 export interface ScenariosContext {
     id: number;
     log: Logger;
@@ -40,6 +39,11 @@ export class UpdateLoop {
     private readonly _eventMap: EventMap = new NameKeyMap<ScenarioEvent<any>>();
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _replay?: Replay;
+    private _areBThreadsProgressing = false;
+
+    private _checkIfBThreadsProgressing(): boolean {
+        return this._areBThreadsProgressing;
+    }
 
     constructor(stagingFunction: StagingFunction, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
@@ -49,8 +53,17 @@ export class UpdateLoop {
             eventMap: this._eventMap,
             bThreadBids: this._bThreadBids,
             internalDispatch,
-            logger: this._logger}
-        );
+            areBThreadsProgressing: this._checkIfBThreadsProgressing,
+            logger: this._logger
+        });
+    }
+
+    private _advanceBThreads<T extends AnyActionWithId>(progressFn: (action: T) => ReactionCheck, action: T): ReactionCheck {
+        this._logger.logAction(action);
+        this._areBThreadsProgressing = true;
+        const reactionCheck = progressFn(action);
+        this._areBThreadsProgressing = false;
+        return reactionCheck;
     }
 
     private _getContext(): ScenariosContext {
@@ -87,8 +100,9 @@ export class UpdateLoop {
                         console.warn('invalid action: ', uiActionCheck, action);
                         continue;
                     }
-                    this._logger.logAction(action);
-                    reactionCheck = advanceUiAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = this._advanceBThreads(
+                        (action) => advanceUiAction(this._bThreadMap, this._allPlacedBids, action),
+                        action);
                     break;
                 }
                 case "requestedAction":
@@ -98,20 +112,24 @@ export class UpdateLoop {
                     if(isThenable(action.payload)) {
                         action.resolveActionId = 'pending';
                     }
-                    this._logger.logAction(action);
-                    reactionCheck = advanceRequestedAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = this._advanceBThreads(
+                        (action) => advanceRequestedAction(this._bThreadMap, this._allPlacedBids, action),
+                        action);
                     break;
                 case "resolveAction":
-                    this._logger.logAction(action);
-                    reactionCheck = advanceResolveAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = this._advanceBThreads(
+                        (action) => advanceResolveAction(this._bThreadMap, this._allPlacedBids, action),
+                        action)
                     break;
                 case "resolvedExtendAction":
-                    this._logger.logAction(action);
-                    reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = this._advanceBThreads(
+                        (action) => advanceResolveExtendAction(this._bThreadMap, this._allPlacedBids, action),
+                        action);
                     break;
                 case "rejectAction":
-                    this._logger.logAction(action);
-                    reactionCheck = advanceRejectAction(this._bThreadMap, action);
+                    reactionCheck = this._advanceBThreads(
+                        (action) => advanceRejectAction(this._bThreadMap, action),
+                        action);
             }
             this._replay?.abortReplayOnInvalidAction(action);
             if(reactionCheck !== ReactionCheck.OK) {

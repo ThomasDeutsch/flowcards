@@ -1,4 +1,4 @@
-import { Scenario } from "../src";
+import { Scenario, Scenarios } from "../src";
 import * as bp from "../src/bid";
 import { ScenarioEvent } from "../src/scenario-event";
 import { delay, testScenarios } from "./testutils";
@@ -61,72 +61,73 @@ test("a request will also advance waiting Scenarios", () => {
 });
 
 
-// test("waits will return the value that has been requested", () => {
-//     const eventA = new ScenarioEvent<number>('A');
+test("waits will return the value that has been requested", () => {
+    const eventA = new ScenarioEvent<number>('A');
 
-//     const requestThread = new Scenario('requestThread', function* () {
-//         yield bp.request(eventA, 1000);
-//     });
+    const requestThread = new Scenario('requestThread', function* () {
+        yield bp.request(eventA, 1000);
+    });
 
-//     const receiveThread = new Scenario('receiveThread', function* () {
-//         const progress = yield bp.waitFor(eventA);
-//         expect(progress.event).toBe(eventA);
-//         expect(progress.event.value).toBe(1000);
-//     });
+    const receiveThread = new Scenario('receiveThread', function* () {
+        const progress = yield bp.waitFor(eventA);
+        expect(progress.event).toBe(eventA);
+        expect(progress.event.value).toBe(1000);
+    });
 
-//     testScenarios((s, e) => {
-//         e(eventA);
-//         s(requestThread.context());
-//         s(receiveThread.context());
-//     });
-// });
-
-
-// test("multiple requests will return information about the progressed Scenario", () => {
-//     const eventA = new ScenarioEvent<number>('A');
-//     const eventB = new ScenarioEvent<number>('B');
-
-//     const requestThread = new Scenario('request', function* () {
-//         const progress = yield [bp.request(eventA, 1000), bp.request(eventB, 2000)];
-//         expect(progress.event).toBe(eventB);
-//         expect(progress.remainingBids?.length).toEqual(1);
-//         expect(progress.remainingBids?.[0]?.eventId.name).toBe(eventA.id.name)
-//     });
-
-//     const receiveThreadB = new Scenario('receive', function* () {
-//         const progress = yield bp.askFor(eventA);
-//         expect(progress.event).toBe(eventB);
-//     });
-
-//     testScenarios((s, e) => {
-//         e(eventA, eventB);
-//         s(requestThread.context());
-//         s(receiveThreadB.context());
-//     });
-// });
+    testScenarios((s, e) => {
+        e([eventA]);
+        s(requestThread);
+        s(receiveThread);
+    });
+});
 
 
-// test("multiple bids at the same time will be expressed as an array.", () => {
-//     const testEvent = {
-//         A: new ScenarioEvent<number>('A'),
-//         B: new ScenarioEvent<number>('B')
-//     }
+test("multiple requests will return information about the progressed Scenario", () => {
+    const eventA = new ScenarioEvent<number>('A');
+    const eventB = new ScenarioEvent<number>('B');
 
-//     const requestThread = scenario(null, function* () {
-//         yield bp.request(testEvent.A, 1000);
-//     })
+    const requestThread = new Scenario('request', function* () {
+        const progress = yield [bp.request(eventA, 1000), bp.request(eventB, 2000)];
+        expect(progress.event).toBe(eventB);
+        expect(progress.remainingBids?.length).toEqual(1);
+        expect(progress.remainingBids?.[0]?.eventId.name).toBe(eventA.id.name)
+    });
 
-//     const receiveThread = scenario(null, function* () {
-//         const progress = yield [bp.askFor(testEvent.A), bp.askFor(testEvent.B)];
-//         expect(testEvent.A.value).toBe(1000);
-//         expect(progress.event).toBe(testEvent.A);
-//     })
+    const receiveThreadB = new Scenario('receive', function* () {
+        const progress = yield bp.askFor(eventA);
+        expect(progress.event).toBe(eventB);
+    });
 
-//     testScenarios(testEvent, (enable) => {
-//         enable(requestThread());
-//         enable(receiveThread());
-//     });
-// });
+    testScenarios((s, e) => {
+        e([eventA, eventB]);
+        s(requestThread);
+        s(receiveThreadB);
+    });
+});
+
+
+test("multiple bids at the same time will be expressed as an array.", () => {
+    const testEvent = {
+        A: new ScenarioEvent<number>('A'),
+        B: new ScenarioEvent<number>('B')
+    }
+
+    const requestThread = new Scenario(null, function* () {
+        yield bp.request(testEvent.A, 1000);
+    });
+
+    const receiveThread = new Scenario(null, function* () {
+        const progress = yield [bp.askFor(testEvent.A), bp.askFor(testEvent.B)];
+        expect(testEvent.A.value).toBe(1000);
+        expect(progress.event).toBe(testEvent.A);
+    });
+
+    testScenarios((s, e) => {
+        e(testEvent)
+        s(requestThread);
+        s(receiveThread);
+    });
+});
 
 
 // test("A request-value can be a function. It will get called, when the event is selected", () => {

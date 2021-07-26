@@ -1,6 +1,7 @@
 
 import { BThreadGenerator, BThreadState, BThreadUtils } from './bthread';
 import { NameKeyId, toNameKeyId } from './name-key-map';
+import * as utils from './utils';
 
 export interface EnableScenarioInfo<P> {
     id: NameKeyId;
@@ -8,6 +9,11 @@ export interface EnableScenarioInfo<P> {
     generatorFunction: BThreadGeneratorFunction<P>;
     nextProps?: P;
     updateStateCb: (state: BThreadState) => void;
+}
+export interface ScenarioProps {
+    id: string;
+    destroyOnDisable?: boolean;
+    description?: string;
 }
 
 export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadUtils, props: P) => BThreadGenerator;
@@ -18,11 +24,22 @@ export class Scenario<P = void> {
     private _currentProps?: P;
     public readonly destroyOnDisable: boolean;
     private _bThreadState?: BThreadState;
+    public readonly description?: string;
 
-    constructor(id: NameKeyId | string, generatorFn: BThreadGeneratorFunction<P>, destroyOnDisable?: boolean) {
-        this.id = toNameKeyId(id);
+    constructor(props: ScenarioProps | string | null, generatorFn: BThreadGeneratorFunction<P>) {
         this._generatorFunction = generatorFn;
-        this.destroyOnDisable = !!destroyOnDisable;
+        if(typeof props === 'string') {
+            this.id = toNameKeyId(props);
+            this.destroyOnDisable = false;
+        } else if(props === null) {
+            this.id = toNameKeyId(utils.uuidv4());
+            this.destroyOnDisable = false;
+        }
+        else {
+            this.id = toNameKeyId(props.id);
+            this.description = props.description;
+            this.destroyOnDisable = !!props.destroyOnDisable;
+        }
     }
 
     public __updateCurrentProps(p: P | undefined): void {

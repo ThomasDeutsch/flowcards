@@ -33,7 +33,7 @@ function getResultDetails(result: PayloadValidationReturn): string | undefined {
     return (typeof result === 'object' ? result.reason : undefined)
 }
 
-export type CombinedValidationItem = { type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation' | 'eventPayloadValidation', reason?: string }
+export type CombinedValidationItem = { type: 'blocked' | 'betweenBids' | 'pending' | 'noAskForBid' | 'payloadValidation' | 'eventPayloadValidation', reason?: string }
 export type CombinedValidation = {isValid: boolean, passed: CombinedValidationItem[], failed: CombinedValidationItem[]}
 export type CombinedValidationCB<P> = (payload?: P) => CombinedValidation;
 
@@ -43,17 +43,24 @@ export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, 
     return [bid.payloadValidationCB, ...validations].filter(notUndefined).every(validationCB => isValidReturn(validationCB(payload)))
 }
 
-export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
+export function askForValidationExplainCB<P>(areBThreadsProgressing: () => boolean, bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
     if(bid === undefined || bidContext === undefined) return (payload?: P) => ({
         isValid: false, passed: [], failed: [{type: 'noAskForBid', reason: 'event is not asked for'}]
     });
     return (payload) => {
         const failed: CombinedValidationItem[] = [];
         const passed: CombinedValidationItem[] = [];
-        if (bidContext.blockedBy) {
+        if(areBThreadsProgressing()) {
+            return {
+                isValid: false,
+                passed: [],
+                failed: [{type: 'betweenBids', reason: `BThreads are progressing and bids are recalculating`}]
+            }
+        }
+        if(bidContext.blockedBy) {
             failed.push({type: 'blocked', reason: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId.name).join(', ')}`})
         }
-        if (bidContext.pendingBy) {
+        if(bidContext.pendingBy) {
             failed.push({type: 'pending', reason: `event is pending by BThread: ${bidContext.pendingBy.name}${bidContext.pendingBy.key ? '-' + bidContext.pendingBy.key: ''}`})
         }
         const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];

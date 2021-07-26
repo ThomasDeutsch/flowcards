@@ -92,6 +92,7 @@ export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap)
 
 export function unblockNameKeyId(allPlacedBids: AllPlacedBids, eventId: NameKeyId): void {
     const context = allPlacedBids.get(eventId)!;
+    //TODO: set event is pending back to
     allPlacedBids.set(eventId, {...context, blockedBy: undefined});
 }
 
@@ -152,7 +153,7 @@ function getNameKeyId<P>(event: ScenarioEvent<P> | NameKeyId): NameKeyId {
 
 // bids user-API --------------------------------------------------------------------
 
-export function request<P>(event: ScenarioEvent<P> | NameKeyId, payload?: P | UpdatePayloadCb<P>): Bid {
+export function request<P>(event: ScenarioEvent<P> | NameKeyId, payload?: P | UpdatePayloadCb<P | undefined>): Bid {
     return {
         type: 'requestBid',
         eventId: getNameKeyId(event),

@@ -41,15 +41,15 @@ export interface ResolveExtendAction extends Action {
     extendedRequestingBid?: {type: BidType, bThreadId: NameKeyId};
 }
 
-interface ResolveActionWithId extends ResolveAction {
+export interface ResolveActionWithId extends ResolveAction {
     id: number;
 }
 
-interface ResolveExtendActionWithId extends ResolveExtendAction {
+export interface ResolveExtendActionWithId extends ResolveExtendAction {
     id: number;
 }
 
-interface UiActionWithId extends UIAction {
+export interface UiActionWithId extends UIAction {
     id: number;
 }
 

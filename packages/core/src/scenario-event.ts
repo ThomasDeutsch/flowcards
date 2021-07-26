@@ -16,14 +16,17 @@ export class ScenarioEvent<P = void> {
     private _updatedOn?: number;
     private _bidContext?: PlacedBidContext;
     private _askForBid?: PlacedBid;
-    private _validateCheck: CombinedValidationCB<P> = askForValidationExplainCB();
+    private _validateCheck?: CombinedValidationCB<P>;
     private _cancelPendingCb?: (message: string) => boolean;
     private _uiActionCb?: (payload?: P) => void;
     private _isEnabled = false;
     private _value?: P;
     private _valueByKey = new Map<Key, P>();
+    private _initialValue?: P;
+    private _areBThreadsProgressing?: () => boolean;
 
     constructor(name: string, initialValue?: P) {
+        this._initialValue = initialValue;
         this._value = initialValue;
         this.name = name;
     }
@@ -39,7 +42,8 @@ export class ScenarioEvent<P = void> {
         return { name: this.name, key: key, value: this._valueByKey.get(key) }
     }
 
-    public __setUIActionCb(internalDispatch: InternalDispatch): void {
+    public __setUIActionCb(internalDispatch: InternalDispatch, areBThreadsProgressing: () => boolean): void {
+        this._areBThreadsProgressing = areBThreadsProgressing.bind(this);
         this._uiActionCb = (payload?: P) => {
             const uiAction: UIAction = {
                 type: "uiAction",
@@ -50,15 +54,23 @@ export class ScenarioEvent<P = void> {
         }
     }
 
-    public setIsEnabled(isEnabled: boolean): void {
-        this._isEnabled = isEnabled;
+    public disable(resetValue = false): void {
+        this._isEnabled = false;
+        if(resetValue) {
+            this._value = this._initialValue || undefined;
+        }
     }
+
+    public enable(): void {
+        this._isEnabled = true;
+    }
+
 
     public __update(currentActionId: number, allPlacedBids: AllPlacedBids, cancelPendingCb?: (message: string) => boolean): void {
         this._updatedOn = currentActionId;
         this._bidContext = allPlacedBids.get(this.id);
         this._askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
-        this._validateCheck = askForValidationExplainCB(this._askForBid, this._bidContext);
+        this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, this._bidContext);
         this._cancelPendingCb = cancelPendingCb;
     }
 
@@ -75,14 +87,12 @@ export class ScenarioEvent<P = void> {
     }
 
     public validate(value?: P): CombinedValidation {
-        return this._validateCheck?.(value);
+        return this._validateCheck!(value);
     }
 
     public dispatch(payload: P): boolean {
-        if(!this._askForBid) return false;
-        if(this._bidContext?.pendingBy || this._bidContext?.blockedBy) return false;
-        if(!this.validate(payload)?.isValid) return false;
-        this._uiActionCb?.(payload);
+        if(this.validate(payload).isValid === false) return false;
+        this._uiActionCb!(payload);
         return true;
     }
 
