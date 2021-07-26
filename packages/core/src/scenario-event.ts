@@ -47,7 +47,7 @@ export class ScenarioEvent<P = void> {
     }
 
     public __setUIActionCb(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean): void {
-        this._areBThreadsProgressing = areBThreadsProgressing.bind(this);
+        this._areBThreadsProgressing = areBThreadsProgressing
         this._uiActionCb = uiActionDispatch;
     }
 

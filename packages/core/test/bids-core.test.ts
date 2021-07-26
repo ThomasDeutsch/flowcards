@@ -423,63 +423,67 @@ test("the allOf utility function will return if all bids have progressed", (done
 });
 
 
-// test("a pending event is cancelled, if the next bid is not asking for the pending event id", (done) => {
-//     const eventA = new ScenarioEvent<number>('A');
-//     const eventB = new ScenarioEvent<number>('B');
-//     const eventCancel = new ScenarioEvent<number>('Cancel');
+test("a pending event is cancelled, if the next bid is not asking for the pending event id", (done) => {
+    const eventA = new ScenarioEvent<number>('A');
+    const eventB = new ScenarioEvent<number>('B');
+    const eventCancel = new ScenarioEvent<number>('Cancel');
 
-//     const requestingThread = scenario({id: 'thread1', }, function*() {
-//         yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];
-//         yield bp.request(eventCancel);
-//     });
+    const requestingThread = new Scenario({id: 'thread1', }, function*() {
+        yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];
+        yield bp.request(eventCancel);
+    });
 
-//     testScenarios({eventA, eventB, eventCancel}, (enable) => {
-//         enable(requestingThread());
-//     }, ({scenario})=> {
-//         if(scenario('thread1')?.isCompleted) {
-//             expect(eventB.isPending).toBe(false);
-//             done();
-//         }
-//     });
-// });
-
-
-// test("a pending event is cancelled, if the thread completes", (done) => {
-//     const eventA = new ScenarioEvent<number>('A');
-//     const eventB = new ScenarioEvent<number>('B');
-
-//     const requestingThread = scenario({id: 'thread1', }, function*() {
-//         yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];
-//     })
-
-//     testScenarios({eventA, eventB},(enable) => {
-//         enable(requestingThread());
-//     }, ({scenario})=> {
-//         if(scenario('thread1')?.isCompleted) {
-//             expect(eventB.isPending).toBe(false);
-//             done();
-//         }
-//     });
-// });
+    testScenarios((enable, events) => {
+        events([eventA, eventB, eventCancel]);
+        enable(requestingThread);
+    }, ()=> {
+        if(requestingThread.isCompleted) {
+            expect(eventB.isPending).toBe(false);
+            done();
+        }
+    });
+});
 
 
-// test("a pending event will not remain pending if the next bids will not include the pending event.", (done) => {
-//     const eventA = new ScenarioEvent<number>('A');
-//     const eventB = new ScenarioEvent<number>('B');
-//     const eventContinue = new ScenarioEvent<number>('Continue');
+test("a pending event is cancelled, if the thread completes", (done) => {
+    const eventA = new ScenarioEvent<number>('A');
+    const eventB = new ScenarioEvent<number>('B');
 
-//     const requestingThread = scenario(null, function*() {
-//         yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];
-//         yield [bp.request(eventB), bp.request(eventContinue)];
-//         yield [bp.askFor(eventContinue)]
-//     })
+    const requestingThread = new Scenario({id: 'thread1', }, function*() {
+        yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];
+    })
 
-//     testScenarios({eventA, eventB, eventContinue}, (enable) => {
-//         enable(requestingThread());
-//     }, ()=> {
-//         if(eventContinue.validate()?.isValid) {
-//             expect(eventB.isPending).toBe(false);
-//             done();
-//         }
-//     });
-// });
+    testScenarios((enable, events) => {
+        events([eventA, eventB]);
+        enable(requestingThread);
+    }, ()=> {
+        if(requestingThread.isCompleted) {
+            expect(eventB.isPending).toBe(false);
+            done();
+        }
+    });
+});
+
+
+test("a pending event will not remain pending if the next bids will not include the pending event.", (done) => {
+    const eventA = new ScenarioEvent<number>('A');
+    const eventB = new ScenarioEvent<number>('B');
+    const eventContinue = new ScenarioEvent<number>('Continue');
+
+    const requestingThread = new Scenario(null, function*() {
+        yield [bp.request(eventA, 1), bp.request(eventB, () => delay(500, 1))];
+        //yield [bp.request(eventB), bp.request(eventContinue)];
+        yield bp.askFor(eventContinue);
+    })
+
+    testScenarios((enable, events) => {
+        events([eventA, eventB, eventContinue])
+        enable(requestingThread);
+    }, ()=> {
+        console.log(eventContinue.validate())
+        if(eventContinue.validate()?.isValid) {
+            expect(eventB.isPending).toBe(false);
+            done();
+        }
+    });
+});

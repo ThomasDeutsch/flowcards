@@ -52,7 +52,7 @@ export class UpdateLoop {
             eventMap: this._eventMap,
             bThreadBids: this._bThreadBids,
             internalDispatch,
-            areBThreadsProgressing: this._checkIfBThreadsProgressing,
+            areBThreadsProgressing: this._checkIfBThreadsProgressing.bind(this),
             logger: this._logger
         });
     }
