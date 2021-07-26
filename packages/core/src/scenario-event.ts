@@ -1,6 +1,6 @@
 import { PlacedBid } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid, PlacedBidContext } from "./bid";
-import { NameKeyId } from "./name-key-map";
+import { NameKeyId, NameKeyMap } from "./name-key-map";
 import { UIActionDispatch } from "./scaffolding";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
 
@@ -12,7 +12,7 @@ export interface EventIdWithValue<P> extends NameKeyId {
 
 export class ScenarioEvent<P = void> {
     public readonly name: string;
-    public readonly key?: string;
+    public readonly key?: string | number;
     public readonly initialValue?: P;
     public readonly description?: string
     private _updatedOn?: number;
@@ -33,7 +33,7 @@ export class ScenarioEvent<P = void> {
             this.name = nameOrNameKey;
         } else {
             this.name = nameOrNameKey.name;
-            this.key = nameOrNameKey.key?.toString();
+            this.key = nameOrNameKey.key;
         }
 
     }
@@ -108,7 +108,7 @@ export class ScenarioEvent<P = void> {
 export class ScenarioEventKeyed<P = void> {
     public readonly name: string;
     private _initialValue?: P;
-    private _eventByKey: Record<string, ScenarioEvent<P>> = {};
+    private _children = new Map<string | number, ScenarioEvent<P>>();
 
     constructor(name: string, initialValue?: P) {
         this._initialValue = initialValue;
@@ -119,34 +119,34 @@ export class ScenarioEventKeyed<P = void> {
         return { name: this.name }
     }
 
-    public key(k: string | number): ScenarioEvent<P> {
-        const key = k.toString();
-        let event = this._eventByKey[key];
+    public key(key: string | number): ScenarioEvent<P> {
+        let event = this._children.get(key);
         if(event === undefined) {
-            event = this._eventByKey[key] = new ScenarioEvent<P>({name: this.name, key: key}, this._initialValue);
+            event = new ScenarioEvent<P>({name: this.name, key: key}, this._initialValue);
+            this._children.set(key, event);
         }
         return event;
     }
 
     public keys(...keys: (string | number)[]): ScenarioEvent<P>[] {
-        return keys.map(key => this.key(key.toString()));
+        return keys.map(key => this.key(key));
     }
 
-    public allKeys(): string[] {
-        return Object.entries(this._eventByKey).map(([k]) => k);
+    public allKeys(): (string | number)[] {
+        return [...this._children].map(([k]) => k);
     }
 
     public enable(): void {
-        Object.entries(this._eventByKey).forEach(([_, e]) => e.enable());
+        [...this._children].forEach(([_, e]) => e.enable());
     }
 
     public disable(onDisable?: 'resetValues' | 'resetKeys'): void {
         if(onDisable == 'resetValues') {
-            Object.entries(this._eventByKey).forEach(([_, e]) => e.disable(true));
+            [...this._children].forEach(([_, e]) => e.disable(true));
         } else if(onDisable === "resetKeys") {
-            this._eventByKey = {}
+            this._children.clear();
         } else {
-            Object.entries(this._eventByKey).forEach(([_, e]) => e.disable());
+            [...this._children].forEach(([_, e]) => e.disable());
         }
     }
 }

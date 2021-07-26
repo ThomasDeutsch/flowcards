@@ -274,73 +274,41 @@ test("if an async request gets blocked, it will not call the updatePayloadCb", (
 });
 
 
+test("an event can be disabled in the staging-function", () => {
+
+    let progressedRequestThread = false;
+
+    const eventA = new ScenarioEvent('A');
+
+    const requestingThread = new Scenario(null, function* () {
+        yield bp.request(eventA);
+        progressedRequestThread = true;
+    })
+
+    testScenarios((enable, enableEvents) => {
+        enableEvents([eventA])
+        eventA.disable();
+        enable(requestingThread);
+    });
+    expect(progressedRequestThread).toBe(false);
+});
 
 
+test("if a thread has multiple requests, the last request has the highest priority.", () => {
 
+    const eventA = new ScenarioEventKeyed('A');
 
-// test("a keyed waitFor will not advance on the same Event-Name without a Key", () => {
-//     let requestProgressed = false, waitProgressed = false;
+    const requestingThread = new Scenario({id: 'thread1'}, function*() {
+        const progress = yield [bp.request(eventA.key(1)), bp.request(eventA.key(2)), bp.request(eventA.key(3)), bp.request(eventA.key(4))];
+        expect(progress.event).toEqual(eventA.key(4));
+        expect(progress.eventId.key).toEqual(4);
+    });
 
-//     const eventA = new ScenarioEvent('A');
-
-//     const requestingThread = scenario({id: 'thread1'}, function*() {
-//         yield bp.request(eventA);
-//         requestProgressed = true;
-//     });
-
-//     const waitingThread = scenario(null, function*() {
-//         yield [bp.waitFor(eventA.key(1)), bp.waitFor(eventA.key(2))];
-//         waitProgressed = true;
-//     });
-
-//     testScenarios({eventA}, (enable) => {
-//         enable(requestingThread());
-//         enable(waitingThread());
-//     }, () => {
-//         expect(requestProgressed).toBe(true);
-//         expect(waitProgressed).toBe(false);
-//     });
-// });
-
-
-// test("a wait without a key will react to keyed events with the same name", () => {
-//     let requestProgressed: any, waitProgressed: any;
-
-//     const eventA = new ScenarioEvent('A');
-
-//     const requestingThread = scenario({id: 'thread1'}, function*() {
-//         yield bp.request(eventA.key(1));
-//         requestProgressed = true;
-//     });
-
-//     const waitingThread = scenario(null, function*() {
-//         yield bp.waitFor(eventA);
-//         waitProgressed = true;
-//     });
-
-//     testScenarios({eventA}, (enable) => {
-//         enable(requestingThread());
-//         enable(waitingThread());
-//     }, () => {
-//         expect(requestProgressed).toBe(true);
-//         expect(waitProgressed).toBe(true);
-//     });
-// });
-
-// test("if a thread has multiple requests, the last request has the highest priority.", () => {
-
-//     const eventA = new ScenarioEvent('A');
-
-//     const requestingThread = scenario({id: 'thread1'}, function*() {
-//         const progress = yield [bp.request(eventA.key(1)), bp.request(eventA.key(2)), bp.request(eventA.key(3)), bp.request(eventA.key(4))];
-//         expect(progress.event).toEqual(eventA);
-//         expect(progress.eventId.key).toEqual(4);
-//     });
-
-//     testScenarios({eventA}, (enable) => {
-//         enable(requestingThread());
-//     });
-// });
+    testScenarios((enable, events) => {
+        events(eventA.keys(1,2,3,4))
+        enable(requestingThread);
+    });
+});
 
 
 // test("with multiple requests for the same eventId, highest priority request is selected - that is also valid", () => {

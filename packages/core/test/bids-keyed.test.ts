@@ -4,6 +4,7 @@ import { ScenarioEvent, ScenarioEventKeyed } from "../src/scenario-event";
 import { delay, testScenarios } from "./testutils";
 
 
+
 test("a requested event with a key is blocked by a block for the same event that has no key", () => {
 
     let progressedRequestThread = false;
@@ -76,21 +77,75 @@ test("a requested event with a disabled key will not progress", () => {
 });
 
 
-test("an event can be disabled in the staging-function", () => {
+test("an keyed event can be disabled in the staging-function", () => {
 
     let progressedRequestThread = false;
 
-    const eventA = new ScenarioEvent('A');
+    const eventA = new ScenarioEventKeyed('A');
 
     const requestingThread = new Scenario(null, function* () {
-        yield bp.request(eventA);
+        yield bp.request(eventA.key(1));
         progressedRequestThread = true;
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents([eventA])
-        eventA.disable();
+        enableEvents([eventA.key(1)])
+        eventA.key(1).disable();
         enable(requestingThread);
     });
     expect(progressedRequestThread).toBe(false);
+});
+
+
+test("a keyed waitFor will not advance on the same Event-Name without a Key", () => {
+    let requestProgressed = false, waitProgressed = false;
+
+    const eventAUnkeyed = new ScenarioEvent('A');
+    const eventA = new ScenarioEventKeyed('A');
+
+    const requestingThread = new Scenario({id: 'thread1'}, function*() {
+        yield bp.request(eventAUnkeyed);
+        requestProgressed = true;
+    });
+
+    const waitingThread = new Scenario(null, function*() {
+        yield [bp.waitFor(eventA.key(1)), bp.waitFor(eventA.key(2))];
+        waitProgressed = true;
+    });
+
+    testScenarios((enable, enableEvents) => {
+        enableEvents([eventAUnkeyed, ...eventA.keys(1,2)])
+        enable(requestingThread);
+        enable(waitingThread);
+    }, () => {
+        expect(requestProgressed).toBe(true);
+        expect(waitProgressed).toBe(false);
+    });
+});
+
+
+test("a wait without a key will react to keyed events with the same name", () => {
+    let requestProgressed: any, waitProgressed: any;
+
+    const eventA = new ScenarioEventKeyed('A');
+    const eventAUK = new ScenarioEvent('A');
+
+    const requestingThread = new Scenario({id: 'thread1'}, function*() {
+        yield bp.request(eventA.key(1));
+        requestProgressed = true;
+    });
+
+    const waitingThread = new Scenario(null, function*() {
+        yield bp.waitFor(eventAUK);
+        waitProgressed = true;
+    });
+
+    testScenarios((enable, events) => {
+        events([eventA.key(1), eventAUK])
+        enable(requestingThread);
+        enable(waitingThread);
+    }, () => {
+        expect(requestProgressed).toBe(true);
+        expect(waitProgressed).toBe(true);
+    });
 });
