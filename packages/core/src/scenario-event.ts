@@ -39,7 +39,7 @@ export class ScenarioEvent<P = void> {
     }
 
     public get id(): NameKeyId {
-        return this.key ? { name: this.name, key: this.key } : { name: this.name };
+        return this.key !== undefined ? { name: this.name, key: this.key } : { name: this.name };
     }
 
     public get updatedOn(): number | undefined {

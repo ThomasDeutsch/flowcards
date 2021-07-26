@@ -73,7 +73,7 @@ export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap)
     allBThreadBids.forEach(({placedBids}) => {
         placedBids.forEach(bid => {
             if(bid.type === 'blockBid') return;
-            if(!eventMap.has(bid.eventId)) return;
+            if(!eventMap.get(bid.eventId)?.isEnabled) return;
             const placedBidsForNameKeyId = bidsByNameKeyId.get(bid.eventId) || {
                 blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)),
                 pendingBy: pendingEvents.get(bid.eventId),

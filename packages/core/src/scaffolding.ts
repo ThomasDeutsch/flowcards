@@ -37,7 +37,7 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
     const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
     const enabledEventIds = new NameKeyMap<NameKeyId>();
-    
+
 
     const enableScenario: EnableScenario = <P>(...[scenario, scenarioProps]: [Scenario<P>, P] | [Scenario<P>]) => {
         enabledScenarioIds.set(scenario.id, scenario.id);
@@ -69,6 +69,7 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
         if(props.eventMap.has(event.id) === false) {
             event.__setUIActionCb(uiActionCb, props.areBThreadsProgressing);
             props.eventMap.set(event.id, event);
+            event.enable();
         }
     }
 
@@ -89,13 +90,9 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
                 bThread.setEnabled(false);
             }
         });
-        // set enable state for events
         props.eventMap.allValues?.forEach(event => {
-            if(enabledEventIds.has(event.id)) {
-                event.enable();
-            } else {
+            if(!enabledEventIds.has(event.id)) {
                 event.disable();
-                props.eventMap.deleteSingle(event.id);
             }
         });
         if(destroyOnDisableThreadIds.size > 0)
