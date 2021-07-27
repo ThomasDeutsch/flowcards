@@ -83,6 +83,7 @@ export class ScenarioEvent<P = void> {
     }
 
     public dispatch(payload: P): boolean {
+        if(this._isEnabled === false) return false;
         if(this.validate(payload).isValid === false) return false;
         this._uiActionCb!(this.id, payload);
         return true;

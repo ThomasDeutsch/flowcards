@@ -310,7 +310,6 @@ test("if a thread has multiple requests, the last request has the highest priori
     });
 });
 
-
 test("with multiple requests for the same eventId, highest priority request is selected - that is also valid", () => {
     let lowerPrioRequestProgressed = false;
     let higherPrioRequestProgressed = false;
@@ -472,7 +471,7 @@ test("a pending event will not remain pending if the next bids will not include 
 
     const requestingThread = new Scenario(null, function*() {
         yield [bp.request(eventA, 1), bp.request(eventB, () => delay(500, 1))];
-        //yield [bp.request(eventB), bp.request(eventContinue)];
+        yield [bp.request(eventB), bp.request(eventContinue)];
         yield bp.askFor(eventContinue);
     })
 
