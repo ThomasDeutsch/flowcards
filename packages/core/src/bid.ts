@@ -93,7 +93,7 @@ export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap)
 export function unblockNameKeyId(allPlacedBids: AllPlacedBids, eventId: NameKeyId): void {
     const context = allPlacedBids.get(eventId)!;
     //TODO: set event is pending back to
-    allPlacedBids.set(eventId, {...context, blockedBy: undefined});
+    allPlacedBids.set(eventId, {...context, blockedBy: undefined, pendingBy: undefined});
 }
 
 function isRequestingBid(bid: Bid): boolean {

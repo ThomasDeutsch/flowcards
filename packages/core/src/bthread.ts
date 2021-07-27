@@ -121,18 +121,6 @@ export class BThread<P> {
         this._state.bids = toBidsByType({pendingBidMap: allPendingBids, placedBids: this._placedBids})
     }
 
-    private _cancelPendingRequests(eventId?: NameKeyId): NameKeyMap<PlacedBid> | undefined {
-        const cancelledBids = new NameKeyMap<PlacedBid>();
-        this._pendingRequests.forEach((id, pendingBid) => {
-            if(!eventId || !sameNameKeyId(eventId, id)) {
-                cancelledBids.set(id, pendingBid);
-                this._pendingRequests.deleteSingle(id);
-            }
-        });
-        this._pendingRequests.clear();
-        return cancelledBids.size > 0 ? cancelledBids : undefined;
-    }
-
     private _processNextBid(props: NextBidProperties): void {
         let next: IteratorResult<BidOrBids, void>;
         if(props.error) {
@@ -161,6 +149,7 @@ export class BThread<P> {
 
     private _isValidBid(pendingBid?: PendingBid): boolean {
         if(!this._thread) return false; // thread was deleted
+        if(!this.state.isEnabled) return false; // thread was disabled
         if(pendingBid === undefined) return false;
         let pending: PendingBid | undefined;
         if(pendingBid.type === 'extendBid') {
@@ -175,8 +164,8 @@ export class BThread<P> {
     // --- public
 
     public resetBThread(generatorFunction: BThreadGeneratorFunction<any>, nextProps: P): void {
-        this._cancelPendingRequests();
-        this._pendingExtends = new NameKeyMap();
+        this._pendingRequests.clear();
+        this._pendingExtends.clear();
         this._state = this._createState();
         this._thread = generatorFunction.bind(this._utils)(nextProps);
         const next = this._thread.next();
@@ -221,10 +210,11 @@ export class BThread<P> {
         });
     }
 
-    public cancelPending(eventId: NameKeyId | string, message: string): boolean {
+    public cancelPendingRequest(eventId: NameKeyId): boolean {
         const pendingBid = this._pendingRequests.get(toNameKeyId(eventId));
+        if(pendingBid === undefined) return false;
         if(this._isValidBid(pendingBid) === false) return false;
-        const response = getResolveAction("rejectAction", pendingBid!, message);
+        const response = getResolveAction("rejectAction", pendingBid!, '');
         this._resolveActionCB(response);
         return true;
     }
@@ -294,6 +284,5 @@ export class BThread<P> {
         this._pendingExtends.clear();
         this._pendingRequests.clear();
         this._placedBids = [];
-        this._state = this._createState();
     }
 }

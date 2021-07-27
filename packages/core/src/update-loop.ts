@@ -152,11 +152,8 @@ export class UpdateLoop {
         if(replay) this._replay = replay;
         this._scaffold();
         this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
-        this._eventMap.forEach((id, event) => {
-            const bidContext = this._allPlacedBids.get(id);
-            const pendingByBThread = bidContext?.pendingBy ? this._bThreadMap.get(bidContext.pendingBy) : undefined;
-            const cancelPending = pendingByBThread ? (message: string) => pendingByBThread.cancelPending(id, message) : undefined;
-            event.__update(this._currentActionId, this._allPlacedBids, cancelPending)
+        this._eventMap.forEach((_, event) => {
+            event.__update(this._currentActionId, this._allPlacedBids)
         })
         return this._runLoop();
     }

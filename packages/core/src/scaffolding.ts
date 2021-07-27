@@ -13,7 +13,7 @@ export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Sce
 export type EnableScenarioEvents = (events: ScenarioEvent<any>[] | Record<string, ScenarioEvent<any>>) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
 export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
-
+export type CancelPending = (bThreadId: NameKeyId, eventId: NameKeyId) => boolean;
 
 export interface ScaffoldingProps {
     stagingFunction: StagingFunction;
@@ -34,10 +34,12 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
             payload: payload
         })
     }
+    const cancelPendingRequest = (bThreadId: NameKeyId, eventId: NameKeyId): boolean => {
+        return !!props.bThreadMap.get(bThreadId)?.cancelPendingRequest(eventId);
+    }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
     const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
     const enabledEventIds = new NameKeyMap<NameKeyId>();
-
 
     const enableScenario: EnableScenario = <P>(...[scenario, scenarioProps]: [Scenario<P>, P] | [Scenario<P>]) => {
         enabledScenarioIds.set(scenario.id, scenario.id);
@@ -67,7 +69,7 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
     function setupEvent(event: ScenarioEvent<any>) {
         enabledEventIds.set(event.id, event.id);
         if(props.eventMap.has(event.id) === false) {
-            event.__setUIActionCb(uiActionCb, props.areBThreadsProgressing);
+            event.__setup(uiActionCb, props.areBThreadsProgressing, cancelPendingRequest);
             props.eventMap.set(event.id, event);
             event.enable();
         }

@@ -1,7 +1,7 @@
 import { PlacedBid } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid, PlacedBidContext } from "./bid";
 import { NameKeyId, NameKeyMap } from "./name-key-map";
-import { UIActionDispatch } from "./scaffolding";
+import { CancelPending, UIActionDispatch } from "./scaffolding";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
 
 export type ValueUpdateCb<P> = (value: P) => P;
@@ -16,10 +16,10 @@ export class ScenarioEvent<P = void> {
     public readonly initialValue?: P;
     public readonly description?: string
     private _updatedOn?: number;
-    private _bidContext?: PlacedBidContext;
+    private _allPlacedBids?: AllPlacedBids;
     private _askForBid?: PlacedBid;
     private _validateCheck?: CombinedValidationCB<P>;
-    private _cancelPendingCb?: (message: string) => boolean;
+    private _cancelPendingRequest?: CancelPending;
     private _uiActionCb?: UIActionDispatch;
     private _isEnabled = false;
     private _value?: P;
@@ -46,9 +46,10 @@ export class ScenarioEvent<P = void> {
         return this._updatedOn;
     }
 
-    public __setUIActionCb(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean): void {
+    public __setup(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean, cancelPendingRequest: CancelPending): void {
         this._areBThreadsProgressing = areBThreadsProgressing
         this._uiActionCb = uiActionDispatch;
+        this._cancelPendingRequest = cancelPendingRequest;
     }
 
     public disable(resetValue = false): void {
@@ -62,12 +63,12 @@ export class ScenarioEvent<P = void> {
         this._isEnabled = true;
     }
 
-    public __update(currentActionId: number, allPlacedBids: AllPlacedBids, cancelPendingCb?: (message: string) => boolean): void {
+    public __update(currentActionId: number, allPlacedBids: AllPlacedBids): void {
         this._updatedOn = currentActionId;
-        this._bidContext = allPlacedBids.get(this.id);
+        this._allPlacedBids = allPlacedBids;
         this._askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
-        this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, this._bidContext);
-        this._cancelPendingCb = cancelPendingCb;
+        const context = allPlacedBids.get(this.id);
+        this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, context);
     }
 
     public get value(): P | undefined {
@@ -90,15 +91,18 @@ export class ScenarioEvent<P = void> {
     }
 
     public get isPending(): boolean {
-        return !!this._cancelPendingCb;
+        return !!this._allPlacedBids?.get(this.id)?.pendingBy;
     }
 
-    public cancelPending(message: string): boolean {
-        return this._cancelPendingCb?.(message) || false;
+    public cancelPending(): boolean {
+        const bThreadId = this._allPlacedBids?.get(this.id)?.pendingBy;
+        console.log('ID: ', bThreadId)
+        if(!bThreadId) return false;
+        return this._cancelPendingRequest!(bThreadId, this.id);
     }
 
     public get isBlocked(): boolean {
-        return !!this._bidContext?.blockedBy;
+        return !!this._allPlacedBids?.get(this.id)?.blockedBy;
     }
 
     public get isEnabled(): boolean {
