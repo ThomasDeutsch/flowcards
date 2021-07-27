@@ -1,7 +1,7 @@
-import { BidType, getMatchingBids, PlacedBid } from './bid';
+import { BidType, PlacedBid } from './bid';
 import { NameKeyId } from './name-key-map';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
-import { AllPlacedBids, unblockNameKeyId } from '.';
+import { AllPlacedBids, getMatchingBids, unblockNameKeyId } from '.';
 import { combinedIsValid, ReactionCheck } from './validation';
 import { BThreadMap } from './update-loop';
 

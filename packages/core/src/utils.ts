@@ -34,11 +34,6 @@ export function toArray<T>(x: T | T[]): T[] {
     return [x];
 }
 
-export function flattenShallow<T>(arr?: T[][]): T[] | undefined {
-    if(!arr || arr.length === 0) return undefined;
-    return arr.reduce((acc, val) => acc.concat(val), []);
-}
-
 export function latest<T>(arr?: T[]): T | undefined {
     if(!arr || arr.length === 0) return undefined;
     return arr[arr.length-1];

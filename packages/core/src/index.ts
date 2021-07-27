@@ -57,7 +57,7 @@ export class Scenarios {
             this._bufferedActions.length = 0;
             const context = this._updateLoop.runScaffolding();
             this._updateCb?.(context);
-        });
+        }).catch(e => console.error(e));
     }
 
     public reset(initialActionsOrReplay?: AnyActionWithId[] | Replay): void {

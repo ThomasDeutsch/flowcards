@@ -1,4 +1,4 @@
-import { Scenario, Scenarios } from "../src";
+import { Scenario } from "../src";
 import * as bp from "../src/bid";
 import { ScenarioEvent, ScenarioEventKeyed } from "../src/scenario-event";
 import { delay, testScenarios } from "./testutils";
@@ -57,6 +57,25 @@ test("a request will also advance waiting Scenarios", () => {
         expect(requestingThread.isCompleted).toBeTruthy();
         expect(askingThread.isCompleted).toBeTruthy();
         expect(waitingThread.isCompleted).toBeTruthy();
+    });
+});
+
+
+
+test("a request function parameter is the previous request value ", () => {
+    const eventA = new ScenarioEvent<number>('A');
+
+    const requestingThread = new Scenario('thread1', function*() {
+        yield bp.request(eventA, 1);
+        yield bp.request(eventA, (a) => (a || 0) + 1);
+    });
+
+    testScenarios((s, e) => {
+        e([eventA]);
+        s(requestingThread);
+    }, () => {
+        expect(eventA.value).toBe(2);
+        expect(requestingThread.isCompleted).toBeTruthy();
     });
 });
 
@@ -126,6 +145,30 @@ test("multiple bids at the same time will be expressed as an array.", () => {
         e(testEvent)
         s(requestThread);
         s(receiveThread);
+    });
+});
+
+
+test("A request-value can be a function. It will get called, when the event is selected", () => {
+    const testEvent = {
+        A: new ScenarioEvent<number>('A'),
+        B: new ScenarioEvent<number>('B')
+    }
+
+    const requestThread = new Scenario(null, function* () {
+        yield bp.request(testEvent.A, () => 1000);
+    })
+
+    const receiveThread = new Scenario(null, function* () {
+        const progress = yield [bp.askFor(testEvent.A), bp.askFor(testEvent.B)];
+        expect(testEvent.A.value).toBe(1000);
+        expect(progress.event).toBe(testEvent.A);
+    })
+
+    testScenarios((enable, enableEvents) => {
+        enableEvents(testEvent);
+        enable(requestThread);
+        enable(receiveThread);
     });
 });
 
@@ -479,7 +522,6 @@ test("a pending event will not remain pending if the next bids will not include 
         events([eventA, eventB, eventContinue])
         enable(requestingThread);
     }, ()=> {
-        console.log(eventContinue.validate())
         if(eventContinue.validate()?.isValid) {
             expect(eventB.isPending).toBe(false);
             done();

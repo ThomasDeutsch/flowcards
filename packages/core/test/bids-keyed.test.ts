@@ -21,7 +21,7 @@ test("keys can be a string or a number", () => {
     });
 });
 
-test("a requested event with a key is blocked by a block for the same event that has no key", () => {
+test("a requested event with a key is blocked by a block for the same name and key", () => {
 
     let progressedRequestThread = false;
 
@@ -33,7 +33,7 @@ test("a requested event with a key is blocked by a block for the same event that
     })
 
     const blockingThread = new Scenario(null, function* () {
-        yield bp.block(eventA);
+        yield bp.block(eventA.key(1));
     })
 
     testScenarios((enable, enableEvents) => {
@@ -110,8 +110,9 @@ test("a keyed waitFor will not advance on the same Event-Name without a Key", ()
 });
 
 
-test("a wait without a key will react to keyed events with the same name", () => {
-    let requestProgressed: any, waitProgressed: any;
+test("a wait without a key will not react to keyed events with the same name", () => {
+    let requestProgressed = false,
+        waitProgressed = false;
 
     const eventA = new ScenarioEventKeyed('A');
     const eventAUK = new ScenarioEvent('A');
@@ -132,7 +133,7 @@ test("a wait without a key will react to keyed events with the same name", () =>
         enable(waitingThread);
     }, () => {
         expect(requestProgressed).toBe(true);
-        expect(waitProgressed).toBe(true);
+        expect(waitProgressed).toBe(false);
     });
 });
 
@@ -208,61 +209,66 @@ test("a request without a key will not advance waiting threads with a key", () =
 });
 
 
-// test("an request without a key will not advance extends with a key", () => {
-//     // hint: if you want to also advance this extend, then add a second extend without the key.
-//     let advancedExtend = false;
+test("an request without a key will not advance extends with a key", () => {
+    let advancedExtend = false;
+    const eventA = new ScenarioEvent('A');
+    const eventAK = new ScenarioEventKeyed('A');
 
-//     const extending = scenario(null, function* () {
-//         yield bp.extend({name: 'A', key: 1});
-//         advancedExtend = true;
-//     });
+    const extending = new Scenario(null, function* () {
+        yield bp.extend({name: 'A', key: 1});
+        advancedExtend = true;
+    });
 
-//     const requesting = scenario(null, function* () {
-//         yield bp.request('A');
-//     });
+    const requesting = new Scenario(null, function* () {
+        yield bp.request(eventA);
+    });
 
-//     testScenarios((enable) => {
-//         enable(extending());
-//         enable(requesting());
-//     }, ()=> {
-//         expect(advancedExtend).toEqual(false);
-//     });
-// });
+    testScenarios((enable, events) => {
+        events([eventA, ...eventAK.keys(1)])
+        enable(extending);
+        enable(requesting);
+    }, ()=> {
+        expect(advancedExtend).toEqual(false);
+    });
+});
 
 
-// test("a request with a key, will only advance the matching wait with the same key, and waits without a key", () => {
-//     let advancedWait1 = false;
-//     let advancedWait2 = false;
-//     let advancedWaitNoKey = false;
+test("a request with a key, will only advance the matching wait with the same key, and not waits without a key", () => {
+    let advancedWait1 = false;
+    let advancedWait2 = false;
+    let advancedWaitNoKey = false;
 
-//     const waitThreadWithKey1 = scenario(null, function* () {
-//         yield bp.askFor({name: 'A', key: 1});
-//         advancedWait1 = true;
-//     });
+    const eventA = new ScenarioEvent('A');
+    const eventAK = new ScenarioEventKeyed('A');
 
-//     const waitThreadWithKey2= scenario(null, function* () {
-//         yield bp.askFor({name: 'A', key: 2});
-//         advancedWait2 = true;
-//     });
+    const waitThreadWithKey1 = new Scenario(null, function* () {
+        yield bp.askFor({name: 'A', key: 1});
+        advancedWait1 = true;
+    });
 
-//     const waitThreadWithoutKey = scenario(null, function* () {
-//         yield bp.askFor({name: 'A'});
-//         advancedWaitNoKey = true;
-//     });
+    const waitThreadWithKey2 = new Scenario(null, function* () {
+        yield bp.askFor({name: 'A', key: 2});
+        advancedWait2 = true;
+    });
 
-//     const requestThread = scenario(null, function* () {
-//         yield bp.request({name: 'A', key: 1});
-//     });
+    const waitThreadWithoutKey = new Scenario(null, function* () {
+        yield bp.askFor({name: 'A'});
+        advancedWaitNoKey = true;
+    });
 
-//     testScenarios((enable) => {
-//         enable(waitThreadWithKey1());
-//         enable(waitThreadWithKey2());
-//         enable(waitThreadWithoutKey());
-//         enable(requestThread());
-//     }, ()=> {
-//         expect(advancedWait1).toEqual(true);
-//         expect(advancedWait2).toEqual(false);
-//         expect(advancedWaitNoKey).toEqual(true);
+    const requestThread = new Scenario(null, function* () {
+        yield bp.request({name: 'A', key: 1});
+    });
 
-//     });
-// });
+    testScenarios((enable, events) => {
+        events([eventA, ...eventAK.keys(1,2)]);
+        enable(waitThreadWithKey1);
+        enable(waitThreadWithKey2);
+        enable(waitThreadWithoutKey);
+        enable(requestThread);
+    }, ()=> {
+        expect(advancedWait1).toEqual(true);
+        expect(advancedWait2).toEqual(false);
+        expect(advancedWaitNoKey).toEqual(false);
+    });
+});

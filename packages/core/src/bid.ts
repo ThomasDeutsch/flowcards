@@ -75,7 +75,7 @@ export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap)
             if(bid.type === 'blockBid') return;
             if(!eventMap.get(bid.eventId)?.isEnabled) return;
             const placedBidsForNameKeyId = bidsByNameKeyId.get(bid.eventId) || {
-                blockedBy: utils.flattenShallow(blockedEvents.getExactMatchAndUnkeyedMatch(bid.eventId)),
+                blockedBy: blockedEvents.get(bid.eventId),
                 pendingBy: pendingEvents.get(bid.eventId),
                 bids: []
             } as PlacedBidContext
@@ -137,15 +137,14 @@ export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: N
 }
 
 export function getMatchingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: NameKeyId): PlacedBid[] | undefined {
-    let bids = allPlacedBids.get(eventId)?.bids || [];
-    if(eventId.key !== undefined) bids = [...bids, ...(allPlacedBids.get({name: eventId.name})?.bids || [])];
+    const bids = allPlacedBids.get(eventId)?.bids || [];
     if(bids.length === 0) return undefined;
     const matchingBids = bids?.filter(bid => types.some(type => bid.type === type));
     return matchingBids.length > 0 ? matchingBids : undefined;
 }
 
 
-type UpdatePayloadCb<T> = () => T | Promise<T>;
+type UpdatePayloadCb<P> = (param?: P) => P | Promise<P>;
 
 function getNameKeyId<P>(event: ScenarioEvent<P> | ScenarioEventKeyed<P> | NameKeyId ): NameKeyId {
     return 'id' in event ? event.id : {name: event.name, key: event.key}
@@ -153,7 +152,7 @@ function getNameKeyId<P>(event: ScenarioEvent<P> | ScenarioEventKeyed<P> | NameK
 
 // bids user-API --------------------------------------------------------------------
 
-export function request<P>(event: ScenarioEvent<P> | NameKeyId, payload?: P | UpdatePayloadCb<P | undefined>): Bid {
+export function request<P>(event: ScenarioEvent<P> | NameKeyId, payload?: P | UpdatePayloadCb<P | undefined> | undefined): Bid {
     return {
         type: 'requestBid',
         eventId: getNameKeyId(event),
@@ -181,9 +180,14 @@ export function extend<P>(event: ScenarioEvent<P> | NameKeyId, payloadValidation
     return { type: 'extendBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
-export function block<P>(event: ScenarioEvent<P> | ScenarioEventKeyed<P> | NameKeyId): Bid {
+export function block<P>(event: ScenarioEvent<P> | NameKeyId): Bid {
     return { type: 'blockBid', eventId: getNameKeyId(event) };
 }
+
+//TODO:  to be able to create a blockAll helper function, a bid needs to to able to accept multiple eventIds.
+// export function blockAll<P>(events: ScenarioEventKeyed, ...keys: string | number): Bid[] {
+//     return { type}
+// }
 
 export function validate<P>(event: ScenarioEvent<P> | NameKeyId, payloadValidationCB?: PayloadValidationCB<P>): Bid {
     return { type: 'validateBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };

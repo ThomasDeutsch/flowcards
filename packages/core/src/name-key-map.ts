@@ -1,5 +1,3 @@
-import { notUndefined } from './utils';
-
 export type Key = string | number | undefined;
 type NameKeyIteratorFunction<T> = (e: NameKeyId, value: T) => any;
 
@@ -66,16 +64,6 @@ export class NameKeyMap<T>  {
         return this.set(eventId, callbackFn(value));
     }
 
-    public getExactMatchAndUnkeyedMatch(event: NameKeyId): T[] | undefined {
-        const noKeyResult = this.noKey.get(event.name)
-        if(event.key === undefined) {
-            return (noKeyResult !== undefined) ? [noKeyResult] : undefined
-        }
-        const withKeyResult = this.withKey.get(event.name)?.get(event.key);
-        if(withKeyResult === undefined && noKeyResult === undefined) return undefined;
-        return [noKeyResult, withKeyResult].filter(notUndefined);
-    }
-
     public has(event: NameKeyId | string): boolean {
         event = toNameKeyId(event);
         if(event.key === undefined) {
@@ -128,9 +116,5 @@ export class NameKeyMap<T>  {
             this.set(event, value);
         });
         return this;
-    }
-
-    public hasMatching(event: NameKeyId): boolean {
-        return (this.has(event) || this.has({name: event.name})) === true;
     }
 }

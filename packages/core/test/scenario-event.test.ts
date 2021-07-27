@@ -48,19 +48,18 @@ test("an event value can be reset to its initial value on disable", () => {
     });
 });
 
-test("after an event progressed, it is not pending any longer", () => {
+test("after an event progressed, it is not pending any longer", (done) => {
     const eventA = new ScenarioEvent<number>('A');
-    const eventB = new ScenarioEvent<number>('B');
 
-    const requestingThread = new Scenario<ScenarioProps>(null, function*() {
+    const requestingThread = new Scenario(null, function*() {
         yield bp.request(eventA, () => delay(100, 1));
         expect(eventA.isPending).toBe(false);
-        yield bp.request(eventB);
+        done();
     });
 
     testScenarios((enable, event) => {
         event([eventA]);
-        enable(requestingThread, {a: 1});
+        enable(requestingThread);
     });
 });
 

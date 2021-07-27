@@ -106,7 +106,8 @@ export class UpdateLoop {
                 }
                 case "requestedAction":
                     if(typeof action.payload === "function") {
-                        action.payload = action.payload();
+                        const val = this._eventMap.get(action.eventId)?.value;
+                        action.payload = action.payload(val);
                     }
                     if(isThenable(action.payload)) {
                         action.resolveActionId = 'pending';
