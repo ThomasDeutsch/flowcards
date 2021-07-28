@@ -1,14 +1,10 @@
-import { PlacedBid } from ".";
-import { AllPlacedBids, getHighestPrioAskForBid, PlacedBidContext } from "./bid";
-import { NameKeyId, NameKeyMap } from "./name-key-map";
-import { CancelPending, UIActionDispatch } from "./scaffolding";
+import { PlacedBid, UpdateCallback } from ".";
+import { AllPlacedBids, getHighestPrioAskForBid } from "./bid";
+import { NameKeyId } from "./name-key-map";
+import { FinishPending, UIActionDispatch } from "./scaffolding";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
 
-export type ValueUpdateCb<P> = (value: P) => P;
-
-export interface EventIdWithValue<P> extends NameKeyId {
-    value?: P;
-}
+export type NextValueFn<P> = (current: P | undefined) => P
 
 export class ScenarioEvent<P = void> {
     public readonly name: string;
@@ -19,7 +15,7 @@ export class ScenarioEvent<P = void> {
     private _allPlacedBids?: AllPlacedBids;
     private _askForBid?: PlacedBid;
     private _validateCheck?: CombinedValidationCB<P>;
-    private _cancelPendingRequest?: CancelPending;
+    private _finishPendingRequest?: FinishPending;
     private _uiActionCb?: UIActionDispatch;
     private _isEnabled = false;
     private _value?: P;
@@ -35,7 +31,6 @@ export class ScenarioEvent<P = void> {
             this.name = nameOrNameKey.name;
             this.key = nameOrNameKey.key;
         }
-
     }
 
     public get id(): NameKeyId {
@@ -46,10 +41,10 @@ export class ScenarioEvent<P = void> {
         return this._updatedOn;
     }
 
-    public __setup(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean, cancelPendingRequest: CancelPending): void {
+    public __setup(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean, finishPendingRequest: FinishPending): void {
         this._areBThreadsProgressing = areBThreadsProgressing
         this._uiActionCb = uiActionDispatch;
-        this._cancelPendingRequest = cancelPendingRequest;
+        this._finishPendingRequest = finishPendingRequest;
     }
 
     public disable(resetValue = false): void {
@@ -94,11 +89,19 @@ export class ScenarioEvent<P = void> {
         return !!this._allPlacedBids?.get(this.id)?.pendingBy;
     }
 
-    public cancelPending(): boolean {
+    public reject(error?: any): boolean {
+        if(!this.isPending) return false;
         const bThreadId = this._allPlacedBids?.get(this.id)?.pendingBy;
-        console.log('ID: ', bThreadId)
         if(!bThreadId) return false;
-        return this._cancelPendingRequest!(bThreadId, this.id);
+        return this._finishPendingRequest!('reject', bThreadId, this.id, error);
+    }
+
+    public resolve(value: NextValueFn<P>): boolean {
+        if(!this.isPending) return false;
+        const bThreadId = this._allPlacedBids?.get(this.id)?.pendingBy;
+        if(!bThreadId) return false;
+        const nextVal = value(this._value);
+        return this._finishPendingRequest!('resolve', bThreadId, this.id, nextVal);
     }
 
     public get isBlocked(): boolean {

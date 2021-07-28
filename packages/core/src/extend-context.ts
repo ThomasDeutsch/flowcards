@@ -9,6 +9,9 @@ export class ExtendContext {
 
     constructor(payload: unknown) {
         this._value = payload;
+        this._promise = new Promise((resolve) => {
+            this._resolveFn = resolve;
+        });
     }
 
     public resolve(value?: unknown): void {
@@ -16,12 +19,5 @@ export class ExtendContext {
         this._isCompleted = true;
         this._resolveFn?.(value);
         this._value = value;
-    }
-
-    public createPromiseIfNotCompleted(): void {
-        if(this.isCompleted) return;
-        this._promise = new Promise((resolve) => {
-            this._resolveFn = resolve;
-        });
     }
 }

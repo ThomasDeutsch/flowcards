@@ -17,7 +17,7 @@ test("an event needs to be enabled in order to be requested", () => {
     });
 
     testScenarios((enable, event) => {
-        event([eventA]);
+        event(eventA);
         enable(requestingThread, {a: 1});
     }, ()=> {
         expect(eventB.isEnabled).toBe(false)
@@ -36,7 +36,7 @@ test("an event value can be reset to its initial value on disable", () => {
     });
 
     testScenarios((enable, event) => {
-        event([eventA, eventB]);
+        event(eventA, eventB);
         enable(requestingThread, {a: 1});
         if(requestingThread.isCompleted) {
             eventA.disable(true); // true = reset value
@@ -58,7 +58,7 @@ test("after an event progressed, it is not pending any longer", (done) => {
     });
 
     testScenarios((enable, event) => {
-        event([eventA]);
+        event(eventA);
         enable(requestingThread);
     });
 });
@@ -76,7 +76,7 @@ test("after an event progressed, it is not dispatch-able until the next bids are
     });
 
     testScenarios((enable, event) => {
-        event([eventA, eventB]);
+        event(eventA, eventB);
         enable(requestingThread, {a: 1});
     });
 });

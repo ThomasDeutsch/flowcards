@@ -5,7 +5,7 @@ import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { setupScaffolding, StagingFunction } from './scaffolding';
-import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryNameKeyId, InternalDispatch, PlacedBid, BidType, PlacedBidContext, AnyAction, UiActionWithId } from './index';
+import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryNameKeyId, InternalDispatch, PlacedBid, BidType, PlacedBidContext } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor } from './validation';
 import { isThenable } from './utils';
 import { Replay } from './replay';

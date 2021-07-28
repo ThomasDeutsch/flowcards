@@ -10,21 +10,21 @@ test("a requested event that is not blocked will advance", () => {
         a: number
     }
 
-    const basicEvents = {
+    const basicEvent = {
         eventA: new ScenarioEvent<number>('A'),
         eventB: new ScenarioEvent<number>('B')
     }
 
     const requestingThread = new Scenario<TestProps>('thread1', function*(context) {
-        const progress = yield bp.request(basicEvents.eventA, 1);
-        expect(progress.event).toBe(basicEvents.eventA);
+        const progress = yield bp.request(basicEvent.eventA, 1);
+        expect(progress.event).toBe(basicEvent.eventA);
         expect(context.a).toEqual(123);
         expect(typeof context.a).toEqual('number');
         expect(this.key).toBe(undefined);
     });
 
     testScenarios((s, e) => {
-        e(basicEvents);
+        e(basicEvent.eventA, basicEvent.eventB);
         s(requestingThread, {a: 123});
     }, ()=> {
         expect(requestingThread.isCompleted).toBe(true);
@@ -48,7 +48,7 @@ test("a request will also advance waiting Scenarios", () => {
     });
 
     testScenarios((s, e) => {
-        e([eventA]);
+        e(eventA);
         s(requestingThread);
         s(askingThread);
         s(waitingThread);
@@ -71,7 +71,7 @@ test("a request function parameter is the previous request value ", () => {
     });
 
     testScenarios((s, e) => {
-        e([eventA]);
+        e(eventA);
         s(requestingThread);
     }, () => {
         expect(eventA.value).toBe(2);
@@ -94,7 +94,7 @@ test("waits will return the value that has been requested", () => {
     });
 
     testScenarios((s, e) => {
-        e([eventA]);
+        e(eventA);
         s(requestThread);
         s(receiveThread);
     });
@@ -118,7 +118,7 @@ test("multiple requests will return information about the progressed Scenario", 
     });
 
     testScenarios((s, e) => {
-        e([eventA, eventB]);
+        e(eventA, eventB);
         s(requestThread);
         s(receiveThreadB);
     });
@@ -142,7 +142,7 @@ test("multiple bids at the same time will be expressed as an array.", () => {
     });
 
     testScenarios((s, e) => {
-        e(testEvent)
+        e(testEvent.A, testEvent.B);
         s(requestThread);
         s(receiveThread);
     });
@@ -166,7 +166,7 @@ test("A request-value can be a function. It will get called, when the event is s
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents(testEvent);
+        enableEvents(testEvent.A, testEvent.B);
         enable(requestThread);
         enable(receiveThread);
     });
@@ -190,7 +190,7 @@ test("A request-value can be a function. It will get called, when the event is s
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents(testEvent);
+        enableEvents(testEvent.A, testEvent.B);
         enable(requestThread);
         enable(receiveThread);
     });
@@ -220,7 +220,7 @@ test("if a request value is a function, it will be called once.", () => {
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents(testEvent);
+        enableEvents(testEvent.A);
         enable(requestThread);
         enable(receiveThread1);
         enable(receiveThread2);
@@ -249,7 +249,7 @@ test("When there are multiple requests with the same event-name, the request wit
     })
 
     testScenarios((enable, enableEvent) => {
-        enableEvent(testEvent);
+        enableEvent(testEvent.A);
         enable(requestThreadLower); // Lower priority, because it will enabled first.
         enable(requestThreadHigher); // this thread has a higher priority, because it gets enabled later than the first one.
         enable(receiveThread);
@@ -283,7 +283,7 @@ test("events can be blocked", () => {
     });
 
     testScenarios((enable, enableEvents) => {
-        enableEvents(testEvent);
+        enableEvents(testEvent.A);
         enable(requestThread);
         enable(waitingThread);
         enable(blockingThread);
@@ -309,7 +309,7 @@ test("if an async request gets blocked, it will not call the updatePayloadCb", (
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents([eventA]);
+        enableEvents(eventA);
         enable(requestingThread);
         enable(blockingThread);
     });
@@ -329,7 +329,7 @@ test("an event can be disabled in the staging-function", () => {
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents([eventA])
+        enableEvents(eventA)
         eventA.disable();
         enable(requestingThread);
     });
@@ -348,7 +348,7 @@ test("if a thread has multiple requests, the last request has the highest priori
     });
 
     testScenarios((enable, events) => {
-        events(eventA.keys(1,2,3,4))
+        events(...eventA.keys(1,2,3,4))
         enable(requestingThread);
     });
 });
@@ -376,7 +376,7 @@ test("with multiple requests for the same eventId, highest priority request is s
     });
 
     testScenarios((enable, event) => {
-        event([eventA])
+        event(eventA)
         enable(requestingThread0);
         enable(requestingThread1);
         enable(validatingThread);
@@ -409,7 +409,7 @@ test("with multiple askFor for the same eventId, highest priority request is sel
     });
 
     testScenarios((enable, events) => {
-        events([eventA]);
+        events(eventA);
         enable(askingThreadLow);
         enable(askingThreadHigh);
         enable(requestingThread);
@@ -430,7 +430,7 @@ test("requesting the same bid multiple times is not allowed and will throw a war
     });
 
     testScenarios((enable, events) => {
-        events([eventA]);
+        events(eventA);
         enable(requestingThread);
     }, ()=> {
         expect(requestingThread.isCompleted).toBe(true);
@@ -452,7 +452,7 @@ test("the allOf utility function will return if all bids have progressed", (done
     });
 
     testScenarios((enable, events) => {
-        events([eventA, eventB]);
+        events(eventA, eventB);
         enable(requestingThread);
     }, ()=> {
         if(requestingThread.isCompleted) {
@@ -476,7 +476,7 @@ test("a pending event is cancelled, if the next bid is not asking for the pendin
     });
 
     testScenarios((enable, events) => {
-        events([eventA, eventB, eventCancel]);
+        events(eventA, eventB, eventCancel);
         enable(requestingThread);
     }, ()=> {
         if(requestingThread.isCompleted) {
@@ -496,7 +496,7 @@ test("a pending event is cancelled, if the thread completes", (done) => {
     })
 
     testScenarios((enable, events) => {
-        events([eventA, eventB]);
+        events(eventA, eventB);
         enable(requestingThread);
     }, ()=> {
         if(requestingThread.isCompleted) {
@@ -519,7 +519,7 @@ test("a pending event will not remain pending if the next bids will not include 
     })
 
     testScenarios((enable, events) => {
-        events([eventA, eventB, eventContinue])
+        events(eventA, eventB, eventContinue)
         enable(requestingThread);
     }, ()=> {
         if(eventContinue.validate()?.isValid) {

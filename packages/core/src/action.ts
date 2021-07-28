@@ -77,7 +77,7 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
 }
 
 
-export function getResolveAction(responseType: "rejectAction" | "resolveAction", pendingBid: PendingBid, data: unknown): ResolveAction {
+export function getResolveRejectAction(responseType: "rejectAction" | "resolveAction", pendingBid: PendingBid, data: unknown): ResolveAction {
     return {
         id: undefined,
         type: responseType,

@@ -45,14 +45,14 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, exte
         if(combinedIsValid(extendBid, bidContext, extendedAction.payload) !== true) continue
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
+        allPlacedBids.update(extendBid.eventId, (val) => {
+            val!.pendingBy = extendingBThread.id;
+            return val!;
+        });
         const extendContext = extendingBThread.progressExtend(extendedAction);
         if(!extendContext) continue;
-        if(extendContext.promise) {
-            progressWaitingBThreads(allPlacedBids, bThreadMap, ["onPendingBid"], extendedAction);
-            return true;
-        } else {
-            extendedAction.payload = extendContext.value;
-        }
+        progressWaitingBThreads(allPlacedBids, bThreadMap, ["onPendingBid"], extendedAction);
+        return true;
     }
     return false;
 }

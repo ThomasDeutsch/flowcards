@@ -13,7 +13,7 @@ test("A function, returning a promise can be requested and will create a pending
     });
 
     testScenarios((enable, events) => {
-        events([eventA]);
+        events(eventA);
         enable(thread1);
     }, () => {
         if(thread1.isCompleted) {
@@ -46,7 +46,7 @@ test("multiple async-requests can be executed sequentially", (done) => {
     );
 
     testScenarios((enable,events) => {
-        events([eventWaitForCard, eventValidateCard, eventLoadAccount, eventWaitForPin]);
+        events(eventWaitForCard, eventValidateCard, eventLoadAccount, eventWaitForPin);
         enable(scenario1);
     }, (() => {
         if(scenario1.isCompleted) {
@@ -79,7 +79,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
     });
 
     testScenarios((enable, events) => {
-        events([eventA, eventB]);
+        events(eventA, eventB);
         enable(requestingScenario);
         enable(thread2);
         enable(thread3);
@@ -106,7 +106,7 @@ test("if a thread gets disabled, resolving events are ignored", (done) => {
     });
 
     testScenarios((enable, events) => {
-        events([eventA, eventB])
+        events(eventA, eventB)
         enable(thread1);
         if(eventA.isPending) {
             enable(thread2);
@@ -133,7 +133,7 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
     });
 
     testScenarios((enable, events) => {
-        events([eventA, eventB]);
+        events(eventA, eventB);
         enable(thread1);
         enable(thread2);
     }, () => {
@@ -163,7 +163,7 @@ test("a canceled request will not progress a pending event with the same event-i
     });
 
     testScenarios((enable, event) => {
-        event([eventA, eventB, eventCancel]);
+        event(eventA, eventB, eventCancel);
         enable(thread1);
         enable(thread2);
     }, () => {
@@ -188,12 +188,12 @@ test("a pending event can be canceled by calling cancelPending", (done) => {
     });
 
     testScenarios((enable, events) => {
-        events([eventA])
+        events(eventA)
         enable(thread1);
     }, () => {
         if(eventA.isPending) {
-            expect(eventA.cancelPending).toBeDefined();
-            eventA.cancelPending();
+            expect(eventA.reject).toBeDefined();
+            eventA.reject();
         }
     });
 });

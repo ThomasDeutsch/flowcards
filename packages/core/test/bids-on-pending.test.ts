@@ -18,7 +18,7 @@ test("an onPending-wait is progressed, when the event receives the pending state
     })
 
     testScenarios((enable, events) => {
-        events(testEvents);
+        events(testEvents.A);
         enable(thread1);
         enable(thread2);
     }, () => {
@@ -45,7 +45,7 @@ test("an onPending-wait is not progressed on events that are not async", () => {
     })
 
     testScenarios((enable, events) => {
-        events(testEvents);
+        events(testEvents.A);
         enable(thread1);
         enable(thread2);
     }, () => {
@@ -69,7 +69,7 @@ test("an onPending for a keyed event is not progressed when a no-key request for
     })
 
     testScenarios((enable, events) => {
-        events([testEvents.A, ...testEvents.AK.keys(1)]);
+        events(testEvents.A, ...testEvents.AK.keys(1));
         enable(thread1);
         enable(thread2);
     }, () => {

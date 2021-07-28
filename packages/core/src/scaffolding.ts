@@ -4,16 +4,16 @@ import { Logger } from './logger';
 import { Scenario } from './scenario';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
-import { ScenarioEvent, ScenarioEventKeyed } from './scenario-event';
+import { ScenarioEvent } from './scenario-event';
 import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 import * as utils from './utils';
 
 
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadState;
-export type EnableScenarioEvents = (events: ScenarioEvent<any>[] | Record<string, ScenarioEvent<any>>) => void;
+export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
 export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
-export type CancelPending = (bThreadId: NameKeyId, eventId: NameKeyId) => boolean;
+export type FinishPending = (type: 'resolve' | 'reject', bThreadId: NameKeyId, eventId: NameKeyId, value: any) => boolean;
 
 export interface ScaffoldingProps {
     stagingFunction: StagingFunction;
@@ -34,8 +34,8 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
             payload: payload
         })
     }
-    const cancelPendingRequest = (bThreadId: NameKeyId, eventId: NameKeyId): boolean => {
-        return !!props.bThreadMap.get(bThreadId)?.cancelPendingRequest(eventId);
+    const finishPendingRequest: FinishPending = (type, bThreadId, eventId, value): boolean => {
+        return !!props.bThreadMap.get(bThreadId)?.dispatchResolveRejectAction(type, eventId, value);
     }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
     const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
@@ -66,17 +66,16 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
         return bThread.state;
     }
 
-    function setupEvent(event: ScenarioEvent<any>) {
-        enabledEventIds.set(event.id, event.id);
-        if(props.eventMap.has(event.id) === false) {
-            event.__setup(uiActionCb, props.areBThreadsProgressing, cancelPendingRequest);
-            props.eventMap.set(event.id, event);
-            event.enable();
-        }
-    }
 
-    const enableEvents: EnableScenarioEvents = (events) => {
-        utils.executeForEach(setupEvent, events);
+    const enableEvents: EnableScenarioEvents = (...events) => {
+        events.forEach(event => {
+            enabledEventIds.set(event.id, event.id);
+            if(props.eventMap.has(event.id) === false) {
+                event.__setup(uiActionCb, props.areBThreadsProgressing, finishPendingRequest);
+                props.eventMap.set(event.id, event);
+                event.enable();
+            }
+        });
     }
 
     function scaffold() {

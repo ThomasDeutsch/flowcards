@@ -12,7 +12,7 @@ test("keys can be a string or a number", () => {
     });
 
     testScenarios((enable, events) => {
-        events(eventA.keys("1", 2));
+        events(...eventA.keys("1", 2));
         enable(thread1);
     }, ()=> {
         expect(eventA.key("1").isEnabled).toBe(true);
@@ -37,7 +37,7 @@ test("a requested event with a key is blocked by a block for the same name and k
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents([eventA.key(1)])
+        enableEvents(eventA.key(1))
         enable(requestingThread);
         enable(blockingThread);
     });
@@ -56,7 +56,7 @@ test("a requested event with a disabled key will not progress", () => {
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents([eventA.key(2)])
+        enableEvents(eventA.key(2))
         enable(requestingThread);
     });
     expect(progressedRequestThread).toBe(false);
@@ -75,7 +75,7 @@ test("an keyed event can be disabled in the staging-function", () => {
     })
 
     testScenarios((enable, enableEvents) => {
-        enableEvents([eventA.key(1)])
+        enableEvents(eventA.key(1))
         eventA.key(1).disable();
         enable(requestingThread);
     });
@@ -100,7 +100,7 @@ test("a keyed waitFor will not advance on the same Event-Name without a Key", ()
     });
 
     testScenarios((enable, enableEvents) => {
-        enableEvents([eventAUnkeyed, ...eventA.keys(1,2)])
+        enableEvents(eventAUnkeyed, ...eventA.keys(1,2))
         enable(requestingThread);
         enable(waitingThread);
     }, () => {
@@ -128,7 +128,7 @@ test("a wait without a key will not react to keyed events with the same name", (
     });
 
     testScenarios((enable, events) => {
-        events([eventA.key(1), eventAUK])
+        events(eventA.key(1), eventAUK)
         enable(requestingThread);
         enable(waitingThread);
     }, () => {
@@ -164,7 +164,7 @@ test("an event with a key will be blocked by a block with the same name and key"
     });
 
     testScenarios((enable, events) => {
-        events(eventA.keys(1, 2));
+        events(...eventA.keys(1, 2));
         enable(thread1);
         enable(thread2);
         enable(blockingThread);
@@ -198,7 +198,7 @@ test("a request without a key will not advance waiting threads with a key", () =
     });
 
     testScenarios((enable, events) => {
-        events([eventA, ...eventAK.keys(1, 2)])
+        events(eventA, ...eventAK.keys(1, 2))
         enable(waitThreadWithKey1);
         enable(waitThreadWithKey2);
         enable(requestThread);
@@ -224,7 +224,7 @@ test("an request without a key will not advance extends with a key", () => {
     });
 
     testScenarios((enable, events) => {
-        events([eventA, ...eventAK.keys(1)])
+        events(eventA, ...eventAK.keys(1))
         enable(extending);
         enable(requesting);
     }, ()=> {
@@ -261,7 +261,7 @@ test("a request with a key, will only advance the matching wait with the same ke
     });
 
     testScenarios((enable, events) => {
-        events([eventA, ...eventAK.keys(1,2)]);
+        events(eventA, ...eventAK.keys(1,2));
         enable(waitThreadWithKey1);
         enable(waitThreadWithKey2);
         enable(waitThreadWithoutKey);
