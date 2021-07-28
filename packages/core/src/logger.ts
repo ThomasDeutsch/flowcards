@@ -1,8 +1,8 @@
 import { PlacedBid } from './bid';
 import * as utils from './utils';
-import { BThreadState } from './bthread';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { AnyActionWithId, RequestedAction } from './action';
+import { BThreadPublicContext } from './bthread';
 
 export enum BThreadReactionType {
     progress = 'progress',
@@ -23,7 +23,7 @@ export class Logger {
     public get actions(): AnyActionWithId[] { return this._actions; }
     public bThreadReactionHistory = new NameKeyMap<Map<number, BThreadReaction>>();
     public pendingNameKeyIdHistory = new Map<number, Set<NameKeyId> | undefined>();
-    public bThreadStateHistory = new Map<number, NameKeyMap<BThreadState>>();
+    public bThreadStateHistory = new Map<number, NameKeyMap<BThreadPublicContext>>();
 
     private _currentActionId(): number {
         return utils.latest(this._actions)?.id || 0;
@@ -67,7 +67,8 @@ export class Logger {
         });
     }
 
-    public logBThreadStateMap(bThreadStateMap: NameKeyMap<BThreadState>): void {
+    // TODO: not used! - remove?
+    public logBThreadStateMap(bThreadStateMap: NameKeyMap<BThreadPublicContext>): void {
         this.bThreadStateHistory.set(this._currentActionId(), bThreadStateMap.clone());
     }
 

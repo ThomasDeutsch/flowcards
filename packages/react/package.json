@@ -26,7 +26,7 @@
     "react": ">=16.8.0"
   },
   "license": "MIT",
-  "gitHead": "84ceb3e3738cdd257ca9865be8bbdfea8aba08f5",
+  "gitHead": "72b889283715a75efedc99c20e9fe79319f31063",
   "publishConfig": {
     "access": "public"
   },
