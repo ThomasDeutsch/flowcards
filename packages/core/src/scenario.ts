@@ -73,22 +73,31 @@ export class Scenario<P = void> {
 }
 
 
-// export class ScenariosByKey<V, K extends EventKey, T extends BThreadGeneratorFunction<V>> {
-//     public readonly id: string;
-//     private _generatorFunction: T;
-//     private _scenarioByKey = new Map<K, Scenario<T>>()
+export class ScenarioKeyed<P> {
+    private _generatorFunction: BThreadGeneratorFunction<P>;
+    private _props: ScenarioProps | string | null;
+    private _children = new Map<string | number, Scenario<P>>()
 
-//     constructor(id: string, generatorFn: T) {
-//         this.id = id;
-//         this._generatorFunction = generatorFn;
-//     }
+    constructor(props: ScenarioProps | string | null, generatorFn: BThreadGeneratorFunction<P>) {
+        this._props = props;
+        this._generatorFunction = generatorFn;
+    }
 
-//     public context(key: K, props?: Parameters<T>[1]): EnableScenarioInfo<V> {
-//         let scenario = this._scenarioByKey.get(key);
-//         if(scenario === undefined) {
-//             scenario = new Scenario({name: this.id, key: key }, this._generatorFunction);
-//             this._scenarioByKey.set(key, scenario);
-//         }
-//         return scenario.context(props)
-//     }
-// }
+    public key(key: string | number): Scenario<P> {
+        let scenario = this._children.get(key);
+        if(scenario === undefined) {
+            scenario = new Scenario<P>(this._props, this._generatorFunction);
+            this._children.set(key, scenario);
+        }
+        return scenario;
+    }
+
+    public keys(...keys: (string | number)[]): Scenario<P>[] {
+        return keys.map(key => this.key(key));
+    }
+
+    public allKeys(): (string | number)[] {
+        return [...this._children].map(([k]) => k);
+    }
+
+}

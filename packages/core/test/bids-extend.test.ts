@@ -53,7 +53,6 @@ test("after the extend resolved, the event is no longer pending", (done) => {
 
     const thread3 = new Scenario({id: 'extending thread'}, function* () {
         yield bp.extend(eventA);
-        console.log(eventA.isPending)
         expect(eventA.isPending).toBe(true);
         eventA.resolve((prev = 0) => prev + 10);
     })
@@ -62,8 +61,7 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         events(eventA, eventX, eventZ);
         enable(thread1);
         enable(thread3);
-    }, ({log}) => {
-        console.log('actions: ', log.actions)
+    }, () => {
         if(eventX.validate().isValid) {
             expect(eventA.value).toBe(20);
             done();

@@ -236,11 +236,6 @@ export class BThread<P> {
         if(pendingRequest) {
             return this._dispatchFinishPendingRequest(type, pendingRequest, data);
         }
-        const pendingExtend = this._pendingExtends.get(eventId);
-        console.log('is there a pending extend?', pendingExtend)
-        if(pendingExtend) {
-            return this._dispatchResolvePendingExtend(pendingExtend, data);
-        }
         return false;
     }
 
@@ -296,7 +291,7 @@ export class BThread<P> {
         const eventId = extendedAction.eventId;
         const pendingBid: PendingBid = toExtendPendingBid(extendedAction, extendContext, this.id);
         this._pendingExtends.set(extendedAction.eventId, pendingBid);
-        this._event.get(eventId)?.__setValue(extendedAction.payload);
+        this._event.get(eventId)?.__setExtendContext(extendContext);
         this._addPendingBid(pendingBid);
         this._processNextBid({bid, eventId});
         this._logger.logReaction(BThreadReactionType.progress ,this.id, bid);

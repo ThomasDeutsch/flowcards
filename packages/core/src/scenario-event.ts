@@ -1,5 +1,6 @@
 import { PlacedBid, UpdateCallback } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid } from "./bid";
+import { ExtendContext } from "./extend-context";
 import { NameKeyId } from "./name-key-map";
 import { FinishPending, UIActionDispatch } from "./scaffolding";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
@@ -21,6 +22,7 @@ export class ScenarioEvent<P = void> {
     private _value?: P;
     private _initialValue?: P;
     private _areBThreadsProgressing?: () => boolean;
+    private _extendContext?: ExtendContext;
 
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
         this._initialValue = initialValue;
@@ -66,6 +68,10 @@ export class ScenarioEvent<P = void> {
         this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, context);
     }
 
+    public __setExtendContext(context: ExtendContext): void {
+        this._extendContext = context;
+    }
+
     public get value(): P | undefined {
         return this._value;
     }
@@ -86,7 +92,7 @@ export class ScenarioEvent<P = void> {
     }
 
     public get isPending(): boolean {
-        return !!this._allPlacedBids?.get(this.id)?.pendingBy;
+        return !!this._extendContext || !!this._allPlacedBids?.get(this.id)?.pendingBy;
     }
 
     public reject(error?: any): boolean {
@@ -96,11 +102,16 @@ export class ScenarioEvent<P = void> {
         return this._finishPendingRequest!('reject', bThreadId, this.id, error);
     }
 
-    public resolve(value: NextValueFn<P>): boolean {
+    public resolve(nextCB: NextValueFn<P>): boolean {
+        if(this._extendContext && this._extendContext.isCompleted === false) {
+            this._extendContext.resolve(nextCB(this._extendContext.value));
+            delete this._extendContext;
+            return true;
+        }
         if(!this.isPending) return false;
         const bThreadId = this._allPlacedBids?.get(this.id)?.pendingBy;
         if(!bThreadId) return false;
-        const nextVal = value(this._value);
+        const nextVal = nextCB(this._value);
         return this._finishPendingRequest!('resolve', bThreadId, this.id, nextVal);
     }
 
