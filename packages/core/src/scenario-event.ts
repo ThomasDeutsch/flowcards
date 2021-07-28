@@ -1,8 +1,7 @@
-import { PlacedBid, UpdateCallback } from ".";
+import { PlacedBid } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid } from "./bid";
-import { ExtendContext } from "./extend-context";
 import { NameKeyId } from "./name-key-map";
-import { FinishPending, UIActionDispatch } from "./scaffolding";
+import { UIActionDispatch } from "./scaffolding";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
 
 export type NextValueFn<P> = (current: P | undefined) => P
@@ -16,13 +15,11 @@ export class ScenarioEvent<P = void> {
     private _allPlacedBids?: AllPlacedBids;
     private _askForBid?: PlacedBid;
     private _validateCheck?: CombinedValidationCB<P>;
-    private _finishPendingRequest?: FinishPending;
     private _uiActionCb?: UIActionDispatch;
     private _isEnabled = false;
     private _value?: P;
     private _initialValue?: P;
     private _areBThreadsProgressing?: () => boolean;
-    private _extendContext?: ExtendContext;
 
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
         this._initialValue = initialValue;
@@ -43,10 +40,9 @@ export class ScenarioEvent<P = void> {
         return this._updatedOn;
     }
 
-    public __setup(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean, finishPendingRequest: FinishPending): void {
+    public __setup(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean): void {
         this._areBThreadsProgressing = areBThreadsProgressing
         this._uiActionCb = uiActionDispatch;
-        this._finishPendingRequest = finishPendingRequest;
     }
 
     public disable(resetValue = false): void {
@@ -66,10 +62,6 @@ export class ScenarioEvent<P = void> {
         this._askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
         const context = allPlacedBids.get(this.id);
         this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, context);
-    }
-
-    public __setExtendContext(context: ExtendContext): void {
-        this._extendContext = context;
     }
 
     public get value(): P | undefined {
@@ -92,27 +84,7 @@ export class ScenarioEvent<P = void> {
     }
 
     public get isPending(): boolean {
-        return !!this._extendContext || !!this._allPlacedBids?.get(this.id)?.pendingBy;
-    }
-
-    public reject(error?: any): boolean {
-        if(!this.isPending) return false;
-        const bThreadId = this._allPlacedBids?.get(this.id)?.pendingBy;
-        if(!bThreadId) return false;
-        return this._finishPendingRequest!('reject', bThreadId, this.id, error);
-    }
-
-    public resolve(nextCB: NextValueFn<P>): boolean {
-        if(this._extendContext && this._extendContext.isCompleted === false) {
-            this._extendContext.resolve(nextCB(this._extendContext.value));
-            delete this._extendContext;
-            return true;
-        }
-        if(!this.isPending) return false;
-        const bThreadId = this._allPlacedBids?.get(this.id)?.pendingBy;
-        if(!bThreadId) return false;
-        const nextVal = nextCB(this._value);
-        return this._finishPendingRequest!('resolve', bThreadId, this.id, nextVal);
+        return !!this._allPlacedBids?.get(this.id)?.pendingBy;
     }
 
     public get isBlocked(): boolean {

@@ -1,14 +1,12 @@
 
-import { BThreadGenerator, BThreadState, BThreadUtils } from './bthread';
-import { NameKeyId, toNameKeyId } from './name-key-map';
-import * as utils from './utils';
+import { BThreadContext, BThreadGenerator, BThreadPublicContext } from './bthread';
+import { NameKeyId } from './name-key-map';
 
 export interface EnableScenarioInfo<P> {
     id: NameKeyId;
     destroyOnDisable: boolean;
     generatorFunction: BThreadGeneratorFunction<P>;
     nextProps?: P;
-    updateStateCb: (state: BThreadState) => void;
 }
 export interface ScenarioInfo {
     name: string;
@@ -17,7 +15,7 @@ export interface ScenarioInfo {
     description?: string;
 }
 
-export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadUtils, props: P) => BThreadGenerator;
+export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadContext, props: P) => BThreadGenerator;
 
 
 function toInfoObj(info: ScenarioInfo | string): ScenarioInfo {
@@ -43,7 +41,7 @@ export class Scenario<P = void> {
     private _generatorFunction: BThreadGeneratorFunction<P>;
     private _currentProps?: P;
     public readonly destroyOnDisable: boolean;
-    private _bThreadState?: BThreadState;
+    private _bThreadContext?: BThreadPublicContext;
     public readonly description?: string;
 
     constructor(info: ScenarioInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
@@ -58,8 +56,8 @@ export class Scenario<P = void> {
         this._currentProps = p;
     }
 
-    public __updateState(bThreadState: BThreadState): void {
-        this._bThreadState = bThreadState;
+    public __updateBThreadContext(nextContext: BThreadPublicContext): void {
+        this._bThreadContext = nextContext;
     }
 
     public get generatorFunction(): BThreadGeneratorFunction<P> {
@@ -71,11 +69,11 @@ export class Scenario<P = void> {
     }
 
     public get section(): string {
-        return this._bThreadState?.section || "";
+        return this._bThreadContext?.section || "";
     }
 
     public get isCompleted(): boolean {
-        return !!this._bThreadState?.isCompleted;
+        return !!this._bThreadContext?.isCompleted;
     }
 }
 

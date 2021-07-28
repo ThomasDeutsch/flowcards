@@ -172,28 +172,3 @@ test("a canceled request will not progress a pending event with the same event-i
         }
     });
 });
-
-
-test("a pending event can be canceled by calling cancelPending", (done) => {
-    const eventA = new ScenarioEvent<string>('A');
-
-
-    const thread1 = new Scenario('requestingThread', function* () {
-        try {
-            yield bp.request(eventA, () => delay(9999, '1'));
-        } catch(e) {
-            expect(e.event.name).toEqual('A');
-            done();
-        }
-    });
-
-    testScenarios((enable, events) => {
-        events(eventA)
-        enable(thread1);
-    }, () => {
-        if(eventA.isPending) {
-            expect(eventA.reject).toBeDefined();
-            eventA.reject();
-        }
-    });
-});

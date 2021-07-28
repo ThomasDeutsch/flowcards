@@ -19,25 +19,25 @@ interface NextBidProperties {
 export type ErrorInfo = {event: NameKeyId, error: any}
 export type BThreadGenerator = Generator<BidOrBids, void, ScenarioProgressInfo>;
 
-export interface BThreadUtils {
+export interface BThreadContext {
     key?: string | number;
     section: (newValue: string) => void;
     clearSection: () => void;
+    resolveExtend: <P>(event: ScenarioEvent<P>, update: (value : P) => P) => boolean;
 }
+
+export type BThreadPublicContext = {
+    isCompleted: boolean;
+    section: string;
+    pendingRequests: NameKeyMap<PendingBid>;
+    pendingExtends: NameKeyMap<PendingBid>;
+}
+
 
 export interface ScenarioProgressInfo {
     event: ScenarioEvent;
     eventId: NameKeyId;
     remainingBids?: Bid[];
-}
-
-export interface BThreadState {
-    id: NameKeyId;
-    section?: string;
-    isCompleted: boolean;
-    pendingBids: NameKeyMap<PendingBid>;
-    bids: BidsByType;
-    cancelledBids?: NameKeyMap<PlacedBid>;
 }
 
 export function isSameNameKeyId(a?: NameKeyId, b?: NameKeyId): boolean {
@@ -64,28 +64,18 @@ export class BThread<P> {
     private _nextBidOrBids?: BidOrBids;
     private _pendingRequests: NameKeyMap<PendingBid> = new NameKeyMap();
     private _pendingExtends: NameKeyMap<PendingBid> = new NameKeyMap();
-    private _state: BThreadState;
-    public get state(): BThreadState { return this._state }
-    private _utils: BThreadUtils;
+    private _context: BThreadContext;
+    private _isCompleted = false;
+    private _currentSection = '';
 
-    private _createState(): BThreadState {
-        return {
-            id: this.id,
-            section: undefined,
-            isCompleted: false,
-            pendingBids: new NameKeyMap(),
-            bids: {},
-        };
-    }
 
     public constructor(params: BThreadParameters<P>) {
         this.id = params.id;
         this._logger = params.logger;
         this._event = params.scenarioEventMap;
         this._resolveActionCB = params.resolveActionCB;
-        this._state = this._createState();
-        this._utils = this._createBThreadUtils();
-        this._thread = params.generatorFunction.bind(this._utils)(params.props);
+        this._context = this._createBThreadUtils();
+        this._thread = params.generatorFunction.bind(this._context)(params.props);
         const next = this._thread.next();
         this._nextBidOrBids = next.value as BidOrBids;
         this._setCurrentBids();
@@ -93,14 +83,19 @@ export class BThread<P> {
 
      // --- private
 
-    private _createBThreadUtils(): BThreadUtils {
+    private _createBThreadUtils(): BThreadContext {
         return {
-            section: (value?: string) => {
-                if(!value) this._state.section = undefined;
-                this._state.section = value;
+            section: (value: string) => {
+                this._currentSection = value;
             },
-            clearSection: () => { this._state.section = undefined; },
-            key:  this.id.key
+            clearSection: () => { this._currentSection = ''; },
+            key:  this.id.key,
+            resolveExtend: (event, updateFn): boolean => {
+                const pendingBid = this._pendingExtends.get(event.id);
+                if(pendingBid === undefined) return false;
+                if(pendingBid.extendedRequestingBid === undefined) return false;
+                return this._dispatchResolvePendingExtend(pendingBid, updateFn(pendingBid.extendedRequestingBid.payload));
+            }
         }
     }
 
@@ -111,9 +106,6 @@ export class BThread<P> {
                 this._pendingRequests.deleteSingle(requestBidNameKeyId);
             }
         })
-        const allPendingBids = this._pendingRequests.clone().merge(this._pendingExtends);
-        this._state.pendingBids = allPendingBids;
-        this._state.bids = toBidsByType({pendingBidMap: allPendingBids, placedBids: this._placedBids})
     }
 
     private _processNextBid(props: NextBidProperties): void {
@@ -132,9 +124,7 @@ export class BThread<P> {
             this._pendingRequests.clear();
             delete this._nextBidOrBids;
             this._placedBids = [];
-            this._state.isCompleted = true;
-            this._state.bids = {};
-            this._state.pendingBids = new NameKeyMap();
+            this._isCompleted = true;
         } else {
             this._nextBidOrBids = next.value;
         }
@@ -170,12 +160,39 @@ export class BThread<P> {
         return true;
     }
 
+    private _addPendingBid(pendingBid: PendingBid): void {
+        this._setCurrentBids();
+        if(pendingBid.type !== 'extendBid') {
+            this._logger.logReaction(BThreadReactionType.newPending, this.id, pendingBid);
+        }
+        pendingBid.payload!.then((data: any): void => {
+            if(pendingBid.type === 'extendBid') {
+                this._dispatchResolvePendingExtend(pendingBid, data);
+            } else {
+                this._dispatchFinishPendingRequest('resolve', pendingBid, data);
+            }
+        }).catch((e: Error): void => {
+            this._dispatchFinishPendingRequest('reject', pendingBid, e);
+        });
+    }
+
     // --- public
 
-    public get bThreadBids(): BThreadBids | undefined {
-        if(this._state.pendingBids.size === 0 && this._placedBids.length === 0) return undefined
+    public get context(): BThreadPublicContext {
         return {
-            pendingBidMap: this._state.pendingBids,
+            isCompleted: this._isCompleted,
+            section: this._currentSection,
+            pendingRequests: this._pendingRequests,
+            pendingExtends: this._pendingExtends
+        }
+    }
+
+
+    public get bThreadBids(): BThreadBids | undefined {
+        const allPendingBids = this._pendingRequests.clone().merge(this._pendingExtends);
+        if(allPendingBids.size === 0 && this._placedBids.length === 0) return undefined
+        return {
+            pendingBidMap: allPendingBids,
             placedBids: this._placedBids.reverse()
         }
     }
@@ -183,8 +200,7 @@ export class BThread<P> {
     public resetBThread(generatorFunction: BThreadGeneratorFunction<any>, nextProps: P): void {
         this._pendingRequests.clear();
         this._pendingExtends.clear();
-        this._state = this._createState();
-        this._thread = generatorFunction.bind(this._utils)(nextProps);
+        this._thread = generatorFunction.bind(this._context)(nextProps);
         const next = this._thread.next();
         this._nextBidOrBids = next.value as BidOrBids;
         this._setCurrentBids();
@@ -200,35 +216,11 @@ export class BThread<P> {
             type: action.bidType,
             eventId: action.eventId,
             actionId: action.id!,
-            payload: action.payload,
+            payload: action.payload as Promise<any>,
             startTime: new Date().getTime()
         };
         this._pendingRequests.set(action.eventId, pendingBid);
         this._addPendingBid(pendingBid);
-    }
-
-    private _addPendingBid(pendingBid: PendingBid): void {
-        this._setCurrentBids();
-        if(pendingBid.type !== 'extendBid') {
-            this._logger.logReaction(BThreadReactionType.newPending, this.id, pendingBid);
-        }
-        pendingBid.payload.then((data: any): void => {
-            if(pendingBid.type === 'extendBid') {
-                this._dispatchResolvePendingExtend(pendingBid, data);
-            } else {
-                this._dispatchFinishPendingRequest('resolve', pendingBid, data);
-            }
-        }).catch((e: Error): void => {
-            this._dispatchFinishPendingRequest('reject', pendingBid, e);
-        });
-    }
-
-    public dispatchResolveRejectAction(type: 'resolve' | 'reject', eventId: NameKeyId, data: any): boolean {
-        const pendingRequest = this._pendingRequests.get(eventId);
-        if(pendingRequest) {
-            return this._dispatchFinishPendingRequest(type, pendingRequest, data);
-        }
-        return false;
     }
 
     public rejectPending(eventId: NameKeyId, error: any): ReactionCheck {
@@ -279,11 +271,10 @@ export class BThread<P> {
     public progressExtend(extendedAction: AnyAction): ExtendContext | undefined {
         const bid = this.getCurrentBid('extendBid', extendedAction.eventId);
         if(bid === undefined) return undefined;
-        const extendContext = new ExtendContext(extendedAction.payload);
+        const extendContext = new ExtendContext();
         const eventId = extendedAction.eventId;
         const pendingBid: PendingBid = toExtendPendingBid(extendedAction, extendContext, this.id);
         this._pendingExtends.set(extendedAction.eventId, pendingBid);
-        this._event.get(eventId)?.__setExtendContext(extendContext);
         this._addPendingBid(pendingBid);
         this._processNextBid({bid, eventId});
         this._logger.logReaction(BThreadReactionType.progress ,this.id, bid);

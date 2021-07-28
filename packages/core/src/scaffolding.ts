@@ -1,5 +1,5 @@
 import { BThreadBids } from './bid';
-import { BThread, BThreadState } from './bthread';
+import { BThread, BThreadPublicContext } from './bthread';
 import { Logger } from './logger';
 import { Scenario } from './scenario';
 import { BThreadMap, EventMap } from './update-loop';
@@ -9,11 +9,10 @@ import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 import * as utils from './utils';
 
 
-export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadState;
+export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
 export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
 export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
-export type FinishPending = (type: 'resolve' | 'reject', bThreadId: NameKeyId, eventId: NameKeyId, value: any) => boolean;
 
 export interface ScaffoldingProps {
     stagingFunction: StagingFunction;
@@ -33,9 +32,6 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
             eventId: eventId,
             payload: payload
         })
-    }
-    const finishPendingRequest: FinishPending = (type, bThreadId, eventId, value): boolean => {
-        return !!props.bThreadMap.get(bThreadId)?.dispatchResolveRejectAction(type, eventId, value);
     }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
     const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
@@ -62,18 +58,16 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
             if(scenario.destroyOnDisable) destroyOnDisableThreadIds.set(scenario.id, scenario.id);
         }
         if(bThread.bThreadBids !== undefined) props.bThreadBids.unshift(bThread.bThreadBids);
-        scenario.__updateState(bThread.state);
-        return bThread.state;
+        scenario.__updateBThreadContext(bThread.context);
+        return bThread.context;
     }
 
 
     const enableEvents: EnableScenarioEvents = (...events) => {
         events.forEach(event => {
-            // for every event that is extending - add a pending bid to all BThread bids!
-            // but not for async requests, because this is strictly coupled to a BThread.... or?
             enabledEventIds.set(event.id, event.id);
             if(props.eventMap.has(event.id) === false) {
-                event.__setup(uiActionCb, props.areBThreadsProgressing, finishPendingRequest);
+                event.__setup(uiActionCb, props.areBThreadsProgressing);
                 props.eventMap.set(event.id, event);
                 event.enable();
             }

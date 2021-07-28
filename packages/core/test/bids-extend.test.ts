@@ -55,7 +55,7 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         yield bp.extend(eventA);
         expect(eventA.isPending).toBe(true);
         expect(eventA.value).toBe(undefined); // the request is not yet resolved.
-        eventA.resolve((prev = 0) => prev + 10); // the resolve-fn will provide the extend-value ( 100 )
+        this.resolveExtend(eventA, (prev = 0) => prev + 10); // the resolve-fn will provide the extend-value ( 100 )
     })
 
     testScenarios((enable, events) => {
