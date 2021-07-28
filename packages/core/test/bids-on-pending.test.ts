@@ -9,11 +9,11 @@ test("an onPending-wait is progressed, when the event receives the pending state
         A: new ScenarioEvent<string>('A')
     }
 
-    const thread1 = new Scenario(null, function* () {
+    const thread1 = new Scenario('thread1', function* () {
         yield bp.request(testEvents.A, () => delay(100, "hey"));
     })
 
-    const thread2 = new Scenario(null, function* () {
+    const thread2 = new Scenario('thread2', function* () {
         yield bp.onPending(testEvents.A);
     })
 
@@ -36,11 +36,11 @@ test("an onPending-wait is not progressed on events that are not async", () => {
         A: new ScenarioEvent<string>('A')
     }
 
-    const thread1 = new Scenario(null, function* () {
+    const thread1 = new Scenario('thread1', function* () {
         yield bp.request(testEvents.A, "hey");
     })
 
-    const thread2 = new Scenario(null, function* () {
+    const thread2 = new Scenario('thread2', function* () {
         yield bp.onPending(testEvents.A);
     })
 
@@ -60,11 +60,11 @@ test("an onPending for a keyed event is not progressed when a no-key request for
         AK: new ScenarioEventKeyed<string>('A')
     }
 
-    const thread1 = new Scenario(null, function* () {
+    const thread1 = new Scenario('thread1', function* () {
         yield bp.request(testEvents.A, () => delay(100, "hey"));
     })
 
-    const thread2 = new Scenario(null, function* () {
+    const thread2 = new Scenario('thread2', function* () {
         yield bp.onPending({name: 'A', key: 1});
     })
 

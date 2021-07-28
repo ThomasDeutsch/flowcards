@@ -11,7 +11,7 @@ test("an event needs to be enabled in order to be requested", () => {
     const eventA = new ScenarioEvent<number>('A');
     const eventB = new ScenarioEvent<number>('B');
 
-    const requestingThread = new Scenario<ScenarioProps>(null, function*() {
+    const requestingThread = new Scenario<ScenarioProps>('thread1', function*() {
         yield bp.request(eventA);
         yield bp.request(eventB);
     });
@@ -30,7 +30,7 @@ test("an event value can be reset to its initial value on disable", () => {
     const eventA = new ScenarioEvent<number>('A', 10);
     const eventB = new ScenarioEvent('B');
 
-    const requestingThread = new Scenario<ScenarioProps>(null, function*() {
+    const requestingThread = new Scenario<ScenarioProps>('thread1', function*() {
         yield bp.request(eventA, 20);
         yield bp.request(eventB);
     });
@@ -51,7 +51,7 @@ test("an event value can be reset to its initial value on disable", () => {
 test("after an event progressed, it is not pending any longer", (done) => {
     const eventA = new ScenarioEvent<number>('A');
 
-    const requestingThread = new Scenario(null, function*() {
+    const requestingThread = new Scenario('thread1', function*() {
         yield bp.request(eventA, () => delay(100, 1));
         expect(eventA.isPending).toBe(false);
         done();
@@ -67,7 +67,7 @@ test("after an event progressed, it is not dispatch-able until the next bids are
     const eventA = new ScenarioEvent<number>('A');
     const eventB = new ScenarioEvent<number>('B');
 
-    const requestingThread = new Scenario<ScenarioProps>(null, function*() {
+    const requestingThread = new Scenario('thread1', function*() {
         const progress = yield [bp.request(eventA), bp.askFor(eventB)];
         expect(progress.event).toBe(eventA);
         expect(eventB.validate().isValid).toBe(false);
@@ -77,7 +77,7 @@ test("after an event progressed, it is not dispatch-able until the next bids are
 
     testScenarios((enable, event) => {
         event(eventA, eventB);
-        enable(requestingThread, {a: 1});
+        enable(requestingThread);
     });
 });
 

@@ -69,6 +69,8 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
 
     const enableEvents: EnableScenarioEvents = (...events) => {
         events.forEach(event => {
+            // for every event that is extending - add a pending bid to all BThread bids!
+            // but not for async requests, because this is strictly coupled to a BThread.... or?
             enabledEventIds.set(event.id, event.id);
             if(props.eventMap.has(event.id) === false) {
                 event.__setup(uiActionCb, props.areBThreadsProgressing, finishPendingRequest);
@@ -84,13 +86,6 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
         enabledEventIds.clear();
         props.stagingFunction(enableScenario, enableEvents); // do the staging
         // set enable state for scenarios
-        props.bThreadMap.allValues?.forEach(bThread => {
-            if(enabledScenarioIds.has(bThread.id)) {
-                bThread.setEnabled(true);
-            } else {
-                bThread.setEnabled(false);
-            }
-        });
         props.eventMap.allValues?.forEach(event => {
             if(!enabledEventIds.has(event.id)) {
                 event.disable();

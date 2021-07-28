@@ -33,7 +33,6 @@ export interface ScenarioProgressInfo {
 
 export interface BThreadState {
     id: NameKeyId;
-    isEnabled: boolean;
     section?: string;
     isCompleted: boolean;
     pendingBids: NameKeyMap<PendingBid>;
@@ -72,7 +71,6 @@ export class BThread<P> {
     private _createState(): BThreadState {
         return {
             id: this.id,
-            isEnabled: true,
             section: undefined,
             isCompleted: false,
             pendingBids: new NameKeyMap(),
@@ -146,7 +144,6 @@ export class BThread<P> {
 
     private _isValidBid(pendingBid?: PendingBid): boolean {
         if(!this._thread) return false; // thread was deleted
-        if(!this.state.isEnabled) return false; // thread was disabled
         if(pendingBid === undefined) return false;
         let pending: PendingBid | undefined;
         if(pendingBid.type === 'extendBid') {
@@ -177,7 +174,6 @@ export class BThread<P> {
 
     public get bThreadBids(): BThreadBids | undefined {
         if(this._state.pendingBids.size === 0 && this._placedBids.length === 0) return undefined
-
         return {
             pendingBidMap: this._state.pendingBids,
             placedBids: this._placedBids.reverse()
@@ -192,10 +188,6 @@ export class BThread<P> {
         const next = this._thread.next();
         this._nextBidOrBids = next.value as BidOrBids;
         this._setCurrentBids();
-    }
-
-    public setEnabled(isEnabled: boolean): void {
-        this._state.isEnabled = isEnabled;
     }
 
     public getCurrentBid(bidType: BidType, eventId: NameKeyId): PlacedBid | undefined {

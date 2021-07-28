@@ -10,14 +10,34 @@ export interface EnableScenarioInfo<P> {
     nextProps?: P;
     updateStateCb: (state: BThreadState) => void;
 }
-export interface ScenarioProps {
-    id: string;
+export interface ScenarioInfo {
+    name: string;
+    key?: string | number;
     destroyOnDisable?: boolean;
     description?: string;
 }
 
 export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadUtils, props: P) => BThreadGenerator;
 
+
+function toInfoObj(info: ScenarioInfo | string): ScenarioInfo {
+    if(typeof info === 'string') {
+        return {
+            name: info,
+            destroyOnDisable: false,
+            description: "",
+            key: undefined
+        }
+    }
+    else {
+        return {
+            name: info.name,
+            key: info.key,
+            description: info.description || "",
+            destroyOnDisable: !!info.destroyOnDisable
+        }
+    }
+}
 export class Scenario<P = void> {
     public readonly id: NameKeyId;
     private _generatorFunction: BThreadGeneratorFunction<P>;
@@ -26,20 +46,12 @@ export class Scenario<P = void> {
     private _bThreadState?: BThreadState;
     public readonly description?: string;
 
-    constructor(props: ScenarioProps | string | null, generatorFn: BThreadGeneratorFunction<P>) {
+    constructor(info: ScenarioInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
         this._generatorFunction = generatorFn;
-        if(typeof props === 'string') {
-            this.id = toNameKeyId(props);
-            this.destroyOnDisable = false;
-        } else if(props === null) {
-            this.id = toNameKeyId(utils.uuidv4());
-            this.destroyOnDisable = false;
-        }
-        else {
-            this.id = toNameKeyId(props.id);
-            this.description = props.description;
-            this.destroyOnDisable = !!props.destroyOnDisable;
-        }
+        const i = toInfoObj(info);
+        this.id = {name: i.name, key: i.key}
+        this.destroyOnDisable = i.destroyOnDisable || false;
+        this.description = i.description;
     }
 
     public __updateCurrentProps(p: P | undefined): void {
@@ -58,10 +70,6 @@ export class Scenario<P = void> {
         return this._currentProps;
     }
 
-    public get isEnabled(): boolean {
-        return !!this._bThreadState?.isEnabled;
-    }
-
     public get section(): string {
         return this._bThreadState?.section || "";
     }
@@ -69,24 +77,24 @@ export class Scenario<P = void> {
     public get isCompleted(): boolean {
         return !!this._bThreadState?.isCompleted;
     }
-
 }
 
 
-export class ScenarioKeyed<P> {
+export class ScenarioKeyed<P = void> {
     private _generatorFunction: BThreadGeneratorFunction<P>;
-    private _props: ScenarioProps | string | null;
+    private _info: ScenarioInfo;
     private _children = new Map<string | number, Scenario<P>>()
 
-    constructor(props: ScenarioProps | string | null, generatorFn: BThreadGeneratorFunction<P>) {
-        this._props = props;
+    constructor(info: ScenarioInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
+        this._info = toInfoObj(info);
         this._generatorFunction = generatorFn;
     }
 
     public key(key: string | number): Scenario<P> {
         let scenario = this._children.get(key);
         if(scenario === undefined) {
-            scenario = new Scenario<P>(this._props, this._generatorFunction);
+            const infoWithKey: ScenarioInfo = {...this._info, key: key};
+            scenario = new Scenario<P>(infoWithKey, this._generatorFunction);
             this._children.set(key, scenario);
         }
         return scenario;
@@ -99,5 +107,4 @@ export class ScenarioKeyed<P> {
     public allKeys(): (string | number)[] {
         return [...this._children].map(([k]) => k);
     }
-
 }

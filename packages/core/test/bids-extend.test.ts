@@ -15,12 +15,12 @@ test("requests can be extended", () => {
         progressedExtend = false,
         setupCount = 0;
 
-    const thread1 = new Scenario({id: 'requesting thread'}, function* () {
+    const thread1 = new Scenario('requesting thread', function* () {
         yield bp.request(eventA);
         progressedRequest = true;
     });
 
-    const thread3 = new Scenario({id: 'extending thread'}, function* () {
+    const thread3 = new Scenario('extending thread', function* () {
         yield bp.extend(eventA);
         progressedExtend = true;
         yield bp.askFor(eventX);
@@ -46,15 +46,16 @@ test("after the extend resolved, the event is no longer pending", (done) => {
     const eventX = new ScenarioEvent('X');
     const eventZ = new ScenarioEvent('X');
 
-    const thread1 = new Scenario({id: 'requesting thread'}, function* () {
-        yield bp.request(eventA, 10);
+    const thread1 = new Scenario('requesting thread', function* () {
+        yield bp.request(eventA, 100);
         yield bp.askFor(eventX);
     });
 
-    const thread3 = new Scenario({id: 'extending thread'}, function* () {
+    const thread3 = new Scenario('extending thread', function* () {
         yield bp.extend(eventA);
         expect(eventA.isPending).toBe(true);
-        eventA.resolve((prev = 0) => prev + 10);
+        expect(eventA.value).toBe(undefined); // the request is not yet resolved.
+        eventA.resolve((prev = 0) => prev + 10); // the resolve-fn will provide the extend-value ( 100 )
     })
 
     testScenarios((enable, events) => {
@@ -63,7 +64,7 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         enable(thread3);
     }, () => {
         if(eventX.validate().isValid) {
-            expect(eventA.value).toBe(20);
+            expect(eventA.value).toBe(110);
             done();
         }
     }

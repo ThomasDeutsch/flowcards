@@ -8,7 +8,7 @@ import { ScenarioEvent, ScenarioEventKeyed } from "../src";
 test("A function, returning a promise can be requested and will create a pending-event", (done) => {
     const eventA = new ScenarioEvent<number>('A');
 
-    const thread1 = new Scenario({id: 'requestingThread'}, function* () {
+    const thread1 = new Scenario('requestingThread', function* () {
         yield bp.request(eventA, () => delay(10, 10));
     });
 
@@ -64,16 +64,16 @@ test("for multiple active promises in one yield, only one resolve will progress 
     const eventA = new ScenarioEvent('A');
     const eventB = new ScenarioEvent('B');
 
-    const requestingScenario = new Scenario(null, function* () {
+    const requestingScenario = new Scenario('thread1', function* () {
         yield [bp.request(eventA, () => delay(10)), bp.request(eventB, () => delay(10))];
     });
 
-    const thread2 = new Scenario(null, function* () {
+    const thread2 = new Scenario('thread2', function* () {
         yield bp.askFor(eventA);
         progressed2 = true;
     });
 
-    const thread3 = new Scenario(null, function* () {
+    const thread3 = new Scenario('thread3', function* () {
         yield bp.askFor(eventB);
         progressed3 = true;
     });
@@ -96,12 +96,12 @@ test("if a thread gets disabled, resolving events are ignored", (done) => {
     const eventA = new ScenarioEvent('A');
     const eventB = new ScenarioEvent('B');
 
-    const thread1 = new Scenario({id: 'thread1'}, function* () {
+    const thread1 = new Scenario('thread1', function* () {
         const progress = yield [bp.askFor(eventB),  bp.request(eventA, () => delay(100))];
         expect(progress.event).toBe(eventA);
     });
 
-    const thread2 = new Scenario({id: 'thread2'}, function*() {
+    const thread2 = new Scenario('thread2', function*() {
         yield bp.request(eventB, () => delay(200));
     });
 
@@ -124,11 +124,11 @@ test("a thread in a pending-event state can place additional bids.", (done) => {
     const eventA = new ScenarioEvent('A');
     const eventB = new ScenarioEvent('B');
 
-    const thread1 = new Scenario({id: 'requestingThread'}, function* () {
+    const thread1 = new Scenario('requestingThread', function* () {
         yield [bp.request(eventA, () => delay(100)), bp.block(eventB)];
     });
 
-    const thread2 = new Scenario({id: 'waitingThread'}, function* () {
+    const thread2 = new Scenario('waitingThread', function* () {
         yield bp.askFor(eventB);
     });
 
@@ -151,14 +151,14 @@ test("a canceled request will not progress a pending event with the same event-i
     const eventB = new ScenarioEvent('B');
     const eventCancel = new ScenarioEvent('B');
 
-    const thread1 = new Scenario({id: 'requestingThread'}, function* () {
+    const thread1 = new Scenario('requestingThread', function* () {
         yield [bp.request(eventA, () => delay(200, '1')), bp.askFor(eventCancel)];
         yield bp.request(eventB);
         yield bp.request(eventA, () => delay(500, '2'));
         expect(eventA.value).toBe('2');
     });
 
-    const thread2 = new Scenario({id: 'cancelThread'}, function* () {
+    const thread2 = new Scenario('cancelThread', function* () {
         yield bp.trigger(eventCancel);
     });
 
@@ -178,7 +178,7 @@ test("a pending event can be canceled by calling cancelPending", (done) => {
     const eventA = new ScenarioEvent<string>('A');
 
 
-    const thread1 = new Scenario({id: 'requestingThread'}, function* () {
+    const thread1 = new Scenario('requestingThread', function* () {
         try {
             yield bp.request(eventA, () => delay(9999, '1'));
         } catch(e) {

@@ -7,7 +7,7 @@ import { delay, testScenarios } from "./testutils";
 test("keys can be a string or a number", () => {
     const eventA = new ScenarioEventKeyed('A');
 
-    const thread1 = new Scenario(null, function* () {
+    const thread1 = new Scenario('thread1', function* () {
         yield bp.askFor({name: 'A', key: "1"});
     });
 
@@ -27,12 +27,12 @@ test("a requested event with a key is blocked by a block for the same name and k
 
     const eventA = new ScenarioEventKeyed('A');
 
-    const requestingThread = new Scenario(null, function* () {
+    const requestingThread = new Scenario('thread1', function* () {
         yield bp.request(eventA.key(1));
         progressedRequestThread = true;
     })
 
-    const blockingThread = new Scenario(null, function* () {
+    const blockingThread = new Scenario('thread2', function* () {
         yield bp.block(eventA.key(1));
     })
 
@@ -50,7 +50,7 @@ test("a requested event with a disabled key will not progress", () => {
 
     const eventA = new ScenarioEventKeyed('A');
 
-    const requestingThread = new Scenario(null, function* () {
+    const requestingThread = new Scenario('thread1', function* () {
         yield bp.request(eventA.key(1));
         progressedRequestThread = true;
     })
@@ -69,7 +69,7 @@ test("an keyed event can be disabled in the staging-function", () => {
 
     const eventA = new ScenarioEventKeyed('A');
 
-    const requestingThread = new Scenario(null, function* () {
+    const requestingThread = new Scenario('thread1', function* () {
         yield bp.request(eventA.key(1));
         progressedRequestThread = true;
     })
@@ -89,12 +89,12 @@ test("a keyed waitFor will not advance on the same Event-Name without a Key", ()
     const eventAUnkeyed = new ScenarioEvent('A');
     const eventA = new ScenarioEventKeyed('A');
 
-    const requestingThread = new Scenario({id: 'thread1'}, function*() {
+    const requestingThread = new Scenario('thread1', function*() {
         yield bp.request(eventAUnkeyed);
         requestProgressed = true;
     });
 
-    const waitingThread = new Scenario(null, function*() {
+    const waitingThread = new Scenario('thread1', function*() {
         yield [bp.waitFor(eventA.key(1)), bp.waitFor(eventA.key(2))];
         waitProgressed = true;
     });
@@ -117,12 +117,12 @@ test("a wait without a key will not react to keyed events with the same name", (
     const eventA = new ScenarioEventKeyed('A');
     const eventAUK = new ScenarioEvent('A');
 
-    const requestingThread = new Scenario({id: 'thread1'}, function*() {
+    const requestingThread = new Scenario('thread1', function*() {
         yield bp.request(eventA.key(1));
         requestProgressed = true;
     });
 
-    const waitingThread = new Scenario(null, function*() {
+    const waitingThread = new Scenario('thread2', function*() {
         yield bp.waitFor(eventAUK);
         waitProgressed = true;
     });
@@ -144,21 +144,21 @@ test("an event with a key will be blocked by a block with the same name and key"
 
     const eventA = new ScenarioEventKeyed('A');
 
-    const thread1 = new Scenario(null, function* () {
+    const thread1 = new Scenario('thread1', function* () {
         yield bp.askFor({name: 'A', key: 1});
         advancedKey1 = true;
     });
 
-    const thread2 = new Scenario(null, function* () {
+    const thread2 = new Scenario('thread2', function* () {
         yield bp.askFor({name: 'A', key: 2});
         advancedKey2 = true;
     });
 
-    const blockingThread = new Scenario(null, function* () {
+    const blockingThread = new Scenario('thread3', function* () {
         yield bp.block({name: 'A', key: 1});
     });
 
-    const requestingThread = new Scenario(null, function* () {
+    const requestingThread = new Scenario('thread4', function* () {
         yield bp.request({name: 'A', key: 2});
         yield bp.request({name: 'A', key: 1});
     });
@@ -183,17 +183,17 @@ test("a request without a key will not advance waiting threads with a key", () =
     const eventA = new ScenarioEvent('A');
     const eventAK = new ScenarioEventKeyed('A');
 
-    const waitThreadWithKey1 = new Scenario(null, function* () {
+    const waitThreadWithKey1 = new Scenario('thread1', function* () {
         yield bp.askFor({name: 'A', key: 1});
         advancedWait1 = true;
     });
 
-    const waitThreadWithKey2 = new Scenario(null, function* () {
+    const waitThreadWithKey2 = new Scenario('thread2', function* () {
         yield bp.askFor({name: 'A', key: 2});
         advancedWait2 = true;
     });
 
-    const requestThread = new Scenario(null, function* () {
+    const requestThread = new Scenario('thread3', function* () {
         yield bp.request(eventA);
     });
 
@@ -214,12 +214,12 @@ test("an request without a key will not advance extends with a key", () => {
     const eventA = new ScenarioEvent('A');
     const eventAK = new ScenarioEventKeyed('A');
 
-    const extending = new Scenario(null, function* () {
+    const extending = new Scenario('thread1', function* () {
         yield bp.extend({name: 'A', key: 1});
         advancedExtend = true;
     });
 
-    const requesting = new Scenario(null, function* () {
+    const requesting = new Scenario('thread1', function* () {
         yield bp.request(eventA);
     });
 
@@ -241,22 +241,22 @@ test("a request with a key, will only advance the matching wait with the same ke
     const eventA = new ScenarioEvent('A');
     const eventAK = new ScenarioEventKeyed('A');
 
-    const waitThreadWithKey1 = new Scenario(null, function* () {
+    const waitThreadWithKey1 = new Scenario('thread1', function* () {
         yield bp.askFor({name: 'A', key: 1});
         advancedWait1 = true;
     });
 
-    const waitThreadWithKey2 = new Scenario(null, function* () {
+    const waitThreadWithKey2 = new Scenario('thread2', function* () {
         yield bp.askFor({name: 'A', key: 2});
         advancedWait2 = true;
     });
 
-    const waitThreadWithoutKey = new Scenario(null, function* () {
+    const waitThreadWithoutKey = new Scenario('thread3', function* () {
         yield bp.askFor({name: 'A'});
         advancedWaitNoKey = true;
     });
 
-    const requestThread = new Scenario(null, function* () {
+    const requestThread = new Scenario('thread4', function* () {
         yield bp.request({name: 'A', key: 1});
     });
 
