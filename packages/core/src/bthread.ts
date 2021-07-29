@@ -21,14 +21,11 @@ export type BThreadGenerator = Generator<BidOrBids, void, ScenarioProgressInfo>;
 
 export interface BThreadContext {
     key?: string | number;
-    section: (newValue: string) => void;
-    clearSection: () => void;
     resolveExtend: <P>(event: ScenarioEvent<P>, update: (value : P) => P) => boolean;
 }
 
 export type BThreadPublicContext = {
     isCompleted: boolean;
-    section: string;
     pendingRequests: NameKeyMap<PendingBid>;
     pendingExtends: NameKeyMap<PendingBid>;
 }
@@ -66,7 +63,6 @@ export class BThread<P> {
     private _pendingExtends: NameKeyMap<PendingBid> = new NameKeyMap();
     private _context: BThreadContext;
     private _isCompleted = false;
-    private _currentSection = '';
 
 
     public constructor(params: BThreadParameters<P>) {
@@ -85,10 +81,6 @@ export class BThread<P> {
 
     private _createBThreadUtils(): BThreadContext {
         return {
-            section: (value: string) => {
-                this._currentSection = value;
-            },
-            clearSection: () => { this._currentSection = ''; },
             key:  this.id.key,
             resolveExtend: (event, updateFn): boolean => {
                 const pendingBid = this._pendingExtends.get(event.id);
@@ -181,7 +173,6 @@ export class BThread<P> {
     public get context(): BThreadPublicContext {
         return {
             isCompleted: this._isCompleted,
-            section: this._currentSection,
             pendingRequests: this._pendingRequests,
             pendingExtends: this._pendingExtends
         }

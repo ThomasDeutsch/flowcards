@@ -15,7 +15,6 @@ export interface BThreadReaction {
     reactionType: BThreadReactionType;
     actionId: number;
     selectedBid?: PlacedBid;
-    section?: string
 }
 
 export class Logger {

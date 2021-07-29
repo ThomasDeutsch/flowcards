@@ -68,10 +68,6 @@ export class Scenario<P = void> {
         return this._currentProps;
     }
 
-    public get section(): string {
-        return this._bThreadContext?.section || "";
-    }
-
     public get isCompleted(): boolean {
         return !!this._bThreadContext?.isCompleted;
     }
