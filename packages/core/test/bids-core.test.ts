@@ -528,3 +528,24 @@ test("a pending event will not remain pending if the next bids will not include 
         }
     });
 });
+
+
+test("askFor will enable events to be dispatched", (done) => {
+    const eventA = new ScenarioEvent<number>('A');
+
+    const askingThread = new Scenario('thread1', function*() {
+        yield bp.askFor(eventA);
+        expect(eventA.value).toBe(10);
+    })
+
+    testScenarios((enable, events) => {
+        events(eventA);
+        enable(askingThread);
+    }, (context)=> {
+        if(!askingThread.isCompleted) {
+            eventA.dispatch(10);
+        } else {
+            done();
+        }
+    });
+});
