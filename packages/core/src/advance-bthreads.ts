@@ -3,7 +3,7 @@ import { NameKeyId } from './name-key-map';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
 import { AllPlacedBids, getMatchingBids, unblockNameKeyId } from '.';
 import { combinedIsValid, ReactionCheck } from './validation';
-import { BThreadMap } from './update-loop';
+import { BThreadMap, EventMap } from './update-loop';
 
 
 export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: NameKeyId, payload: unknown): PlacedBid[] | undefined {
@@ -75,8 +75,9 @@ export function advanceRequestedAction(bThreadMap: BThreadMap, allPlacedBids: Al
 }
 
 
-export function advanceUiAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: UIAction): ReactionCheck {
+export function advanceUiAction(bThreadMap: BThreadMap, eventMap: EventMap, allPlacedBids: AllPlacedBids, action: UIAction): ReactionCheck {
     if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
+    eventMap.get(action.eventId)?.__setValue(action.payload);
     progressWaitingBThreads(allPlacedBids, bThreadMap, ["askForBid", "waitForBid"], action);
     return ReactionCheck.OK;
 }

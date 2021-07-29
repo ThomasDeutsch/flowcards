@@ -535,15 +535,15 @@ test("askFor will enable events to be dispatched", (done) => {
 
     const askingThread = new Scenario('thread1', function*() {
         yield bp.askFor(eventA);
-        expect(eventA.value).toBe(10);
+        expect(eventA.value).toBe(11);
     })
 
     testScenarios((enable, events) => {
         events(eventA);
         enable(askingThread);
-    }, (context)=> {
+    }, ()=> {
         if(!askingThread.isCompleted) {
-            eventA.dispatch(10);
+            eventA.dispatch(11);
         } else {
             done();
         }

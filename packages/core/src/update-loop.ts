@@ -99,9 +99,8 @@ export class UpdateLoop {
                         console.warn('invalid action: ', uiActionCheck, action);
                         continue;
                     }
-                    this._eventMap.get(action.eventId)?.__setValue(action.payload); // requests and askFors will persist the values
                     reactionCheck = this._advanceBThreads(
-                        (action) => advanceUiAction(this._bThreadMap, this._allPlacedBids, action),
+                        (action) => advanceUiAction(this._bThreadMap, this._eventMap, this._allPlacedBids, action),
                         action);
                     break;
                 }
