@@ -35,7 +35,7 @@ export type BThreadPublicContext = {
 
 
 export interface ScenarioProgressInfo {
-    event: ScenarioEvent;
+    event: ScenarioEvent<any>;
     eventId: NameKeyId;
     remainingBids?: Bid[];
 }
