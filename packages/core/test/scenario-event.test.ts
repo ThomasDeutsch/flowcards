@@ -26,7 +26,7 @@ test("an event needs to be enabled in order to be requested", () => {
 });
 
 
-test("an event value can be reset to its initial value on disable", () => {
+test("an event value is reset to its initial value on disable", () => {
     const eventA = new ScenarioEvent<number>('A', 10);
     const eventB = new ScenarioEvent('B');
 
@@ -39,7 +39,7 @@ test("an event value can be reset to its initial value on disable", () => {
         event(eventA, eventB);
         enable(requestingThread, {a: 1});
         if(requestingThread.isCompleted) {
-            eventA.disable(true); // true = reset value
+            eventA.disable(); // true = reset value
         }
     }, ()=> {
         expect(eventB.isEnabled).toBe(true);

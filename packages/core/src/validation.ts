@@ -24,7 +24,6 @@ export enum ReactionCheck {
 export type PayloadValidationReturn = boolean | {isValid: boolean, reason?: string};
 export type PayloadValidationCB<P> = (payload?: P) => PayloadValidationReturn;
 
-
 function isValidReturn(val: PayloadValidationReturn): boolean {
     return val === true || (typeof val === 'object' && val.isValid === true);
 }
