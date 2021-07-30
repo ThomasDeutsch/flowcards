@@ -4,7 +4,7 @@ import { BThread } from './bthread';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
-import { setupScaffolding, StagingFunction } from './scaffolding';
+import { setupStaging, StagingFunction } from './staging';
 import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryNameKeyId, InternalDispatch, PlacedBid, BidType, PlacedBidContext } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor } from './validation';
 import { isThenable } from './utils';
@@ -34,7 +34,7 @@ export class UpdateLoop {
     private readonly _bThreadMap: BThreadMap = new NameKeyMap<BThread<any>>();
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _logger: Logger;
-    private readonly _scaffold: () => void;
+    private readonly _stageScenarioAndEvents: () => void;
     private readonly _eventMap: EventMap = new NameKeyMap<ScenarioEvent<any>>();
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _replay?: Replay;
@@ -46,7 +46,7 @@ export class UpdateLoop {
 
     constructor(stagingFunction: StagingFunction, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
-        this._scaffold = setupScaffolding({
+        this._stageScenarioAndEvents = setupStaging({
             stagingFunction,
             bThreadMap: this._bThreadMap,
             eventMap: this._eventMap,
@@ -139,7 +139,7 @@ export class UpdateLoop {
             this._replay?.checkIfCompleted(action);
          } while (reactionCheck !== ReactionCheck.OK);
          this._currentActionId++;
-         return this.runScaffolding();
+         return this.runStagingAndLoop();
     }
 
     // public ----------------------------------------------------------------------
@@ -148,9 +148,9 @@ export class UpdateLoop {
         actions.forEach(action => this._actionQueue.push(action));
     }
 
-    public runScaffolding(replay?: Replay): ScenariosContext {
+    public runStagingAndLoop(replay?: Replay): ScenariosContext {
         if(replay) this._replay = replay;
-        this._scaffold();
+        this._stageScenarioAndEvents();
         this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
         this._eventMap.forEach((_, event) => {
             event.__update(this._currentActionId, this._allPlacedBids)
@@ -162,6 +162,9 @@ export class UpdateLoop {
         this._currentActionId = 0;
         this._actionQueue.length = 0;
         this._bThreadMap.allValues?.forEach(bThread => bThread.destroy());
+        this._eventMap.allValues?.forEach(event => {
+            event.disable();
+        });
         this._bThreadMap.clear();
         this._eventMap.clear();
         this._logger.resetLog();

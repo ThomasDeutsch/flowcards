@@ -14,7 +14,7 @@ export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
 export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
 
-export interface ScaffoldingProps {
+export interface StagingProps {
     stagingFunction: StagingFunction;
     bThreadMap: BThreadMap;
     eventMap: EventMap;
@@ -24,7 +24,7 @@ export interface ScaffoldingProps {
     logger: Logger;
 }
 
-export function setupScaffolding(props: ScaffoldingProps): () => void {
+export function setupStaging(props: StagingProps): () => void {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
     const uiActionCb = (eventId: NameKeyId, payload?: any): void => {
         props.internalDispatch({
@@ -74,7 +74,7 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
         });
     }
 
-    function scaffold() {
+    function run() {
         props.bThreadBids.length = 0;
         enabledScenarioIds.clear();
         enabledEventIds.clear();
@@ -94,5 +94,5 @@ export function setupScaffolding(props: ScaffoldingProps): () => void {
             }
         });
     }
-    return scaffold;
+    return run;
 }

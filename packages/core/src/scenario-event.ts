@@ -1,7 +1,7 @@
 import { PlacedBid } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid } from "./bid";
 import { NameKeyId } from "./name-key-map";
-import { UIActionDispatch } from "./scaffolding";
+import { UIActionDispatch } from "./staging";
 import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
 
 export type NextValueFn<P> = (current: P | undefined) => P
@@ -45,11 +45,9 @@ export class ScenarioEvent<P = void> {
         this._uiActionCb = uiActionDispatch;
     }
 
-    public disable(resetValue = false): void {
+    public disable(): void {
         this._isEnabled = false;
-        if(resetValue) {
-            this._value = this._initialValue || undefined;
-        }
+        this._value = this._initialValue || undefined;
     }
 
     public enable(): void {
@@ -131,10 +129,8 @@ export class ScenarioEventKeyed<P = void> {
         [...this._children].forEach(([_, e]) => e.enable());
     }
 
-    public disable(onDisable?: 'resetValues' | 'resetKeys'): void {
-        if(onDisable == 'resetValues') {
-            [...this._children].forEach(([_, e]) => e.disable(true));
-        } else if(onDisable === "resetKeys") {
+    public disable(deleteKeys: boolean): void {
+        if(deleteKeys) {
             this._children.clear();
         } else {
             [...this._children].forEach(([_, e]) => e.disable());

@@ -1,6 +1,6 @@
 import { ScenariosContext } from '../src/update-loop';
 import { AnyActionWithId, Scenarios, UpdateCallback } from '../src/index';
-import { StagingFunction } from '../src/scaffolding';
+import { StagingFunction } from '../src/staging';
 
 export function testScenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, replay?: AnyActionWithId[]): ScenariosContext {
     const s = new Scenarios(stagingFunction, updateCb, true, replay);

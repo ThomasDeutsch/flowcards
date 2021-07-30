@@ -1,6 +1,6 @@
 import { AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { ScenariosContext, UpdateLoop } from './update-loop';
-import { StagingFunction } from './scaffolding';
+import { StagingFunction } from './staging';
 import { Logger } from './logger';
 import { Replay } from './replay';
 
@@ -10,7 +10,7 @@ export * from './bthread';
 export * from './update-loop';
 export * from './name-key-map';
 export * from "./bid";
-export * from "./scaffolding";
+export * from "./staging";
 export * from './logger';
 export * from './action';
 export * from './extend-context';
@@ -40,7 +40,7 @@ export class Scenarios {
         else if (initialActionsOrReplay instanceof Replay) {
             replay = initialActionsOrReplay;
         }
-        this.initialScenariosContext = this._updateLoop.runScaffolding(replay);
+        this.initialScenariosContext = this._updateLoop.runStagingAndLoop(replay);
         this._updateCb = updateCb;
         if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
     }
@@ -55,7 +55,7 @@ export class Scenarios {
             if(this._bufferedActions.length === 0) return
             this._updateLoop.setActionQueue(this._bufferedActions);
             this._bufferedActions.length = 0;
-            const context = this._updateLoop.runScaffolding();
+            const context = this._updateLoop.runStagingAndLoop();
             this._updateCb?.(context);
         });
     }
@@ -64,12 +64,12 @@ export class Scenarios {
         this._bufferedActions.length = 0;
         const replay = Array.isArray(initialActionsOrReplay) ? new Replay(initialActionsOrReplay) : initialActionsOrReplay
         this._updateLoop.reset();
-        const context = this._updateLoop.runScaffolding(replay);
+        const context = this._updateLoop.runStagingAndLoop(replay);
         this._updateCb?.(context);
     }
 
     public onDepsChanged(): void {
-        const context = this._updateLoop.runScaffolding();
+        const context = this._updateLoop.runStagingAndLoop();
         this._updateCb?.(context);
         // TODO: make dependency-change replayable!
     }

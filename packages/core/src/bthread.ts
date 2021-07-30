@@ -1,5 +1,5 @@
 import { AnyAction, ResolveExtendAction, getResolveExtendAction, RequestedAction } from './action';
-import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids, BidsByType, toBidsByType } from './bid';
+import { PlacedBid, BidType, BThreadBids, getPlacedBidsForBThread, BidOrBids } from './bid';
 import { NameKeyId, sameNameKeyId, NameKeyMap } from './name-key-map';
 import { ExtendContext } from './extend-context';
 import { Logger, BThreadReactionType } from './logger';
