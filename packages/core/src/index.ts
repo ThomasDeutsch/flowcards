@@ -34,8 +34,10 @@ export class Scenarios {
         if(initialActionsOrReplay === undefined)  {
             replay = undefined;
         }
-        else if(Array.isArray(initialActionsOrReplay)) {
-            replay = new Replay(initialActionsOrReplay);
+        else if(Array.isArray(initialActionsOrReplay) ) {
+            if(initialActionsOrReplay.length > 0) {
+                replay = new Replay(initialActionsOrReplay);
+            }
         }
         else if (initialActionsOrReplay instanceof Replay) {
             replay = initialActionsOrReplay;
