@@ -269,6 +269,7 @@ test("after the extend resolved, the event is no longer pending", (done) => {
 
 test("an extend will wait for the pending-event to finish before it extends.", (done) => {
     const eventA = new ScenarioEvent<number>('XXX');
+    let checkFunctionIsCalled = false;
 
 
     const requestingThread = new Scenario('requestingThread', function* () {
@@ -277,7 +278,10 @@ test("an extend will wait for the pending-event to finish before it extends.", (
 
 
     const extendingThread = new Scenario('extendingThread', function* () {
-        yield bp.extend(eventA);
+        yield bp.extend(eventA, (x) => {
+            checkFunctionIsCalled = true;
+            return x === 1000
+        });
         const extend = this.getExtend(eventA);
         expect(extend?.value).toBe(1000);
         extend?.resolve((x=0) => x + 10 )
@@ -290,6 +294,7 @@ test("an extend will wait for the pending-event to finish before it extends.", (
     }, () => {
         if(requestingThread.isCompleted) {
             expect(eventA.value).toBe(1010);
+            expect(checkFunctionIsCalled).toBe(true);
             done();
         }
     });

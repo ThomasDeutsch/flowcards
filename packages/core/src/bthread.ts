@@ -9,6 +9,7 @@ import { ReactionCheck } from './validation';
 import { ScenarioEvent } from './scenario-event';
 import { Bid, getResolveRejectAction } from '.';
 import { BThreadGeneratorFunction } from './scenario';
+import * as utils from './utils';
 
 interface NextBidProperties {
     bid: Bid;
@@ -66,12 +67,13 @@ export class BThread<P> {
     private _pendingExtends: NameKeyMap<PendingBid> = new NameKeyMap();
     private _context: BThreadContext;
     private _isCompleted = false;
-
+    private _currentProps?: P
 
     public constructor(params: BThreadParameters<P>) {
         this.id = params.id;
         this._logger = params.logger;
         this._event = params.scenarioEventMap;
+        this._currentProps = params.props;
         this._resolveActionCB = params.resolveActionCB;
         this._context = this._createBThreadUtils();
         this._thread = params.generatorFunction.bind(this._context)(params.props);
@@ -193,10 +195,14 @@ export class BThread<P> {
         }
     }
 
-    public resetBThread(generatorFunction: BThreadGeneratorFunction<any>, nextProps: P): void {
+    public resetBThreadOnPropsChange(generatorFunction: BThreadGeneratorFunction<any>, nextProps?: P): void {
+        const changedProps = utils.getChangedProps(this._currentProps, nextProps);
+        if(changedProps === undefined) return;
+        //TODO: log props change?
         this._pendingRequests.clear();
         this._pendingExtends.clear();
-        this._thread = generatorFunction.bind(this._context)(nextProps);
+        this._currentProps = nextProps;
+        this._thread = generatorFunction.bind(this._context)(this._currentProps);
         const next = this._thread.next();
         this._nextBidOrBids = next.value as BidOrBids;
         this._setCurrentBids();

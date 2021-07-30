@@ -42,11 +42,7 @@ export function setupStaging(props: StagingProps): RunStaging {
         enabledScenarioIds.set(scenario.id, scenario.id);
         let bThread = props.bThreadMap.get(scenario.id) as BThread<P>;
         if (bThread) {
-            const changedProps = utils.getChangedProps(scenario.currentProps || undefined, scenarioProps || undefined);
-            if(changedProps) {
-                scenario.__updateCurrentProps(scenarioProps);
-                bThread.resetBThread(scenario.generatorFunction, scenarioProps!);
-            }
+            bThread.resetBThreadOnPropsChange(scenario.generatorFunction, scenarioProps)
         } else {
             bThread = new BThread<P>({
                 id: scenario.id,
@@ -60,6 +56,7 @@ export function setupStaging(props: StagingProps): RunStaging {
         }
         if(bThread.bThreadBids !== undefined) props.bThreadBids.unshift(bThread.bThreadBids);
         scenario.__updateBThreadContext(bThread.context);
+
         return bThread.context;
     }
 

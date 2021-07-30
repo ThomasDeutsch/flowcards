@@ -1,4 +1,4 @@
-import { Scenario } from "../src";
+import { BThreadPublicContext, Scenario } from "../src";
 import * as bp from "../src/bid";
 import { ScenarioEvent, ScenarioEventKeyed } from "../src/scenario-event";
 import { delay, testScenarios } from "./testutils";
@@ -429,11 +429,13 @@ test("requesting the same bid multiple times is not allowed and will throw a war
         yield [bp.request(eventA), bp.request(eventA)]
     });
 
+    let scenarioContext: BThreadPublicContext;
+
     testScenarios((enable, events) => {
         events(eventA);
-        enable(requestingThread);
+        scenarioContext = enable(requestingThread);
     }, ()=> {
-        expect(requestingThread.isCompleted).toBe(true);
+        expect(scenarioContext.isCompleted).toBe(true);
     });
 });
 

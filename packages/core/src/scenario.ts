@@ -1,6 +1,7 @@
 
 import { BThreadContext, BThreadGenerator, BThreadPublicContext } from './bthread';
-import { NameKeyId } from './name-key-map';
+import { NameKeyId, NameKeyMap } from './name-key-map';
+import { PendingBid } from './pending-bid';
 
 export interface EnableScenarioInfo<P> {
     id: NameKeyId;
@@ -39,7 +40,6 @@ function toInfoObj(info: ScenarioInfo | string): ScenarioInfo {
 export class Scenario<P = void> {
     public readonly id: NameKeyId;
     private _generatorFunction: BThreadGeneratorFunction<P>;
-    private _currentProps?: P;
     public readonly destroyOnDisable: boolean;
     private _bThreadContext?: BThreadPublicContext;
     public readonly description?: string;
@@ -52,10 +52,6 @@ export class Scenario<P = void> {
         this.description = i.description;
     }
 
-    public __updateCurrentProps(p: P | undefined): void {
-        this._currentProps = p;
-    }
-
     public __updateBThreadContext(nextContext: BThreadPublicContext): void {
         this._bThreadContext = nextContext;
     }
@@ -64,12 +60,16 @@ export class Scenario<P = void> {
         return this._generatorFunction;
     }
 
-    public get currentProps(): P | undefined {
-        return this._currentProps;
-    }
-
     public get isCompleted(): boolean {
         return !!this._bThreadContext?.isCompleted;
+    }
+
+    public get pendingRequests(): NameKeyMap<PendingBid> | undefined {
+        return this._bThreadContext?.pendingRequests;
+    }
+
+    public get pendingExtends(): NameKeyMap<PendingBid> | undefined {
+        return this._bThreadContext?.pendingExtends;
     }
 }
 
