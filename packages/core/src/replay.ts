@@ -76,7 +76,7 @@ export class Replay {
 
     constructor(actions: ReplayAction[]) {
         actions.forEach(action => this._actions.set(action.id, action));
-        this._lastActionId = actions[actions.length-1].id;
+        this._lastActionId = actions[actions.length-1]?.id || 0;
     }
 
     public abortReplayOnInvalidReaction(action: AnyActionWithId, failedCheck: string): void {
