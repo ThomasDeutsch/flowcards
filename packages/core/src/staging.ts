@@ -5,7 +5,7 @@ import { Scenario } from './scenario';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
-import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
+import { AllPlacedBids, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 import * as utils from './utils';
 
 
@@ -13,6 +13,7 @@ export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Sce
 export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
 export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
+export type RunStaging = () => void;
 
 export interface StagingProps {
     stagingFunction: StagingFunction;
@@ -24,7 +25,7 @@ export interface StagingProps {
     logger: Logger;
 }
 
-export function setupStaging(props: StagingProps): () => void {
+export function setupStaging(props: StagingProps): RunStaging {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
     const uiActionCb = (eventId: NameKeyId, payload?: any): void => {
         props.internalDispatch({

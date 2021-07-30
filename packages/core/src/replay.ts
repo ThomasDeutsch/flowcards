@@ -56,11 +56,10 @@ function getActionCheckResult(action: AnyActionWithId, replayAction?: ReplayActi
     }
     if(action.type === 'resolvedExtendAction') {
         const ra = replayAction as any;
-        if(action.extendedRequestingBid !== undefined && ra.extendedRequestingBid !== undefined) {
-            if(!sameId(action.extendedRequestingBid!.bThreadId, ra.extendedRequestingBid!.bThreadId)) return ReplayActionCheck.ExtendedBidNotMatching;
-            if(action.extendedRequestingBid!.type !== ra.extendedRequestingBid!.type) return ReplayActionCheck.ExtendedBidNotMatching;
+        if(action.extendedBThreadId !== undefined && ra.extendedBThreadId !== undefined) {
+            if(!sameId(action.extendedBThreadId, ra.extendedBThreadId)) return ReplayActionCheck.ExtendedBidNotMatching;
         }
-        if(!sameId(action.extendingNameKeyId, ra.extendingNameKeyId)) return ReplayActionCheck.ExtendingScenarioNotMatching;
+        if(!sameId(action.extendedBThreadId!, ra.extendedBThreadId)) return ReplayActionCheck.ExtendingScenarioNotMatching;
     }
     return ReplayActionCheck.OK;
 }

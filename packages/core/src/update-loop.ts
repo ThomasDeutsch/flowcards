@@ -4,7 +4,7 @@ import { BThread } from './bthread';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
-import { setupStaging, StagingFunction } from './staging';
+import { RunStaging, setupStaging, StagingFunction } from './staging';
 import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryNameKeyId, InternalDispatch, PlacedBid, BidType, PlacedBidContext } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor } from './validation';
 import { isThenable } from './utils';
@@ -34,7 +34,7 @@ export class UpdateLoop {
     private readonly _bThreadMap: BThreadMap = new NameKeyMap<BThread<any>>();
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _logger: Logger;
-    private readonly _stageScenarioAndEvents: () => void;
+    private readonly _stageScenarioAndEvents: RunStaging;
     private readonly _eventMap: EventMap = new NameKeyMap<ScenarioEvent<any>>();
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _replay?: Replay;
@@ -92,6 +92,7 @@ export class UpdateLoop {
                 return this._getContext();
             }
             const action = toActionWithId(maybeAction, this._currentActionId);
+            //if(action.eventId.name === 'XXX') console.log('action', action)
             switch(action.type) {
                 case "uiAction": {
                     const uiActionCheck = validateAskedFor(action, this._allPlacedBids);
@@ -152,9 +153,9 @@ export class UpdateLoop {
         if(replay) this._replay = replay;
         this._stageScenarioAndEvents();
         this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
-        this._eventMap.forEach((_, event) => {
+        this._eventMap.allValues?.forEach(event => {
             event.__update(this._currentActionId, this._allPlacedBids)
-        })
+        });
         return this._runLoop();
     }
 

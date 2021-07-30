@@ -55,7 +55,7 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         yield bp.extend(eventA);
         expect(eventA.isPending).toBe(true);
         expect(eventA.value).toBe(undefined); // the request is not yet resolved.
-        this.resolveExtend(eventA, (prev = 0) => prev + 10); // the resolve-fn will provide the extend-value ( 100 )
+        this.getExtend(eventA)?.resolve((x=0) => x + 10 ); // the resolve-fn will provide the extend-value ( 100 )
     })
 
     testScenarios((enable, events) => {
@@ -267,28 +267,33 @@ test("after the extend resolved, the event is no longer pending", (done) => {
 // });
 
 
-// test("an extend will wait for the pending-event to finish before it extends.", (done) => {
-//     const requestingThread = scenario({id: 'requestingThread'}, function* () {
-//         yield bp.request("A", delay(100, 'resolvedValue'));
-//     });
+test("an extend will wait for the pending-event to finish before it extends.", (done) => {
+    const eventA = new ScenarioEvent<number>('XXX');
 
-//     const extendingThread = scenario({id: 'extendingThread'}, function* () {
-//         const bid = yield bp.extend("A");
-//         expect(bid.payload).toBe('resolvedValue');
-//         yield bp.request("V", delay(200, 'resolvedValue'));
-//     });
 
-//     testScenarios((enable) => {
-//         enable(requestingThread());
-//         enable(extendingThread());
-//     }, ({event, scenario}) => {
-//         if(scenario('extendingThread')?.isCompleted) {
-//             expect(event('A').isPending).toBeTruthy();
-//             expect(scenario('requestingThread')?.isCompleted).toBeFalsy();
-//             done();
-//         }
-//     });
-// });
+    const requestingThread = new Scenario('requestingThread', function* () {
+        yield bp.request(eventA, () => delay(100, 1000));
+    });
+
+
+    const extendingThread = new Scenario('extendingThread', function* () {
+        yield bp.extend(eventA);
+        const extend = this.getExtend(eventA);
+        expect(extend?.value).toBe(1000);
+        extend?.resolve((x=0) => x + 10 )
+    });
+
+    testScenarios((enable, events) => {
+        events(eventA);
+        enable(requestingThread);
+        enable(extendingThread);
+    }, () => {
+        if(requestingThread.isCompleted) {
+            expect(eventA.value).toBe(1010);
+            done();
+        }
+    });
+});
 
 
 // test("an extend can be resolved. This will progress waits and requests", (done) => {

@@ -19,9 +19,13 @@ interface NextBidProperties {
 export type ErrorInfo = {event: NameKeyId, error: any}
 export type BThreadGenerator = Generator<BidOrBids, void, ScenarioProgressInfo>;
 
+type UpdateFn<P> = (value : P) => P;
 export interface BThreadContext {
     key?: string | number;
-    resolveExtend: <P>(event: ScenarioEvent<P>, update: (value : P) => P) => boolean;
+    getExtend: <P>(event: ScenarioEvent<P>) => {
+        value: P,
+        resolve: (updateFn: UpdateFn<P>) => boolean
+    } | undefined;
 }
 
 export type BThreadPublicContext = {
@@ -29,7 +33,6 @@ export type BThreadPublicContext = {
     pendingRequests: NameKeyMap<PendingBid>;
     pendingExtends: NameKeyMap<PendingBid>;
 }
-
 
 export interface ScenarioProgressInfo {
     event: ScenarioEvent<any>;
@@ -82,11 +85,13 @@ export class BThread<P> {
     private _createBThreadUtils(): BThreadContext {
         return {
             key:  this.id.key,
-            resolveExtend: (event, updateFn): boolean => {
-                const pendingBid = this._pendingExtends.get(event.id);
-                if(pendingBid === undefined) return false;
-                if(pendingBid.extendedRequestingBid === undefined) return false;
-                return this._dispatchResolvePendingExtend(pendingBid, updateFn(pendingBid.extendedRequestingBid.payload));
+            getExtend: (event) => {
+                const extendBid = this._pendingExtends.get(event.id);
+                if(extendBid === undefined) return;
+                return {
+                    value: extendBid.extendedPayload,
+                    resolve: (updateFn) => this._dispatchResolvePendingExtend(extendBid, updateFn(extendBid.extendedPayload))
+                }
             }
         }
     }
@@ -207,6 +212,7 @@ export class BThread<P> {
             type: action.bidType,
             eventId: action.eventId,
             actionId: action.id!,
+            extendedRequestingBThreadId: action.bThreadId,
             payload: action.payload as Promise<any>,
             startTime: new Date().getTime()
         };

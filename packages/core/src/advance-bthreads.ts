@@ -84,14 +84,14 @@ export function advanceUiAction(bThreadMap: BThreadMap, eventMap: EventMap, allP
 
 
 export function advanceResolveExtendAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): ReactionCheck {
-    const extendingBThread = bThreadMap.get(action.extendingNameKeyId);
+    const extendingBThread = bThreadMap.get(action.bThreadId);
     if(!extendingBThread) return ReactionCheck.ExtendingBThreadNotFound;
     const resolveCheck = extendingBThread.deleteResolvedExtend(action);
     if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
-    if(action.extendedRequestingBid) {
-        const requestingBThread = bThreadMap.get(action.extendedRequestingBid.bThreadId);
+    if(action.extendedBThreadId) {
+        const requestingBThread = bThreadMap.get(action.extendedBThreadId);
         if(requestingBThread === undefined) return ReactionCheck.ExtendedRequestingBThreadNotFound;
-        requestingBThread.progressRequested(action.extendedRequestingBid.type, action.eventId, action.payload);
+        requestingBThread.progressRequested(action.extendedBidType!, action.eventId, action.payload);
     }
     unblockNameKeyId(allPlacedBids, action.eventId);
     progressWaitingBThreads(allPlacedBids, bThreadMap, ['askForBid', 'waitForBid'], action);
