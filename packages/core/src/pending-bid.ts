@@ -2,7 +2,6 @@ import { AnyAction } from "./action";
 import { PlacedBid, BidType } from "./bid";
 import { NameKeyId } from "./name-key-map";
 import { ExtendContext } from "./extend-context";
-import { RequestedAction, ResolveAction } from ".";
 
 
 export interface PendingBid extends Omit<PlacedBid, 'payload'> {

@@ -5,9 +5,7 @@ import { Scenario } from './scenario';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
-import { AllPlacedBids, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
-import * as utils from './utils';
-
+import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
 export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
