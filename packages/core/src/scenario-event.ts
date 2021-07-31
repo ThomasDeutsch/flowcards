@@ -45,9 +45,11 @@ export class ScenarioEvent<P = void> {
         this._uiActionCb = uiActionDispatch;
     }
 
-    public disable(): void {
+    public disable(keepValue?: boolean): void {
         this._isEnabled = false;
-        this._value = this._initialValue || undefined;
+        if(!keepValue) {
+            this._value = this._initialValue || undefined;
+        }
     }
 
     public enable(): void {

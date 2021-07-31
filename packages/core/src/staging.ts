@@ -8,7 +8,7 @@ import { ScenarioEvent } from './scenario-event';
 import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
-export type EnableScenarioEvents = (...events: ScenarioEvent<any>[]) => void;
+export type EnableScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
 export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
 export type RunStaging = () => void;
@@ -54,18 +54,27 @@ export function setupStaging(props: StagingProps): RunStaging {
         }
         if(bThread.bThreadBids !== undefined) props.bThreadBids.unshift(bThread.bThreadBids);
         scenario.__updateBThreadContext(bThread.context);
-
         return bThread.context;
     }
 
+    function setupEnableEvent(event: ScenarioEvent<any>) {
+        enabledEventIds.set(event.id, event.id);
+        if(props.eventMap.has(event.id) === false) {
+            event.__setup(uiActionCb, props.areBThreadsProgressing);
+            props.eventMap.set(event.id, event);
+            event.enable();
+        }
+    }
 
     const enableEvents: EnableScenarioEvents = (...events) => {
         events.forEach(event => {
-            enabledEventIds.set(event.id, event.id);
-            if(props.eventMap.has(event.id) === false) {
-                event.__setup(uiActionCb, props.areBThreadsProgressing);
-                props.eventMap.set(event.id, event);
-                event.enable();
+            if(event instanceof ScenarioEvent) {
+                setupEnableEvent(event);
+            }
+            else {
+                Object.values(event).forEach(e => {
+                    setupEnableEvent(e);
+                })
             }
         });
     }
@@ -75,7 +84,6 @@ export function setupStaging(props: StagingProps): RunStaging {
         enabledScenarioIds.clear();
         enabledEventIds.clear();
         props.stagingFunction(enableScenario, enableEvents); // do the staging
-        // set enable state for scenarios
         props.eventMap.allValues?.forEach(event => {
             if(!enabledEventIds.has(event.id)) {
                 event.disable();
