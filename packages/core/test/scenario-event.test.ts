@@ -81,16 +81,26 @@ test("after an event progressed, it is not dispatch-able until the next bids are
     });
 });
 
-// TODO: is this a good idea?
+// TODO: is this a good idea? - not sure
+// 1. (cons) a validation at this level is almost without context.
+// 2. (pros) before a validation is repeated over multiple bids, it may be better to have a global validation
+// 3. (cons) instead of a global validation it might be a better idea to have a validate-bid ?
+
 // test("an event can have an additional validate function", () => {
 //     const eventA = new ScenarioEvent<number>('A', 10);
 
-//     const requestingThread = new Scenario({id: 'thread1'}, function*() {
-//         yield bp.request(eventA, (a) => (a || 0) + 1);
+//     const acceptedRequestScenario = new Scenario('acceptedRequestScenario', function*() {
+//         yield bp.request(eventA, 9);
 //     });
 
-//     testScenarios({eventA}, (enable) => {
-//         enable(requestingThread);
+//     const failingRequestScenario = new Scenario('failingRequestScenario', function*() {
+//         yield bp.request(eventA, 11);
+//     });
+
+//     testScenarios((enable, events) => {
+//         events(eventA);
+//         enable(acceptedRequestScenario);
+//         enable(failingRequestScenario);
 //     }, ()=> {
 //         expect(eventA.value).toBe(11);
 //     });
