@@ -19,13 +19,11 @@ interface NextBidProperties {
 
 export type ErrorInfo = {event: NameKeyId, error: any}
 export type BThreadGenerator = Generator<BidOrBids, void, ScenarioProgressInfo>;
-
-type UpdateFn<P> = (value : P) => P;
 export interface BThreadContext {
     key?: string | number;
     getExtend: <P>(event: ScenarioEvent<P>) => {
         value: P,
-        resolve: (updateFn: UpdateFn<P>) => boolean
+        resolve: (next: (value : P) => P) => boolean
     } | undefined;
 }
 

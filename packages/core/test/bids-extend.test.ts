@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from "./testutils";
 import { Scenario } from '../src/scenario';
-import { ExtendContext, ScenarioEvent, ScenarioEventKeyed } from "../src";
+import { ScenarioEvent } from "../src";
 
 
 // Extends
@@ -177,7 +177,6 @@ test("extended values can be accessed with the getExtend function", (done) => {
 });
 
 test("blocked events can not be extended", () => {
-    let extendedValue: number;
     let thread1Advanced = false,
         extendAdvanced = false;
 
@@ -390,7 +389,7 @@ test("an extend will keep the event-pending if the BThread with the extend compl
 });
 
 test("multiple extends will resolve after another. After all extends complete, the request and wait will continue", (done) => {
-    const eventA = new ScenarioEvent<string>('Axxx');
+    const eventA = new ScenarioEvent<string>('A');
     const eventFin = new ScenarioEvent('Fin');
 
     const requestingThread = new Scenario('requestingThread', function* () {
@@ -425,159 +424,68 @@ test("multiple extends will resolve after another. After all extends complete, t
         enable(extendingThread);
         enable(extendingThreadHigherPriority); // this BThread is enabled after the first extendingThread, giving it a higher priority
         enable(waitingThread);
-    }, (context) => {
+    }, () => {
         if(eventFin.validate().isValid) {
             done();
         }
     });
 });
 
-// test("an extend will be resolved in the same cycle", () => {
-//     let loopCount = 0;
-//     let requestedValue: number;
 
-//     const requestingThread = new Scenario(null, function* () {
-//         const bid = yield bp.request("A", 1);
-//         requestedValue = bid.payload;
-//     });
+test("an extend can have an optional validation-function", (done) => {
+    const eventA = new ScenarioEvent<number>('A');
 
-//     const extendingThread = new Scenario(null, function* () {
-//         const bid = yield bp.extend("A");
-//         bid.resolve?.(bid.payload + 1);
-//     });
+    const requestingThread = new Scenario('requestingThread', function* () {
+        yield bp.request(eventA, 1);
+        expect(eventA.value).toBe(11);
+        yield bp.request(eventA, 2);
+        expect(eventA.value).toBe(99);
+        done();
+    });
 
-//     testScenarios((enable) => {
-//         loopCount++;
-//         enable(requestingThread);
-//         enable(extendingThread);
-//     }, ({event}) => {
-//         expect(event('A').isPending).toBeFalsy();
-//         expect(requestedValue).toEqual(2);
-//         expect(loopCount).toEqual(2); // 1: init, 2: request + extend
-//     });
-// });
+    const extendingThreadOne = new Scenario('extendingThreadOne', function* () {
+        yield bp.extend(eventA, (val) => val === 2);
+        this.getExtend(eventA)?.resolve(() => 99);
+    });
+    const extendingThreadTwo = new Scenario('extendingThreadTwo', function* () {
+        yield bp.extend(eventA, (val) => val === 1);
+        this.getExtend(eventA)?.resolve((val) => val + 10);
+    });
 
-// test("an extend can have an optional validation-function", () => {
+    testScenarios((enable, events) => {
+        events(eventA);
+        enable(requestingThread);
+        enable(extendingThreadOne);
+        enable(extendingThreadTwo);
+    });
+});
 
-//     const requestingThread = new Scenario(null, function* () {
-//         const bid = yield bp.request("A", 1);
-//         expect(bid.payload).toBe(10);
-//         const bid2 = yield bp.request("A", 2);
-//         expect(bid2.payload).toBe(99);
-//     });
+test("a wait can be extended. during the extension, the event is pending", (done) => {
+    const eventA = new ScenarioEvent('A');
+    const eventFin = new ScenarioEvent('Fin');
 
-//     const extendingThreadOne = new Scenario(null, function* () {
-//         const bid = yield bp.extend("A", (val) => val === 2);
-//         bid.resolve?.(99);
-//     });
-//     const extendingThreadTwo = new Scenario(null, function* () {
-//         const bid = yield bp.extend("A", (val) => val === 1);
-//         bid.resolve?.(10);
-//     });
+    const waitingThread = new Scenario('waitingThread', function* () {
+        yield bp.askFor(eventA);
+    });
 
-//     testScenarios((enable) => {
-//         enable(requestingThread);
-//         enable(extendingThreadOne);
-//         enable(extendingThreadTwo);
-//     }, ({event}) => {
-//         expect(event('A').isPending).toBeFalsy();
-//     });
-// });
+    const extendingThread = new Scenario('extendingThread', function* () {
+        yield bp.extend(eventA);
+        yield bp.askFor(eventFin);
+    });
 
-// test("a wait can be extended. during the extension, the event is pending", (done) => {
-//     const waitingThread = new Scenario(null, function* () {
-//         yield bp.askFor("AB");
-//     });
+    testScenarios((enable, events) => {
+        events(eventA, eventFin)
+        enable(waitingThread);
+        enable(extendingThread);
+    }, () => {
+        if(eventA.validate().isValid) eventA.dispatch();
+        else {
+            expect(eventA.isPending).toBe(true);
+            done();
+        }
 
-//     const extendingThread = new Scenario(null, function* () {
-//         const x = yield bp.extend("AB");
-//         yield bp.askFor('fin');
-//     });
-
-//     testScenarios((enable) => {
-//         enable(waitingThread);
-//         enable(extendingThread);
-//     }, ({event}) => {
-//         if(event('AB').dispatch !== undefined) event('AB').dispatch!();
-//         else {
-//             expect(event('AB').isPending).toBe(true);
-//             done();
-//         }
-
-//     });
-// });
-
-// test("a askFor can be extended. After resolving the extend, the wait will be continued", (done) => {
-//     let timesEventADispatched = 0;
-
-//     const waitingThread = new Scenario({id: 'waitingBThread'}, function* () {
-//         const bid = yield [bp.askFor("eventAX"), bp.askFor("eventB")];
-//         expect(bid.payload).toBe(12);
-//         expect(timesEventADispatched).toBe(1);
-//         done();
-//     });
-
-//     const extendingThread = new Scenario({id: 'extendingBThread'}, function* () {
-//         const x = yield bp.extend("eventAX");
-//         yield bp.request('ASYNC', () => delay(200));
-//         x.resolve!(12);
-//     });
-
-
-//     testScenarios((enable) => {
-//         enable(waitingThread);
-//         enable(extendingThread);
-//     }, ({event, log}) => {
-//         if(event('eventAX').dispatch !== undefined) {
-//             event('eventAX')!.dispatch!(10);
-//             timesEventADispatched++;
-//         }
-//     });
-// });
-
-// test("a request can be extended. After resolving the extend, the request will be continued", (done) => {
-
-//     const requestingThread = new Scenario({id: 'requestingThread'}, function* () {
-//         const bid = yield bp.request("eventAtt");
-//         expect(bid.payload).toBe(12);
-//         done();
-//     });
-
-//     const extendingThread = new Scenario({id: 'extendingBThread'}, function* () {
-//         const x = yield bp.extend("eventAtt");
-//         yield bp.request('ASYNC', () => delay(200));
-//         x.resolve?.(12);
-//     });
-
-
-//     testScenarios((enable) => {
-//         enable(requestingThread);
-//         enable(extendingThread);
-//     });
-// });
-
-
-// test("a request can be extended. After resolving the extend, the extend-bid will not be used again in this run.", (done) => {
-
-//     const requestingThread = new Scenario({id: 'requestingThread'}, function* () {
-//         const bid = yield bp.request("eventiii");
-//         expect(bid.payload).toBe(12);
-//         done();
-//     });
-
-//     const extendingThread = new Scenario({id: 'extendingBThread'}, function* () {
-//         while(true) {
-//             const x = yield bp.extend("eventiii");
-//             yield bp.request('ASYNC', () => delay(200));
-//             x.resolve?.(12);
-//         }
-//     });
-
-//     testScenarios((enable) => {
-//         enable(requestingThread);
-//         enable(extendingThread);
-//     });
-// });
+    });
+});
 
 
 // a request: the requesting BThread
