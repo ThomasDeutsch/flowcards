@@ -96,7 +96,6 @@ export class UpdateLoop {
                 return this._getContext();
             }
             const action = toActionWithId(maybeAction, this._currentActionId);
-            //if(action.eventId.name === 'XXX') console.log('action', action)
             switch(action.type) {
                 case "uiAction": {
                     const uiActionCheck = validateAskedFor(action, this._allPlacedBids);

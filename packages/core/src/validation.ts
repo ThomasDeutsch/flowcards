@@ -36,6 +36,7 @@ export type CombinedValidationItem = { type: 'blocked' | 'betweenBids' | 'pendin
 export type CombinedValidation = {isValid: boolean, passed: CombinedValidationItem[], failed: CombinedValidationItem[]}
 export type CombinedValidationCB<P> = (payload?: P) => CombinedValidation;
 
+
 export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, payload?: unknown): boolean {
     if(bid === undefined || bidContext === undefined) return false;
     const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];

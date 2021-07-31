@@ -85,12 +85,12 @@ test("after an event progressed, it is not dispatch-able until the next bids are
 // test("an event can have an additional validate function", () => {
 //     const eventA = new ScenarioEvent<number>('A', 10);
 
-//     const requestingThread = scenario({id: 'thread1'}, function*() {
+//     const requestingThread = new Scenario({id: 'thread1'}, function*() {
 //         yield bp.request(eventA, (a) => (a || 0) + 1);
 //     });
 
 //     testScenarios({eventA}, (enable) => {
-//         enable(requestingThread());
+//         enable(requestingThread);
 //     }, ()=> {
 //         expect(eventA.value).toBe(11);
 //     });

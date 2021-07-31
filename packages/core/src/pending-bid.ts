@@ -16,7 +16,11 @@ export interface PendingBid extends Omit<PlacedBid, 'payload'> {
 export function toExtendPendingBid(extendedAction: AnyAction, extendContext: ExtendContext, extendingBThreadId: NameKeyId): PendingBid {
     let bThreadId: NameKeyId | undefined;
     let extendedBidType: BidType | undefined;
-    if(extendedAction.type === 'requestedAction') {
+    if(extendedAction.type === 'resolvedExtendAction') {
+        extendedBidType = extendedAction.extendedBidType;
+        bThreadId = extendedAction.extendedBThreadId;
+    }
+    else if(extendedAction.type === 'requestedAction') {
         extendedBidType =  extendedAction.bidType;
         bThreadId = extendedAction.bThreadId
     } else if(extendedAction.type === 'resolveAction') {

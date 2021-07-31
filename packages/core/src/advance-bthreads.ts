@@ -88,12 +88,13 @@ export function advanceResolveExtendAction(bThreadMap: BThreadMap, allPlacedBids
     if(!extendingBThread) return ReactionCheck.ExtendingBThreadNotFound;
     const resolveCheck = extendingBThread.deleteResolvedExtend(action);
     if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
+    unblockNameKeyId(allPlacedBids, action.eventId);
+    if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
     if(action.extendedBThreadId) {
         const requestingBThread = bThreadMap.get(action.extendedBThreadId);
         if(requestingBThread === undefined) return ReactionCheck.ExtendedRequestingBThreadNotFound;
         requestingBThread.progressRequested(action.extendedBidType!, action.eventId, action.payload);
     }
-    unblockNameKeyId(allPlacedBids, action.eventId);
     progressWaitingBThreads(allPlacedBids, bThreadMap, ['askForBid', 'waitForBid'], action);
     return ReactionCheck.OK;
 }
