@@ -44,13 +44,10 @@ export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, 
 }
 
 export const explainEventNotEnabled: CombinedValidationCB<any> = (payload: any) => ({ isValid: false, passed: [], failed: [{type: 'eventNotEnabled', reason: 'event is not enabled'}]});
+
 export const explainNotAllowedDuringScaffolding: CombinedValidationCB<any> = (payload: any) => ({ isValid: false, passed: [], failed: [{type: 'notAllowedDuringStaging', reason: 'event can not be dispatched during staging'}]});
 
-
 export function askForValidationExplainCB<P>(areBThreadsProgressing: () => boolean, bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
-    if(bid === undefined || bidContext === undefined) return (payload?: P) => ({
-        isValid: false, passed: [], failed: [{type: 'noAskForBid', reason: 'event is not asked for'}]
-    });
     return (payload) => {
         const failed: CombinedValidationItem[] = [];
         const passed: CombinedValidationItem[] = [];
@@ -59,6 +56,11 @@ export function askForValidationExplainCB<P>(areBThreadsProgressing: () => boole
                 isValid: false,
                 passed: [],
                 failed: [{type: 'betweenBids', reason: `not allowed to dispatch between yields, if you want an event to happen, you can add a request in a yield`}]
+            }
+        }
+        if(bid === undefined || bidContext === undefined) {
+            return {
+                isValid: false, passed: [], failed: [{type: 'noAskForBid', reason: 'event is not asked for'}]
             }
         }
         if(bidContext.blockedBy) {

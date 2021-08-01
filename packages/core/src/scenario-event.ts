@@ -42,7 +42,7 @@ export class ScenarioEvent<P = void> {
     }
 
     public __setup(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean): void {
-        this._areBThreadsProgressing = areBThreadsProgressing
+        this._areBThreadsProgressing = areBThreadsProgressing;
         this._uiActionCb = uiActionDispatch;
     }
 

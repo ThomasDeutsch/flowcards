@@ -81,6 +81,64 @@ test("after an event progressed, it is not dispatch-able until the next bids are
     });
 });
 
+
+test("an event can not be dispatched during staging", () => {
+    const eventA = new ScenarioEvent<number>('A');
+
+    const requestingThread = new Scenario('thread1', function*() {
+        yield bp.askFor(eventA);
+    });
+
+    testScenarios((enable, event) => {
+        event(eventA);
+        expect(eventA.dispatch(1)).toBe(false);
+        expect(eventA.validate(1).isValid).toBe(false);
+        expect(eventA.validate(1).failed[0].type).toEqual('notAllowedDuringStaging');
+        enable(requestingThread);
+    });
+});
+
+
+test("an event can not be dispatched during bThread progress", () => {
+    const eventA = new ScenarioEvent<number>('A');
+
+    const requestingThread = new Scenario('thread1', function*() {
+        yield bp.request(eventA);
+        expect(eventA.dispatch(1)).toBe(false);
+        expect(eventA.validate(1).isValid).toBe(false);
+        expect(eventA.validate(1).failed.length).toBe(1);
+        expect(eventA.validate(1).failed[0].type).toEqual('betweenBids');
+        yield bp.askFor(eventA);
+    });
+
+    testScenarios((enable, event) => {
+        event(eventA);
+        enable(requestingThread);
+    });
+});
+
+
+test("an event that is not enabled can not be dispatched", () => {
+    const eventA = new ScenarioEvent<number>('A');
+
+    const requestingThread = new Scenario('thread1', function*() {
+        yield bp.askFor(eventA);
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread);
+    },() => {
+        expect(eventA.validate(1).isValid).toBe(false);
+        expect(eventA.validate(1).failed[0].type).toBe('eventNotEnabled')
+
+    });
+});
+
+// TODO: VALIDATION DURING STAGING
+// TODO: VALIDATION DURING BTHREAD-PROGRESS
+
+
+
 // TODO: is this a good idea? - not sure
 // 1. (cons) a validation at this level is almost without context.
 // 2. (pros) before a validation is repeated over multiple bids, it may be better to have a global validation
