@@ -6,6 +6,7 @@ import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
 import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
+import { explainNotAllowedDuringScaffolding } from './validation';
 
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
 export type EnableScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
@@ -62,8 +63,9 @@ export function setupStaging(props: StagingProps): RunStaging {
         if(props.eventMap.has(event.id) === false) {
             event.__setup(uiActionCb, props.areBThreadsProgressing);
             props.eventMap.set(event.id, event);
-            event.enable();
+            event.__enable();
         }
+        event.__enable();
     }
 
     const enableEvents: EnableScenarioEvents = (...events) => {

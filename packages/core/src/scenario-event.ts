@@ -2,7 +2,7 @@ import { PlacedBid } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid } from "./bid";
 import { NameKeyId } from "./name-key-map";
 import { UIActionDispatch } from "./staging";
-import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB } from "./validation";
+import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB, explainEventNotEnabled, explainNotAllowedDuringScaffolding } from "./validation";
 
 export type NextValueFn<P> = (current: P | undefined) => P
 
@@ -14,7 +14,7 @@ export class ScenarioEvent<P = void> {
     private _updatedOn?: number;
     private _allPlacedBids?: AllPlacedBids;
     private _askForBid?: PlacedBid;
-    private _validateCheck?: CombinedValidationCB<P>;
+    private _validateCheck: CombinedValidationCB<P>;
     private _uiActionCb?: UIActionDispatch;
     private _isEnabled = false;
     private _value?: P;
@@ -30,6 +30,7 @@ export class ScenarioEvent<P = void> {
             this.name = nameOrNameKey.name;
             this.key = nameOrNameKey.key;
         }
+        this._validateCheck = explainEventNotEnabled;
     }
 
     public get id(): NameKeyId {
@@ -45,23 +46,24 @@ export class ScenarioEvent<P = void> {
         this._uiActionCb = uiActionDispatch;
     }
 
-    public disable(keepValue?: boolean): void {
-        this._isEnabled = false;
-        if(!keepValue) {
-            this._value = this._initialValue || undefined;
-        }
-    }
-
-    public enable(): void {
+    public __enable(): void {
         this._isEnabled = true;
+        this._validateCheck = explainNotAllowedDuringScaffolding;
     }
 
     public __update(currentActionId: number, allPlacedBids: AllPlacedBids): void {
         this._updatedOn = currentActionId;
         this._allPlacedBids = allPlacedBids;
         this._askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
-        const context = allPlacedBids.get(this.id);
-        this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, context);
+        this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, allPlacedBids.get(this.id));
+    }
+
+    public disable(keepValue?: boolean): void {
+        this._isEnabled = false;
+        this._validateCheck = explainEventNotEnabled;
+        if(!keepValue) {
+            this._value = this._initialValue || undefined;
+        }
     }
 
     public get value(): P | undefined {
@@ -73,11 +75,10 @@ export class ScenarioEvent<P = void> {
     }
 
     public validate(value?: P): CombinedValidation {
-        return this._validateCheck!(value);
+        return this._validateCheck(value);
     }
 
     public dispatch(payload: P): boolean {
-        if(this._isEnabled === false) return false;
         if(this.validate(payload).isValid === false) return false;
         this._uiActionCb!(this.id, payload);
         return true;
@@ -128,7 +129,7 @@ export class ScenarioEventKeyed<P = void> {
     }
 
     public enable(): void {
-        [...this._children].forEach(([_, e]) => e.enable());
+        [...this._children].forEach(([_, e]) => e.__enable());
     }
 
     public disable(deleteKeys: boolean): void {

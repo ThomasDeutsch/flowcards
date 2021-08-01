@@ -32,7 +32,7 @@ function getResultDetails(result: PayloadValidationReturn): string | undefined {
     return (typeof result === 'object' ? result.reason : undefined)
 }
 
-export type CombinedValidationItem = { type: 'blocked' | 'betweenBids' | 'pending' | 'noAskForBid' | 'payloadValidation' | 'eventPayloadValidation', reason?: string }
+export type CombinedValidationItem = { type: 'blocked' | 'betweenBids' | 'pending' | 'noAskForBid' | 'payloadValidation' | 'eventNotEnabled' | 'notAllowedDuringStaging', reason?: string }
 export type CombinedValidation = {isValid: boolean, passed: CombinedValidationItem[], failed: CombinedValidationItem[]}
 export type CombinedValidationCB<P> = (payload?: P) => CombinedValidation;
 
@@ -42,6 +42,10 @@ export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, 
     const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
     return [bid.payloadValidationCB, ...validations].filter(notUndefined).every(validationCB => isValidReturn(validationCB(payload)))
 }
+
+export const explainEventNotEnabled: CombinedValidationCB<any> = (payload: any) => ({ isValid: false, passed: [], failed: [{type: 'eventNotEnabled', reason: 'event is not enabled'}]});
+export const explainNotAllowedDuringScaffolding: CombinedValidationCB<any> = (payload: any) => ({ isValid: false, passed: [], failed: [{type: 'notAllowedDuringStaging', reason: 'event can not be dispatched during staging'}]});
+
 
 export function askForValidationExplainCB<P>(areBThreadsProgressing: () => boolean, bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
     if(bid === undefined || bidContext === undefined) return (payload?: P) => ({
@@ -54,7 +58,7 @@ export function askForValidationExplainCB<P>(areBThreadsProgressing: () => boole
             return {
                 isValid: false,
                 passed: [],
-                failed: [{type: 'betweenBids', reason: `BThreads are progressing and bids are recalculating`}]
+                failed: [{type: 'betweenBids', reason: `not allowed to dispatch between yields, if you want an event to happen, you can add a request in a yield`}]
             }
         }
         if(bidContext.blockedBy) {

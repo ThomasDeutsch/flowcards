@@ -1,7 +1,7 @@
-import { Scenario, ScenarioKeyed } from "../src";
+import { ScenarioKeyed } from "../src";
 import * as bp from "../src/bid";
-import { ScenarioEvent, ScenarioEventKeyed } from "../src/scenario-event";
-import { delay, testScenarios } from "./testutils";
+import { ScenarioEvent } from "../src/scenario-event";
+import { testScenarios } from "./testutils";
 
 
 test("the enable-events function will accept a record of ScenarioEvents", () => {

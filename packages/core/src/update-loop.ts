@@ -71,10 +71,6 @@ export class UpdateLoop {
             log: this._logger,
             bids: this._allPlacedBids,
             replay: this._replay
-
-            // update Facades
-            // - events
-            // - scenarios
         }
     }
 
