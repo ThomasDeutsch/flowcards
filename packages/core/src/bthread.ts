@@ -12,7 +12,7 @@ import { BThreadGeneratorFunction } from './scenario';
 import * as utils from './utils';
 
 interface NextBidProperties {
-    bid: Bid;
+    bid: Bid<any>;
     eventId: NameKeyId;
     error?: ErrorInfo;
 }
@@ -36,7 +36,7 @@ export type BThreadPublicContext = {
 export interface ScenarioProgressInfo {
     event: ScenarioEvent<any>;
     eventId: NameKeyId;
-    remainingBids?: Bid[];
+    remainingBids?: Bid<any>[];
 }
 
 export function isSameNameKeyId(a?: NameKeyId, b?: NameKeyId): boolean {

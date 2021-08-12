@@ -79,6 +79,21 @@ test("a request function parameter is the previous request value ", () => {
     });
 });
 
+test("a bid can be wrapped in a utility function hat will return the typed value", () => {
+    const eventA = new ScenarioEvent<number>('A');
+
+    const requestingThread = new Scenario('thread1', function*() {
+        const value = yield* bp.bid(bp.request(eventA, 1));
+        expect(value).toBe(1);
+    });
+
+    testScenarios((s, e) => {
+        e(eventA);
+        s(requestingThread);
+    }, () => {
+        expect(requestingThread.isCompleted).toBeTruthy();
+    });
+});
 
 test("waits will return the value that has been requested", () => {
     const eventA = new ScenarioEvent<number>('A');

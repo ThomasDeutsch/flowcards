@@ -3,6 +3,7 @@ import { testScenarios, delay } from "./testutils";
 import { Scenario } from '../src/scenario';
 import { ScenarioEvent, ScenarioEventKeyed } from "../src/index";
 
+
 test("an onPending-wait is progressed, when the event receives the pending state", (done) => {
 
     const testEvents = {
@@ -65,7 +66,7 @@ test("an onPending for a keyed event is not progressed when a no-key request for
     })
 
     const thread2 = new Scenario('thread2', function* () {
-        yield bp.onPending({name: 'A', key: 1});
+        yield bp.onPending(testEvents.AK.key(1));
     })
 
     testScenarios((enable, events) => {
