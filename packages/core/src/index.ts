@@ -55,7 +55,7 @@ export class Scenarios {
     private _clearBufferOnNextTick(): void {
         Promise.resolve().then(() => { // next tick
             if(this._bufferedActions.length === 0) return
-            this._updateLoop.setActionQueue(this._bufferedActions);
+            this._updateLoop.addToActionQueue(this._bufferedActions);
             this._bufferedActions.length = 0;
             const context = this._updateLoop.runStagingAndLoop();
             this._updateCb?.(context);

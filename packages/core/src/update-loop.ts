@@ -143,7 +143,7 @@ export class UpdateLoop {
     }
 
     // public ----------------------------------------------------------------------
-    public setActionQueue(actions: (UIAction | ResolveAction | ResolveExtendAction)[]): void {
+    public addToActionQueue(actions: (UIAction | ResolveAction | ResolveExtendAction)[]): void {
         this._actionQueue.length = 0;
         actions.forEach(action => this._actionQueue.push(action));
     }
