@@ -6,7 +6,6 @@ import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
 import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
-import { explainNotAllowedDuringScaffolding } from './validation';
 
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
 export type EnableScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
@@ -53,7 +52,7 @@ export function setupStaging(props: StagingProps): RunStaging {
             props.bThreadMap.set(scenario.id, bThread);
             if(scenario.destroyOnDisable) destroyOnDisableThreadIds.set(scenario.id, scenario.id);
         }
-        if(bThread.bThreadBids !== undefined) props.bThreadBids.unshift(bThread.bThreadBids);
+        if(bThread.bThreadBids !== undefined) props.bThreadBids.push(bThread.bThreadBids);
         scenario.__updateBThreadContext(bThread.context);
         return bThread.context;
     }

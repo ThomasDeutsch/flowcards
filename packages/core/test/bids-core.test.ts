@@ -121,7 +121,7 @@ test("multiple requests will return information about the progressed Scenario", 
     const eventB = new ScenarioEvent<number>('B');
 
     const requestThread = new Scenario('request', function* () {
-        const progress = yield [bp.request(eventA, 1000), bp.request(eventB, 2000)];
+        const progress = yield [bp.request(eventB, 2000), bp.request(eventA, 1000)];
         expect(progress.event).toBe(eventB);
         expect(progress.remainingBids?.length).toEqual(1);
         expect(progress.remainingBids?.[0]?.eventId.name).toBe(eventA.id.name)
@@ -358,8 +358,8 @@ test("if a thread has multiple requests, the last request has the highest priori
 
     const requestingThread = new Scenario('thread1', function*() {
         const progress = yield [bp.request(eventA.key(1)), bp.request(eventA.key(2)), bp.request(eventA.key(3)), bp.request(eventA.key(4))];
-        expect(progress.event).toEqual(eventA.key(4));
-        expect(progress.eventId.key).toEqual(4);
+        expect(progress.event).toEqual(eventA.key(1));
+        expect(progress.eventId.key).toEqual(1);
     });
 
     testScenarios((enable, events) => {

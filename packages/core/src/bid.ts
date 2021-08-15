@@ -6,6 +6,7 @@ import { combinedIsValid, PayloadValidationCB } from './validation';
 import { ScenarioEvent, ScenarioEventKeyed } from './scenario-event';
 import { EventMap } from './update-loop';
 import { ScenarioProgressInfo } from './bthread';
+import { Logger } from './logger';
 
 export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" |  "waitForBid" | "onPendingBid" | "validateBid";
 
@@ -93,7 +94,6 @@ export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap)
 
 export function unblockNameKeyId(allPlacedBids: AllPlacedBids, eventId: NameKeyId): void {
     const context = allPlacedBids.get(eventId)!;
-    //TODO: set event is pending back to
     allPlacedBids.set(eventId, {...context, blockedBy: undefined, pendingBy: undefined});
 }
 
@@ -113,18 +113,33 @@ export function toBidsByType(bThreadBids: BThreadBids): BidsByType {
     }, {} as BidsByType);
 }
 
-export function getHighestPriorityValidRequestingBidForEveryNameKeyId(allPlacedBids: AllPlacedBids): PlacedRequestingBid[] | undefined {
-    const requestingBids: PlacedRequestingBid[] = []
-    allPlacedBids.forEach((eventId, bidContext) => {
-        if(bidContext.blockedBy || bidContext.pendingBy) return;
-        const requestingBidForEvent = [...bidContext.bids].reverse().find(bid => {
+export function getHighestPriorityValidRequestingBid(allPlacedBids: AllPlacedBids, logger: Logger): PlacedRequestingBid | undefined {
+    let bid: PlacedBid | undefined;
+    let involvedBThreads: NameKeyId[] = [];
+    allPlacedBids.allValues?.some((bidContext) => {
+        if(bidContext.blockedBy) {
+            involvedBThreads = involvedBThreads.concat(bidContext.blockedBy);
+            return false;
+        }
+        if(bidContext.pendingBy) {
+            involvedBThreads = involvedBThreads.concat(bidContext.pendingBy);
+            return false;
+        }
+        bid = bidContext.bids.find(bid => {
             if(!isRequestingBid(bid)) return false;
-            if(bid.type === 'triggerBid' && getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) === undefined) return false;
-            return combinedIsValid(bid, bidContext, bid.payload);
+            if(bid.type === 'triggerBid') {
+                const hasAskForBid = getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) !== undefined;
+                return hasAskForBid;
+            }
+            const isValid = combinedIsValid(bid, bidContext, bid.payload);
+            if(isValid === false) return false;
+            involvedBThreads.push(bid.bThreadId);
+            return true;
         });
-        if(requestingBidForEvent) requestingBids.push(requestingBidForEvent as PlacedRequestingBid)
+        return (bid === undefined) ? false : true;
     });
-    return requestingBids.length > 0 ? requestingBids : undefined;
+    logger.logInvolvedBThreadsForNextRequestingBid(involvedBThreads);
+    return (bid === undefined) ? undefined : bid as PlacedRequestingBid;
 }
 
 export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: NameKeyId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {

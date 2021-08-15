@@ -5,7 +5,7 @@ import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { RunStaging, setupStaging, StagingFunction } from './staging';
-import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBidForEveryNameKeyId, InternalDispatch, PlacedBid, BidType, PlacedBidContext } from './index';
+import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBid, InternalDispatch, PlacedBid, BidType, PlacedBidContext } from './index';
 import { UIActionCheck, ReactionCheck, validateAskedFor } from './validation';
 import { isThenable } from './utils';
 import { Replay } from './replay';
@@ -81,12 +81,11 @@ export class UpdateLoop {
     }
 
     private _runLoop(): ScenariosContext {
-        const placedRequestingBids = getHighestPriorityValidRequestingBidForEveryNameKeyId(this._allPlacedBids);
         let reactionCheck = ReactionCheck.OK;
         do {
             const maybeAction =
                 this._replay?.getNextReplayAction(this.getBid.bind(this), this._currentActionId)
-                || getRequestedAction(this._currentActionId, placedRequestingBids?.pop())
+                || getRequestedAction(this._currentActionId, getHighestPriorityValidRequestingBid(this._allPlacedBids, this._logger))
                 || this._getQueuedAction();
             if(maybeAction === undefined) {
                 return this._getContext();
