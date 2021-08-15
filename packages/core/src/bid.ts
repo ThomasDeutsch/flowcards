@@ -50,7 +50,7 @@ export function getPlacedBidsForBThread(bThreadId: NameKeyId, bidOrBids?: BidOrB
 // bids from multiple BThreads
 // --------------------------------------------------------------------------------------------------------------------
 export type PlacedBidContext = {
-    blockedBy?: [PlacedBid];
+    blockedBy?: NameKeyId[];
     pendingBy?: NameKeyId;
     validatedBy?: PlacedBid[];
     bids: PlacedBid[];
@@ -59,14 +59,14 @@ export type AllPlacedBids = NameKeyMap<PlacedBidContext>;
 
 export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap): AllPlacedBids {
     const pendingEvents = new NameKeyMap<NameKeyId>();
-    const blockedEvents = new NameKeyMap<PlacedBid[]>();
+    const blockedEvents = new NameKeyMap<NameKeyId[]>();
     allBThreadBids.forEach(({placedBids, pendingBidMap}) => {
         pendingBidMap.allValues?.forEach(bid => {
             pendingEvents.set(bid.eventId, bid.bThreadId);
         });
         placedBids.forEach(bid => {
             if(bid.type === 'blockBid') {
-                blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid]);
+                blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid.bThreadId]);
             }
         });
     });

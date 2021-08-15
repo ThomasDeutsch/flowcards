@@ -64,7 +64,7 @@ export function askForValidationExplainCB<P>(areBThreadsProgressing: () => boole
             }
         }
         if(bidContext.blockedBy) {
-            failed.push({type: 'blocked', reason: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId.name).join(', ')}`})
+            failed.push({type: 'blocked', reason: `event is blocked by BThreads: ${bidContext.blockedBy.join(', ')}`})
         }
         if(bidContext.pendingBy) {
             failed.push({type: 'pending', reason: `event is pending by BThread: ${bidContext.pendingBy.name}${bidContext.pendingBy.key ? '-' + bidContext.pendingBy.key: ''}`})
