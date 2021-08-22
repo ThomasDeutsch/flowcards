@@ -38,7 +38,7 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, exte
     const matchingExtendBids = getMatchingBids(allPlacedBids, ["extendBid"], extendedAction.eventId);
     if(matchingExtendBids === undefined) return false;
     while(matchingExtendBids && matchingExtendBids.length > 0) {
-        const extendBid = matchingExtendBids.shift()!; // get bid with highest priority
+        const extendBid = matchingExtendBids.pop()!; // get bid with highest priority
         if(allPlacedBids.get(extendBid.eventId)?.blockedBy) continue;
         const bidContext = allPlacedBids.get!(extendBid.eventId)!;
         bidContext!.pendingBy = undefined;

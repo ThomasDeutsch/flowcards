@@ -134,9 +134,6 @@ test("an event that is not enabled can not be dispatched", () => {
     });
 });
 
-// TODO: VALIDATION DURING STAGING
-// TODO: VALIDATION DURING BTHREAD-PROGRESS
-
 
 
 // TODO: is this a good idea? - not sure

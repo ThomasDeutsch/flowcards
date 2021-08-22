@@ -189,7 +189,7 @@ export class BThread<P> {
         if(allPendingBids.size === 0 && this._placedBids.length === 0) return undefined
         return {
             pendingBidMap: allPendingBids,
-            placedBids: this._placedBids.reverse()
+            placedBids: this._placedBids
         }
     }
 

@@ -117,35 +117,43 @@ export function getHighestPriorityValidRequestingBid(allPlacedBids: AllPlacedBid
     let bid: PlacedBid | undefined;
     let involvedBThreads: NameKeyId[] = [];
     allPlacedBids.allValues?.some((bidContext) => {
-        if(bidContext.blockedBy) {
-            involvedBThreads = involvedBThreads.concat(bidContext.blockedBy);
-            return false;
-        }
-        if(bidContext.pendingBy) {
-            involvedBThreads = involvedBThreads.concat(bidContext.pendingBy);
-            return false;
-        }
-        bid = bidContext.bids.find(bid => {
-            if(!isRequestingBid(bid)) return false;
-            if(bid.type === 'triggerBid') {
-                const hasAskForBid = getHighestPrioAskForBid(allPlacedBids, bid.eventId, bid) !== undefined;
-                return hasAskForBid;
+        bid = bidContext.bids.find(b => {
+            if(!isRequestingBid(b)) return false;
+            if(b.type === 'triggerBid') {
+                const hasAskForBid = getHighestPrioAskForBid(allPlacedBids, b.eventId, b) !== undefined;
+                if(hasAskForBid === false) return false;
             }
-            const isValid = combinedIsValid(bid, bidContext, bid.payload);
-            if(isValid === false) return false;
-            involvedBThreads.push(bid.bThreadId);
-            return true;
+            const isValid = combinedIsValid(b, bidContext, b.payload);
+            let isBlocked = false;
+            if(bidContext.blockedBy) {
+                involvedBThreads = involvedBThreads.concat(bidContext.blockedBy);
+                isBlocked = true;
+            } else if(bidContext.pendingBy) {
+                involvedBThreads = involvedBThreads.concat(bidContext.pendingBy);
+                isBlocked = true;
+            }
+            if(bidContext.validatedBy) {
+                involvedBThreads = involvedBThreads.concat(bidContext.validatedBy.map(v => v.bThreadId));
+            }
+            return isBlocked ? false : isValid;
         });
-        return (bid === undefined) ? false : true;
+        return !!bid;
     });
-    logger.logInvolvedBThreadsForNextRequestingBid(involvedBThreads);
-    return (bid === undefined) ? undefined : bid as PlacedRequestingBid;
+    if(bid) {
+        involvedBThreads.push(bid.bThreadId);
+        logger.logInvolvedBThreads(involvedBThreads);
+        return bid as PlacedRequestingBid;
+    }
+    logger.logInvolvedBThreads(involvedBThreads);
+    return undefined;
 }
 
+//TODO: check all askFor bids, and create a combined validation that will respect that
+// askFor 1 OR askFor 2 needs to be valid!
 export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: NameKeyId, actionOrBid?: AnyAction | PlacedBid): PlacedBid | undefined {
     const bidContext = allPlacedBids.get(eventId);
-    if(!bidContext) return undefined
-    return bidContext.bids.reverse().find(bid => {
+    if(!bidContext) return undefined;
+    return bidContext.bids.find(bid => {
         if(bid === undefined || bidContext === undefined) return false;
         if(bid.type !== "askForBid") return false;
         return actionOrBid ? combinedIsValid(bid, bidContext, actionOrBid.payload) : true;

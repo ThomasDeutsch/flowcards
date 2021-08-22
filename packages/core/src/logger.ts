@@ -20,7 +20,8 @@ export interface BThreadReaction {
 export class Logger {
     private _actions: AnyActionWithId[] = [];
     public get actions(): AnyActionWithId[] { return this._actions; }
-    public involvedBThreadsForNextRequestingBid = new Map<number, NameKeyMap<true>>();
+    private _involvedScenarios = new NameKeyMap<true>();
+    public get involvedScenarios(): NameKeyMap<true> { return this._involvedScenarios; }
     public bThreadReactionHistory = new NameKeyMap<Map<number, BThreadReaction>>();
     public pendingNameKeyIdHistory = new Map<number, Set<NameKeyId> | undefined>();
     public bThreadStateHistory = new Map<number, NameKeyMap<BThreadPublicContext>>();
@@ -53,18 +54,14 @@ export class Logger {
         return bThreadReactions;
     }
 
-    public logInvolvedBThreadsForNextRequestingBid(bThradIds: NameKeyId[]): void {
-        let bThreads = this.involvedBThreadsForNextRequestingBid.get(this._currentActionId());
-        if(bThreads === undefined) {
-            bThreads = new NameKeyMap<true>()
-            this.involvedBThreadsForNextRequestingBid.set(this._currentActionId(), bThreads);
-        }
+    public logInvolvedBThreads(bThradIds: NameKeyId[]): void {
         bThradIds.forEach(id => {
-            bThreads?.set(id, true);
+            this._involvedScenarios?.set(id, true);
         })
     }
 
     public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
+        this._involvedScenarios.set(bThreadId, true);
         const bThreadReactions = this._getBThreadReactions(bThreadId);
         const currentActionId = this._currentActionId();
         bThreadReactions.set(currentActionId, {
@@ -74,13 +71,9 @@ export class Logger {
         });
     }
 
-    // TODO: not used! - remove?
-    public logBThreadStateMap(bThreadStateMap: NameKeyMap<BThreadPublicContext>): void {
-        this.bThreadStateHistory.set(this._currentActionId(), bThreadStateMap.clone());
-    }
-
     public resetLog(): void {
         this._actions = [];
+        this._involvedScenarios = new NameKeyMap<true>();
         this.bThreadReactionHistory = new NameKeyMap();
         this.pendingNameKeyIdHistory = new Map();
         this.bThreadStateHistory = new Map();

@@ -38,8 +38,8 @@ export interface ResolveExtendAction extends Action {
     pendingDuration: number;
     requestActionId: number;
     bThreadId: NameKeyId;
-    extendedBThreadId?: NameKeyId;
-    extendedBidType?: BidType;
+    extendedBThreadId: NameKeyId;
+    extendedBidType: BidType;
 }
 
 export interface ResolveActionWithId extends ResolveAction {
@@ -99,8 +99,8 @@ export function getResolveExtendAction(pendingBid: PendingBid, data: unknown): R
         payload: data,
         requestActionId: pendingBid.actionId,
         pendingDuration: new Date().getTime() - pendingBid.startTime,
-        extendedBThreadId: pendingBid.extendedRequestingBThreadId,
-        extendedBidType: pendingBid.extendedBidType,
+        extendedBThreadId: pendingBid.extendedRequestingBThreadId!,
+        extendedBidType: pendingBid.extendedBidType!,
         bThreadId: pendingBid.bThreadId
     }
 }

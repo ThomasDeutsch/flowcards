@@ -104,12 +104,6 @@ export class NameKeyMap<T>  {
         return elements.length > 0 ? elements : undefined;
     }
 
-    public get allKeys(): Set<NameKeyId> | undefined {
-        const events = new Set<NameKeyId>();
-        this.forEach((event) => events.add(event));
-        return events.size > 0 ? events : undefined;
-    }
-
     public merge(em: NameKeyMap<T> | undefined): NameKeyMap<T> {
         if(!em) return this;
         em.forEach((event, value) => {

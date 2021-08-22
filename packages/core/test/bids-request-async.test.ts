@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { Scenario } from '../src/scenario'
 import { delay } from './testutils';
-import { ScenarioEvent, ScenarioEventKeyed } from "../src";
+import { ScenarioEvent } from "../src";
 
 
 test("A function, returning a promise can be requested and will create a pending-event", (done) => {
@@ -92,7 +92,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
 });
 
 
-test("if a thread gets disabled, resolving events are ignored", (done) => {
+test("if a scenario gets disabled, resolving events are ignored", (done) => {
     const eventA = new ScenarioEvent('A');
     const eventB = new ScenarioEvent('B');
 
@@ -120,7 +120,7 @@ test("if a thread gets disabled, resolving events are ignored", (done) => {
 });
 
 
-test("a thread in a pending-event state can place additional bids.", (done) => {
+test("a scenario in a pending-event state can place additional bids.", (done) => {
     const eventA = new ScenarioEvent('A');
     const eventB = new ScenarioEvent('B');
 

@@ -79,6 +79,7 @@ export class ScenarioEvent<P = void> {
     }
 
     public dispatch(payload: P): boolean {
+        // TODO: disable multiple dispatches to be buffered?
         if(this.validate(payload).isValid === false) return false;
         this._uiActionCb!(this.id, payload);
         return true;
