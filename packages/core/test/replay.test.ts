@@ -3,7 +3,7 @@ import * as bp from "../src/bid";
 import { ScenarioEvent } from "../src/scenario-event";
 import { testScenarios } from "./testutils";
 
-test("a request replay has no payload, the Payload-Function will be called", () => {
+test("if a request replay has no payload, the Payload-Function will be called", () => {
 
     const basicEvent = {
         eventA: new ScenarioEvent<number>('A')
@@ -107,6 +107,33 @@ test("a replay will fail, if the requested event is not the same event as the re
           bThreadId: { name: 'requestingThread', key: undefined },
           eventId: { name: 'A' },
           payload: 1000 // payload override
+        }
+      ]);
+});
+
+
+test("if a ui replay action is found, without a matching askFor bid, the replay will be aborted", () => {
+
+    const basicEvent = {
+        eventA: new ScenarioEvent<number>('A')
+    }
+
+    const waitingThread = new Scenario('waitingThread', function*() {
+        yield bp.waitFor(basicEvent.eventA); // not asking for event
+    });
+
+    testScenarios((s, e) => {
+        e(basicEvent);
+        s(waitingThread);
+    }, ({replay}) => {
+        expect(replay?.state === 'aborted').toBe(true);
+        expect(replay?.abortInfo?.error).toBe('NoMatchingAskForBid');
+    }, [
+        {
+          id: 0,
+          type: 'uiAction',
+          eventId: { name: 'A' },
+          payload: 1
         }
       ]);
 });

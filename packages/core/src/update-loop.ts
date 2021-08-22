@@ -77,7 +77,7 @@ export class UpdateLoop {
     private _isValidUIAction(action: UIAction): UIActionCheck {
         const uiActionCheck = validateAskedFor(action, this._allPlacedBids);
         if(uiActionCheck !== UIActionCheck.OK) {
-            console.warn('invalid action: ', uiActionCheck, action);
+            console.warn('invalid UI action: ', uiActionCheck, action);
         }
         return uiActionCheck;
     }
@@ -88,14 +88,14 @@ export class UpdateLoop {
         if(action.type === 'uiAction') {
             if(this._isValidUIAction(action) !== UIActionCheck.OK) return this._getQueuedAction();
         }
-        return {...action, id: this._currentActionId};
+        return action;
     }
 
     private _runLoop(): ScenariosContext {
         let reactionCheck = ReactionCheck.OK;
         do {
             const requestedAction = getRequestedAction(this._currentActionId, getHighestPriorityValidRequestingBid(this._allPlacedBids, this._logger));
-            const replayAction = this._replay?.getNextReplayAction(this._currentActionId, this._isValidUIAction, requestedAction);
+            const replayAction = this._replay?.getNextReplayAction(this._currentActionId, this._isValidUIAction.bind(this), requestedAction);
             const maybeAction = replayAction || requestedAction || this._getQueuedAction();
             if(maybeAction === undefined) {
                 return this._getContext();

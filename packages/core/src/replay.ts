@@ -44,7 +44,6 @@ export class Replay {
             this._state = 'completed';
             return undefined;
         }
-        if(this._actions.has(actionId) === false) return undefined;
         const replayAction = this._actions.get(actionId)!;
         if(replayAction === undefined) return undefined;
         // UI ACTION
