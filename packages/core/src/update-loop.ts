@@ -154,6 +154,7 @@ export class UpdateLoop {
         if(replay) this._replay = replay;
         this._stageScenarioAndEvents();
         this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
+        this._logger.logPlacedBids(this._allPlacedBids);
         this._eventMap.allValues?.forEach(event => {
             event.__update(this._currentActionId, this._allPlacedBids)
         });

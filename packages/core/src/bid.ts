@@ -141,10 +141,10 @@ export function getHighestPriorityValidRequestingBid(allPlacedBids: AllPlacedBid
     });
     if(bid) {
         involvedBThreads.push(bid.bThreadId);
-        logger.logInvolvedBThreads(involvedBThreads);
+        logger.logInvolvedScenarios(involvedBThreads);
         return bid as PlacedRequestingBid;
     }
-    logger.logInvolvedBThreads(involvedBThreads);
+    logger.logInvolvedScenarios(involvedBThreads);
     return undefined;
 }
 

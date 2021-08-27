@@ -4,6 +4,7 @@ import { StagingFunction } from './staging';
 import { Logger } from './logger';
 import { Replay } from './replay';
 
+//TODO: remove this and let the user use deep imports ( also better for tree-shaking )
 export * from './scenario';
 export * from './scenario-event';
 export * from './bthread';

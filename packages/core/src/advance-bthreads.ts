@@ -13,7 +13,7 @@ export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[
     matchingBids.forEach(bid => {
         if(bid.payloadValidationCB === undefined) {
             progressingBids.push(bid);
-            return undefined;
+            return;
         }
         const result = bid.payloadValidationCB(payload);
         if(typeof result === 'object' && result.isValid || result === true) {
@@ -37,11 +37,9 @@ function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap: BThre
 function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, extendedAction: AnyAction): boolean {
     const matchingExtendBids = getMatchingBids(allPlacedBids, ["extendBid"], extendedAction.eventId);
     if(matchingExtendBids === undefined) return false;
+    const bidContext = allPlacedBids.get!(extendedAction.eventId)!;
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.pop()!; // get bid with highest priority
-        if(allPlacedBids.get(extendBid.eventId)?.blockedBy) continue;
-        const bidContext = allPlacedBids.get!(extendBid.eventId)!;
-        bidContext!.pendingBy = undefined;
         if(combinedIsValid(extendBid, bidContext, extendedAction.payload) !== true) continue
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;

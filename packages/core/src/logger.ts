@@ -2,7 +2,8 @@ import { PlacedBid } from './bid';
 import * as utils from './utils';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { AnyActionWithId, RequestedAction } from './action';
-import { BThreadPublicContext } from './bthread';
+import { AllPlacedBids } from '.';
+
 
 export enum BThreadReactionType {
     progress = 'progress',
@@ -17,47 +18,55 @@ export interface BThreadReaction {
     selectedBid?: PlacedBid;
 }
 
+// TODO: Make the logger optional.
 export class Logger {
-    private _actions: AnyActionWithId[] = [];
-    public get actions(): AnyActionWithId[] { return this._actions; }
+    private _actionHistory: AnyActionWithId[] = [];
+    public get actionHistory(): AnyActionWithId[] { return this._actionHistory; }
     private _involvedScenarios = new NameKeyMap<true>();
     public get involvedScenarios(): NameKeyMap<true> { return this._involvedScenarios; }
-    public bThreadReactionHistory = new NameKeyMap<Map<number, BThreadReaction>>();
-    public pendingNameKeyIdHistory = new Map<number, Set<NameKeyId> | undefined>();
-    public bThreadStateHistory = new Map<number, NameKeyMap<BThreadPublicContext>>();
-
+    private _bThreadReactionHistory = new NameKeyMap<Map<number, BThreadReaction>>();
+    public get bThreadReactionHistory(): NameKeyMap<Map<number, BThreadReaction>> { return this._bThreadReactionHistory }
+    private _placedBidsHistory = new Map<number, AllPlacedBids>();
+    public get placedBidsHistory(): Map<number, AllPlacedBids> { return this._placedBidsHistory }
+    private _involvedScenariosHistory = new Map<number, NameKeyMap<true>>();
+    public get involvedScenariosHistory(): Map<number, NameKeyMap<true>> { return this._involvedScenariosHistory }
 
     private _currentActionId(): number {
-        return utils.latest(this._actions)?.id || 0;
+        return utils.latest(this._actionHistory)?.id || 0;
     }
 
     public logAction(action: AnyActionWithId): void {
-        const a = {...action}
+        const a = {...action};
         if(action.type === "resolveAction") {
-            const requestAction = this._actions[action.requestActionId] as RequestedAction;
+            const requestAction = this._actionHistory[action.requestActionId] as RequestedAction;
             requestAction.resolveActionId = action.id;
         }
         if(action.type === "requestedAction" && action.resolveActionId === 'pending') {
-            a.payload = undefined; // do not save the promise object
+            delete a.payload; // do not save the promise object
         }
-        // TODO: create a copy of payload with: JSON.parse(JSON.stringify(foo));
-        // TODO: Make the logger optional.
-        this._actions.push(a);
+        this._actionHistory.push(a);
     }
 
     private _getBThreadReactions(bThreadId: NameKeyId): Map<number, BThreadReaction> {
-        let bThreadReactions = this.bThreadReactionHistory.get(bThreadId);
+        let bThreadReactions = this._bThreadReactionHistory.get(bThreadId);
         if(bThreadReactions === undefined) {
             bThreadReactions = new Map<number, BThreadReaction>()
-            this.bThreadReactionHistory.set(bThreadId, bThreadReactions);
+            this._bThreadReactionHistory.set(bThreadId, bThreadReactions);
         }
         return bThreadReactions;
     }
 
-    public logInvolvedBThreads(bThradIds: NameKeyId[]): void {
-        bThradIds.forEach(id => {
+    public logInvolvedScenarios(bThreadIds: NameKeyId[]): void {
+        this._involvedScenariosHistory.set(this._currentActionId(), new NameKeyMap());
+        const map = this._involvedScenariosHistory.get(this._currentActionId())!;
+        bThreadIds.forEach(id => {
             this._involvedScenarios?.set(id, true);
+            map.set(id, true);
         })
+    }
+
+    public logPlacedBids(bids: AllPlacedBids): void {
+        this._placedBidsHistory.set(this._currentActionId(), bids);
     }
 
     public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
@@ -72,10 +81,10 @@ export class Logger {
     }
 
     public resetLog(): void {
-        this._actions = [];
+        this._actionHistory = [];
         this._involvedScenarios = new NameKeyMap<true>();
-        this.bThreadReactionHistory = new NameKeyMap();
-        this.pendingNameKeyIdHistory = new Map();
-        this.bThreadStateHistory = new Map();
+        this._involvedScenariosHistory = new Map();
+        this._bThreadReactionHistory = new NameKeyMap();
+        this._placedBidsHistory = new Map();
     }
 }
