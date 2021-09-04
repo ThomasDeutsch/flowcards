@@ -197,7 +197,8 @@ test("blocked events can not be extended", () => {
         extendAdvanced = true;
     });
 
-    testScenarios((enable) => {
+    testScenarios((enable, event) => {
+        event(eventA)
         enable(thread1);
         enable(thread2);
         enable(thread3);

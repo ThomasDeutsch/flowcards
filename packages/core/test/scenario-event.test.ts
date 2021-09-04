@@ -63,57 +63,50 @@ test("after an event progressed, it is not pending any longer", (done) => {
     });
 });
 
-test("after an event progressed, it is not dispatch-able until the next bids are calculated", () => {
-    const eventA = new ScenarioEvent<number>('A');
-    const eventB = new ScenarioEvent<number>('B');
-
-    const requestingThread = new Scenario('thread1', function*() {
-        const progress = yield [bp.request(eventA), bp.askFor(eventB)];
-        expect(progress.event).toBe(eventA);
-        expect(eventB.validate().isValid).toBe(false);
-        expect(eventB.validate().failed[0].type).toBe('betweenBids');
-        yield bp.request(eventB);
-    });
-
-    testScenarios((enable, event) => {
-        event(eventA, eventB);
-        enable(requestingThread);
-    });
-});
-
-
-test("an event can not be dispatched during staging", () => {
+test("a dispatch returns a promise, that will return true, if the dispatch was valid", (done) => {
     const eventA = new ScenarioEvent<number>('A');
 
-    const requestingThread = new Scenario('thread1', function*() {
-        yield bp.askFor(eventA);
+    const askingScenario = new Scenario('thread1', function*() {
+        const x = yield* bp.bid(bp.askFor(eventA));
+        expect(x).toBe(100);
     });
 
     testScenarios((enable, event) => {
         event(eventA);
-        expect(eventA.dispatch(1)).toBe(false);
-        expect(eventA.validate(1).isValid).toBe(false);
-        expect(eventA.validate(1).failed[0].type).toEqual('notAllowedDuringStaging');
-        enable(requestingThread);
+        enable(askingScenario);
+    }, () => {
+        if(eventA.validate().isValid) {
+            eventA.dispatch(100).then((wasValidDispatch) => {
+                expect(wasValidDispatch).toBe(true);
+                askingScenario.isCompleted === true;
+                done();
+            });
+        }
     });
 });
 
-
-test("an event can not be dispatched during bThread progress", () => {
+test("the dispatch promise returns false, if another event has made the dispatch invalid.", (done) => {
     const eventA = new ScenarioEvent<number>('A');
+    const eventX = new ScenarioEvent<number>('X');
 
-    const requestingThread = new Scenario('thread1', function*() {
-        yield bp.request(eventA);
-        expect(eventA.dispatch(1)).toBe(false);
-        expect(eventA.validate(1).isValid).toBe(false);
-        expect(eventA.validate(1).failed.length).toBe(1);
-        expect(eventA.validate(1).failed[0].type).toEqual('betweenBids');
-        yield bp.askFor(eventA);
+    const askingScenario = new Scenario('thread1', function*() {
+        const x = yield bp.askFor(eventA);
+    });
+
+    const blockingScenario = new Scenario('thread2', function*() {
+        yield bp.block(eventA);
     });
 
     testScenarios((enable, event) => {
         event(eventA);
-        enable(requestingThread);
+        enable(askingScenario);
+        enable(blockingScenario);
+    }, () => {
+        eventA.dispatch(100).then((wasValidDispatch) => {
+            expect(wasValidDispatch).toBe(false);
+            askingScenario.isCompleted === false;
+            done();
+        });
     });
 });
 

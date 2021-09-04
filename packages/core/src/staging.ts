@@ -5,12 +5,12 @@ import { Scenario } from './scenario';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
-import { InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
+import { AllPlacedBids, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
 export type EnableScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
-export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
+export type UIActionDispatch = (eventId: NameKeyId, isValidCB?: (isValid: boolean) => void, payload?: any) => void;
 export type RunStaging = () => void;
 
 export interface StagingProps {
@@ -19,17 +19,19 @@ export interface StagingProps {
     eventMap: EventMap;
     bThreadBids: BThreadBids[];
     internalDispatch: InternalDispatch;
-    areBThreadsProgressing: () => boolean;
+    getAllPlacedBids: () => AllPlacedBids;
+    getCurrentActionId: () => number;
     logger: Logger;
 }
 
 export function setupStaging(props: StagingProps): RunStaging {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
-    const uiActionCb = (eventId: NameKeyId, payload?: any): void => {
+    const uiActionDispatch: UIActionDispatch = (eventId: NameKeyId, isValidCB?: (isValid: boolean) => void, payload?: any): void => {
         props.internalDispatch({
             type: "uiAction",
             eventId: eventId,
-            payload: payload
+            payload: payload,
+            isValidCB
         })
     }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
@@ -60,7 +62,11 @@ export function setupStaging(props: StagingProps): RunStaging {
     function setupEnableEvent(event: ScenarioEvent<any>) {
         enabledEventIds.set(event.id, event.id);
         if(props.eventMap.has(event.id) === false) {
-            event.__setup(uiActionCb, props.areBThreadsProgressing);
+            event.__setup({
+                uiActionDispatch,
+                getCurrentActionId: props.getCurrentActionId,
+                getAllPlacedBids: props.getAllPlacedBids
+            });
             props.eventMap.set(event.id, event);
             event.__enable();
         }

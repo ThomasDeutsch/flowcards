@@ -1,7 +1,8 @@
-import { RequestedAction, UIAction} from "./index";
+import { RequestedAction} from "./index";
 import { AnyActionWithId } from "./action";
 import { sameNameKeyId } from "./name-key-map";
-import { UIActionCheck } from "./validation";
+import { EventMap } from "./update-loop";
+import { notUndefined } from "./utils";
 
 export type ReplayFinishedCB = () => void;
 export interface PayloadOverride {
@@ -38,7 +39,7 @@ export class Replay {
         this._state = 'aborted';
     }
 
-    public getNextReplayAction(actionId: number, isValidUIAction: (action: UIAction) => UIActionCheck, requestAction? :RequestedAction): AnyActionWithId | undefined {
+    public getNextReplayAction(actionId: number, eventMap: EventMap, requestAction? :RequestedAction): AnyActionWithId | undefined {
         if(this._state !== 'running') return undefined;
         if(actionId > this._lastActionId) {
             this._state = 'completed';
@@ -48,9 +49,9 @@ export class Replay {
         if(replayAction === undefined) return undefined;
         // UI ACTION
         if(replayAction.type === 'uiAction') {
-            const uiActionCheck = isValidUIAction(replayAction);
-            if(uiActionCheck !== UIActionCheck.OK) {
-                this.abortReplay(replayAction, uiActionCheck);
+            const validationResult = eventMap.get(replayAction.eventId)?.validate(replayAction.payload);
+            if(validationResult?.isValid !== true) {
+                this.abortReplay(replayAction, validationResult?.failed.map(f => f.reason).filter(notUndefined).join(', ') || '');
                 return undefined;
             }
         }

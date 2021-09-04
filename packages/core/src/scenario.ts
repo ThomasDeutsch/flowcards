@@ -52,6 +52,7 @@ export class Scenario<P = void> {
         this.description = i.description;
     }
 
+    /** @internal */
     public __updateBThreadContext(nextContext: BThreadPublicContext): void {
         this._bThreadContext = nextContext;
     }

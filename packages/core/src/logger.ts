@@ -1,7 +1,6 @@
 import { PlacedBid } from './bid';
-import * as utils from './utils';
-import { NameKeyId, NameKeyMap } from './name-key-map';
-import { AnyActionWithId, RequestedAction } from './action';
+import { NameKeyId } from './name-key-map';
+import { AnyActionWithId } from './action';
 import { AllPlacedBids } from '.';
 
 
@@ -9,82 +8,76 @@ export enum BThreadReactionType {
     progress = 'progress',
     error = 'error',
     newPending = 'newPending',
-    resolvedExtend = 'resolvedExtend'
+    resolvedExtend = 'resolvedExtend' //TODO: needed? can this be replaced with 'progress' ?
 }
 
 export interface BThreadReaction {
     reactionType: BThreadReactionType;
-    actionId: number;
-    selectedBid?: PlacedBid;
+    placedBid?: PlacedBid;
 }
 
-// TODO: Make the logger optional.
-export class Logger {
-    private _actionHistory: AnyActionWithId[] = [];
-    public get actionHistory(): AnyActionWithId[] { return this._actionHistory; }
-    private _involvedScenarios = new NameKeyMap<true>();
-    public get involvedScenarios(): NameKeyMap<true> { return this._involvedScenarios; }
-    private _bThreadReactionHistory = new NameKeyMap<Map<number, BThreadReaction>>();
-    public get bThreadReactionHistory(): NameKeyMap<Map<number, BThreadReaction>> { return this._bThreadReactionHistory }
-    private _placedBidsHistory = new Map<number, AllPlacedBids>();
-    public get placedBidsHistory(): Map<number, AllPlacedBids> { return this._placedBidsHistory }
-    private _involvedScenariosHistory = new Map<number, NameKeyMap<true>>();
-    public get involvedScenariosHistory(): Map<number, NameKeyMap<true>> { return this._involvedScenariosHistory }
+export interface LoopLog {
+    scenarioIds: NameKeyId[];
+    action: AnyActionWithId;
+    reactions: BThreadReaction[];
+    placedBids: AllPlacedBids;
+}
 
-    private _currentActionId(): number {
-        return utils.latest(this._actionHistory)?.id || 0;
+export class Logger {
+    private _loopLogs: LoopLog[] = [];
+    private _loopLog: Partial<LoopLog> = {
+        scenarioIds: [],
+        reactions: []
     }
 
+    // 1. log involved scenarios
+    // For a requested action, what scenarios have selected the specific action?
+    public logInvolvedScenariosForNextRequestBid(scenarioIds: NameKeyId[]): void {
+        this._loopLog.scenarioIds = [...this._loopLog.scenarioIds!, ...scenarioIds];
+    }
+
+    // 2. log placed bids
+    public logPlacedBids(bids: AllPlacedBids): void {
+        this._loopLog!.placedBids = bids;
+    }
+
+    // 3. log action
     public logAction(action: AnyActionWithId): void {
         const a = {...action};
-        if(action.type === "resolveAction") {
-            const requestAction = this._actionHistory[action.requestActionId] as RequestedAction;
-            requestAction.resolveActionId = action.id;
-        }
         if(action.type === "requestedAction" && action.resolveActionId === 'pending') {
             delete a.payload; // do not save the promise object
         }
-        this._actionHistory.push(a);
+        this._loopLog.action = a;
     }
 
-    private _getBThreadReactions(bThreadId: NameKeyId): Map<number, BThreadReaction> {
-        let bThreadReactions = this._bThreadReactionHistory.get(bThreadId);
-        if(bThreadReactions === undefined) {
-            bThreadReactions = new Map<number, BThreadReaction>()
-            this._bThreadReactionHistory.set(bThreadId, bThreadReactions);
-        }
-        return bThreadReactions;
-    }
-
-    public logInvolvedScenarios(bThreadIds: NameKeyId[]): void {
-        this._involvedScenariosHistory.set(this._currentActionId(), new NameKeyMap());
-        const map = this._involvedScenariosHistory.get(this._currentActionId())!;
-        bThreadIds.forEach(id => {
-            this._involvedScenarios?.set(id, true);
-            map.set(id, true);
-        })
-    }
-
-    public logPlacedBids(bids: AllPlacedBids): void {
-        this._placedBidsHistory.set(this._currentActionId(), bids);
-    }
-
+    // 4. log reactions ( by BThread )
     public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
-        this._involvedScenarios.set(bThreadId, true);
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentActionId = this._currentActionId();
-        bThreadReactions.set(currentActionId, {
+        this._loopLog.scenarioIds?.push(bThreadId);
+        this._loopLog.reactions!.push({
             reactionType: reactionType,
-            actionId: currentActionId,
-            selectedBid: bid
+            placedBid: bid
         });
     }
 
+    public finishLoop(): void {
+        this._loopLogs.push({...this._loopLog} as LoopLog);
+        this._loopLog = {
+            scenarioIds: [],
+            reactions: []
+        };
+    }
+
+    public getLoopLogs(): LoopLog[] {
+        const logs = [...this._loopLogs];
+        this._loopLogs = [];
+        return logs;
+    }
+
     public resetLog(): void {
-        this._actionHistory = [];
-        this._involvedScenarios = new NameKeyMap<true>();
-        this._involvedScenariosHistory = new Map();
-        this._bThreadReactionHistory = new NameKeyMap();
-        this._placedBidsHistory = new Map();
+        this._loopLogs = [];
+        this._loopLog = {
+            scenarioIds: [],
+            reactions: []
+        }
     }
 }

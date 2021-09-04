@@ -127,7 +127,7 @@ test("if a ui replay action is found, without a matching askFor bid, the replay 
         s(waitingThread);
     }, ({replay}) => {
         expect(replay?.state === 'aborted').toBe(true);
-        expect(replay?.abortInfo?.error).toBe('NoMatchingAskForBid');
+        expect(replay?.abortInfo?.error).toBe('event is not asked for');
     }, [
         {
           id: 0,
@@ -135,5 +135,5 @@ test("if a ui replay action is found, without a matching askFor bid, the replay 
           eventId: { name: 'A' },
           payload: 1
         }
-      ]);
+    ]);
 });

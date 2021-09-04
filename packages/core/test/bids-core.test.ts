@@ -309,7 +309,7 @@ test("events can be blocked", () => {
     }, () => {
         expect(advancedRequest).toBeFalsy();
         expect(advancedWait).toBeFalsy();
-        expect(testEvent.A.isBlocked).toBeTruthy();
+        expect(testEvent.A.validate().isValid).toBe(false);
     });
 });
 
@@ -638,7 +638,7 @@ test("a trigger will not advance without an askFor bid", () => {
         e(eventA);
         s(requestingThread);
         s(triggerThread);
-    }, () => {
+    }, ({logs}) => {
         expect(triggerThread.isCompleted).toBe(false);
         expect(requestingThread.isCompleted).toBe(true);
     });

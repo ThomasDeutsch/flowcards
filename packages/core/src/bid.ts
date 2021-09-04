@@ -2,7 +2,7 @@ import { NameKeyId, NameKeyMap } from './name-key-map';
 import * as utils from './utils';
 import { PendingBid } from './pending-bid';
 import { AnyAction, BThreadGenerator } from '.';
-import { combinedIsValid, PayloadValidationCB } from './validation';
+import { isValidPayload, PayloadValidationCB } from './validation';
 import { ScenarioEvent, ScenarioEventKeyed } from './scenario-event';
 import { EventMap } from './update-loop';
 import { ScenarioProgressInfo } from './bthread';
@@ -55,12 +55,14 @@ export type PlacedBidContext = {
     pendingBy?: NameKeyId;
     validatedBy?: PlacedBid[];
     bids: PlacedBid[];
+    isDisabled: boolean;
 }
 export type AllPlacedBids = NameKeyMap<PlacedBidContext>;
 
 export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap): AllPlacedBids {
     const pendingEvents = new NameKeyMap<NameKeyId>();
     const blockedEvents = new NameKeyMap<NameKeyId[]>();
+    const disabledEvents = new NameKeyMap<true>();
     allBThreadBids.forEach(({placedBids, pendingBidMap}) => {
         pendingBidMap.allValues?.forEach(bid => {
             pendingEvents.set(bid.eventId, bid.bThreadId);
@@ -69,16 +71,19 @@ export function allPlacedBids(allBThreadBids: BThreadBids[], eventMap: EventMap)
             if(bid.type === 'blockBid') {
                 blockedEvents.update(bid.eventId, (prev = []) => [...prev, bid.bThreadId]);
             }
+            if(!eventMap.get(bid.eventId)?.isEnabled) {
+                disabledEvents.set(bid.eventId, true);
+            }
         });
     });
     const bidsByNameKeyId: AllPlacedBids = new NameKeyMap();
     allBThreadBids.forEach(({placedBids}) => {
         placedBids.forEach(bid => {
             if(bid.type === 'blockBid') return;
-            if(!eventMap.get(bid.eventId)?.isEnabled) return;
             const placedBidsForNameKeyId = bidsByNameKeyId.get(bid.eventId) || {
                 blockedBy: blockedEvents.get(bid.eventId),
                 pendingBy: pendingEvents.get(bid.eventId),
+                isDisabled: disabledEvents.get(bid.eventId),
                 bids: []
             } as PlacedBidContext
             if(bid.type === 'validateBid') {
@@ -123,28 +128,31 @@ export function getHighestPriorityValidRequestingBid(allPlacedBids: AllPlacedBid
                 const hasAskForBid = getHighestPrioAskForBid(allPlacedBids, b.eventId, b) !== undefined;
                 if(hasAskForBid === false) return false;
             }
-            const isValid = combinedIsValid(b, bidContext, b.payload);
             let isBlocked = false;
             if(bidContext.blockedBy) {
                 involvedBThreads = involvedBThreads.concat(bidContext.blockedBy);
                 isBlocked = true;
-            } else if(bidContext.pendingBy) {
+            }
+            if(bidContext.pendingBy) {
                 involvedBThreads = involvedBThreads.concat(bidContext.pendingBy);
                 isBlocked = true;
             }
-            if(bidContext.validatedBy) {
+            if(bidContext.isDisabled) {
+                isBlocked = true;
+            }
+            if(bidContext.validatedBy !== undefined) {
                 involvedBThreads = involvedBThreads.concat(bidContext.validatedBy.map(v => v.bThreadId));
             }
-            return isBlocked ? false : isValid;
+            return isBlocked ? false : isValidPayload(b, bidContext, b.payload);
         });
         return !!bid;
     });
     if(bid) {
         involvedBThreads.push(bid.bThreadId);
-        logger.logInvolvedScenarios(involvedBThreads);
+        logger.logInvolvedScenariosForNextRequestBid(involvedBThreads);
         return bid as PlacedRequestingBid;
     }
-    logger.logInvolvedScenarios(involvedBThreads);
+    logger.logInvolvedScenariosForNextRequestBid(involvedBThreads);
     return undefined;
 }
 
@@ -156,7 +164,7 @@ export function getHighestPrioAskForBid(allPlacedBids: AllPlacedBids, eventId: N
     return bidContext.bids.find(bid => {
         if(bid === undefined || bidContext === undefined) return false;
         if(bid.type !== "askForBid") return false;
-        return actionOrBid ? combinedIsValid(bid, bidContext, actionOrBid.payload) : true;
+        return actionOrBid ? isValidPayload(bid, bidContext, actionOrBid.payload) : true;
     });
 }
 

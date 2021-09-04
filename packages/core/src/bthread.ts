@@ -5,11 +5,11 @@ import { ExtendContext } from './extend-context';
 import { Logger, BThreadReactionType } from './logger';
 import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
-import { ReactionCheck } from './validation';
 import { ScenarioEvent } from './scenario-event';
 import { Bid, getResolveRejectAction } from '.';
 import { BThreadGeneratorFunction } from './scenario';
 import * as utils from './utils';
+import { ReactionCheck } from './reaction';
 
 interface NextBidProperties {
     bid: Bid<any>;

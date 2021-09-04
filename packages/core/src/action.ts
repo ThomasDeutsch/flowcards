@@ -2,6 +2,7 @@ import { RequestingBidType, PlacedRequestingBid} from './bid';
 import { NameKeyId } from './name-key-map';
 import { PendingBid } from './pending-Bid';
 import { BidType } from '.';
+import { EventMap } from './update-loop';
 
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
@@ -14,6 +15,7 @@ export interface UIAction extends Action {
     type: "uiAction",
     eventId: NameKeyId;
     payload?: unknown;
+    isValidCB?: (isValid: boolean) => void;
 }
 
 export interface RequestedAction extends Action {
@@ -65,9 +67,9 @@ export function toActionWithId(action: AnyAction, id: number): AnyActionWithId {
 }
 
 
-export function getRequestedAction(currentActionId: number, bid?: PlacedRequestingBid): RequestedAction | undefined {
+export function getRequestedAction(currentActionId: number, eventMap: EventMap, bid?: PlacedRequestingBid): RequestedAction | undefined {
     if(bid === undefined) return undefined;
-    return {
+    const action: RequestedAction = {
         id: currentActionId,
         type: "requestedAction",
         bidType: bid.type as RequestingBidType,
@@ -75,6 +77,7 @@ export function getRequestedAction(currentActionId: number, bid?: PlacedRequesti
         eventId: bid.eventId,
         payload: bid.payload
     };
+    return action;
 }
 
 

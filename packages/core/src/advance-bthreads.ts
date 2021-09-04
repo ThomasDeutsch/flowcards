@@ -2,8 +2,9 @@ import { BidType, PlacedBid } from './bid';
 import { NameKeyId } from './name-key-map';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
 import { AllPlacedBids, getMatchingBids, unblockNameKeyId } from '.';
-import { combinedIsValid, ReactionCheck } from './validation';
+import { isValidPayload } from './validation';
 import { BThreadMap, EventMap } from './update-loop';
+import { ReactionCheck } from './reaction';
 
 
 export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[], eventId: NameKeyId, payload: unknown): PlacedBid[] | undefined {
@@ -40,7 +41,7 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, exte
     const bidContext = allPlacedBids.get!(extendedAction.eventId)!;
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.pop()!; // get bid with highest priority
-        if(combinedIsValid(extendBid, bidContext, extendedAction.payload) !== true) continue
+        if(isValidPayload(extendBid, bidContext, extendedAction.payload) !== true) continue
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
         allPlacedBids.update(extendBid.eventId, (val) => {

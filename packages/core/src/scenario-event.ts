@@ -1,10 +1,15 @@
-import { PlacedBid } from ".";
 import { AllPlacedBids, getHighestPrioAskForBid } from "./bid";
 import { NameKeyId } from "./name-key-map";
 import { UIActionDispatch } from "./staging";
-import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB, explainEventNotEnabled, explainNotAllowedDuringScaffolding } from "./validation";
+import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB, explainEventNotEnabled} from "./validation";
 
 export type NextValueFn<P> = (current: P | undefined) => P
+
+export interface EventSetupProps {
+    uiActionDispatch: UIActionDispatch;
+    getCurrentActionId: () => number;
+    getAllPlacedBids: () => AllPlacedBids;
+}
 
 export class ScenarioEvent<P = void> {
     public readonly name: string;
@@ -12,14 +17,17 @@ export class ScenarioEvent<P = void> {
     public readonly initialValue?: P;
     public readonly description?: string
     private _updatedOn?: number;
-    private _allPlacedBids?: AllPlacedBids;
-    private _askForBid?: PlacedBid;
-    private _validateCheck: CombinedValidationCB<P>;
-    private _uiActionCb?: UIActionDispatch;
     private _isEnabled = false;
+    //setup
+    private _uiActionDispatch?: UIActionDispatch;
+    private _getCurrentActionId?: () => number;
+    private _getAllPlacedBids?: () => AllPlacedBids;
+    // value
     private _value?: P;
     private _initialValue?: P;
-    private _areBThreadsProgressing?: () => boolean;
+    // validation check & placed-bids
+    private _validateCheck: CombinedValidationCB<P>;
+    private _isPending = false;
 
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
         this._initialValue = initialValue;
@@ -41,26 +49,38 @@ export class ScenarioEvent<P = void> {
         return this._updatedOn;
     }
 
-    public __setup(uiActionDispatch: UIActionDispatch, areBThreadsProgressing: () => boolean): void {
-        this._areBThreadsProgressing = areBThreadsProgressing;
-        this._uiActionCb = uiActionDispatch;
+    /** @internal */
+    public __setup(props: EventSetupProps): void {
+        this._uiActionDispatch = props.uiActionDispatch;
+        this._getCurrentActionId = props.getCurrentActionId;
+        this._getAllPlacedBids = props.getAllPlacedBids;
     }
 
+    /** @internal */
     public __enable(): void {
         this._isEnabled = true;
-        this._validateCheck = explainNotAllowedDuringScaffolding;
     }
 
-    public __update(currentActionId: number, allPlacedBids: AllPlacedBids): void {
+    private _updateEventIfNeeded(): void {
+        if(this._getCurrentActionId === undefined || this._getAllPlacedBids === undefined) {
+            this._validateCheck = explainEventNotEnabled;
+            return;
+        }
+        if(this._getCurrentActionId() === this.updatedOn) return;
+        const currentActionId = this._getCurrentActionId();
+        const allPlacedBids = this._getAllPlacedBids();
+        const bidContext = allPlacedBids?.get(this.id);
+        this._isPending = !!bidContext?.pendingBy;
+        if(this._isEnabled === false) this._validateCheck = explainEventNotEnabled;
+        else if(this._updatedOn !== currentActionId) {
+            const askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
+            this._validateCheck = askForValidationExplainCB(askForBid, bidContext);
+        }
         this._updatedOn = currentActionId;
-        this._allPlacedBids = allPlacedBids;
-        this._askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
-        this._validateCheck = askForValidationExplainCB(this._areBThreadsProgressing!, this._askForBid, allPlacedBids.get(this.id));
     }
 
     public disable(keepValue?: boolean): void {
         this._isEnabled = false;
-        this._validateCheck = explainEventNotEnabled;
         if(!keepValue) {
             this._value = this._initialValue || undefined;
         }
@@ -70,33 +90,38 @@ export class ScenarioEvent<P = void> {
         return this._value;
     }
 
+    /** @internal */
     public __setValue(nextValue: P): void {
         this._value = nextValue;
     }
 
     public validate(value?: P): CombinedValidation {
+        this._updateEventIfNeeded();
         return this._validateCheck(value);
     }
 
-    public dispatch(payload: P): boolean {
-        // TODO: disable multiple dispatches to be buffered?
-        if(this.validate(payload).isValid === false) return false;
-        this._uiActionCb!(this.id, payload);
-        return true;
+    // TODO: disable multiple dispatches to be buffered?
+    public dispatch(payload: P): Promise<boolean> {
+        this._updateEventIfNeeded();
+        if(this.validate(payload).isValid === false) return Promise.resolve(false);
+        let wasValid: (x: boolean) => void;
+        const promise = new Promise<boolean>(resolve => {
+            wasValid = resolve;
+        });
+        this._uiActionDispatch!(this.id, wasValid!, payload);
+        return promise;
     }
 
     public get isPending(): boolean {
-        return !!this._allPlacedBids?.get(this.id)?.pendingBy;
-    }
-
-    public get isBlocked(): boolean {
-        return !!this._allPlacedBids?.get(this.id)?.blockedBy;
+        this._updateEventIfNeeded();
+        return this._isPending;
     }
 
     public get isEnabled(): boolean {
         return this._isEnabled;
     }
 }
+
 
 export class ScenarioEventKeyed<P = void> {
     public readonly name: string;
