@@ -5,7 +5,7 @@ import { NameKeyMap } from './name-key-map';
 import { Logger, LoopLog } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { RunStaging, setupStaging, StagingFunction } from './staging';
-import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBid, InternalDispatch, PlacedBidContext } from './index';
+import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBid, InternalDispatch, OnFinishLoopCB, PlacedBidContext } from './index';
 import { Replay } from './replay';
 import { ScenarioEvent } from './scenario-event';
 import { isThenable } from './utils';
@@ -105,20 +105,30 @@ export class UpdateLoop {
          return true;
     }
 
+    private runStaging() {
+        this._stageScenarioAndEvents();
+        this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
+    }
+
     // public ----------------------------------------------------------------------
     public addToActionQueue(actions: (UIAction | ResolveAction | ResolveExtendAction)[]): void {
         actions.forEach(action => this._actionQueue.push(action));
     }
 
-    public runStagingAndLoopSync(replay?: Replay): LoopLog[] {
+    public runStagingAndLoopSync(preRunStaging: boolean, replay?: Replay): LoopLog[] {
         if(replay) this._replay = replay;
         let areActionsRemaining = true;
+        if(preRunStaging) {
+            this.runStaging();
+        }
         while(areActionsRemaining) {
-            this._stageScenarioAndEvents();
-            this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
             this._logger.logPlacedBids(this._allPlacedBids);
             areActionsRemaining = this._runLoop();
-            this._logger.finishLoop();
+            if(areActionsRemaining) {
+                this.runStaging();
+            } else {
+                this._logger.finishLoop();
+            }
         }
         return this._logger.getLoopLogs();
     }

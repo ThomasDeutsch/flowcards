@@ -1,7 +1,7 @@
 import { PlacedBid } from './bid';
 import { NameKeyId } from './name-key-map';
 import { AnyActionWithId } from './action';
-import { AllPlacedBids } from '.';
+import { AllPlacedBids, OnFinishLoopCB } from '.';
 
 
 export enum BThreadReactionType {
@@ -28,6 +28,11 @@ export class Logger {
     private _loopLog: Partial<LoopLog> = {
         scenarioIds: [],
         reactions: []
+    }
+    private readonly _onFinishLoopCB?: OnFinishLoopCB
+
+    constructor(onFinishLoopCB?: OnFinishLoopCB) {
+        this._onFinishLoopCB = onFinishLoopCB;
     }
 
     // 1. log involved scenarios
@@ -61,6 +66,7 @@ export class Logger {
 
     public finishLoop(): void {
         this._loopLogs.push({...this._loopLog} as LoopLog);
+        this._onFinishLoopCB?.({...this._loopLog} as LoopLog);
         this._loopLog = {
             scenarioIds: [],
             reactions: []
