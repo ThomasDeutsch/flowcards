@@ -1,5 +1,5 @@
 import { PlacedBid } from './bid';
-import { NameKeyId } from './name-key-map';
+import { NameKeyId, NameKeyMap } from './name-key-map';
 import { AnyActionWithId } from './action';
 import { AllPlacedBids, OnFinishLoopCB } from '.';
 
@@ -8,7 +8,7 @@ export enum BThreadReactionType {
     progress = 'progress',
     error = 'error',
     newPending = 'newPending',
-    resolvedExtend = 'resolvedExtend' //TODO: needed? can this be replaced with 'progress' ?
+    resolvedExtend = 'resolvedExtend'
 }
 
 export interface BThreadReaction {
@@ -17,19 +17,23 @@ export interface BThreadReaction {
 }
 
 export interface LoopLog {
-    scenarioIds: NameKeyId[];
+    scenarioIds: NameKeyMap<true>;
     action: AnyActionWithId;
-    reactions: BThreadReaction[];
+    reactions: NameKeyMap<BThreadReaction>;
     placedBids: AllPlacedBids;
+}
+
+function getInitialLoopLog(): Partial<LoopLog> {
+    return {
+        scenarioIds: new NameKeyMap(),
+        reactions: new NameKeyMap()
+    }
 }
 
 export class Logger {
     private _loopLogs: LoopLog[] = [];
-    private _loopLog: Partial<LoopLog> = {
-        scenarioIds: [],
-        reactions: []
-    }
-    private readonly _onFinishLoopCB?: OnFinishLoopCB
+    private _loopLog: Partial<LoopLog> = getInitialLoopLog();
+    private readonly _onFinishLoopCB?: OnFinishLoopCB;
 
     constructor(onFinishLoopCB?: OnFinishLoopCB) {
         this._onFinishLoopCB = onFinishLoopCB;
@@ -38,7 +42,9 @@ export class Logger {
     // 1. log involved scenarios
     // For a requested action, what scenarios have selected the specific action?
     public logInvolvedScenariosForNextRequestBid(scenarioIds: NameKeyId[]): void {
-        this._loopLog.scenarioIds = [...this._loopLog.scenarioIds!, ...scenarioIds];
+        scenarioIds.forEach(id => {
+            this._loopLog.scenarioIds?.set(id, true);
+        })
     }
 
     // 2. log placed bids
@@ -57,8 +63,8 @@ export class Logger {
 
     // 4. log reactions ( by BThread )
     public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
-        this._loopLog.scenarioIds?.push(bThreadId);
-        this._loopLog.reactions!.push({
+        this._loopLog.scenarioIds?.set(bThreadId, true);
+        this._loopLog.reactions!.set(bThreadId, {
             reactionType: reactionType,
             placedBid: bid
         });
@@ -67,10 +73,7 @@ export class Logger {
     public finishLoop(): void {
         this._loopLogs.push({...this._loopLog} as LoopLog);
         this._onFinishLoopCB?.({...this._loopLog} as LoopLog);
-        this._loopLog = {
-            scenarioIds: [],
-            reactions: []
-        };
+        this._loopLog = getInitialLoopLog();
     }
 
     public getLoopLogs(): LoopLog[] {
@@ -81,9 +84,6 @@ export class Logger {
 
     public resetLog(): void {
         this._loopLogs = [];
-        this._loopLog = {
-            scenarioIds: [],
-            reactions: []
-        }
+        this._loopLog = getInitialLoopLog();
     }
 }

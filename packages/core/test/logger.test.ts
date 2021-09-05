@@ -49,7 +49,6 @@ test("the logger will provide a map of relevant Scenarios", () => {
         s(relevantTrigger);
         s(notRelevantTrigger);
     }, ({logs})=> {
-        console.log(logs)
         const threads = logs[logs.length-1].scenarioIds;
         expect(threads.has('requestingThread')).toBe(true);
         expect(threads.has('waitingThread')).toBe(true);
