@@ -638,7 +638,7 @@ test("a trigger will not advance without an askFor bid", () => {
         e(eventA);
         s(requestingThread);
         s(triggerThread);
-    }, ({logs}) => {
+    }, () => {
         expect(triggerThread.isCompleted).toBe(false);
         expect(requestingThread.isCompleted).toBe(true);
     });

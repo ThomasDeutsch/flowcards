@@ -19,7 +19,11 @@ export type UpdateLoopFunction = () => void;
 export type ReplayMap = Map<number, AnyActionWithId>;
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
 export type BThreadMap = NameKeyMap<BThread<any>>;
-export type EventMap = NameKeyMap<ScenarioEvent<any>>
+export type EventMap = NameKeyMap<ScenarioEvent<any>>;
+export interface LogInfo {
+    logs: LoopLog[];
+    allRelevantScenarios: NameKeyMap<void>;
+}
 
 
 export class UpdateLoop {
@@ -101,6 +105,7 @@ export class UpdateLoop {
                 this._replay?.abortReplay(action, reactionCheck);
             }
          } while (reactionCheck !== ReactionCheck.OK);
+         this._logger.finishLoop();
          this._currentActionId++;
          return true;
     }
@@ -108,6 +113,7 @@ export class UpdateLoop {
     private runStaging() {
         this._stageScenarioAndEvents();
         this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
+        this._logger.logPlacedBids(this._allPlacedBids);
     }
 
     // public ----------------------------------------------------------------------
@@ -115,22 +121,19 @@ export class UpdateLoop {
         actions.forEach(action => this._actionQueue.push(action));
     }
 
-    public runStagingAndLoopSync(preRunStaging: boolean, replay?: Replay): LoopLog[] {
+    public runStagingAndLoopSync(preRunStaging: boolean, replay?: Replay): LogInfo {
         if(replay) this._replay = replay;
-        let areActionsRemaining = true;
         if(preRunStaging) {
             this.runStaging();
         }
-        while(areActionsRemaining) {
-            this._logger.logPlacedBids(this._allPlacedBids);
-            areActionsRemaining = this._runLoop();
-            if(areActionsRemaining) {
-                this.runStaging();
-            } else {
-                this._logger.finishLoop();
-            }
+        while(this._runLoop()) {
+            this.runStaging();
         }
-        return this._logger.getLoopLogs();
+        //this._logger.finishLoop();
+        return {
+            allRelevantScenarios: this._logger.allRelevantScenarios,
+            logs: this._logger.getLoopLogs()
+        };
     }
 
     public reset(): void {

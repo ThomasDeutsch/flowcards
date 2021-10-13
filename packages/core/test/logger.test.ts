@@ -48,8 +48,8 @@ test("the logger will provide a map of relevant Scenarios", () => {
         s(relevantValidation);
         s(relevantTrigger);
         s(notRelevantTrigger);
-    }, ({logs})=> {
-        const threads = logs[logs.length-1].scenarioIds;
+    }, ({log})=> {
+        const threads = log.allRelevantScenarios;
         expect(threads.has('requestingThread')).toBe(true);
         expect(threads.has('waitingThread')).toBe(true);
         expect(threads.has('relevantBlock')).toBe(true);

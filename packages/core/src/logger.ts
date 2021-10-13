@@ -17,39 +17,45 @@ export interface BThreadReaction {
 }
 
 export interface LoopLog {
-    scenarioIds: NameKeyMap<true>;
+    relevantScenarios: NameKeyMap<void>;
     action: AnyActionWithId;
     reactions: NameKeyMap<BThreadReaction>;
     placedBids: AllPlacedBids;
+    allRelevantScenarios: NameKeyMap<void>;
 }
 
 function getInitialLoopLog(): Partial<LoopLog> {
     return {
-        scenarioIds: new NameKeyMap(),
-        reactions: new NameKeyMap()
-    }
+        relevantScenarios: new NameKeyMap(),
+        reactions: new NameKeyMap()    }
 }
 
 export class Logger {
     private _loopLogs: LoopLog[] = [];
+    private _allRelevantScenarios = new NameKeyMap<void>();
     private _loopLog: Partial<LoopLog> = getInitialLoopLog();
     private readonly _onFinishLoopCB?: OnFinishLoopCB;
+
+    public get allRelevantScenarios(): NameKeyMap<void> {
+        return this._allRelevantScenarios;
+    }
 
     constructor(onFinishLoopCB?: OnFinishLoopCB) {
         this._onFinishLoopCB = onFinishLoopCB;
     }
 
-    // 1. log involved scenarios
+    // 1. log placed bids
+    public logPlacedBids(bids: AllPlacedBids): void {
+        this._loopLog!.placedBids = bids;
+    }
+
+    // 2. log involved scenarios
     // For a requested action, what scenarios have selected the specific action?
     public logInvolvedScenariosForNextRequestBid(scenarioIds: NameKeyId[]): void {
         scenarioIds.forEach(id => {
-            this._loopLog.scenarioIds?.set(id, true);
+            this._loopLog.relevantScenarios!.set(id);
+            this._allRelevantScenarios!.set(id)
         })
-    }
-
-    // 2. log placed bids
-    public logPlacedBids(bids: AllPlacedBids): void {
-        this._loopLog!.placedBids = bids;
     }
 
     // 3. log action
@@ -63,7 +69,8 @@ export class Logger {
 
     // 4. log reactions ( by BThread )
     public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
-        this._loopLog.scenarioIds?.set(bThreadId, true);
+        this._loopLog.relevantScenarios!.set(bThreadId);
+        this._allRelevantScenarios!.set(bThreadId);
         this._loopLog.reactions!.set(bThreadId, {
             reactionType: reactionType,
             placedBid: bid
@@ -84,6 +91,7 @@ export class Logger {
 
     public resetLog(): void {
         this._loopLogs = [];
+        this._allRelevantScenarios = new NameKeyMap();
         this._loopLog = getInitialLoopLog();
     }
 }
