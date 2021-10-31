@@ -1,22 +1,22 @@
 import { PlacedBid } from './bid';
-import { PlacedBidContext } from '.';
+import { Bid, PlacedBidContext } from '.';
 
-export type PayloadValidationReturn = boolean | {isValid: boolean, reason?: string};
-export type PayloadValidationCB<P> = (payload?: P) => PayloadValidationReturn;
+export type PayloadValidationReturn = boolean | { passed: any[], failed: any[] };
+export type PayloadValidationCB<P> = (value: P) => PayloadValidationReturn;
 
 function isValidReturn(val: PayloadValidationReturn): boolean {
-    return val === true || (typeof val === 'object' && val.isValid === true);
+    return val === true || (typeof val === 'object' && !!val.failed?.length);
 }
 
-function getResultDetails(result: PayloadValidationReturn): string | undefined {
-    return (typeof result === 'object' ? result.reason : undefined)
+function getResultDetails(result: PayloadValidationReturn): any[] | undefined {
+    return (typeof result === 'object' ? (result.passed || result.failed) : undefined)
 }
 
-export type CombinedValidationItem = { type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation' | 'eventNotEnabled' | 'notAllowedDuringStaging', reason?: string }
-export type CombinedValidation = {isValid: boolean, passed: CombinedValidationItem[], failed: CombinedValidationItem[]}
-export type CombinedValidationCB<P> = (payload?: P) => CombinedValidation;
+export type ValidationResult = { type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation' | 'eventNotEnabled' | 'notAllowedDuringStaging' | 'eventDisabledDuringDispatch', reason?: any }
+export type ValidationResults = { passed: ValidationResult[], failed: ValidationResult[] };
+export type CombinedValidationCB<P> = (value: P) => ValidationResults;
 
-function getAllPayloadValidations(bid: PlacedBid, bidContext: PlacedBidContext): PayloadValidationCB<any>[] {
+function getAllPayloadValidations<P>(bid: PlacedBid<P>, bidContext: PlacedBidContext): PayloadValidationCB<P>[] {
     const validations = [];
     if(bid.payloadValidationCB !== undefined) {
         validations.push(bid.payloadValidationCB);
@@ -29,23 +29,20 @@ function getAllPayloadValidations(bid: PlacedBid, bidContext: PlacedBidContext):
     return validations;
 }
 
-export function isValidPayload(bid: PlacedBid, bidContext: PlacedBidContext, payload?: unknown): boolean {
+export function isValidPayload<P>(bid: PlacedBid<P>, bidContext: PlacedBidContext, value: P): boolean {
     const validations = getAllPayloadValidations(bid, bidContext);
-    return validations.every(validationCB => isValidReturn(validationCB(payload)))
+    return validations.every(validationCB => isValidReturn(validationCB(value)));
 }
 
-//TODO: remove this - use askForValidationExplainCB
-export const explainEventNotEnabled: CombinedValidationCB<any> = (payload: any) => ({ isValid: false, passed: [], failed: [{type: 'eventNotEnabled', reason: 'event is not enabled'}]});
+export const explainEventNotEnabled: CombinedValidationCB<any> = <P>(value: P) => ({ passed: [], failed: [{type: 'eventNotEnabled'}]});
+export const explainDispatchPending: CombinedValidationCB<any> = <P>(value: P) => ({ passed: [], failed: [{type: 'eventDisabledDuringDispatch'}]});
 
-//TODO: remove this - use askForValidationExplainCB
-export const explainNotAllowedDuringStaging: CombinedValidationCB<any> = (payload: any) => ({ isValid: false, passed: [], failed: [{type: 'notAllowedDuringStaging', reason: 'event can not be dispatched during staging'}]});
-
-export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
-    return (payload) => {
-        const failed: CombinedValidationItem[] = [];
-        const passed: CombinedValidationItem[] = [];
+export function askForValidationExplainCB<P>(bid?: PlacedBid<P>, bidContext?: PlacedBidContext): CombinedValidationCB<P> {
+    return (value: P) => {
+        const failed: ValidationResult[] = [];
+        const passed: ValidationResult[] = [];
         if(bid === undefined || bidContext === undefined) {
-            return {isValid: false,
+            return {
                 passed: [],
                 failed: [{type: 'noAskForBid', reason: 'event is not asked for'}]}
         }
@@ -59,7 +56,7 @@ export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: Place
             failed.push({type: 'eventNotEnabled', reason: `event was not enabled in the staging-function.`})
         }
         getAllPayloadValidations(bid, bidContext).forEach(validationCB => {
-            const validationResult = validationCB(payload);
+            const validationResult = validationCB(value);
             if(isValidReturn(validationResult)) {
                 passed.push({type: 'payloadValidation', reason: getResultDetails(validationResult)})
             } else {
@@ -67,7 +64,6 @@ export function askForValidationExplainCB<P>(bid?: PlacedBid, bidContext?: Place
             }
         });
         return {
-            isValid: failed.length === 0,
             passed: passed,
             failed: failed
         };

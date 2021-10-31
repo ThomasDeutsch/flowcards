@@ -10,7 +10,7 @@ import { AllPlacedBids, InternalDispatch, ResolveAction, ResolveExtendAction } f
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
 export type EnableScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
 export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
-export type UIActionDispatch = (eventId: NameKeyId, isValidCB?: (isValid: boolean) => void, payload?: any) => void;
+export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
 export type RunStaging = () => void;
 
 export interface StagingProps {
@@ -26,12 +26,11 @@ export interface StagingProps {
 
 export function setupStaging(props: StagingProps): RunStaging {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
-    const uiActionDispatch: UIActionDispatch = (eventId: NameKeyId, isValidCB?: (isValid: boolean) => void, payload?: any): void => {
+    const uiActionDispatch: UIActionDispatch = (eventId: NameKeyId, payload?: any): void => {
         props.internalDispatch({
             type: "uiAction",
             eventId: eventId,
-            payload: payload,
-            isValidCB
+            payload: payload
         })
     }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
@@ -93,7 +92,7 @@ export function setupStaging(props: StagingProps): RunStaging {
         props.stagingFunction(enableScenario, enableEvents); // do the staging
         props.eventMap.allValues?.forEach(event => {
             if(!enabledEventIds.has(event.id)) {
-                event.disable();
+                event.__disable();
             }
         });
         if(destroyOnDisableThreadIds.size > 0)

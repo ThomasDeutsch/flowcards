@@ -63,24 +63,24 @@ test("a requested event with a disabled key will not progress", () => {
 });
 
 
-test("an keyed event can be disabled in the staging-function", () => {
+// test("an keyed event can be disabled in the staging-function", () => {
 
-    let progressedRequestThread = false;
+//     let progressedRequestThread = false;
 
-    const eventA = new ScenarioEventKeyed('A');
+//     const eventA = new ScenarioEventKeyed('A');
 
-    const requestingThread = new Scenario('thread1', function* () {
-        yield bp.request(eventA.key(1));
-        progressedRequestThread = true;
-    })
+//     const requestingThread = new Scenario('thread1', function* () {
+//         yield bp.request(eventA.key(1));
+//         progressedRequestThread = true;
+//     })
 
-    testScenarios((enable, enableEvents) => {
-        enableEvents(eventA.key(1))
-        eventA.key(1).disable();
-        enable(requestingThread);
-    });
-    expect(progressedRequestThread).toBe(false);
-});
+//     testScenarios((enable, enableEvents) => {
+//         enableEvents(eventA.key(1))
+//         eventA.key(1).disable();
+//         enable(requestingThread);
+//     });
+//     expect(progressedRequestThread).toBe(false);
+// });
 
 
 test("a keyed waitFor will not advance on the same Event-Name without a Key", () => {

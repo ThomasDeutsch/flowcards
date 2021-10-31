@@ -55,12 +55,15 @@ export class UpdateLoop {
         const action = this._actionQueue.shift();
         if(action === undefined) return undefined;
         if(action.type === 'uiAction') {
-            const validationResult = this._eventMap.get(action.eventId)?.validate(action.payload);
-            if(validationResult?.isValid !== true) {
-                action.isValidCB?.(false);
+            const event = this._eventMap.get(action.eventId);
+            if(event === undefined)  {
                 return this._getQueuedAction.bind(this)();
             }
-            action.isValidCB?.(true);
+            const validation = event.explain(action.payload);
+            event.__resolveDispatch(validation);
+            if(validation.failed.length) {
+                return this._getQueuedAction.bind(this)();
+            }
         }
         return action;
     }
@@ -142,7 +145,7 @@ export class UpdateLoop {
         this._actionQueue.length = 0;
         this._bThreadMap.allValues?.forEach(bThread => bThread.destroy());
         this._eventMap.allValues?.forEach(event => {
-            event.disable();
+            event.__disable();
         });
         this._bThreadMap.clear();
         this._eventMap.clear();

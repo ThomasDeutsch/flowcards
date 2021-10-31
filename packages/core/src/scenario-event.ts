@@ -1,7 +1,7 @@
 import { AllPlacedBids, getHighestPrioAskForBid } from "./bid";
 import { NameKeyId } from "./name-key-map";
 import { UIActionDispatch } from "./staging";
-import { askForValidationExplainCB, CombinedValidation, CombinedValidationCB, explainEventNotEnabled} from "./validation";
+import { askForValidationExplainCB, CombinedValidationCB, explainDispatchPending, explainEventNotEnabled, ValidationResult, ValidationResults} from "./validation";
 
 export type NextValueFn<P> = (current: P | undefined) => P
 
@@ -26,8 +26,9 @@ export class ScenarioEvent<P = void> {
     private _value?: P;
     private _initialValue?: P;
     // validation check & placed-bids
-    private _validateCheck: CombinedValidationCB<P>;
+    private _explainValue: CombinedValidationCB<P>;
     private _isPending = false;
+    private _resolveDispatch?: (result: ValidationResults) => void;
 
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
         this._initialValue = initialValue;
@@ -38,7 +39,7 @@ export class ScenarioEvent<P = void> {
             this.name = nameOrNameKey.name;
             this.key = nameOrNameKey.key;
         }
-        this._validateCheck = explainEventNotEnabled;
+        this._explainValue = explainEventNotEnabled;
     }
 
     public get id(): NameKeyId {
@@ -63,7 +64,7 @@ export class ScenarioEvent<P = void> {
 
     private _updateEventIfNeeded(): void {
         if(this._getCurrentActionId === undefined || this._getAllPlacedBids === undefined) {
-            this._validateCheck = explainEventNotEnabled;
+            this._explainValue = explainEventNotEnabled;
             return;
         }
         if(this._getCurrentActionId() === this.updatedOn) return;
@@ -71,15 +72,19 @@ export class ScenarioEvent<P = void> {
         const allPlacedBids = this._getAllPlacedBids();
         const bidContext = allPlacedBids?.get(this.id);
         this._isPending = !!bidContext?.pendingBy;
-        if(this._isEnabled === false) this._validateCheck = explainEventNotEnabled;
+        if(this._isEnabled === false) {
+            this._explainValue = explainEventNotEnabled;
+        }
         else if(this._updatedOn !== currentActionId) {
             const askForBid = getHighestPrioAskForBid(allPlacedBids, this.id);
-            this._validateCheck = askForValidationExplainCB(askForBid, bidContext);
+            this._explainValue = askForValidationExplainCB(askForBid, bidContext);
         }
         this._updatedOn = currentActionId;
     }
 
-    public disable(keepValue?: boolean): void {
+    /** @internal */
+    public __disable(keepValue?: boolean): void {
+        this.__resolveDispatch?.({passed: [], failed: [{type: 'eventDisabledDuringDispatch'}]});
         this._isEnabled = false;
         if(!keepValue) {
             this._value = this._initialValue || undefined;
@@ -95,21 +100,32 @@ export class ScenarioEvent<P = void> {
         this._value = nextValue;
     }
 
-    public validate(value?: P): CombinedValidation {
+    public explain(value: P): ValidationResults {
         this._updateEventIfNeeded();
-        return this._validateCheck(value);
+        return this._explainValue(value);
     }
 
-    // TODO: disable multiple dispatches to be buffered?
-    public dispatch(payload: P): Promise<boolean> {
+    public isValidDispatch(value: P): boolean {
         this._updateEventIfNeeded();
-        if(this.validate(payload).isValid === false) return Promise.resolve(false);
-        let wasValid: (x: boolean) => void;
-        const promise = new Promise<boolean>(resolve => {
-            wasValid = resolve;
+        return this._explainValue(value).failed.length === 0;
+    }
+
+    public dispatch(payload: P): Promise<ValidationResults> {
+        if(this._resolveDispatch) return Promise.resolve(explainDispatchPending(payload));
+        this._updateEventIfNeeded();
+        const validationResults = this._explainValue(payload);
+        if(validationResults.failed.length) return Promise.resolve(validationResults);
+        const promise = new Promise<ValidationResults>(resolve => {
+            this._resolveDispatch = resolve;
         });
-        this._uiActionDispatch!(this.id, wasValid!, payload);
+        this._uiActionDispatch!(this.id, payload);
         return promise;
+    }
+
+    /** @internal */
+    public __resolveDispatch(validation: ValidationResults): void {
+        this._resolveDispatch?.(validation);
+        this._resolveDispatch = undefined;
     }
 
     public get isPending(): boolean {
@@ -158,11 +174,12 @@ export class ScenarioEventKeyed<P = void> {
         [...this._children].forEach(([_, e]) => e.__enable());
     }
 
-    public disable(deleteKeys: boolean): void {
+    /** @internal */
+    public __disable(deleteKeys: boolean): void {
         if(deleteKeys) {
             this._children.clear();
         } else {
-            [...this._children].forEach(([_, e]) => e.disable());
+            [...this._children].forEach(([_, e]) => e.__disable());
         }
     }
 }

@@ -49,9 +49,9 @@ export class Replay {
         if(replayAction === undefined) return undefined;
         // UI ACTION
         if(replayAction.type === 'uiAction') {
-            const validationResult = eventMap.get(replayAction.eventId)?.validate(replayAction.payload);
-            if(validationResult?.isValid !== true) {
-                this.abortReplay(replayAction, validationResult?.failed.map(f => f.reason).filter(notUndefined).join(', ') || '');
+            const isDispatchable = eventMap.get(replayAction.eventId)?.isValidDispatch(replayAction.payload);
+            if(!isDispatchable) {
+                this.abortReplay(replayAction, 'event can not be dispatched');
                 return undefined;
             }
         }

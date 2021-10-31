@@ -17,7 +17,7 @@ export function getProgressingBids(allPlacedBids: AllPlacedBids, types: BidType[
             return;
         }
         const result = bid.payloadValidationCB(payload);
-        if(typeof result === 'object' && result.isValid || result === true) {
+        if((typeof result === 'object' && result.failed.length === 0) || result === true) {
             progressingBids.push(bid);
         }
     });

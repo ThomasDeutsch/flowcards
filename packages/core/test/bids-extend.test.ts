@@ -62,7 +62,7 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         enable(thread1);
         enable(thread3);
     }, () => {
-        if(eventX.validate().isValid) {
+        if(eventX.isValidDispatch()) {
             expect(eventA.value).toBe(110);
             done();
         }
@@ -357,7 +357,7 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
         enable(awaitThread);
         enable(waitingThread);
     }, () => {
-        if(eventFin.validate().isValid) {
+        if(eventFin.isValidDispatch()) {
             done();
         }
     });
@@ -426,7 +426,7 @@ test("multiple extends will resolve after another. After all extends complete, t
         enable(extendingThreadHigherPriority); // this BThread is enabled after the first extendingThread, giving it a higher priority
         enable(waitingThread);
     }, () => {
-        if(eventFin.validate().isValid) {
+        if(eventFin.isValidDispatch()) {
             done();
         }
     });
@@ -474,12 +474,13 @@ test("a wait can be extended. during the extension, the event is pending", (done
         yield bp.askFor(eventFin);
     });
 
+
     testScenarios((enable, events) => {
         events(eventA, eventFin)
         enable(waitingThread);
         enable(extendingThread);
     }, () => {
-        if(eventA.validate().isValid) eventA.dispatch();
+        if(eventA.isValidDispatch()) eventA.dispatch();
         else {
             expect(eventA.isPending).toBe(true);
             done();

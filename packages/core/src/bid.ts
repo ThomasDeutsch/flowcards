@@ -17,7 +17,7 @@ export interface Bid<P> {
     payloadValidationCB?: PayloadValidationCB<any>;
 }
 
-export interface PlacedBid extends Bid<any> {
+export interface PlacedBid<P = any> extends Bid<P> {
     bThreadId: NameKeyId;
 }
 

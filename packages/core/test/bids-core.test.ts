@@ -309,7 +309,7 @@ test("events can be blocked", () => {
     }, () => {
         expect(advancedRequest).toBeFalsy();
         expect(advancedWait).toBeFalsy();
-        expect(testEvent.A.validate().isValid).toBe(false);
+        expect(testEvent.A.isValidDispatch(1)).toBe(false);
     });
 });
 
@@ -334,27 +334,6 @@ test("if an async request gets blocked, it will not call the updatePayloadCb", (
     });
     expect(calledFunction).toBe(false);
 });
-
-
-test("an event can be disabled in the staging-function", () => {
-
-    let progressedRequestThread = false;
-
-    const eventA = new ScenarioEvent('A');
-
-    const requestingThread = new Scenario('thread1', function* () {
-        yield bp.request(eventA);
-        progressedRequestThread = true;
-    })
-
-    testScenarios((enable, enableEvents) => {
-        enableEvents(eventA)
-        eventA.disable();
-        enable(requestingThread);
-    });
-    expect(progressedRequestThread).toBe(false);
-});
-
 
 test("if a thread has multiple requests, the last request has the highest priority.", () => {
 
@@ -573,7 +552,7 @@ test("a pending event will not remain pending if the next bids will not include 
         events(eventA, eventB, eventContinue)
         enable(requestingThread);
     }, ()=> {
-        if(eventContinue.validate()?.isValid) {
+        if(eventContinue.isValidDispatch(123)) {
             expect(eventB.isPending).toBe(false);
             done();
         }
@@ -594,9 +573,10 @@ test("askFor will enable events to be dispatched", (done) => {
         enable(askingThread);
     }, ()=> {
         if(!askingThread.isCompleted) {
-            eventA.dispatch(11);
-        } else {
-            done();
+            eventA.dispatch(11).then(() => {
+                expect(askingThread.isCompleted).toBe(true);
+                done();
+            });
         }
     });
 });

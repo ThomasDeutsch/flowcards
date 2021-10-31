@@ -39,7 +39,7 @@ test("an event value is reset to its initial value on disable", () => {
         event(eventA, eventB);
         enable(requestingThread, {a: 1});
         if(requestingThread.isCompleted) {
-            eventA.disable(); // true = reset value
+            eventA.__disable(); // true = reset value
         }
     }, ()=> {
         expect(eventB.isEnabled).toBe(true);
@@ -63,7 +63,7 @@ test("after an event progressed, it is not pending any longer", (done) => {
     });
 });
 
-test("a dispatch returns a promise, that will return true, if the dispatch was valid", (done) => {
+test("a dispatch returns a validation result, if the dispatch was valid", (done) => {
     const eventA = new ScenarioEvent<number>('A');
 
     const askingScenario = new Scenario('thread1', function*() {
@@ -75,10 +75,10 @@ test("a dispatch returns a promise, that will return true, if the dispatch was v
         event(eventA);
         enable(askingScenario);
     }, () => {
-        if(eventA.validate().isValid) {
-            eventA.dispatch(100).then((wasValidDispatch) => {
-                expect(wasValidDispatch).toBe(true);
-                askingScenario.isCompleted === true;
+        if(eventA.isValidDispatch(100)) {
+            eventA.dispatch(100).then((result) => {
+                expect(result.failed.length).toBe(0);
+                expect(askingScenario.isCompleted).toBe(true);
                 done();
             });
         }
@@ -87,10 +87,9 @@ test("a dispatch returns a promise, that will return true, if the dispatch was v
 
 test("the dispatch promise returns false, if another event has made the dispatch invalid.", (done) => {
     const eventA = new ScenarioEvent<number>('A');
-    const eventX = new ScenarioEvent<number>('X');
 
     const askingScenario = new Scenario('thread1', function*() {
-        const x = yield bp.askFor(eventA);
+        yield bp.askFor(eventA);
     });
 
     const blockingScenario = new Scenario('thread2', function*() {
@@ -102,8 +101,8 @@ test("the dispatch promise returns false, if another event has made the dispatch
         enable(askingScenario);
         enable(blockingScenario);
     }, () => {
-        eventA.dispatch(100).then((wasValidDispatch) => {
-            expect(wasValidDispatch).toBe(false);
+        eventA.dispatch(100).then((result) => {
+            expect(result.failed[0].type).toBe('blocked');
             askingScenario.isCompleted === false;
             done();
         });
@@ -121,35 +120,12 @@ test("an event that is not enabled can not be dispatched", () => {
     testScenarios((enable) => {
         enable(requestingThread);
     },() => {
-        expect(eventA.validate(1).isValid).toBe(false);
-        expect(eventA.validate(1).failed[0].type).toBe('eventNotEnabled')
+        expect(eventA.isValidDispatch(1)).toBe(false);
+        expect(eventA.explain(1).failed[0].type).toBe('eventNotEnabled')
 
     });
 });
 
 
-
-// TODO: is this a good idea? - not sure
-// 1. (cons) a validation at this level is almost without context.
-// 2. (pros) before a validation is repeated over multiple bids, it may be better to have a global validation
-// 3. (cons) instead of a global validation it might be a better idea to have a validate-bid ?
-
-// test("an event can have an additional validate function", () => {
-//     const eventA = new ScenarioEvent<number>('A', 10);
-
-//     const acceptedRequestScenario = new Scenario('acceptedRequestScenario', function*() {
-//         yield bp.request(eventA, 9);
-//     });
-
-//     const failingRequestScenario = new Scenario('failingRequestScenario', function*() {
-//         yield bp.request(eventA, 11);
-//     });
-
-//     testScenarios((enable, events) => {
-//         events(eventA);
-//         enable(acceptedRequestScenario);
-//         enable(failingRequestScenario);
-//     }, ()=> {
-//         expect(eventA.value).toBe(11);
-//     });
-// });
+//TODO: dispatch pending
+//TODO: nextDispatch

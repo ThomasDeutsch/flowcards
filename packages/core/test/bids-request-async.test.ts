@@ -138,9 +138,9 @@ test("a scenario in a pending-event state can place additional bids.", (done) =>
         enable(thread2);
     }, () => {
         if(eventA.isPending) {
-            expect(eventB.validate().isValid).toBe(false);
+            expect(eventB.isValidDispatch()).toBe(false);
         } else if( thread1.isCompleted) {
-            expect(eventB.validate().isValid).toBe(true);
+            expect(eventB.isValidDispatch()).toBe(true);
             done();
         }
     });

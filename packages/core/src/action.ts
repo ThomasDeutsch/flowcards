@@ -15,7 +15,6 @@ export interface UIAction extends Action {
     type: "uiAction",
     eventId: NameKeyId;
     payload?: unknown;
-    isValidCB?: (isValid: boolean) => void;
 }
 
 export interface RequestedAction extends Action {
