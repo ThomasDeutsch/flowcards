@@ -1,48 +1,60 @@
 import { AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
-import { ScenariosContext, UpdateLoop } from './update-loop';
-import { StagingFunction } from './scaffolding';
-import { Logger } from './logger';
+import { LogInfo, UpdateLoop } from './update-loop';
+import { StagingCB } from './staging';
+import { Logger, LoopLog } from './logger';
 import { Replay } from './replay';
 
-export * from './scenario';
-export * from './bthread';
+//TODO: remove this and let the user use deep imports ( better for tree-shaking )
+export * from './b-thread';
+export * from './b-event';
+export * from './bthread-core';
 export * from './update-loop';
-export * from './event-cache';
-export * from './event-map';
+export * from './name-key-map';
 export * from "./bid";
-export * from "./scaffolding";
-export * from './event-map';
+export * from "./staging";
 export * from './logger';
 export * from './action';
 export * from './extend-context';
 export * from './replay';
 
-export type UpdateCallback = (newContext: ScenariosContext) => void;
+export type UpdateCallback = (pl: {log: LogInfo, replay?: Replay}) => void;
 export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
+export type OnFinishLoopCB = (loopLog: LoopLog) => void;
 
-export class Scenarios {
+export interface BehaviorsProps {
+    stagingCb: StagingCB;
+    updateCb?: UpdateCallback;
+    onNextLoopCB?: OnFinishLoopCB;
+    doInitialUpdate: boolean;
+    initialActionsOrReplay?: AnyActionWithId[] | Replay
+}
+
+function getReplay(initialActionsOrReplay?: AnyActionWithId[] | Replay): Replay | undefined {
+    if(initialActionsOrReplay === undefined)  {
+        return undefined;
+    }
+    else if(Array.isArray(initialActionsOrReplay) ) {
+        if(initialActionsOrReplay.length > 0) {
+            return new Replay(initialActionsOrReplay);
+        }
+        return undefined;
+    }
+    return initialActionsOrReplay;
+}
+
+export class Behaviors {
     private _bufferedActions: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _updateLoop: UpdateLoop;
-    private _updateCb?: UpdateCallback;
-    public initialScenariosContext: ScenariosContext;
+    private _updateCB?: UpdateCallback;
     private _logger: Logger;
 
-    constructor(stagingFunction: StagingFunction, updateCb?: UpdateCallback, doInitialUpdate = false, initialActionsOrReplay?: AnyActionWithId[] | Replay) {
-        this._logger = new Logger();
-        this._updateLoop = new UpdateLoop(stagingFunction, this._internalDispatch.bind(this), this._logger);
-        let replay: Replay | undefined;
-        if(initialActionsOrReplay === undefined || Array.isArray(initialActionsOrReplay) && initialActionsOrReplay.length === 0)  {
-            replay = undefined;
-        }
-        else if(Array.isArray(initialActionsOrReplay)) {
-            replay = new Replay(initialActionsOrReplay);
-        }
-        else if (initialActionsOrReplay instanceof Replay) {
-            replay = initialActionsOrReplay;
-        }
-        this.initialScenariosContext = this._updateLoop.runScaffolding(replay);
-        this._updateCb = updateCb;
-        if(updateCb && doInitialUpdate) updateCb(this.initialScenariosContext); // callback with initial value
+    constructor(props: BehaviorsProps) {
+        this._logger = new Logger(props.onNextLoopCB);
+        this._updateLoop = new UpdateLoop(props.stagingCb, this._internalDispatch.bind(this), this._logger);
+        this._updateCB = props.updateCb;
+        const replay = getReplay(props.initialActionsOrReplay);
+        const log = this._updateLoop.runStagingAndLoopSync(true, replay);
+        if(this._updateCB && props.doInitialUpdate) this._updateCB({log, replay}); // callback with initial value
     }
 
     private _internalDispatch(action: UIAction | ResolveAction | ResolveExtendAction) {
@@ -53,24 +65,24 @@ export class Scenarios {
     private _clearBufferOnNextTick(): void {
         Promise.resolve().then(() => { // next tick
             if(this._bufferedActions.length === 0) return
-            this._updateLoop.setActionQueue(this._bufferedActions);
+            this._updateLoop.addToActionQueue(this._bufferedActions);
             this._bufferedActions.length = 0;
-            const context = this._updateLoop.runScaffolding();
-            this._updateCb?.(context);
+            const log = this._updateLoop.runStagingAndLoopSync(false);
+            this._updateCB?.({log});
         });
     }
 
     public reset(initialActionsOrReplay?: AnyActionWithId[] | Replay): void {
         this._bufferedActions.length = 0;
-        const replay = Array.isArray(initialActionsOrReplay) ? new Replay(initialActionsOrReplay) : initialActionsOrReplay
+        const replay = getReplay(initialActionsOrReplay);
         this._updateLoop.reset();
-        const context = this._updateLoop.runScaffolding(replay);
-        this._updateCb?.(context);
+        const log = this._updateLoop.runStagingAndLoopSync(true, replay);
+        this._updateCB?.({log, replay});
     }
 
     public onDepsChanged(): void {
-        const context = this._updateLoop.runScaffolding();
-        this._updateCb?.(context);
+        const log = this._updateLoop.runStagingAndLoopSync(true);
+        this._updateCB?.({log});
         // TODO: make dependency-change replayable!
     }
 }

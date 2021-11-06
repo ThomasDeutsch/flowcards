@@ -1,87 +1,42 @@
 import { PlacedBid } from './bid';
-import { AllPlacedBids, AnyAction, getHighestPrioAskForBid, PlacedBidContext } from '.';
-import { notUndefined } from './utils';
 
-export enum UIActionCheck {
-    OK = 'OK',
-    EventIsBlocked = 'EventIsBlocked',
-    EventIsPending = 'EventIsPending',
-    HasInvalidPayload = 'HasInvalidPayload',
-    NoPlacedBidForEventId = 'NoPlacedBidForEventId',
-    NoMatchingAskForBid = 'NoMatchingAskForBid'
+export type PayloadValidationResult<V> = boolean | V[];
+export type PayloadValidationCB<P, V> = (value: P) => PayloadValidationResult<V>;
+
+
+export function isValidReturn(result: PayloadValidationResult<any>): boolean {
+    return result === true || (typeof result === 'object' && result.length > 0);
 }
 
-export enum ReactionCheck {
-    OK = 'OK',
-    ExtendingBThreadNotFound = 'ExtendingBThreadNotFound',
-    RequestingBThreadNotFound = 'RequestingBThreadNotFound',
-    BThreadWithoutMatchingBid = 'BThreadWithoutMatchingBid',
-    EventWasCancelled = 'EventWasCancelled',
-    PendingBidNotFound = 'PendingBidNotFound',
-    ExtendedRequestingBThreadNotFound = "ExtendedRequestingBThreadNotFound",
-}
+export type ValidationResults<V> = { isValid: boolean, failed: V[] };
 
-export type PayloadValidationReturn<T> = boolean | {isValid: boolean, details?: T};
-export type PayloadValidationCB<T> = (payload?: any) => PayloadValidationReturn<T>;
-
-
-function isValidReturn(val: PayloadValidationReturn<unknown>): boolean {
-    return val === true || (typeof val === 'object' && val.isValid === true);
-}
-
-function getResultDetails(result: PayloadValidationReturn<unknown>): unknown | undefined {
-    return (typeof result === 'object' ? result.details : undefined)
-}
-
-export type ValidationItem<T> = {type: 'blocked' | 'pending' | 'noAskForBid' | 'payloadValidation', details: T}
-export type CombinedValidationCB<T> = (payload?: any) => {isValid: boolean, passed: ValidationItem<T>[], failed: ValidationItem<T>[]}
-
-export function combinedIsValid(bid?: PlacedBid, bidContext?: PlacedBidContext, payload?: unknown): boolean {
-    if(bid === undefined || bidContext === undefined) return false;
-    const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
-    return [bid.payloadValidationCB, ...validations].filter(notUndefined).every(validationCB => isValidReturn(validationCB(payload)))
-}
-
-export function askForValidationExplainCB(bid?: PlacedBid, bidContext?: PlacedBidContext): CombinedValidationCB<unknown> {
-    if(bid === undefined || bidContext === undefined) return (payload?: any) => ({
-        isValid: false, passed: [], failed: [{type: 'noAskForBid', details: 'event is not asked for'}]
-    });
-    return (payload) => {
-        const failed: ValidationItem<unknown>[] = [];
-        const passed: ValidationItem<unknown>[] = [];
-        if (bidContext.blockedBy) {
-            failed.push({type: 'blocked', details: `event is blocked by BThreads: ${bidContext.blockedBy?.map(bid => bid.bThreadId.name).join(', ')}`})
-        }
-        if (bidContext.pendingBy) {
-            failed.push({type: 'pending', details: `event is pending by BThread: ${bidContext.pendingBy.name}${bidContext.pendingBy.key ? '-' + bidContext.pendingBy.key: ''}`})
-        }
-        const validations = bidContext.validatedBy?.map(bid => bid.payloadValidationCB) || [];
-        [bid.payloadValidationCB, ...validations].filter(notUndefined).map(validationCB => {
-            const result = validationCB(payload);
-            if(isValidReturn(result)) {
-                passed.push({type: 'payloadValidation', details: getResultDetails(result)})
-            } else {
-                failed.push({type: 'payloadValidation', details: getResultDetails(result)})
-            }
-        })
-        return {
-            isValid: failed.length === 0,
-            passed: passed,
-            failed: failed
-        };
+export function getAllPayloadValidationCallbacks<P, V>(bid: PlacedBid<P>, validateBids?: PlacedBid[]): PayloadValidationCB<P, V>[] {
+    const validationCallbacks = [];
+    if(bid.payloadValidationCB !== undefined) {
+        validationCallbacks.push(bid.payloadValidationCB);
     }
+    validateBids?.forEach(bid => {
+        if(bid.payloadValidationCB !== undefined) {
+            validationCallbacks.push(bid.payloadValidationCB);
+        }
+    });
+    return validationCallbacks;
 }
 
-export function validateAskedFor(action: AnyAction, allPlacedBids: AllPlacedBids): UIActionCheck {
-    if((action.type === "requestedAction" && action.bidType !== 'triggerBid') ||
-      (action.type !== "uiAction")) return UIActionCheck.OK;
-    const bidContext = allPlacedBids.get(action.eventId);
-    if(bidContext === undefined) return UIActionCheck.NoPlacedBidForEventId;
-    if(bidContext.blockedBy) return UIActionCheck.EventIsBlocked;
-    if(bidContext.pendingBy) return UIActionCheck.EventIsPending;
-    // re-check the dispatched action, because this action comes from a buffer, it could be that the user was able
-    // to dispatch, but another action may caused BThread changes.
-    const askForBid = getHighestPrioAskForBid(allPlacedBids, action.eventId, action);
-    if(askForBid === undefined) return UIActionCheck.NoMatchingAskForBid;
-    return UIActionCheck.OK
+export function isValidPayload<P>(validationCallbacks: PayloadValidationCB<P, any>[], value: P): boolean {
+    return validationCallbacks.every(cb => isValidReturn(cb(value)));
+}
+
+export function validateAll<P>(validationCallbacks: PayloadValidationCB<P, unknown>[], value: P): ValidationResults<any> {
+    const failed: any[] = [];
+    validationCallbacks.forEach(validationCB => {
+        const validationResult = validationCB(value);
+        if(!isValidReturn(validationResult)) {
+            failed.push(validationResult)
+        }
+    });
+    return {
+        isValid: failed.length === 0,
+        failed: failed
+    };
 }

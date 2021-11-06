@@ -1,12 +1,15 @@
-import { ScenariosContext } from '../src/update-loop';
-import { AnyActionWithId, Scenarios, UpdateCallback } from '../src/index';
-import { StagingFunction } from '../src/scaffolding';
+import { AnyActionWithId, Replay, Behaviors, UpdateCallback } from '../src/index';
+import { StagingCB } from '../src/staging';
 
-export function testScenarios(stagingFunction: StagingFunction, updateCb?: UpdateCallback, replay?: AnyActionWithId[]): ScenariosContext {
-    const s = new Scenarios(stagingFunction, updateCb, true, replay);
-    return s.initialScenariosContext;
+export function testScenarios(stagingCb: StagingCB, updateCb?: UpdateCallback, initialActionsOrReplay?: Replay | AnyActionWithId[]): Behaviors {
+    return new Behaviors({
+        stagingCb,
+        updateCb,
+        doInitialUpdate: true,
+        initialActionsOrReplay
+    });
 }
 
-export function delay(ms: number, value?: any): Promise<any> {
+export function delay<T>(ms: number, value?: T): Promise<T | undefined> {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }

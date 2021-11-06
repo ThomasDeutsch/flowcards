@@ -1,9 +1,8 @@
 import { PlacedBid } from './bid';
-import { BThreadMap } from './bthread-map';
-import * as utils from './utils';
-import { BThreadId, BThreadState } from './bthread';
-import { EventId, EventMap } from './event-map';
-import { AnyActionWithId, RequestedAction } from './action';
+import { NameKeyId, NameKeyMap } from './name-key-map';
+import { AnyActionWithId } from './action';
+import { AllPlacedBids, OnFinishLoopCB } from '.';
+
 
 export enum BThreadReactionType {
     progress = 'progress',
@@ -14,66 +13,84 @@ export enum BThreadReactionType {
 
 export interface BThreadReaction {
     reactionType: BThreadReactionType;
-    actionId: number;
-    selectedBid?: PlacedBid;
-    section?: string
+    placedBid?: PlacedBid;
+}
+
+export interface LoopLog {
+    actionScenarios: NameKeyMap<void>;
+    action: AnyActionWithId;
+    reactions: NameKeyMap<BThreadReaction>;
+    placedBids: AllPlacedBids;
+    allRelevantScenarios: NameKeyMap<void>;
+}
+
+function getInitialLoopLog(): Partial<LoopLog> {
+    return {
+        actionScenarios: new NameKeyMap(),
+        reactions: new NameKeyMap()    }
 }
 
 export class Logger {
-    private _actions: AnyActionWithId[] = [];
-    public get actions(): AnyActionWithId[] { return this._actions; }
-    public bThreadReactionHistory = new BThreadMap<Map<number, BThreadReaction>>();
-    public pendingEventIdHistory = new Map<number, Set<EventId> | undefined>();
-    public bThreadStateHistory = new Map<number, BThreadMap<BThreadState>>();
+    private _loopLogs: LoopLog[] = [];
+    private _allRelevantScenarios = new NameKeyMap<void>();
+    private _loopLog: Partial<LoopLog> = getInitialLoopLog();
+    private readonly _onFinishLoopCB?: OnFinishLoopCB;
 
-    private _currentActionId(): number {
-        return utils.latest(this._actions)?.id || 0;
+    public get allRelevantScenarios(): NameKeyMap<void> {
+        return this._allRelevantScenarios;
     }
 
-    public logPendingEventIds(pending: EventMap<PlacedBid[]> | undefined): void {
-        const eventIds = pending?.allKeys;
-        this.pendingEventIdHistory.set(this._currentActionId(), eventIds);
+    constructor(onFinishLoopCB?: OnFinishLoopCB) {
+        this._onFinishLoopCB = onFinishLoopCB;
     }
 
+    // 1. log placed bids
+    public logPlacedBids(bids: AllPlacedBids): void {
+        this._loopLog!.placedBids = bids;
+    }
+
+    // 2. log involved scenarios
+    // For a requested action, what scenarios have selected the specific action?
+    public logInvolvedScenariosForNextRequestBid(scenarioIds: NameKeyId[]): void {
+        scenarioIds.forEach(id => {
+            this._loopLog.actionScenarios!.set(id);
+            this._allRelevantScenarios!.set(id)
+        })
+    }
+
+    // 3. log action
     public logAction(action: AnyActionWithId): void {
-        const a = {...action}
-        if(action.type === "resolveAction") {
-            const requestAction = this._actions[action.requestActionId] as RequestedAction;
-            requestAction.resolveActionId = action.id;
-        }
+        const a = {...action};
         if(action.type === "requestedAction" && action.resolveActionId === 'pending') {
-            a.payload = undefined; // do not save the promise object
+            delete a.payload; // do not save the promise object
         }
-        this._actions.push(a);
+        this._loopLog.action = a;
     }
 
-    private _getBThreadReactions(bThreadId: BThreadId): Map<number, BThreadReaction> {
-        let bThreadReactions = this.bThreadReactionHistory.get(bThreadId);
-        if(bThreadReactions === undefined) {
-            bThreadReactions = new Map<number, BThreadReaction>()
-            this.bThreadReactionHistory.set(bThreadId, bThreadReactions);
-        }
-        return bThreadReactions;
-    }
-
-    public logReaction(reactionType: BThreadReactionType, bThreadId: BThreadId, bid?: PlacedBid): void {
-        const bThreadReactions = this._getBThreadReactions(bThreadId);
-        const currentActionId = this._currentActionId();
-        bThreadReactions.set(currentActionId, {
+    // 4. log reactions ( by BThread )
+    public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
+        this._allRelevantScenarios!.set(bThreadId);
+        this._loopLog.reactions!.set(bThreadId, {
             reactionType: reactionType,
-            actionId: currentActionId,
-            selectedBid: bid
+            placedBid: bid
         });
     }
 
-    public logBThreadStateMap(bThreadStateMap: BThreadMap<BThreadState>): void {
-        this.bThreadStateHistory.set(this._currentActionId(), bThreadStateMap.clone());
+    public finishLoop(): void {
+        this._loopLogs.push({...this._loopLog} as LoopLog);
+        this._onFinishLoopCB?.({...this._loopLog} as LoopLog);
+        this._loopLog = getInitialLoopLog();
+    }
+
+    public getLoopLogs(): LoopLog[] {
+        const logs = [...this._loopLogs];
+        this._loopLogs = [];
+        return logs;
     }
 
     public resetLog(): void {
-        this._actions = [];
-        this.bThreadReactionHistory = new BThreadMap();
-        this.pendingEventIdHistory = new Map();
-        this.bThreadStateHistory = new Map();
+        this._loopLogs = [];
+        this._allRelevantScenarios = new NameKeyMap();
+        this._loopLog = getInitialLoopLog();
     }
 }

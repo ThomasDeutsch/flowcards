@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/react",
-  "version": "1.3.12",
+  "version": "2.2.2",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -19,14 +19,14 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "@flowcards/core": "^1.3.12"
+    "@flowcards/core": "^2.2.2"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0",
     "react": ">=16.8.0"
   },
   "license": "MIT",
-  "gitHead": "84ceb3e3738cdd257ca9865be8bbdfea8aba08f5",
+  "gitHead": "72b889283715a75efedc99c20e9fe79319f31063",
   "publishConfig": {
     "access": "public"
   },

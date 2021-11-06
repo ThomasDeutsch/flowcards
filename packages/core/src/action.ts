@@ -1,19 +1,19 @@
-import { RequestingBidType, PlacedRequestingBid} from './bid';
-import { EventId } from './event-map';
-import { BThreadId } from './bthread';
+import { RequestingBidType, SelectedRequestingBid} from './bid';
+import { NameKeyId } from './name-key-map';
 import { PendingBid } from './pending-Bid';
 import { BidType } from '.';
 
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
 interface Action {
-    eventId: EventId;
+    eventId: NameKeyId;
+    bThreadId: NameKeyId
     payload?: unknown;
 }
 export interface UIAction extends Action {
     id?: number,
     type: "uiAction",
-    eventId: EventId;
+    eventId: NameKeyId;
     payload?: unknown;
 }
 
@@ -21,7 +21,7 @@ export interface RequestedAction extends Action {
     id: number,
     type: "requestedAction",
     bidType: RequestingBidType;
-    bThreadId: BThreadId;
+    matchedAskForBThreadId?: NameKeyId;
     resolveActionId?: number | 'pending';
 }
 
@@ -30,7 +30,7 @@ export interface ResolveAction extends Action {
     type: "resolveAction" | "rejectAction";
     requestActionId: number;
     pendingDuration: number;
-    resolvedRequestingBid: {type: BidType, bThreadId: BThreadId};
+    resolvedRequestingBidType: BidType ;
 }
 
 export interface ResolveExtendAction extends Action {
@@ -38,19 +38,19 @@ export interface ResolveExtendAction extends Action {
     type: "resolvedExtendAction";
     pendingDuration: number;
     requestActionId: number;
-    extendingBThreadId: BThreadId;
-    extendedRequestingBid?: {type: BidType, bThreadId: BThreadId};
+    extendedBThreadId: NameKeyId;
+    extendedBidType: BidType;
 }
 
-interface ResolveActionWithId extends ResolveAction {
+export interface ResolveActionWithId extends ResolveAction {
     id: number;
 }
 
-interface ResolveExtendActionWithId extends ResolveExtendAction {
+export interface ResolveExtendActionWithId extends ResolveExtendAction {
     id: number;
 }
 
-interface UiActionWithId extends UIAction {
+export interface UiActionWithId extends UIAction {
     id: number;
 }
 
@@ -65,28 +65,31 @@ export function toActionWithId(action: AnyAction, id: number): AnyActionWithId {
 }
 
 
-export function getRequestedAction(currentActionId: number, bid?: PlacedRequestingBid): RequestedAction | undefined {
+export function getRequestedAction(currentActionId: number, bid?: SelectedRequestingBid): RequestedAction | undefined {
     if(bid === undefined) return undefined;
-    return {
+    const action: RequestedAction = {
         id: currentActionId,
         type: "requestedAction",
         bidType: bid.type as RequestingBidType,
         bThreadId: bid.bThreadId,
         eventId: bid.eventId,
-        payload: bid.payload
+        payload: bid.payload,
+        matchedAskForBThreadId: bid.matchedAskForBThreadId
     };
+    return action;
 }
 
 
-export function getResolveAction(responseType: "rejectAction" | "resolveAction", pendingBid: PendingBid, data: unknown): ResolveAction {
+export function getResolveRejectAction(responseType: "rejectAction" | "resolveAction", pendingBid: PendingBid, data: unknown): ResolveAction {
     return {
         id: undefined,
         type: responseType,
+        bThreadId: pendingBid.bThreadId,
         eventId: pendingBid.eventId,
         payload: data,
         requestActionId: pendingBid.actionId,
         pendingDuration: new Date().getTime() - pendingBid.startTime,
-        resolvedRequestingBid: {type: pendingBid.type, bThreadId: pendingBid.bThreadId}
+        resolvedRequestingBidType: pendingBid.type
     }
 }
 
@@ -97,9 +100,10 @@ export function getResolveExtendAction(pendingBid: PendingBid, data: unknown): R
         type: "resolvedExtendAction",
         eventId: pendingBid.eventId,
         payload: data,
-        extendingBThreadId: pendingBid.bThreadId,
         requestActionId: pendingBid.actionId,
         pendingDuration: new Date().getTime() - pendingBid.startTime,
-        extendedRequestingBid: pendingBid.extendedRequestingBid
+        extendedBThreadId: pendingBid.extendedRequestingBThreadId!,
+        extendedBidType: pendingBid.extendedBidType!,
+        bThreadId: pendingBid.bThreadId
     }
 }
