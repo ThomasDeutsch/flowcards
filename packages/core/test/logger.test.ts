@@ -19,17 +19,17 @@ test("the logger will provide a map of relevant Scenarios", () => {
     const waitingThread = new Scenario('waitingThread', function*() {
         yield bp.waitFor(basicEvent.eventA);
     });
-    const relevantBlock= new Scenario('relevantBlock', function*() {
+    const relevantBlock = new Scenario('relevantBlock', function*() {
         yield bp.block(basicEvent.eventC);
     });
-    const notRelevantBlock= new Scenario('notRelevantBlock', function*() {
+    const notRelevantBlock = new Scenario('notRelevantBlock', function*() {
         yield bp.block(basicEvent.eventB);
     });
-    const notRelevantValidation= new Scenario('notRelevantValidation', function*() {
+    const notRelevantValidation = new Scenario('notRelevantValidation', function*() {
         yield bp.validate(basicEvent.eventB, (v) => v !== undefined && v > 0);
     });
-    const relevantValidation= new Scenario('relevantValidation', function*() {
-        yield bp.validate(basicEvent.eventC, (v) => v !== undefined && v > 0);
+    const relevantValidation = new Scenario('relevantValidation', function*() {
+        yield bp.validate(basicEvent.eventA, (v) => v !== undefined && v > 0);
     });
     const relevantTrigger = new Scenario('relevantTrigger', function*() {
         yield bp.trigger(basicEvent.eventD);

@@ -1,7 +1,6 @@
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import * as utils from './utils';
-import { PendingBid } from './pending-bid';
-import { AnyAction, BThreadGenerator } from '.';
+import { BThreadGenerator } from '.';
 import { getAllPayloadValidationCallbacks, isValidPayload, PayloadValidationCB } from './validation';
 import { ScenarioEvent, ScenarioEventKeyed } from './scenario-event';
 import { EventMap } from './update-loop';
@@ -107,8 +106,14 @@ export function getHighestPriorityValidRequestingBid(allPlacedBids: AllPlacedBid
     let involvedBThreads: NameKeyId[] = [];
     let matchedAskForBThreadId: NameKeyId | undefined = undefined;
     const foundBid = allPlacedBids.orderedRequestingBids?.find((bid) => {
+        let askForBid: PlacedBid | undefined;
         if(!allPlacedBids.enabled.get(bid.eventId) === true) {
             return false;
+        }
+        if(bid.type === 'triggerBid') {
+            askForBid = getHighestPrioAskForBid(allPlacedBids.waitingBidsByEventId.get(bid.eventId));
+            if(askForBid === undefined) return false;
+            matchedAskForBThreadId = askForBid.bThreadId;
         }
         if(allPlacedBids.blocked.has(bid.eventId)) {
             involvedBThreads = involvedBThreads.concat(allPlacedBids.blocked.get(bid.eventId)!);
@@ -121,15 +126,13 @@ export function getHighestPriorityValidRequestingBid(allPlacedBids: AllPlacedBid
         if(allPlacedBids.validateBids.has(bid.eventId)) {
             involvedBThreads = involvedBThreads.concat(allPlacedBids.validateBids.get(bid.eventId)!.map(v => v.bThreadId));
         }
-        if(bid.type === 'triggerBid') {
-            const askForBid = getHighestPrioAskForBid(allPlacedBids.waitingBidsByEventId.get(bid.eventId));
-            if(askForBid === undefined) return false;
-            matchedAskForBThreadId = askForBid.bThreadId;
-            const validationCallbacks = getAllPayloadValidationCallbacks(askForBid, allPlacedBids.validateBids.get(bid.eventId));
+        const validateBids = allPlacedBids.validateBids.get(bid.eventId);
+        if(validateBids !== undefined) {
+            involvedBThreads = involvedBThreads.concat(validateBids.map(bid => bid.bThreadId));
+            const validationCallbacks = getAllPayloadValidationCallbacks(askForBid || bid, validateBids);
             return isValidPayload(validationCallbacks, bid.payload);
         }
-        const validationCallbacks = getAllPayloadValidationCallbacks(bid, allPlacedBids.validateBids.get(bid.eventId));
-        return isValidPayload(validationCallbacks, bid.payload);
+        return true;
     });
     if(foundBid) {
         involvedBThreads.push(foundBid.bThreadId);

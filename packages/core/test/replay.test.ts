@@ -133,6 +133,7 @@ test("if a ui replay action is found, without a matching askFor bid, the replay 
           id: 0,
           type: 'uiAction',
           eventId: { name: 'A' },
+          bThreadId: { name: 'waitingThread' },
           payload: 1
         }
     ]);
