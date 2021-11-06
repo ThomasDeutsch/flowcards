@@ -1,20 +1,20 @@
 import { BThreadBids } from './bid';
-import { BThread, BThreadPublicContext } from './bthread';
+import { BThreadCore, BThreadPublicContext } from './bthread-core';
 import { Logger } from './logger';
-import { Scenario } from './scenario';
+import { BThread } from './b-thread';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
-import { ScenarioEvent } from './scenario-event';
+import { BEvent } from './b-event';
 import { EventBidInfo, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
-export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
-export type ConnectScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
-export type StagingFunction = (enable: EnableScenario, events: ConnectScenarioEvents) => void;
+export type EnableScenario = <P>(...props: P extends void ? [BThread<P>] : [BThread<P>, P]) => BThreadPublicContext;
+export type ConnectScenarioEvents = (...events: (BEvent<any> | Record<string, BEvent<any>>)[]) => void;
+export type StagingCB = (enable: EnableScenario, events: ConnectScenarioEvents) => void;
 export type UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, payload?: any) => void;
 export type RunStaging = () => void;
 
 export interface StagingProps {
-    stagingFunction: StagingFunction;
+    stagingCb: StagingCB;
     bThreadMap: BThreadMap;
     eventMap: EventMap;
     bThreadBids: BThreadBids[];
@@ -38,13 +38,13 @@ export function setupStaging(props: StagingProps): RunStaging {
     const destroyOnDisableThreadIds = new NameKeyMap<NameKeyId>();
     const enabledEventIds = new NameKeyMap<NameKeyId>();
 
-    const enableScenario: EnableScenario = <P>(...[scenario, scenarioProps]: [Scenario<P>, P] | [Scenario<P>]) => {
+    const enableScenario: EnableScenario = <P>(...[scenario, scenarioProps]: [BThread<P>, P] | [BThread<P>]) => {
         enabledScenarioIds.set(scenario.id, scenario.id);
-        let bThread = props.bThreadMap.get(scenario.id) as BThread<P>;
+        let bThread = props.bThreadMap.get(scenario.id) as BThreadCore<P>;
         if (bThread) {
             bThread.resetBThreadOnPropsChange(scenario.generatorFunction, scenarioProps)
         } else {
-            bThread = new BThread<P>({
+            bThread = new BThreadCore<P>({
                 id: scenario.id,
                 generatorFunction: scenario.generatorFunction,
                 props: scenarioProps!,
@@ -59,7 +59,7 @@ export function setupStaging(props: StagingProps): RunStaging {
         return bThread.context;
     }
 
-    function connectEvent(event: ScenarioEvent<any>) {
+    function connectEvent(event: BEvent<any>) {
         enabledEventIds.set(event.id, event.id);
         if(props.eventMap.has(event.id) === false) {
             event.__connect({
@@ -72,7 +72,7 @@ export function setupStaging(props: StagingProps): RunStaging {
 
     const connectEvents: ConnectScenarioEvents = (...events) => {
         events.forEach(event => {
-            if(event instanceof ScenarioEvent) {
+            if(event instanceof BEvent) {
                 connectEvent(event);
             }
             else {
@@ -87,7 +87,7 @@ export function setupStaging(props: StagingProps): RunStaging {
         props.bThreadBids.length = 0;
         enabledScenarioIds.clear();
         enabledEventIds.clear();
-        props.stagingFunction(enableScenario, connectEvents); // do the staging
+        props.stagingCb(enableScenario, connectEvents); // do the staging
         props.eventMap.allValues?.forEach(event => {
             if(!enabledEventIds.has(event.id)) {
                 props.eventMap.get(event)?.__unplug();

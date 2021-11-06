@@ -5,9 +5,9 @@ import { ExtendContext } from './extend-context';
 import { Logger, BThreadReactionType } from './logger';
 import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
-import { ScenarioEvent } from './scenario-event';
+import { BEvent } from './b-event';
 import { Bid, getResolveRejectAction } from '.';
-import { BThreadGeneratorFunction } from './scenario';
+import { BThreadGeneratorFunction } from './b-thread';
 import * as utils from './utils';
 import { ReactionCheck } from './reaction';
 
@@ -21,7 +21,7 @@ export type ErrorInfo = {event: NameKeyId, error: any}
 export type BThreadGenerator = Generator<BidOrBids, void, ScenarioProgressInfo>;
 export interface BThreadContext {
     key?: string | number;
-    getExtend: <P>(event: ScenarioEvent<P>) => {
+    getExtend: <P>(event: BEvent<P>) => {
         value: P,
         resolve: (next: (value : P) => P) => boolean
     } | undefined;
@@ -34,7 +34,7 @@ export type BThreadPublicContext = {
 }
 
 export interface ScenarioProgressInfo {
-    event: ScenarioEvent<any>;
+    event: BEvent<any>;
     eventId: NameKeyId;
     remainingBids?: Bid<any>[];
 }
@@ -48,16 +48,16 @@ export interface BThreadParameters<P> {
     id: NameKeyId,
     generatorFunction: BThreadGeneratorFunction<P>;
     resolveActionCB: ResolveActionCB;
-    scenarioEventMap: NameKeyMap<ScenarioEvent>;
+    scenarioEventMap: NameKeyMap<BEvent>;
     logger: Logger;
     props: P;
 }
 
-export class BThread<P> {
+export class BThreadCore<P> {
     public readonly id: NameKeyId;
     private readonly _resolveActionCB: ResolveActionCB;
     private readonly _logger: Logger;
-    private readonly _event: NameKeyMap<ScenarioEvent<any>>
+    private readonly _event: NameKeyMap<BEvent<any>>
     private _thread: BThreadGenerator;
     private _placedBids: PlacedBid[] = [];
     private _nextBidOrBids?: BidOrBids;

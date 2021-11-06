@@ -1,14 +1,14 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { Scenario } from '../src/scenario'
+import { BThread } from '../src/b-thread'
 import { delay } from './testutils';
-import { ScenarioEvent } from "../src";
+import { BEvent } from "../src";
 
 
 test("A function, returning a promise can be requested and will create a pending-event", (done) => {
-    const eventA = new ScenarioEvent<number>('A');
+    const eventA = new BEvent<number>('A');
 
-    const thread1 = new Scenario('requestingThread', function* () {
+    const thread1 = new BThread('requestingThread', function* () {
         yield bp.request(eventA, () => delay(10, 10));
     });
 
@@ -28,14 +28,14 @@ test("A function, returning a promise can be requested and will create a pending
 
 test("multiple async-requests can be executed sequentially", (done) => {
 
-    const eventWaitForCard = new ScenarioEvent<number>('Wait for Card');
-    const eventValidateCard = new ScenarioEvent<number>('Validate Card');
-    const eventLoadAccount = new ScenarioEvent<number>('Load Account');
-    const eventWaitForPin = new ScenarioEvent<number>('Wait for Pin');
+    const eventWaitForCard = new BEvent<number>('Wait for Card');
+    const eventValidateCard = new BEvent<number>('Validate Card');
+    const eventLoadAccount = new BEvent<number>('Load Account');
+    const eventWaitForPin = new BEvent<number>('Wait for Pin');
 
     let threadResetCounter = -1;
 
-    const scenario1 = new Scenario('flow',
+    const scenario1 = new BThread('flow',
         function*() {
             threadResetCounter++;
             yield bp.request(eventWaitForCard, () => delay(10, 1));
@@ -61,19 +61,19 @@ test("for multiple active promises in one yield, only one resolve will progress 
     let progressed2 = false;
     let progressed3 = false;
 
-    const eventA = new ScenarioEvent('A');
-    const eventB = new ScenarioEvent('B');
+    const eventA = new BEvent('A');
+    const eventB = new BEvent('B');
 
-    const requestingScenario = new Scenario('thread1', function* () {
+    const requestingScenario = new BThread('thread1', function* () {
         yield [bp.request(eventA, () => delay(10)), bp.request(eventB, () => delay(10))];
     });
 
-    const thread2 = new Scenario('thread2', function* () {
+    const thread2 = new BThread('thread2', function* () {
         yield bp.waitFor(eventA);
         progressed2 = true;
     });
 
-    const thread3 = new Scenario('thread3', function* () {
+    const thread3 = new BThread('thread3', function* () {
         yield bp.waitFor(eventB);
         progressed3 = true;
     });
@@ -93,15 +93,15 @@ test("for multiple active promises in one yield, only one resolve will progress 
 
 
 test("if a scenario gets disabled, resolving events are ignored", (done) => {
-    const eventA = new ScenarioEvent('A');
-    const eventB = new ScenarioEvent('B');
+    const eventA = new BEvent('A');
+    const eventB = new BEvent('B');
 
-    const thread1 = new Scenario('thread1', function* () {
+    const thread1 = new BThread('thread1', function* () {
         const progress = yield [bp.waitFor(eventB),  bp.request(eventA, () => delay(100))];
         expect(progress.event).toBe(eventA);
     });
 
-    const thread2 = new Scenario('thread2', function*() {
+    const thread2 = new BThread('thread2', function*() {
         yield bp.request(eventB, () => delay(200));
     });
 
@@ -121,14 +121,14 @@ test("if a scenario gets disabled, resolving events are ignored", (done) => {
 
 
 test("a scenario in a pending-event state can place additional bids.", (done) => {
-    const eventA = new ScenarioEvent('A');
-    const eventB = new ScenarioEvent('B');
+    const eventA = new BEvent('A');
+    const eventB = new BEvent('B');
 
-    const thread1 = new Scenario('requestingThread', function* () {
+    const thread1 = new BThread('requestingThread', function* () {
         yield [bp.request(eventA, () => delay(100)), bp.block(eventB)];
     });
 
-    const thread2 = new Scenario('waitingThread', function* () {
+    const thread2 = new BThread('waitingThread', function* () {
         yield bp.askFor(eventB);
     });
 
@@ -148,18 +148,18 @@ test("a scenario in a pending-event state can place additional bids.", (done) =>
 });
 
 test("a canceled request will not progress a pending event with the same event-id", (done) => {
-    const eventA = new ScenarioEvent<string>('A');
-    const eventB = new ScenarioEvent('B');
-    const eventCancel = new ScenarioEvent('B');
+    const eventA = new BEvent<string>('A');
+    const eventB = new BEvent('B');
+    const eventCancel = new BEvent('B');
 
-    const thread1 = new Scenario('requestingThread', function* () {
+    const thread1 = new BThread('requestingThread', function* () {
         yield [bp.request(eventA, () => delay(200, '1')), bp.askFor(eventCancel)];
         yield bp.request(eventB);
         yield bp.request(eventA, () => delay(500, '2'));
         expect(eventA.value).toBe('2');
     });
 
-    const thread2 = new Scenario('cancelThread', function* () {
+    const thread2 = new BThread('cancelThread', function* () {
         yield bp.trigger(eventCancel);
     });
 

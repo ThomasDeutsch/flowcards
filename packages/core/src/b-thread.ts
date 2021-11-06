@@ -1,15 +1,10 @@
 
-import { BThreadContext, BThreadGenerator, BThreadPublicContext } from './bthread';
+import { BThreadContext, BThreadGenerator, BThreadPublicContext } from './bthread-core';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { PendingBid } from './pending-bid';
 
-export interface EnableScenarioInfo<P> {
-    id: NameKeyId;
-    destroyOnDisable: boolean;
-    generatorFunction: BThreadGeneratorFunction<P>;
-    nextProps?: P;
-}
-export interface ScenarioInfo {
+
+export interface BThreadInfo {
     name: string;
     key?: string | number;
     destroyOnDisable?: boolean;
@@ -19,7 +14,7 @@ export interface ScenarioInfo {
 export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadContext, props: P) => BThreadGenerator;
 
 
-function toInfoObj(info: ScenarioInfo | string): ScenarioInfo {
+function toInfoObj(info: BThreadInfo | string): BThreadInfo {
     if(typeof info === 'string') {
         return {
             name: info,
@@ -37,14 +32,16 @@ function toInfoObj(info: ScenarioInfo | string): ScenarioInfo {
         }
     }
 }
-export class Scenario<P = void> {
+
+
+export class BThread<P = void> {
     public readonly id: NameKeyId;
     private _generatorFunction: BThreadGeneratorFunction<P>;
     public readonly destroyOnDisable: boolean;
     private _bThreadContext?: BThreadPublicContext;
     public readonly description?: string;
 
-    constructor(info: ScenarioInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
+    constructor(info: BThreadInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
         this._generatorFunction = generatorFn;
         const i = toInfoObj(info);
         this.id = {name: i.name, key: i.key}
@@ -75,27 +72,27 @@ export class Scenario<P = void> {
 }
 
 
-export class ScenarioKeyed<P = void> {
+export class BThreadKeyed<P = void> {
     private _generatorFunction: BThreadGeneratorFunction<P>;
-    private _info: ScenarioInfo;
-    private _children = new Map<string | number, Scenario<P>>()
+    private _info: BThreadInfo;
+    private _children = new Map<string | number, BThread<P>>()
 
-    constructor(info: ScenarioInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
+    constructor(info: BThreadInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
         this._info = toInfoObj(info);
         this._generatorFunction = generatorFn;
     }
 
-    public key(key: string | number): Scenario<P> {
-        let scenario = this._children.get(key);
-        if(scenario === undefined) {
-            const infoWithKey: ScenarioInfo = {...this._info, key: key};
-            scenario = new Scenario<P>(infoWithKey, this._generatorFunction);
-            this._children.set(key, scenario);
+    public key(key: string | number): BThread<P> {
+        let bThread = this._children.get(key);
+        if(bThread === undefined) {
+            const infoWithKey: BThreadInfo = {...this._info, key: key};
+            bThread = new BThread<P>(infoWithKey, this._generatorFunction);
+            this._children.set(key, bThread);
         }
-        return scenario;
+        return bThread;
     }
 
-    public keys(...keys: (string | number)[]): Scenario<P>[] {
+    public keys(...keys: (string | number)[]): BThread<P>[] {
         return keys.map(key => this.key(key));
     }
 

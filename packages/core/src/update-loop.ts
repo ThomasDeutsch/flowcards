@@ -1,13 +1,13 @@
 import { getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyActionWithId, toActionWithId } from './action';
 import { BThreadBids } from './bid';
-import { BThread } from './bthread';
+import { BThreadCore } from './bthread-core';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger, LoopLog } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
-import { RunStaging, setupStaging, StagingFunction } from './staging';
+import { RunStaging, setupStaging, StagingCB } from './staging';
 import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBid, InternalDispatch } from './index';
 import { Replay } from './replay';
-import { ScenarioEvent } from './scenario-event';
+import { BEvent } from './b-event';
 import { isThenable } from './utils';
 import { ReactionCheck } from './reaction';
 
@@ -18,8 +18,8 @@ import { ReactionCheck } from './reaction';
 export type UpdateLoopFunction = () => void;
 export type ReplayMap = Map<number, AnyActionWithId>;
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
-export type BThreadMap = NameKeyMap<BThread<any>>;
-export type EventMap = NameKeyMap<ScenarioEvent<any>>;
+export type BThreadMap = NameKeyMap<BThreadCore<any>>;
+export type EventMap = NameKeyMap<BEvent<any>>;
 export interface LogInfo {
     logs: LoopLog[];
     allRelevantScenarios: NameKeyMap<void>;
@@ -28,18 +28,18 @@ export interface LogInfo {
 export class UpdateLoop {
     private _currentActionId = 0;
     private _allPlacedBids?: AllPlacedBids;
-    private readonly _bThreadMap: BThreadMap = new NameKeyMap<BThread<any>>();
+    private readonly _bThreadMap: BThreadMap = new NameKeyMap<BThreadCore<any>>();
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _logger: Logger;
     private readonly _stageScenarioAndEvents: RunStaging;
-    private readonly _eventMap: EventMap = new NameKeyMap<ScenarioEvent<any>>();
+    private readonly _eventMap: EventMap = new NameKeyMap<BEvent<any>>();
     private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _replay?: Replay;
 
-    constructor(stagingFunction: StagingFunction, internalDispatch: InternalDispatch, logger: Logger) {
+    constructor(stagingCb: StagingCB, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
         this._stageScenarioAndEvents = setupStaging({
-            stagingFunction,
+            stagingCb,
             bThreadMap: this._bThreadMap,
             eventMap: this._eventMap,
             bThreadBids: this._bThreadBids,
@@ -152,4 +152,3 @@ export class UpdateLoop {
         this._logger.resetLog();
     }
 }
-

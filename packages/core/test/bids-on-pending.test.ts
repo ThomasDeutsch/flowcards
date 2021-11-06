@@ -1,20 +1,20 @@
 import * as bp from "../src/index";
 import { testScenarios, delay } from "./testutils";
-import { Scenario } from '../src/scenario';
-import { ScenarioEvent, ScenarioEventKeyed } from "../src/index";
+import { BThread } from '../src/b-thread';
+import { BEvent, BEventKeyed } from "../src/index";
 
 
 test("an onPending-wait is progressed, when the event receives the pending state", (done) => {
 
     const testEvents = {
-        A: new ScenarioEvent<string>('A')
+        A: new BEvent<string>('A')
     }
 
-    const thread1 = new Scenario('thread1', function* () {
+    const thread1 = new BThread('thread1', function* () {
         yield bp.request(testEvents.A, () => delay(100, "hey"));
     })
 
-    const thread2 = new Scenario('thread2', function* () {
+    const thread2 = new BThread('thread2', function* () {
         yield bp.onPending(testEvents.A);
     })
 
@@ -34,14 +34,14 @@ test("an onPending-wait is progressed, when the event receives the pending state
 
 test("an onPending-wait is not progressed on events that are not async", () => {
     const testEvents = {
-        A: new ScenarioEvent<string>('A')
+        A: new BEvent<string>('A')
     }
 
-    const thread1 = new Scenario('thread1', function* () {
+    const thread1 = new BThread('thread1', function* () {
         yield bp.request(testEvents.A, "hey");
     })
 
-    const thread2 = new Scenario('thread2', function* () {
+    const thread2 = new BThread('thread2', function* () {
         yield bp.onPending(testEvents.A);
     })
 
@@ -57,15 +57,15 @@ test("an onPending-wait is not progressed on events that are not async", () => {
 test("an onPending for a keyed event is not progressed when a no-key request for the same event-name is made", (done) => {
 
     const testEvents = {
-        A: new ScenarioEvent<string>('A'),
-        AK: new ScenarioEventKeyed<string>('A')
+        A: new BEvent<string>('A'),
+        AK: new BEventKeyed<string>('A')
     }
 
-    const thread1 = new Scenario('thread1', function* () {
+    const thread1 = new BThread('thread1', function* () {
         yield bp.request(testEvents.A, () => delay(100, "hey"));
     })
 
-    const thread2 = new Scenario('thread2', function* () {
+    const thread2 = new BThread('thread2', function* () {
         yield bp.onPending(testEvents.AK.key(1));
     })
 

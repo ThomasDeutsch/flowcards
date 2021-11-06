@@ -1,15 +1,15 @@
-import { Scenario } from "../src";
+import { BThread } from "../src";
 import * as bp from "../src/bid";
-import { ScenarioEvent } from "../src/scenario-event";
+import { BEvent } from "../src/b-event";
 import { testScenarios } from "./testutils";
 
 test("if a request replay has no payload, the Payload-Function will be called", () => {
 
     const basicEvent = {
-        eventA: new ScenarioEvent<number>('A')
+        eventA: new BEvent<number>('A')
     }
 
-    const requestingThread = new Scenario('requestingThread', function*() {
+    const requestingThread = new BThread('requestingThread', function*() {
         let isCalled = false;
         const n = yield* bp.bid(bp.request(basicEvent.eventA, () => {
             isCalled = true;
@@ -39,13 +39,13 @@ test("if a request replay has no payload, the Payload-Function will be called", 
 test("a request can be replayed with an alternative payload", () => {
 
     const basicEvent = {
-        eventA: new ScenarioEvent<number>('A'),
-        eventB: new ScenarioEvent<number>('B'),
-        eventC: new ScenarioEvent<number>('C'),
-        eventD: new ScenarioEvent('D')
+        eventA: new BEvent<number>('A'),
+        eventB: new BEvent<number>('B'),
+        eventC: new BEvent<number>('C'),
+        eventD: new BEvent('D')
     }
 
-    const requestingThread = new Scenario('requestingThread', function*() {
+    const requestingThread = new BThread('requestingThread', function*() {
         let isCalled = false;
         const n = yield* bp.bid(bp.request(basicEvent.eventC, () => {
             isCalled = true;
@@ -77,17 +77,17 @@ test("a request can be replayed with an alternative payload", () => {
 test("a replay will fail, if the requested event is not the same event as the replay event.", () => {
 
     const basicEvent = {
-        eventA: new ScenarioEvent<number>('A'),
-        eventB: new ScenarioEvent<number>('B'),
-        eventC: new ScenarioEvent<number>('C'),
-        eventD: new ScenarioEvent('D')
+        eventA: new BEvent<number>('A'),
+        eventB: new BEvent<number>('B'),
+        eventC: new BEvent<number>('C'),
+        eventD: new BEvent('D')
     }
 
-    const requesting = new Scenario('requestingThread', function*() {
+    const requesting = new BThread('requestingThread', function*() {
         yield bp.request(basicEvent.eventA, 1);
     });
 
-    const secondRequesting = new Scenario('secondRequesting', function*() {
+    const secondRequesting = new BThread('secondRequesting', function*() {
         yield [bp.request(basicEvent.eventB, 1), bp.block(basicEvent.eventA)];
     });
 
@@ -115,10 +115,10 @@ test("a replay will fail, if the requested event is not the same event as the re
 test("if a ui replay action is found, without a matching askFor bid, the replay will be aborted", () => {
 
     const basicEvent = {
-        eventA: new ScenarioEvent<number>('A')
+        eventA: new BEvent<number>('A')
     }
 
-    const waitingThread = new Scenario('waitingThread', function*() {
+    const waitingThread = new BThread('waitingThread', function*() {
         yield bp.waitFor(basicEvent.eventA); // not asking for event
     });
 

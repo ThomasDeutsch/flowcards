@@ -2,7 +2,6 @@ import { RequestingBidType, SelectedRequestingBid} from './bid';
 import { NameKeyId } from './name-key-map';
 import { PendingBid } from './pending-Bid';
 import { BidType } from '.';
-import { EventMap } from './update-loop';
 
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
@@ -22,7 +21,7 @@ export interface RequestedAction extends Action {
     id: number,
     type: "requestedAction",
     bidType: RequestingBidType;
-    matchedAskForBThread?: NameKeyId;
+    matchedAskForBThreadId?: NameKeyId;
     resolveActionId?: number | 'pending';
 }
 
@@ -75,7 +74,7 @@ export function getRequestedAction(currentActionId: number, bid?: SelectedReques
         bThreadId: bid.bThreadId,
         eventId: bid.eventId,
         payload: bid.payload,
-        matchedAskForBThread: bid.matchedAskForBThreadId
+        matchedAskForBThreadId: bid.matchedAskForBThreadId
     };
     return action;
 }

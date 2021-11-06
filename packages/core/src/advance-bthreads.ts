@@ -3,7 +3,7 @@ import { NameKeyId } from './name-key-map';
 import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
 import { AllPlacedBids, getMatchingBids, unblockNameKeyId } from '.';
 import { getAllPayloadValidationCallbacks, isValidPayload, isValidReturn } from './validation';
-import { BThreadMap, EventMap } from './update-loop';
+import { BThreadMap } from './update-loop';
 import { ReactionCheck } from './reaction';
 
 
@@ -67,8 +67,8 @@ export function advanceRequestedAction(bThreadMap: BThreadMap, allPlacedBids: Al
     if(extendContext) return ReactionCheck.OK;
     const checkedProgress = requestingBThread.progressBid(action.bidType, action.eventId, action.payload);
     if(checkedProgress !== ReactionCheck.OK) return checkedProgress;
-    if(action.matchedAskForBThread) {
-        const askForBThread = bThreadMap.get(action.matchedAskForBThread);
+    if(action.matchedAskForBThreadId) {
+        const askForBThread = bThreadMap.get(action.matchedAskForBThreadId);
         askForBThread?.progressBid('askForBid', action.eventId, action.payload);
     }
     progressWaitingBThreads(allPlacedBids, bThreadMap, "waitForBid", action);

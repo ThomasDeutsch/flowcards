@@ -1,13 +1,13 @@
 import { AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
 import { LogInfo, UpdateLoop } from './update-loop';
-import { StagingFunction } from './staging';
+import { StagingCB } from './staging';
 import { Logger, LoopLog } from './logger';
 import { Replay } from './replay';
 
 //TODO: remove this and let the user use deep imports ( better for tree-shaking )
-export * from './scenario';
-export * from './scenario-event';
-export * from './bthread';
+export * from './b-thread';
+export * from './b-event';
+export * from './bthread-core';
 export * from './update-loop';
 export * from './name-key-map';
 export * from "./bid";
@@ -21,9 +21,9 @@ export type UpdateCallback = (pl: {log: LogInfo, replay?: Replay}) => void;
 export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
 export type OnFinishLoopCB = (loopLog: LoopLog) => void;
 
-export interface ScenariosProps {
-    stagingFunction: StagingFunction;
-    updateCB?: UpdateCallback;
+export interface BehaviorsProps {
+    stagingCb: StagingCB;
+    updateCb?: UpdateCallback;
     onNextLoopCB?: OnFinishLoopCB;
     doInitialUpdate: boolean;
     initialActionsOrReplay?: AnyActionWithId[] | Replay
@@ -42,16 +42,16 @@ function getReplay(initialActionsOrReplay?: AnyActionWithId[] | Replay): Replay 
     return initialActionsOrReplay;
 }
 
-export class Scenarios {
+export class Behaviors {
     private _bufferedActions: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
     private _updateLoop: UpdateLoop;
     private _updateCB?: UpdateCallback;
     private _logger: Logger;
 
-    constructor(props: ScenariosProps) {
+    constructor(props: BehaviorsProps) {
         this._logger = new Logger(props.onNextLoopCB);
-        this._updateLoop = new UpdateLoop(props.stagingFunction, this._internalDispatch.bind(this), this._logger);
-        this._updateCB = props.updateCB;
+        this._updateLoop = new UpdateLoop(props.stagingCb, this._internalDispatch.bind(this), this._logger);
+        this._updateCB = props.updateCb;
         const replay = getReplay(props.initialActionsOrReplay);
         const log = this._updateLoop.runStagingAndLoopSync(true, replay);
         if(this._updateCB && props.doInitialUpdate) this._updateCB({log, replay}); // callback with initial value

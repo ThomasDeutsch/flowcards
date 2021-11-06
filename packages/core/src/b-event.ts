@@ -3,7 +3,9 @@ import { NameKeyId } from "./name-key-map";
 import { UIActionDispatch } from "./staging";
 import { getAllPayloadValidationCallbacks, PayloadValidationCB, validateAll} from "./validation";
 
+
 export type NextValueFn<P> = (current: P | undefined) => P;
+
 
 export interface EventBidInfo {
     blockedBy?: NameKeyId[];
@@ -12,16 +14,18 @@ export interface EventBidInfo {
     waitingBids?: PlacedBid[]
 }
 
+
 export interface EventConnectProps {
     uiActionDispatch: UIActionDispatch;
     getEventBidInfo: (eventId: NameKeyId) => EventBidInfo;
 }
 
-export class ScenarioEvent<P = void> {
+
+export class BEvent<P = void> {
     public readonly name: string;
     public readonly key?: string | number;
     public readonly initialValue?: P;
-    public readonly description?: string
+    public readonly description?: string;
     private _updatedOn?: number;
     //setup
     private _uiActionDispatch?: UIActionDispatch;
@@ -120,10 +124,10 @@ export class ScenarioEvent<P = void> {
 }
 
 
-export class ScenarioEventKeyed<P = void> {
+export class BEventKeyed<P = void> {
     public readonly name: string;
     private _initialValue?: P;
-    private _children = new Map<string | number, ScenarioEvent<P>>();
+    private _children = new Map<string | number, BEvent<P>>();
 
     constructor(name: string, initialValue?: P) {
         this._initialValue = initialValue;
@@ -134,16 +138,16 @@ export class ScenarioEventKeyed<P = void> {
         return { name: this.name }
     }
 
-    public key(key: string | number): ScenarioEvent<P> {
+    public key(key: string | number): BEvent<P> {
         let event = this._children.get(key);
         if(event === undefined) {
-            event = new ScenarioEvent<P>({name: this.name, key: key}, this._initialValue);
+            event = new BEvent<P>({name: this.name, key: key}, this._initialValue);
             this._children.set(key, event);
         }
         return event;
     }
 
-    public keys(...keys: (string | number)[]): ScenarioEvent<P>[] {
+    public keys(...keys: (string | number)[]): BEvent<P>[] {
         return keys.map(key => this.key(key));
     }
 
@@ -152,7 +156,7 @@ export class ScenarioEventKeyed<P = void> {
     }
 
     /** @internal */
-    public __disable(deleteKeys: boolean): void {
+    public __unplug(deleteKeys: boolean): void {
         if(deleteKeys) {
             this._children.clear();
         } else {
