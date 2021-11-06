@@ -17,7 +17,7 @@ export interface BThreadReaction {
 }
 
 export interface LoopLog {
-    relevantScenarios: NameKeyMap<void>;
+    actionScenarios: NameKeyMap<void>;
     action: AnyActionWithId;
     reactions: NameKeyMap<BThreadReaction>;
     placedBids: AllPlacedBids;
@@ -26,7 +26,7 @@ export interface LoopLog {
 
 function getInitialLoopLog(): Partial<LoopLog> {
     return {
-        relevantScenarios: new NameKeyMap(),
+        actionScenarios: new NameKeyMap(),
         reactions: new NameKeyMap()    }
 }
 
@@ -53,7 +53,7 @@ export class Logger {
     // For a requested action, what scenarios have selected the specific action?
     public logInvolvedScenariosForNextRequestBid(scenarioIds: NameKeyId[]): void {
         scenarioIds.forEach(id => {
-            this._loopLog.relevantScenarios!.set(id);
+            this._loopLog.actionScenarios!.set(id);
             this._allRelevantScenarios!.set(id)
         })
     }
@@ -69,7 +69,6 @@ export class Logger {
 
     // 4. log reactions ( by BThread )
     public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
-        this._loopLog.relevantScenarios!.set(bThreadId);
         this._allRelevantScenarios!.set(bThreadId);
         this._loopLog.reactions!.set(bThreadId, {
             reactionType: reactionType,
