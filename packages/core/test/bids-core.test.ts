@@ -55,7 +55,7 @@ test("a request will also advance waiting Scenarios", () => {
     }, () => {
         expect(eventA.value).toBe(1);
         expect(requestingThread.isCompleted).toBeTruthy();
-        expect(askingThread.isCompleted).toBeTruthy();
+        expect(askingThread.isCompleted).toBeFalsy();
         expect(waitingThread.isCompleted).toBeTruthy();
     });
 });
@@ -128,7 +128,7 @@ test("multiple requests will return information about the progressed Scenario", 
     });
 
     const receiveThreadB = new Scenario('receive', function* () {
-        const progress = yield bp.askFor(eventA);
+        const progress = yield bp.waitFor(eventA);
         expect(progress.event).toBe(eventB);
     });
 
@@ -151,7 +151,7 @@ test("multiple bids at the same time will be expressed as an array.", () => {
     });
 
     const receiveThread = new Scenario('thread1', function* () {
-        const progress = yield [bp.askFor(testEvent.A), bp.askFor(testEvent.B)];
+        const progress = yield [bp.waitFor(testEvent.A), bp.waitFor(testEvent.B)];
         expect(testEvent.A.value).toBe(1000);
         expect(progress.event).toBe(testEvent.A);
     });
@@ -175,7 +175,7 @@ test("A request-value can be a function. It will get called, when the event is s
     })
 
     const receiveThread = new Scenario('thread1', function* () {
-        const progress = yield [bp.askFor(testEvent.A), bp.askFor(testEvent.B)];
+        const progress = yield [bp.waitFor(testEvent.A), bp.waitFor(testEvent.B)];
         expect(testEvent.A.value).toBe(1000);
         expect(progress.event).toBe(testEvent.A);
     })
@@ -199,7 +199,7 @@ test("A request-value can be a function. It will get called, when the event is s
     })
 
     const receiveThread = new Scenario('thread1', function* () {
-        const progress = yield [bp.askFor(testEvent.A), bp.askFor(testEvent.B)];
+        const progress = yield [bp.waitFor(testEvent.A), bp.waitFor(testEvent.B)];
         expect(testEvent.A.value).toBe(1000);
         expect(progress.event).toBe(testEvent.A);
     })
@@ -227,11 +227,11 @@ test("if a request value is a function, it will be called once.", () => {
     });
 
     const receiveThread1 = new Scenario("receiveThread1", function* () {
-        yield bp.askFor(testEvent.A);
+        yield bp.waitFor(testEvent.A);
     });
 
     const receiveThread2 = new Scenario("receiveThread2", function* () {
-        yield bp.askFor(testEvent.A);
+        yield bp.waitFor(testEvent.A);
     })
 
     testScenarios((enable, enableEvents) => {
@@ -293,7 +293,7 @@ test("events can be blocked", () => {
     });
 
     const waitingThread = new Scenario('thread1', function* () {
-        yield bp.askFor(testEvent.A);
+        yield bp.waitFor(testEvent.A);
         advancedWait = true;
     });
 
@@ -309,7 +309,7 @@ test("events can be blocked", () => {
     }, () => {
         expect(advancedRequest).toBeFalsy();
         expect(advancedWait).toBeFalsy();
-        expect(testEvent.A.isValidDispatch(1)).toBe(false);
+        expect(testEvent.A.isValid(1)).toBe(false);
     });
 });
 
@@ -352,39 +352,46 @@ test("if a thread has multiple requests, the last request has the highest priori
 });
 
 test("with multiple requests for the same eventId, highest priority request is selected - that is also valid", () => {
-    let lowerPrioRequestProgressed = false;
-    let higherPrioRequestProgressed = false;
-
     const eventA = new ScenarioEvent<number>('A');
 
-    const requestingThread0 = new Scenario('thread1', function*() {
-        const progress = yield bp.request(eventA, 1);
-        lowerPrioRequestProgressed = true;
-        expect(progress.event.value).toBe(1);
+    const requestinglow = new Scenario('thread1', function*() {
+        yield bp.request(eventA, 1);
     });
 
-    const requestingThread1 = new Scenario('thread2', function*() {
-        const progress = yield bp.request(eventA, 5);
-        higherPrioRequestProgressed = true;
-        expect(progress.event.value).toBe(5);
+    const requestingHigh = new Scenario('thread2', function*() {
+        yield bp.request(eventA, 2);
     });
 
-    const validatingThread = new Scenario('thread4', function*() {
+    const requestingInvalid = new Scenario('thread3', function*() {
+        yield bp.request(eventA, 5);
+    });
+
+    const validating = new Scenario('thread4', function*() {
         yield bp.validate(eventA, (nr) => !!nr && nr < 4);
+    });
+
+    const waiting = new Scenario('thread5', function*() {
+        const value = yield* bp.bid(bp.waitFor(eventA));
+        expect(value).toBe(2);
     });
 
     testScenarios((enable, event) => {
         event(eventA)
-        enable(requestingThread0);
-        enable(requestingThread1);
-        enable(validatingThread);
+        enable(requestinglow);
+        enable(requestingHigh);
+        enable(requestingInvalid);
+        enable(validating);
+        enable(waiting);
     }, () => {
-        expect(lowerPrioRequestProgressed).toBe(true);
-        expect(higherPrioRequestProgressed).toBe(false);
+        expect(requestinglow.isCompleted).toBe(true);
+        expect(requestingHigh.isCompleted).toBe(true);
+        expect(requestingInvalid.isCompleted).toBe(false);
+        expect(validating.isCompleted).toBe(false);
+        expect(waiting.isCompleted).toBe(true);
     });
 });
 
-test("with multiple askFor for the same eventId, all askFor bids are progressed", () => {
+test("with multiple askFor for the same eventId, only the highest prio askFor progressed", () => {
     let lowerPrioProgressed = false;
     let higherPrioProgressed = false;
 
@@ -400,7 +407,7 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
         higherPrioProgressed = true;
     });
 
-    const requestingThread = new Scenario('thread3', function*() {
+    const triggerThread = new Scenario('thread3', function*() {
         yield bp.trigger(eventA, 1);
     });
 
@@ -408,45 +415,45 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
         events(eventA);
         enable(askingThreadLow);
         enable(askingThreadHigh);
-        enable(requestingThread);
+        enable(triggerThread);
     }, () => {
-        expect(lowerPrioProgressed).toBe(true);
+        expect(lowerPrioProgressed).toBe(false);
         expect(higherPrioProgressed).toBe(true);
 
     });
 });
 
-test("with multiple askFor for the same eventId, highest priority request is selected - that is also valid", () => {
-    let lowerPrioProgressed = false;
-    let higherPrioProgressed = false;
+// test("with multiple askFor for the same eventId, the high prio askFor is relevant", () => {
+//     let lowerPrioProgressed = false;
+//     let higherPrioProgressed = false;
 
-    const eventA = new ScenarioEvent<number>('A');
+//     const eventA = new ScenarioEvent<number>('A');
 
-    const askingThreadLow = new Scenario('thread1', function*() {
-        yield bp.askFor(eventA, (pl) => !!pl && pl > 10);
-        lowerPrioProgressed = true;
-    });
+//     const askingThreadLow = new Scenario('thread1', function*() {
+//         yield bp.askFor(eventA, (pl) => !!pl && pl > 10);
+//         lowerPrioProgressed = true;
+//     });
 
-    const askingThreadHigh = new Scenario('thread2', function*() {
-        yield bp.askFor(eventA, (pl) => !!pl && pl < 10);
-        higherPrioProgressed = true;
-    });
+//     const askingThreadHigh = new Scenario('thread2', function*() {
+//         yield bp.askFor(eventA, (pl) => !!pl && pl < 10);
+//         higherPrioProgressed = true;
+//     });
 
-    const requestingThread = new Scenario('thread3', function*() {
-        yield bp.request(eventA, 11);
-    });
+//     const requestingThread = new Scenario('thread3', function*() {
+//         yield bp.trigger(eventA, 11);
+//     });
 
-    testScenarios((enable, events) => {
-        events(eventA);
-        enable(askingThreadLow);
-        enable(askingThreadHigh);
-        enable(requestingThread);
-    }, () => {
-        expect(lowerPrioProgressed).toBe(true);
-        expect(higherPrioProgressed).toBe(false);
+//     testScenarios((enable, events) => {
+//         events(eventA);
+//         enable(askingThreadLow);
+//         enable(askingThreadHigh);
+//         enable(requestingThread);
+//     }, () => {
+//         expect(lowerPrioProgressed).toBe(false);
+//         expect(higherPrioProgressed).toBe(false);
 
-    });
-});
+//     });
+// });
 
 
 test("requesting the same bid multiple times is not allowed and will throw a warning", () => {
@@ -513,6 +520,9 @@ test("a pending event is cancelled, if the next bid is not asking for the pendin
             expect(eventB.isPending).toBe(false);
             done();
         }
+        else {
+            expect(eventB.isPending).toBe(true);
+        }
     });
 });
 
@@ -540,11 +550,11 @@ test("a pending event is cancelled, if the thread completes", (done) => {
 test("a pending event will not remain pending if the next bids will not include the pending event.", (done) => {
     const eventA = new ScenarioEvent<number>('A');
     const eventB = new ScenarioEvent<number>('B');
-    const eventContinue = new ScenarioEvent<number>('Continue');
+    const eventContinue = new ScenarioEvent('Continue');
 
     const requestingThread = new Scenario('thread1', function*() {
         yield [bp.request(eventA, 1), bp.request(eventB, () => delay(500, 1))];
-        yield [bp.request(eventB), bp.request(eventContinue)];
+        yield [bp.request(eventContinue)];
         yield bp.askFor(eventContinue);
     })
 
@@ -552,7 +562,7 @@ test("a pending event will not remain pending if the next bids will not include 
         events(eventA, eventB, eventContinue)
         enable(requestingThread);
     }, ()=> {
-        if(eventContinue.isValidDispatch(123)) {
+        if(eventContinue.isValid()) {
             expect(eventB.isPending).toBe(false);
             done();
         }
@@ -573,17 +583,17 @@ test("askFor will enable events to be dispatched", (done) => {
         enable(askingThread);
     }, ()=> {
         if(!askingThread.isCompleted) {
-            eventA.dispatch(11).then(() => {
-                expect(askingThread.isCompleted).toBe(true);
-                done();
-            });
+            const wasDispatched = eventA.dispatch(11);
+            expect(wasDispatched).toBe(true);
+        } else {
+            expect(askingThread.isCompleted).toBe(true);
+            done();
         }
     });
 });
 
 test("a trigger needs an askFor bid", () => {
-    const eventA = new ScenarioEvent('A');
-    const eventB = new ScenarioEvent('B');
+    const eventA = new ScenarioEvent('Axxx');
 
     const askingThread = new Scenario('askingThread', function*() {
         yield bp.askFor(eventA);
@@ -594,20 +604,20 @@ test("a trigger needs an askFor bid", () => {
     });
 
     testScenarios((s, e) => {
-        e(eventA, eventB);
+        e(eventA);
         s(askingThread);
         s(triggerThread);
     }, () => {
-        expect(askingThread.isCompleted).toBe(true);
         expect(triggerThread.isCompleted).toBe(true);
+        expect(askingThread.isCompleted).toBe(true);
     });
 });
 
 test("a trigger will not advance without an askFor bid", () => {
     const eventA = new ScenarioEvent('Abc');
 
-    const requestingThread = new Scenario('requestingThread', function*() {
-        yield bp.request(eventA);
+    const waitingBThread = new Scenario('requestingThread', function*() {
+        yield bp.waitFor(eventA);
     });
 
     const triggerThread = new Scenario('triggerThread', function*() {
@@ -616,10 +626,10 @@ test("a trigger will not advance without an askFor bid", () => {
 
     testScenarios((s, e) => {
         e(eventA);
-        s(requestingThread);
+        s(waitingBThread);
         s(triggerThread);
     }, () => {
         expect(triggerThread.isCompleted).toBe(false);
-        expect(requestingThread.isCompleted).toBe(true);
+        expect(waitingBThread.isCompleted).toBe(false);
     });
 });

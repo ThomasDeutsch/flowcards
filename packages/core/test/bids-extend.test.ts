@@ -9,7 +9,6 @@ import { ScenarioEvent } from "../src";
 
 test("requests can be extended", () => {
     const eventA = new ScenarioEvent('A');
-    const eventX = new ScenarioEvent('X');
     let progressedRequest = false,
         progressedExtend = false,
         setupCount = 0;
@@ -22,18 +21,18 @@ test("requests can be extended", () => {
     const thread3 = new Scenario('extending thread', function* () {
         yield bp.extend(eventA);
         progressedExtend = true;
-        yield bp.askFor(eventX);
     })
 
     testScenarios((enable, events) => {
-        events(eventA, eventX);
+        events(eventA);
         enable(thread1);
         enable(thread3);
         setupCount++;
     }, () => {
         expect(progressedExtend).toBe(true);
-        expect(eventA.isPending).toBeTruthy();
         expect(progressedRequest).toBe(false);
+
+        expect(eventA.isPending).toBeTruthy();
         expect(setupCount).toEqual(2);
     }
  );
@@ -42,12 +41,11 @@ test("requests can be extended", () => {
 
 test("after the extend resolved, the event is no longer pending", (done) => {
     const eventA = new ScenarioEvent<number>('A');
-    const eventX = new ScenarioEvent('X');
-    const eventZ = new ScenarioEvent('X');
+    const eventZ = new ScenarioEvent('Z');
 
     const thread1 = new Scenario('requesting thread', function* () {
         yield bp.request(eventA, 100);
-        yield bp.askFor(eventX);
+        yield bp.askFor(eventZ);
     });
 
     const thread3 = new Scenario('extending thread', function* () {
@@ -58,11 +56,11 @@ test("after the extend resolved, the event is no longer pending", (done) => {
     })
 
     testScenarios((enable, events) => {
-        events(eventA, eventX, eventZ);
+        events(eventA, eventZ);
         enable(thread1);
         enable(thread3);
     }, () => {
-        if(eventX.isValidDispatch()) {
+        if(eventZ.isValid()) {
             expect(eventA.value).toBe(110);
             done();
         }
@@ -84,7 +82,7 @@ test("if an extend is not applied, than the next extend will get the event", () 
     });
 
     const waitThread = new Scenario('waitThread', function* () {
-        yield bp.askFor(eventA, (pl) => pl === 1000);
+        yield bp.waitFor(eventA, (pl) => pl === 1000);
         waitBAdvanced = true;
     });
 
@@ -157,7 +155,7 @@ test("extended values can be accessed with the getExtend function", (done) => {
     });
 
     const thread2 = new Scenario('thread2', function* () {
-        yield bp.askFor(eventA);
+        yield bp.waitFor(eventA);
     });
 
     const thread3 = new Scenario('thread3', function* () {
@@ -338,14 +336,8 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
         ext?.resolve((val) => val + " extended");
     });
 
-    const awaitThread = new Scenario('awaitThread', function* () {
-        yield bp.askFor(eventA);
-        expect(eventA.value).toBe('value extended');
-        yield bp.askFor(eventFin);
-    });
-
     const waitingThread = new Scenario('waitingThread', function* () {
-        yield bp.askFor(eventA);
+        yield bp.waitFor(eventA);
         expect(eventA.value).toBe('value extended');
         yield bp.askFor(eventFin);
     });
@@ -354,10 +346,9 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
         events(eventA, eventFin);
         enable(requestingThread);
         enable(extendingThread);
-        enable(awaitThread);
         enable(waitingThread);
     }, () => {
-        if(eventFin.isValidDispatch()) {
+        if(eventFin.isValid()) {
             done();
         }
     });
@@ -426,7 +417,7 @@ test("multiple extends will resolve after another. After all extends complete, t
         enable(extendingThreadHigherPriority); // this BThread is enabled after the first extendingThread, giving it a higher priority
         enable(waitingThread);
     }, () => {
-        if(eventFin.isValidDispatch()) {
+        if(eventFin.isValid()) {
             done();
         }
     });
@@ -461,7 +452,7 @@ test("an extend can have an optional validation-function", (done) => {
     });
 });
 
-test("a wait can be extended. during the extension, the event is pending", (done) => {
+test("an askFor can be extended. during the extension, the event is pending", (done) => {
     const eventA = new ScenarioEvent('A');
     const eventFin = new ScenarioEvent('Fin');
 
@@ -480,7 +471,7 @@ test("a wait can be extended. during the extension, the event is pending", (done
         enable(waitingThread);
         enable(extendingThread);
     }, () => {
-        if(eventA.isValidDispatch()) eventA.dispatch();
+        if(eventA.isValid()) eventA.dispatch();
         else {
             expect(eventA.isPending).toBe(true);
             done();

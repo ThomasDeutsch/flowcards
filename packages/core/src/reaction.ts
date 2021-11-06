@@ -6,4 +6,5 @@ export enum ReactionCheck {
     EventWasCancelled = 'EventWasCancelled',
     PendingBidNotFound = 'PendingBidNotFound',
     ExtendedRequestingBThreadNotFound = "ExtendedRequestingBThreadNotFound",
+    AskingBThreadNotFound = "AskingBThreadNotFound"
 }

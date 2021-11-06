@@ -1,11 +1,11 @@
 import { getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyActionWithId, toActionWithId } from './action';
 import { BThreadBids } from './bid';
 import { BThread } from './bthread';
-import { NameKeyMap } from './name-key-map';
+import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger, LoopLog } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
 import { RunStaging, setupStaging, StagingFunction } from './staging';
-import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBid, InternalDispatch, OnFinishLoopCB, PlacedBidContext } from './index';
+import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBid, InternalDispatch } from './index';
 import { Replay } from './replay';
 import { ScenarioEvent } from './scenario-event';
 import { isThenable } from './utils';
@@ -25,10 +25,9 @@ export interface LogInfo {
     allRelevantScenarios: NameKeyMap<void>;
 }
 
-
 export class UpdateLoop {
     private _currentActionId = 0;
-    private _allPlacedBids: AllPlacedBids = new NameKeyMap<PlacedBidContext>();
+    private _allPlacedBids?: AllPlacedBids;
     private readonly _bThreadMap: BThreadMap = new NameKeyMap<BThread<any>>();
     private readonly _bThreadBids: BThreadBids[] = [];
     private readonly _logger: Logger;
@@ -45,8 +44,12 @@ export class UpdateLoop {
             eventMap: this._eventMap,
             bThreadBids: this._bThreadBids,
             internalDispatch,
-            getAllPlacedBids: () => this._allPlacedBids,
-            getCurrentActionId: () => this._currentActionId,
+            getEventBidInfo: (eventId: NameKeyId) => ({
+                blockedBy: this._allPlacedBids?.blocked.get(eventId),
+                pendingBy: this._allPlacedBids?.pending.get(eventId),
+                validateBids: this._allPlacedBids?.validateBids.get(eventId),
+                waitingBids: this._allPlacedBids?.waitingBidsByEventId.get(eventId)
+            }),
             logger: this._logger
         });
     }
@@ -59,9 +62,7 @@ export class UpdateLoop {
             if(event === undefined)  {
                 return this._getQueuedAction.bind(this)();
             }
-            const validation = event.explain(action.payload);
-            event.__resolveDispatch(validation);
-            if(validation.failed.length) {
+            if(event.validate(action.payload).isValid === false) {
                 return this._getQueuedAction.bind(this)();
             }
         }
@@ -71,7 +72,7 @@ export class UpdateLoop {
     private _runLoop(): boolean {
         let reactionCheck = ReactionCheck.OK;
         do {
-            const requestedAction = getRequestedAction(this._currentActionId, this._eventMap, getHighestPriorityValidRequestingBid(this._allPlacedBids, this._logger));
+            const requestedAction = getRequestedAction(this._currentActionId, getHighestPriorityValidRequestingBid(this._allPlacedBids!, this._logger));
             const replayAction = this._replay?.getNextReplayAction(this._currentActionId, this._eventMap, requestedAction);
             const maybeAction = replayAction || requestedAction || this._getQueuedAction();
             if(maybeAction === undefined) {
@@ -81,7 +82,7 @@ export class UpdateLoop {
             this._logger.logAction(action);
             switch(action.type) {
                 case "uiAction":
-                    reactionCheck = advanceUiAction(this._bThreadMap, this._eventMap, this._allPlacedBids, action);
+                    reactionCheck = advanceUiAction(this._bThreadMap, this._allPlacedBids!, action);
                     break;
                 case "requestedAction":
                     if(typeof action.payload === "function") {
@@ -91,13 +92,13 @@ export class UpdateLoop {
                     if(isThenable(action.payload)) {
                         action.resolveActionId = 'pending';
                     }
-                    reactionCheck = advanceRequestedAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = advanceRequestedAction(this._bThreadMap, this._allPlacedBids!, action);
                     break;
                 case "resolveAction":
-                    reactionCheck = advanceResolveAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = advanceResolveAction(this._bThreadMap, this._allPlacedBids!, action);
                     break;
                 case "resolvedExtendAction":
-                    reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._allPlacedBids, action);
+                    reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._allPlacedBids!, action);
                     break;
                 case "rejectAction":
                     reactionCheck = advanceRejectAction(this._bThreadMap, action);
@@ -132,7 +133,6 @@ export class UpdateLoop {
         while(this._runLoop()) {
             this.runStaging();
         }
-        //this._logger.finishLoop();
         return {
             allRelevantScenarios: this._logger.allRelevantScenarios,
             logs: this._logger.getLoopLogs()
@@ -145,7 +145,7 @@ export class UpdateLoop {
         this._actionQueue.length = 0;
         this._bThreadMap.allValues?.forEach(bThread => bThread.destroy());
         this._eventMap.allValues?.forEach(event => {
-            event.__disable();
+            event.__unplug();
         });
         this._bThreadMap.clear();
         this._eventMap.clear();

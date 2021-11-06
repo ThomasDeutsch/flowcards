@@ -22,10 +22,10 @@ export function toExtendPendingBid(extendedAction: AnyAction, extendContext: Ext
     }
     else if(extendedAction.type === 'requestedAction') {
         extendedBidType =  extendedAction.bidType;
-        bThreadId = extendedAction.bThreadId
+        bThreadId = extendedAction.bThreadId;
     } else if(extendedAction.type === 'resolveAction') {
-        extendedBidType = extendedAction.resolvedRequestingBid.type;
-        bThreadId = extendedAction.resolvedRequestingBid?.bThreadId
+        extendedBidType = extendedAction.resolvedRequestingBidType;
+        bThreadId = extendedAction.bThreadId;
     }
     return {
         actionId: extendedAction.id!,

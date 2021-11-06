@@ -5,12 +5,12 @@ import { Scenario } from './scenario';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { ScenarioEvent } from './scenario-event';
-import { AllPlacedBids, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
+import { EventBidInfo, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
 export type EnableScenario = <P>(...props: P extends void ? [Scenario<P>] : [Scenario<P>, P]) => BThreadPublicContext;
-export type EnableScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
-export type StagingFunction = (enable: EnableScenario, events: EnableScenarioEvents) => void;
-export type UIActionDispatch = (eventId: NameKeyId, payload?: any) => void;
+export type ConnectScenarioEvents = (...events: (ScenarioEvent<any> | Record<string, ScenarioEvent<any>>)[]) => void;
+export type StagingFunction = (enable: EnableScenario, events: ConnectScenarioEvents) => void;
+export type UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, payload?: any) => void;
 export type RunStaging = () => void;
 
 export interface StagingProps {
@@ -19,18 +19,19 @@ export interface StagingProps {
     eventMap: EventMap;
     bThreadBids: BThreadBids[];
     internalDispatch: InternalDispatch;
-    getAllPlacedBids: () => AllPlacedBids;
-    getCurrentActionId: () => number;
+    getEventBidInfo: (eventId: NameKeyId) => EventBidInfo;
     logger: Logger;
 }
 
 export function setupStaging(props: StagingProps): RunStaging {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
-    const uiActionDispatch: UIActionDispatch = (eventId: NameKeyId, payload?: any): void => {
+    const uiActionDispatch: UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, payload?: any): void => {
         props.internalDispatch({
             type: "uiAction",
             eventId: eventId,
-            payload: payload
+            payload: payload,
+            bThreadId: bThreadId,
+
         })
     }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();
@@ -58,28 +59,25 @@ export function setupStaging(props: StagingProps): RunStaging {
         return bThread.context;
     }
 
-    function setupEnableEvent(event: ScenarioEvent<any>) {
+    function connectEvent(event: ScenarioEvent<any>) {
         enabledEventIds.set(event.id, event.id);
         if(props.eventMap.has(event.id) === false) {
-            event.__setup({
+            event.__connect({
                 uiActionDispatch,
-                getCurrentActionId: props.getCurrentActionId,
-                getAllPlacedBids: props.getAllPlacedBids
+                getEventBidInfo: props.getEventBidInfo
             });
             props.eventMap.set(event.id, event);
-            event.__enable();
         }
-        event.__enable();
     }
 
-    const enableEvents: EnableScenarioEvents = (...events) => {
+    const connectEvents: ConnectScenarioEvents = (...events) => {
         events.forEach(event => {
             if(event instanceof ScenarioEvent) {
-                setupEnableEvent(event);
+                connectEvent(event);
             }
             else {
                 Object.values(event).forEach(e => {
-                    setupEnableEvent(e);
+                    connectEvent(e);
                 })
             }
         });
@@ -89,10 +87,11 @@ export function setupStaging(props: StagingProps): RunStaging {
         props.bThreadBids.length = 0;
         enabledScenarioIds.clear();
         enabledEventIds.clear();
-        props.stagingFunction(enableScenario, enableEvents); // do the staging
+        props.stagingFunction(enableScenario, connectEvents); // do the staging
         props.eventMap.allValues?.forEach(event => {
             if(!enabledEventIds.has(event.id)) {
-                event.__disable();
+                props.eventMap.get(event)?.__unplug();
+                props.eventMap.deleteSingle(event);
             }
         });
         if(destroyOnDisableThreadIds.size > 0)

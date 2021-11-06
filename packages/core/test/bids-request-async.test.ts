@@ -69,12 +69,12 @@ test("for multiple active promises in one yield, only one resolve will progress 
     });
 
     const thread2 = new Scenario('thread2', function* () {
-        yield bp.askFor(eventA);
+        yield bp.waitFor(eventA);
         progressed2 = true;
     });
 
     const thread3 = new Scenario('thread3', function* () {
-        yield bp.askFor(eventB);
+        yield bp.waitFor(eventB);
         progressed3 = true;
     });
 
@@ -97,7 +97,7 @@ test("if a scenario gets disabled, resolving events are ignored", (done) => {
     const eventB = new ScenarioEvent('B');
 
     const thread1 = new Scenario('thread1', function* () {
-        const progress = yield [bp.askFor(eventB),  bp.request(eventA, () => delay(100))];
+        const progress = yield [bp.waitFor(eventB),  bp.request(eventA, () => delay(100))];
         expect(progress.event).toBe(eventA);
     });
 
@@ -138,9 +138,10 @@ test("a scenario in a pending-event state can place additional bids.", (done) =>
         enable(thread2);
     }, () => {
         if(eventA.isPending) {
-            expect(eventB.isValidDispatch()).toBe(false);
-        } else if( thread1.isCompleted) {
-            expect(eventB.isValidDispatch()).toBe(true);
+            expect(eventB.isValid()).toBe(false);
+        }
+        if(thread1.isCompleted) {
+            expect(eventB.isValid()).toBe(true);
             done();
         }
     });

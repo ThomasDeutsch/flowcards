@@ -185,7 +185,13 @@ export class BThread<P> {
 
 
     public get bThreadBids(): BThreadBids | undefined {
-        const allPendingBids = this._pendingRequests.clone().merge(this._pendingExtends);
+        const allPendingBids = new NameKeyMap<NameKeyId>();
+        this._pendingRequests.forEach((eventId) => {
+            allPendingBids.set(eventId, this.id);
+        })
+        this._pendingExtends.forEach((eventId) => {
+            allPendingBids.set(eventId, this.id);
+        })
         if(allPendingBids.size === 0 && this._placedBids.length === 0) return undefined
         return {
             pendingBidMap: allPendingBids,
@@ -256,7 +262,7 @@ export class BThread<P> {
         return ReactionCheck.OK
     }
 
-    public progressRequested(bidType: BidType, eventId: NameKeyId, payload: any): ReactionCheck {
+    public progressBid(bidType: BidType, eventId: NameKeyId, payload: any): ReactionCheck {
         const bid = this.getCurrentBid(bidType, eventId);
         if(bid === undefined) return ReactionCheck.BThreadWithoutMatchingBid;
         this._event.get(eventId)?.__setValue(payload);

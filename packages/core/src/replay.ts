@@ -2,7 +2,7 @@ import { RequestedAction} from "./index";
 import { AnyActionWithId } from "./action";
 import { sameNameKeyId } from "./name-key-map";
 import { EventMap } from "./update-loop";
-import { notUndefined } from "./utils";
+
 
 export type ReplayFinishedCB = () => void;
 export interface PayloadOverride {
@@ -49,8 +49,8 @@ export class Replay {
         if(replayAction === undefined) return undefined;
         // UI ACTION
         if(replayAction.type === 'uiAction') {
-            const isDispatchable = eventMap.get(replayAction.eventId)?.isValidDispatch(replayAction.payload);
-            if(!isDispatchable) {
+            const isValidPayload = eventMap.get(replayAction.eventId)?.isValid(replayAction.payload);
+            if(!isValidPayload) {
                 this.abortReplay(replayAction, 'event can not be dispatched');
                 return undefined;
             }

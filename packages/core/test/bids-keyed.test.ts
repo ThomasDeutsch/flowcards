@@ -1,7 +1,7 @@
-import { Scenario, Scenarios } from "../src";
+import { Scenario } from "../src";
 import * as bp from "../src/bid";
 import { ScenarioEvent, ScenarioEventKeyed } from "../src/scenario-event";
-import { delay, testScenarios } from "./testutils";
+import { testScenarios } from "./testutils";
 
 
 test("keys can be a string or a number", () => {
@@ -15,9 +15,9 @@ test("keys can be a string or a number", () => {
         events(...eventA.keys("1", 2));
         enable(thread1);
     }, ()=> {
-        expect(eventA.key("1").isEnabled).toBe(true);
-        expect(eventA.key(1).isEnabled).toBe(false);
-        expect(eventA.key(2).isEnabled).toBe(true);
+        expect(eventA.key("1").isConnected).toBe(true);
+        expect(eventA.key(1).isConnected).toBe(false);
+        expect(eventA.key(2).isConnected).toBe(true);
     });
 });
 
@@ -145,12 +145,12 @@ test("an event with a key will be blocked by a block with the same name and key"
     const eventA = new ScenarioEventKeyed('A');
 
     const thread1 = new Scenario('thread1', function* () {
-        yield bp.askFor(eventA.key(1));
+        yield bp.waitFor(eventA.key(1));
         advancedKey1 = true;
     });
 
     const thread2 = new Scenario('thread2', function* () {
-        yield bp.askFor(eventA.key(2));
+        yield bp.waitFor(eventA.key(2));
         advancedKey2 = true;
     });
 
@@ -184,12 +184,12 @@ test("a request without a key will not advance waiting threads with a key", () =
     const eventAK = new ScenarioEventKeyed('A');
 
     const waitThreadWithKey1 = new Scenario('thread1', function* () {
-        yield bp.askFor(eventAK.key(1));
+        yield bp.waitFor(eventAK.key(1));
         advancedWait1 = true;
     });
 
     const waitThreadWithKey2 = new Scenario('thread2', function* () {
-        yield bp.askFor(eventAK.key(2));
+        yield bp.waitFor(eventAK.key(2));
         advancedWait2 = true;
     });
 
@@ -242,17 +242,17 @@ test("a request with a key, will only advance the matching wait with the same ke
     const eventAK = new ScenarioEventKeyed('A');
 
     const waitThreadWithKey1 = new Scenario('thread1', function* () {
-        yield bp.askFor(eventAK.key(1));
+        yield bp.waitFor(eventAK.key(1));
         advancedWait1 = true;
     });
 
     const waitThreadWithKey2 = new Scenario('thread2', function* () {
-        yield bp.askFor(eventAK.key(2));
+        yield bp.waitFor(eventAK.key(2));
         advancedWait2 = true;
     });
 
     const waitThreadWithoutKey = new Scenario('thread3', function* () {
-        yield bp.askFor(eventA);
+        yield bp.waitFor(eventA);
         advancedWaitNoKey = true;
     });
 

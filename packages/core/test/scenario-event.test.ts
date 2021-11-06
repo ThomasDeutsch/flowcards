@@ -20,13 +20,13 @@ test("an event needs to be enabled in order to be requested", () => {
         event(eventA);
         enable(requestingThread, {a: 1});
     }, ()=> {
-        expect(eventB.isEnabled).toBe(false)
+        expect(eventB.isConnected).toBe(false)
         expect(requestingThread.isCompleted).toBe(false)
     });
 });
 
 
-test("an event value is reset to its initial value on disable", () => {
+test("an event value is reset to its initial value on unplug", () => {
     const eventA = new ScenarioEvent<number>('A', 10);
     const eventB = new ScenarioEvent('B');
 
@@ -39,10 +39,10 @@ test("an event value is reset to its initial value on disable", () => {
         event(eventA, eventB);
         enable(requestingThread, {a: 1});
         if(requestingThread.isCompleted) {
-            eventA.__disable(); // true = reset value
+            eventA.__unplug();
         }
     }, ()=> {
-        expect(eventB.isEnabled).toBe(true);
+        expect(eventB.isConnected).toBe(true);
         expect(requestingThread.isCompleted).toBe(true);
         expect(eventA.value).toEqual(10);
     });
@@ -69,45 +69,42 @@ test("a dispatch returns a validation result, if the dispatch was valid", (done)
     const askingScenario = new Scenario('thread1', function*() {
         const x = yield* bp.bid(bp.askFor(eventA));
         expect(x).toBe(100);
+        done();
     });
 
     testScenarios((enable, event) => {
         event(eventA);
         enable(askingScenario);
     }, () => {
-        if(eventA.isValidDispatch(100)) {
-            eventA.dispatch(100).then((result) => {
-                expect(result.failed.length).toBe(0);
-                expect(askingScenario.isCompleted).toBe(true);
-                done();
-            });
+        if(eventA.isValid(100)) {
+            eventA.dispatch(100)
         }
     });
 });
 
-test("the dispatch promise returns false, if another event has made the dispatch invalid.", (done) => {
-    const eventA = new ScenarioEvent<number>('A');
+// test("the dispatch promise returns false, if another event has made the dispatch invalid.", (done) => {
+//     const eventA = new ScenarioEvent<number>('A');
 
-    const askingScenario = new Scenario('thread1', function*() {
-        yield bp.askFor(eventA);
-    });
+//     const askingScenario = new Scenario('thread1', function*() {
+//         yield bp.askFor(eventA);
+//     });
 
-    const blockingScenario = new Scenario('thread2', function*() {
-        yield bp.block(eventA);
-    });
+//     const blockingScenario = new Scenario('thread2', function*() {
+//         yield bp.block(eventA);
+//     });
 
-    testScenarios((enable, event) => {
-        event(eventA);
-        enable(askingScenario);
-        enable(blockingScenario);
-    }, () => {
-        eventA.dispatch(100).then((result) => {
-            expect(result.failed[0].type).toBe('blocked');
-            askingScenario.isCompleted === false;
-            done();
-        });
-    });
-});
+//     testScenarios((enable, event) => {
+//         event(eventA);
+//         enable(askingScenario);
+//         enable(blockingScenario);
+//     }, () => {
+//         eventA.dispatch(100).then((result) => {
+//             expect(result.failed[0].type).toBe('blocked');
+//             askingScenario.isCompleted === false;
+//             done();
+//         });
+//     });
+// });
 
 
 test("an event that is not enabled can not be dispatched", () => {
@@ -120,8 +117,8 @@ test("an event that is not enabled can not be dispatched", () => {
     testScenarios((enable) => {
         enable(requestingThread);
     },() => {
-        expect(eventA.isValidDispatch(1)).toBe(false);
-        expect(eventA.explain(1).failed[0].type).toBe('eventNotEnabled')
+        expect(eventA.isValid(1)).toBe(false);
+        expect(eventA.isConnected).toBe(false);
 
     });
 });
