@@ -8,7 +8,7 @@ import { BEvent } from './b-event';
 import { EventBidInfo, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
 export type EnableScenario = <P>(...props: P extends void ? [BThread<P>] : [BThread<P>, P]) => BThreadPublicContext;
-export type ConnectScenarioEvents = (...events: (BEvent<any> | Record<string, BEvent<any>>)[]) => void;
+export type ConnectScenarioEvents = (...events: (BEvent<any, any> | Record<string, BEvent<any>>)[]) => void;
 export type StagingCB = (enable: EnableScenario, events: ConnectScenarioEvents) => void;
 export type UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, payload?: any) => void;
 export type RunStaging = () => void;

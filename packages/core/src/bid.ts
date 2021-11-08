@@ -167,11 +167,11 @@ export function trigger<P>(event: BEvent<P>, payload?: P): Bid<P> {
     return { type: 'triggerBid', eventId: getNameKeyId(event), payload: payload };
 }
 
-export function askFor<P>(event: BEvent<P>, payloadValidationCB?: PayloadValidationCB<P, any>): Bid<P> {
+export function askFor<P, V>(event: BEvent<P, V>, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P> {
     return { type: 'askForBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
-export function waitFor<P>(event: BEvent<P>, payloadValidationCB?: PayloadValidationCB<P, any>): Bid<P> {
+export function waitFor<P, V>(event: BEvent<P, V>, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P> {
     return { type: 'waitForBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
@@ -179,7 +179,7 @@ export function onPending<P>(event: BEvent<P>): Bid<P> {
     return { type: 'onPendingBid', eventId: getNameKeyId(event) };
 }
 
-export function extend<P>(event: BEvent<P>, payloadValidationCB?: PayloadValidationCB<P, any>): Bid<P> {
+export function extend<P, V>(event: BEvent<P, V>, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P> {
     return { type: 'extendBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 
@@ -187,7 +187,7 @@ export function block<P>(event: BEvent<P>): Bid<P> {
     return { type: 'blockBid', eventId: getNameKeyId(event) };
 }
 
-export function validate<P>(event: BEvent<P>, payloadValidationCB?: PayloadValidationCB<P, any>): Bid<P> {
+export function validate<P, V>(event: BEvent<P, V>, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P> {
     return { type: 'validateBid', eventId: getNameKeyId(event), payloadValidationCB: payloadValidationCB };
 }
 

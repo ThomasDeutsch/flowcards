@@ -143,3 +143,50 @@ test("a validate function will return the combined event validation result", () 
     }
  );
 });
+
+
+test("if there are multiple askFor bids for the same event, the lower priority askFor validations are ignored", () => {
+    const eventA = new BEvent<number, string>('A');
+
+    const threadLow = new BThread('threadLow', function* () {
+        yield bp.askFor(eventA, () => false);
+    });
+
+    const threadHigh = new BThread('threadHigh', function* () {
+        yield bp.askFor(eventA, () => true);
+    });
+
+    testScenarios((enable, events) => {
+        events(eventA);
+        enable(threadLow);
+        enable(threadHigh); // higher priority bThread, because it is enabled further down the staging-function.
+
+    }, () => {
+        expect(eventA.validate(1).isValid).toBe(true);
+
+    }
+ );
+});
+
+
+interface ValidationReturn {
+    description: string
+}
+
+test("an event can be provided with a validation type", () => {
+    const eventA = new BEvent<number, ValidationReturn>('A');
+
+    const askingThread = new BThread('askingThread', function* () {
+        yield bp.askFor(eventA, () => ({failed: [{description: '123'}]}));
+    });
+
+    testScenarios((enable, events) => {
+        events(eventA);
+        enable(askingThread);
+
+    }, () => {
+        expect(eventA.validate(1).isValid).toBe(false);
+
+    }
+ );
+});
