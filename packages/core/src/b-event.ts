@@ -1,7 +1,7 @@
 import { getHighestPrioAskForBid, PlacedBid } from ".";
 import { NameKeyId } from "./name-key-map";
 import { UIActionDispatch } from "./staging";
-import { getAllPayloadValidationCallbacks, PayloadValidationCB, validateAll} from "./validation";
+import { getAllPayloadValidationCallbacks, PayloadValidationCB, validateAll, ValidationResults} from "./validation";
 
 
 export type NextValueFn<P> = (current: P | undefined) => P;
@@ -21,7 +21,7 @@ export interface EventConnectProps {
 }
 
 
-export class BEvent<P = void> {
+export class BEvent<P = void, V = string> {
     public readonly name: string;
     public readonly key?: string | number;
     public readonly initialValue?: P;
@@ -79,22 +79,22 @@ export class BEvent<P = void> {
         return this._getEventBidInfo?.(this.id);
     }
 
-    private _getAskForBidAndValidationCallbacks<P>(): undefined | [PlacedBid<P>, PayloadValidationCB<P, unknown>[]]  {
+    private _getAskForBidAndValidationCallbacks(): undefined | [PlacedBid<P>, PayloadValidationCB<P, V>[]]  {
         const bidInfo = this.bidInfo;
         if(bidInfo === undefined) return undefined;
         const askForBid = getHighestPrioAskForBid<P>(bidInfo.waitingBids);
         if(askForBid === undefined) return undefined;
-        const validationCallbacks = getAllPayloadValidationCallbacks(askForBid, bidInfo.validateBids);
+        const validationCallbacks = getAllPayloadValidationCallbacks<P, V>(askForBid, bidInfo.validateBids);
         return [askForBid, validationCallbacks];
     }
 
-    public validate(value: P): {isValid: boolean, failed?: any[], passed?: any[]} {
+    public validate(value: P): ValidationResults<V> {
         const bidInfo = this.bidInfo;
-        if(bidInfo === undefined) return { isValid: false }
-        if(bidInfo.pendingBy !== undefined || this.isConnected === false  || bidInfo.blockedBy !== undefined) return { isValid: false };
+        if(bidInfo === undefined) return { isValid: false, passed: [], failed: [] }
+        if(bidInfo.pendingBy !== undefined || this.isConnected === false  || bidInfo.blockedBy !== undefined) return { isValid: false, passed: [], failed: []  };
         const av = this._getAskForBidAndValidationCallbacks();
-        if(av === undefined) return {isValid: false};
-        return validateAll(av[1], value);
+        if(av === undefined) return {isValid: false, passed: [], failed: [] };
+        return validateAll<P, V>(av[1], value);
     }
 
     public isValid(value: P): boolean {

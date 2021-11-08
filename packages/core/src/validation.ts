@@ -33,7 +33,7 @@ export function isValidPayload<P>(validationCallbacks: PayloadValidationCB<P, an
     return validationCallbacks.every(cb => isValidReturn(cb(value)));
 }
 
-export function validateAll<P, V>(validationCallbacks: PayloadValidationCB<P, V>[], value: P): ValidationResults<any> {
+export function validateAll<P, V>(validationCallbacks: PayloadValidationCB<P, V>[], value: P): ValidationResults<V> {
     let booleanFailed = false;
     let failed: V[] = [];
     let passed: V[] = [];
