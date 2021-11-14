@@ -2,6 +2,7 @@ import { RequestingBidType, SelectedRequestingBid} from './bid';
 import { NameKeyId } from './name-key-map';
 import { PendingBid } from './pending-Bid';
 import { BidType } from '.';
+import { ValidationResults } from './validation';
 
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectedAction" | "resolvedExtendAction";
 
@@ -10,11 +11,14 @@ interface Action {
     bThreadId: NameKeyId
     payload?: unknown;
 }
+
+export type DispatchResultCB = (value: ValidationResults<any, any>) => void;
 export interface UIAction extends Action {
     id?: number,
     type: "uiAction",
     eventId: NameKeyId;
     payload?: unknown;
+    dispatchResultCB?: DispatchResultCB
 }
 
 export interface RequestedAction extends Action {

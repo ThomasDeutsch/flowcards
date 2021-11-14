@@ -583,8 +583,9 @@ test("askFor will enable events to be dispatched", (done) => {
         enable(askingThread);
     }, ()=> {
         if(!askingThread.isCompleted) {
-            const wasDispatched = eventA.dispatch(11);
-            expect(wasDispatched).toBe(true);
+            eventA.dispatch(11).then(val => {
+                expect(val.isValid).toBe(true);
+            });
         } else {
             expect(askingThread.isCompleted).toBe(true);
             done();

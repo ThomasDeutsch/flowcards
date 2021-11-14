@@ -10,6 +10,7 @@ import { Replay } from './replay';
 import { BEvent } from './b-event';
 import { isThenable } from './utils';
 import { ReactionCheck } from './reaction';
+import { isValidPayload, validateDispatch } from './validation';
 
 
 // update loop
@@ -57,21 +58,42 @@ export class UpdateLoop {
     private _getQueuedAction(): UIAction | ResolveAction | ResolveExtendAction | undefined {
         const action = this._actionQueue.shift();
         if(action === undefined) return undefined;
+        const event = this._eventMap.get(action.eventId);
         if(action.type === 'uiAction') {
-            const event = this._eventMap.get(action.eventId);
-            if(event === undefined)  {
-                return this._getQueuedAction.bind(this)();
-            }
-            if(event.validate(action.payload).isValid === false) {
+            // TODO: do not validate if action has the same dispatch-id as the current loop-index.
+            const validationResults = validateDispatch(event?.isConnected === true, action.payload, event?.bidInfo);
+            action.dispatchResultCB!(validationResults);
+            if(validationResults.isValid) {
+                return action;
+            } else {
                 return this._getQueuedAction.bind(this)();
             }
         }
-        return action;
+        if(action.type === 'resolveAction') {
+            // todo: ignore blocked & pending for validation
+            if(event === undefined)  {
+                action.type = 'rejectAction';
+                action.payload = {isValid: false, failed: [], passed: []}; // TODO: use error type
+            }
+            return action;
+        }
+        if(action.type === 'resolvedExtendAction') {
+            // todo: ignore blocked & pending for validation
+            return action;
+        }
+        // if(action.type === 'resolvedExtendAction') {
+        //     if(event?.validate(action.payload).isValid) return action
+        // }
+        return this._getQueuedAction.bind(this)();
     }
 
     private _runLoop(): boolean {
         let reactionCheck = ReactionCheck.OK;
         do {
+            // TODO: prioritize:
+            // replay Values
+            // dispatched Values // if the dispatched value has the same id as the loop-value, then a new validation can be skipped.
+            // requests
             const requestedAction = getRequestedAction(this._currentActionId, getHighestPriorityValidRequestingBid(this._allPlacedBids!, this._logger));
             const replayAction = this._replay?.getNextReplayAction(this._currentActionId, this._eventMap, requestedAction);
             const maybeAction = replayAction || requestedAction || this._getQueuedAction();

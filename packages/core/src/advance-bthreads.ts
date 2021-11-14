@@ -45,10 +45,9 @@ function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, exte
         if(isValidPayload(validationCallbacks, extendedAction.payload) !== true) continue
         const extendingBThread = bThreadMap.get(extendBid.bThreadId);
         if(extendingBThread === undefined) continue;
-        allPlacedBids.pending.set(extendBid.eventId, extendingBThread.id);
+        //allPlacedBids.pending.set(extendBid.eventId, extendingBThread.id);
         const extendContext = extendingBThread.progressExtend(extendedAction);
         if(!extendContext) continue;
-        progressWaitingBThreads(allPlacedBids, bThreadMap, "onPendingBid", extendedAction);
         return true;
     }
     return false;
@@ -60,7 +59,6 @@ export function advanceRequestedAction(bThreadMap: BThreadMap, allPlacedBids: Al
     if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
     if(action.resolveActionId === 'pending') {
         requestingBThread.addPendingRequest(action);
-        progressWaitingBThreads(allPlacedBids, bThreadMap, "onPendingBid", action);
         return ReactionCheck.OK;
     }
     const extendContext = extendAction(allPlacedBids, bThreadMap, action);

@@ -62,7 +62,10 @@ export class Logger {
     public logAction(action: AnyActionWithId): void {
         const a = {...action};
         if(action.type === "requestedAction" && action.resolveActionId === 'pending') {
-            delete a.payload; // do not save the promise object
+            delete a.payload; // do not log the promise object
+        }
+        if(a.type === "uiAction") {
+            delete a.dispatchResultCB;
         }
         this._loopLog.action = a;
     }

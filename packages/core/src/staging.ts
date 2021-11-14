@@ -5,12 +5,12 @@ import { BThread } from './b-thread';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { BEvent } from './b-event';
-import { EventBidInfo, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
+import { DispatchResultCB, EventBidInfo, InternalDispatch, ResolveAction, ResolveExtendAction } from '.';
 
 export type EnableScenario = <P>(...props: P extends void ? [BThread<P>] : [BThread<P>, P]) => BThreadPublicContext;
 export type ConnectScenarioEvents = (...events: (BEvent<any, any> | Record<string, BEvent<any>>)[]) => void;
 export type StagingCB = (enable: EnableScenario, events: ConnectScenarioEvents) => void;
-export type UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, payload?: any) => void;
+export type UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, dispatchResultCB: DispatchResultCB, payload?: any) => void;
 export type RunStaging = () => void;
 
 export interface StagingProps {
@@ -25,13 +25,13 @@ export interface StagingProps {
 
 export function setupStaging(props: StagingProps): RunStaging {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
-    const uiActionDispatch: UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, payload?: any): void => {
+    const uiActionDispatch: UIActionDispatch = (bThreadId: NameKeyId, eventId: NameKeyId, dispatchResultCB, payload?: any): void => {
         props.internalDispatch({
             type: "uiAction",
-            eventId: eventId,
-            payload: payload,
-            bThreadId: bThreadId,
-
+            eventId,
+            payload,
+            bThreadId,
+            dispatchResultCB
         })
     }
     const enabledScenarioIds = new NameKeyMap<NameKeyId>();

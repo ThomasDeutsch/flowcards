@@ -145,24 +145,26 @@ test("a validate function will return the combined event validation result", () 
 });
 
 
-test("if there are multiple askFor bids for the same event, the lower priority askFor validations are ignored", () => {
+test("if there are multiple askFor bids for the same event, the validations are combined", () => {
     const eventA = new BEvent<number, string>('A');
 
     const threadLow = new BThread('threadLow', function* () {
-        yield bp.askFor(eventA, () => false);
+        yield bp.askFor(eventA, (x) => x > 2);
     });
 
     const threadHigh = new BThread('threadHigh', function* () {
-        yield bp.askFor(eventA, () => true);
+        yield bp.askFor(eventA, (x) => x > 1);
     });
 
     testScenarios((enable, events) => {
         events(eventA);
         enable(threadLow);
-        enable(threadHigh); // higher priority bThread, because it is enabled further down the staging-function.
+        enable(threadHigh);
 
     }, () => {
-        expect(eventA.validate(1).isValid).toBe(true);
+        console.log('test: ', eventA.validate(3))
+        expect(eventA.validate(3).isValid).toBe(true);
+        expect(eventA.validate(2).isValid).toBe(false);
 
     }
  );

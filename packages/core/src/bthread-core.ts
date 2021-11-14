@@ -6,7 +6,7 @@ import { Logger, BThreadReactionType } from './logger';
 import { toExtendPendingBid, PendingBid } from './pending-bid';
 import { ResolveActionCB } from './update-loop';
 import { BEvent } from './b-event';
-import { Bid, getResolveRejectAction } from '.';
+import { askFor, Bid, extend, getResolveRejectAction, isRequestingBid, isSameBid, RequestingBidType } from '.';
 import { BThreadGeneratorFunction } from './b-thread';
 import * as utils from './utils';
 import { ReactionCheck } from './reaction';
@@ -18,7 +18,7 @@ interface NextBidProperties {
 }
 
 export type ErrorInfo = {event: NameKeyId, error: any}
-export type BThreadGenerator = Generator<BidOrBids, void, ScenarioProgressInfo>;
+export type BThreadGenerator = Generator<BidOrBids, void, BThreadProgressInfo>;
 export interface BThreadContext {
     key?: string | number;
     getExtend: <P>(event: BEvent<P>) => {
@@ -33,7 +33,7 @@ export type BThreadPublicContext = {
     pendingExtends: NameKeyMap<PendingBid>;
 }
 
-export interface ScenarioProgressInfo {
+export interface BThreadProgressInfo {
     event: BEvent<any>;
     eventId: NameKeyId;
     remainingBids?: Bid<any>[];
@@ -110,10 +110,10 @@ export class BThreadCore<P> {
         if(props.error) {
             next = this._thread.throw(props.error); // progress BThread to next bid
         } else {
-            const progressInfo: ScenarioProgressInfo = {
+            const progressInfo: BThreadProgressInfo = {
                 event: this._event.get(props.eventId)!,
                 eventId: props.eventId,
-                remainingBids: this._placedBids.filter(bid => !sameNameKeyId(bid.eventId, props.bid.eventId))
+                remainingBids: this._placedBids.filter(bid => !isSameBid(props.bid, bid))
             }
             next = this._thread.next(progressInfo); // progress BThread to next bid
         }
@@ -182,7 +182,6 @@ export class BThreadCore<P> {
             pendingExtends: this._pendingExtends
         }
     }
-
 
     public get bThreadBids(): BThreadBids | undefined {
         const allPendingBids = new NameKeyMap<NameKeyId>();

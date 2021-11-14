@@ -1,7 +1,7 @@
-import { getHighestPrioAskForBid, PlacedBid } from ".";
+import { PlacedBid } from ".";
 import { NameKeyId } from "./name-key-map";
 import { UIActionDispatch } from "./staging";
-import { getAllPayloadValidationCallbacks, PayloadValidationCB, validateAll, ValidationResults} from "./validation";
+import { validateDispatch, ValidationResults} from "./validation";
 
 
 export type NextValueFn<P> = (current: P | undefined) => P;
@@ -19,7 +19,6 @@ export interface EventConnectProps {
     uiActionDispatch: UIActionDispatch;
     getEventBidInfo: (eventId: NameKeyId) => EventBidInfo;
 }
-
 
 export class BEvent<P = void, V = string> {
     public readonly name: string;
@@ -79,22 +78,12 @@ export class BEvent<P = void, V = string> {
         return this._getEventBidInfo?.(this.id);
     }
 
-    private _getAskForBidAndValidationCallbacks(): undefined | [PlacedBid<P>, PayloadValidationCB<P, V>[]]  {
-        const bidInfo = this.bidInfo;
-        if(bidInfo === undefined) return undefined;
-        const askForBid = getHighestPrioAskForBid<P>(bidInfo.waitingBids);
-        if(askForBid === undefined) return undefined;
-        const validationCallbacks = getAllPayloadValidationCallbacks<P, V>(askForBid, bidInfo.validateBids);
-        return [askForBid, validationCallbacks];
+    private _getValidationResultAndAskForBid(value: P): ValidationResults<P,V> {
+        return validateDispatch<P, V>(this.isConnected, value, this.bidInfo);
     }
 
-    public validate(value: P): ValidationResults<V> {
-        const bidInfo = this.bidInfo;
-        if(bidInfo === undefined) return { isValid: false, passed: [], failed: [] }
-        if(bidInfo.pendingBy !== undefined || this.isConnected === false  || bidInfo.blockedBy !== undefined) return { isValid: false, passed: [], failed: []  };
-        const av = this._getAskForBidAndValidationCallbacks();
-        if(av === undefined) return {isValid: false, passed: [], failed: [] };
-        return validateAll<P, V>(av[1], value);
+    public validate(value: P): ValidationResults<P, V> {
+        return this._getValidationResultAndAskForBid(value);
     }
 
     public isValid(value: P): boolean {
@@ -113,13 +102,14 @@ export class BEvent<P = void, V = string> {
         return this.bidInfo?.blockedBy !== undefined;
     }
 
-    public dispatch(value: P): boolean {
-        const av = this._getAskForBidAndValidationCallbacks();
-        if(av === undefined) return false;
-        const [askForBid, validationCallbacks] = av;
-        if(validateAll(validationCallbacks, value).isValid === false) return false;
-        this._uiActionDispatch!(askForBid.bThreadId, askForBid.eventId, value)
-        return true;
+    public dispatch(value: P): Promise<ValidationResults<P, V>> {
+        const result = this._getValidationResultAndAskForBid(value);
+        if(result.isValid) {
+            return new Promise<ValidationResults<P, V>>((resolve) => {
+                this._uiActionDispatch!(result.selectedBid!.bThreadId, result.selectedBid!.eventId, resolve, value);
+            })
+        }
+        return Promise.resolve(result);
     }
 }
 
@@ -162,5 +152,12 @@ export class BEventKeyed<P = void> {
         } else {
             [...this._children].forEach(([_, e]) => e.__unplug());
         }
+    }
+}
+
+
+export class BUIEvent<P, V> extends BEvent<P, V> {
+    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
+        super(nameOrNameKey, initialValue);
     }
 }

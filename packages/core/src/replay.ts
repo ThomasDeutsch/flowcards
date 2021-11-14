@@ -49,6 +49,7 @@ export class Replay {
         if(replayAction === undefined) return undefined;
         // UI ACTION
         if(replayAction.type === 'uiAction') {
+            //TODO: instead of isValidPayload, use validateAskFor!! (validateAll)
             const isValidPayload = eventMap.get(replayAction.eventId)?.isValid(replayAction.payload);
             if(!isValidPayload) {
                 this.abortReplay(replayAction, 'event can not be dispatched');
