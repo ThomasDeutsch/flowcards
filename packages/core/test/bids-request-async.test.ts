@@ -4,9 +4,27 @@ import { BThread } from '../src/b-thread'
 import { delay } from './testutils';
 import { BEvent } from "../src";
 
+test("a pending event is cancelled, if the thread completes", (done) => {
+    const eventA = new BEvent<number>('A');
+    const eventB = new BEvent<number>('B');
+
+    const requestingThread = new BThread('thread1', function*() {
+        yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];
+    })
+
+    testScenarios((enable, events) => {
+        events(eventA, eventB);
+        enable(requestingThread);
+    }, ()=> {
+        if(requestingThread.isCompleted) {
+            expect(eventB.isPending).toBe(false);
+            done();
+        }
+    });
+});
 
 test("A function, returning a promise can be requested and will create a pending-event", (done) => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new BEvent<number>('Axxl');
 
     const thread1 = new BThread('requestingThread', function* () {
         yield bp.request(eventA, () => delay(10, 10));
@@ -92,7 +110,7 @@ test("for multiple active promises in one yield, only one resolve will progress 
 });
 
 
-test("if a scenario gets disabled, resolving events are ignored", (done) => {
+test("if a scenario gets disabled, pending events will be canceled", (done) => {
     const eventA = new BEvent('A');
     const eventB = new BEvent('B');
 
@@ -102,7 +120,7 @@ test("if a scenario gets disabled, resolving events are ignored", (done) => {
     });
 
     const thread2 = new BThread('thread2', function*() {
-        yield bp.request(eventB, () => delay(200));
+        yield bp.request(eventB, () => delay(2000));
     });
 
     testScenarios((enable, events) => {

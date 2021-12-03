@@ -1,26 +1,23 @@
-import { getRequestedAction, UIAction, ResolveAction, ResolveExtendAction, AnyActionWithId, toActionWithId } from './action';
-import { BThreadBids } from './bid';
+import { ResolveAction, ResolveExtendAction, getNextRequestedAction } from './action';
+import { BidType, PlacedBid } from './bid';
 import { BThreadCore } from './bthread-core';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger, LoopLog } from './logger';
-import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction } from './advance-bthreads';
+import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction, advanceTriggeredAction } from './advance-bthreads';
 import { RunStaging, setupStaging, StagingCB } from './staging';
-import { allPlacedBids, AllPlacedBids, getHighestPriorityValidRequestingBid, InternalDispatch } from './index';
+import { allPlacedBids, AllPlacedBids, AnyAction, BufferAction, getQueuedAction, InternalDispatch } from './index';
 import { Replay } from './replay';
-import { BEvent } from './b-event';
-import { isThenable } from './utils';
-import { ReactionCheck } from './reaction';
-import { isValidPayload, validateDispatch } from './validation';
+import { BEvent, BUIEvent } from './b-event';
 
 
 // update loop
 // -----------------------------------------------------------------------------------
 
 export type UpdateLoopFunction = () => void;
-export type ReplayMap = Map<number, AnyActionWithId>;
+export type ReplayMap = Map<number, AnyAction>;
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
 export type BThreadMap = NameKeyMap<BThreadCore<any>>;
-export type EventMap = NameKeyMap<BEvent<any>>;
+export type EventMap = NameKeyMap<BEvent<any, any> | BUIEvent<any, any>>;
 export interface LogInfo {
     logs: LoopLog[];
     allRelevantScenarios: NameKeyMap<void>;
@@ -30,120 +27,72 @@ export class UpdateLoop {
     private _currentActionId = 0;
     private _allPlacedBids?: AllPlacedBids;
     private readonly _bThreadMap: BThreadMap = new NameKeyMap<BThreadCore<any>>();
-    private readonly _bThreadBids: BThreadBids[] = [];
+    private readonly _bThreadBids: PlacedBid<unknown>[] = [];
     private readonly _logger: Logger;
-    private readonly _stageScenarioAndEvents: RunStaging;
-    private readonly _eventMap: EventMap = new NameKeyMap<BEvent<any>>();
-    private readonly _actionQueue: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
+    private readonly _stageBThreadsAndEvents: RunStaging;
+    private readonly _eventMap: EventMap = new NameKeyMap<BEvent<any, any> | BUIEvent<any, any>>();
+    private readonly _actionQueue: BufferAction[] = [];
     private _replay?: Replay;
 
     constructor(stagingCb: StagingCB, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
-        this._stageScenarioAndEvents = setupStaging({
+        this._stageBThreadsAndEvents = setupStaging({
             stagingCb,
             bThreadMap: this._bThreadMap,
             eventMap: this._eventMap,
             bThreadBids: this._bThreadBids,
             internalDispatch,
-            getEventBidInfo: (eventId: NameKeyId) => ({
-                blockedBy: this._allPlacedBids?.blocked.get(eventId),
-                pendingBy: this._allPlacedBids?.pending.get(eventId),
-                validateBids: this._allPlacedBids?.validateBids.get(eventId),
-                waitingBids: this._allPlacedBids?.waitingBidsByEventId.get(eventId)
-            }),
+            getBids: (eventId: NameKeyId, bidType: BidType) => this._allPlacedBids?.[bidType].get(eventId),
             logger: this._logger
         });
     }
 
-    private _getQueuedAction(): UIAction | ResolveAction | ResolveExtendAction | undefined {
-        const action = this._actionQueue.shift();
-        if(action === undefined) return undefined;
-        const event = this._eventMap.get(action.eventId);
-        if(action.type === 'uiAction') {
-            // TODO: do not validate if action has the same dispatch-id as the current loop-index.
-            const validationResults = validateDispatch(event?.isConnected === true, action.payload, event?.bidInfo);
-            action.dispatchResultCB!(validationResults);
-            if(validationResults.isValid) {
-                return action;
-            } else {
-                return this._getQueuedAction.bind(this)();
-            }
-        }
-        if(action.type === 'resolveAction') {
-            // todo: ignore blocked & pending for validation
-            if(event === undefined)  {
-                action.type = 'rejectAction';
-                action.payload = {isValid: false, failed: [], passed: []}; // TODO: use error type
-            }
-            return action;
-        }
-        if(action.type === 'resolvedExtendAction') {
-            // todo: ignore blocked & pending for validation
-            return action;
-        }
-        // if(action.type === 'resolvedExtendAction') {
-        //     if(event?.validate(action.payload).isValid) return action
-        // }
-        return this._getQueuedAction.bind(this)();
-    }
-
     private _runLoop(): boolean {
-        let reactionCheck = ReactionCheck.OK;
-        do {
-            // TODO: prioritize:
-            // replay Values
-            // dispatched Values // if the dispatched value has the same id as the loop-value, then a new validation can be skipped.
-            // requests
-            const requestedAction = getRequestedAction(this._currentActionId, getHighestPriorityValidRequestingBid(this._allPlacedBids!, this._logger));
-            const replayAction = this._replay?.getNextReplayAction(this._currentActionId, this._eventMap, requestedAction);
-            const maybeAction = replayAction || requestedAction || this._getQueuedAction();
-            if(maybeAction === undefined) {
-                return false;
-            }
-            const action = toActionWithId(maybeAction, this._currentActionId);
-            this._logger.logAction(action);
-            switch(action.type) {
-                case "uiAction":
-                    reactionCheck = advanceUiAction(this._bThreadMap, this._allPlacedBids!, action);
-                    break;
-                case "requestedAction":
-                    if(typeof action.payload === "function") {
-                        const val = this._eventMap.get(action.eventId)?.value;
-                        action.payload = action.payload(val);
-                    }
-                    if(isThenable(action.payload)) {
-                        action.resolveActionId = 'pending';
-                    }
-                    reactionCheck = advanceRequestedAction(this._bThreadMap, this._allPlacedBids!, action);
-                    break;
-                case "resolveAction":
-                    reactionCheck = advanceResolveAction(this._bThreadMap, this._allPlacedBids!, action);
-                    break;
-                case "resolvedExtendAction":
-                    reactionCheck = advanceResolveExtendAction(this._bThreadMap, this._allPlacedBids!, action);
-                    break;
-                case "rejectAction":
-                    reactionCheck = advanceRejectAction(this._bThreadMap, action);
-                    break;
-            }
-            if(reactionCheck !== ReactionCheck.OK) {
-                console.error('Scenario-Reaction-Error: ', reactionCheck, action);
-                this._replay?.abortReplay(action, reactionCheck);
-            }
-         } while (reactionCheck !== ReactionCheck.OK);
-         this._logger.finishLoop();
-         this._currentActionId++;
-         return true;
+        const action: AnyAction | undefined =
+            this._replay?.getNextReplayAction(this._eventMap, this._allPlacedBids!, this._currentActionId, this._logger) ||
+            getQueuedAction(this._actionQueue, this._eventMap, this._currentActionId) ||
+            getNextRequestedAction(this._eventMap, this._allPlacedBids!, this._currentActionId, this._logger);
+        if(action === undefined) {
+            return false;
+        }
+        this._logger.logAction(action);
+        const event = this._eventMap.get(action.eventId)!;
+        switch(action.type) {
+            case "uiAction":
+                advanceUiAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                break;
+            case "requestedAction":
+                advanceRequestedAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                break;
+            case "triggeredAction":
+                advanceTriggeredAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                break;
+            case "requestedAsyncAction":
+                event.__dispatchOnPromiseResolve(action);
+                break;
+            case "resolveAction":
+                advanceResolveAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                break;
+            case "resolvedExtendAction":
+                advanceResolveExtendAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                break;
+            case "rejectAction":
+                advanceRejectAction(this._bThreadMap, this._allPlacedBids!, action);
+                break;
+        }
+        this._logger.finishLoop();
+        this._currentActionId++;
+        return true;
     }
 
     private runStaging() {
-        this._stageScenarioAndEvents();
-        this._allPlacedBids = allPlacedBids(this._bThreadBids, this._eventMap);
+        this._stageBThreadsAndEvents();
+        this._allPlacedBids = allPlacedBids(this._bThreadBids);
         this._logger.logPlacedBids(this._allPlacedBids);
     }
 
     // public ----------------------------------------------------------------------
-    public addToActionQueue(actions: (UIAction | ResolveAction | ResolveExtendAction)[]): void {
+    public addToActionQueue(actions: BufferAction[]): void {
         actions.forEach(action => this._actionQueue.push(action));
     }
 
@@ -165,7 +114,6 @@ export class UpdateLoop {
         this._replay = undefined;
         this._currentActionId = 0;
         this._actionQueue.length = 0;
-        this._bThreadMap.allValues?.forEach(bThread => bThread.destroy());
         this._eventMap.allValues?.forEach(event => {
             event.__unplug();
         });

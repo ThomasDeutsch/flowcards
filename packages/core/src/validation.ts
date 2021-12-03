@@ -1,5 +1,6 @@
-import { EventBidInfo, getHighestPriorityAskForBid } from '.';
+import { BEvent } from '.';
 import { PlacedBid } from './bid';
+import { notEmpty } from './utils';
 
 export type PayloadValidationResult<V> = boolean | V[] | { failed?: V[], passed?: V[] };
 export type PayloadValidationCB<P, V> = (value: P) => PayloadValidationResult<V>;
@@ -16,7 +17,7 @@ export function isValidReturn(result: PayloadValidationResult<any>): boolean {
 }
 
 
-type ValidationResultsType = 'eventNotConnected' | 'noBidsForEvent' | 'noAskForBid' | 'eventIsBlocked' | 'eventIsPending' | 'payloadValidation';
+type ValidationResultsType = 'eventNotConnected' | 'noAskForBid' | 'eventIsBlocked' | 'eventIsPending' | 'payloadValidation';
 
 
 export type ValidationResults<P, V> = {
@@ -24,42 +25,32 @@ export type ValidationResults<P, V> = {
     isValid: boolean,
     failed: V[],
     passed: V[],
-    bidInfo?: EventBidInfo,
-    selectedBid?: PlacedBid<P>
+    selectedBids?: PlacedBid<P>[]
 };
 
 
-export function getAllPayloadValidationCallbacks<P, V>(bid: PlacedBid<P>, validateBids?: PlacedBid[]): PayloadValidationCB<P, V>[] {
-    const validationCallbacks = [];
-    if(bid.payloadValidationCB !== undefined) {
-        validationCallbacks.push(bid.payloadValidationCB);
-    }
-    validateBids?.forEach(bid => {
-        if(bid.payloadValidationCB !== undefined) {
-            validationCallbacks.push(bid.payloadValidationCB);
-        }
-    });
-    return validationCallbacks;
+export function getAllPayloadValidationCallbacks<P, V>(bids: PlacedBid[]): PayloadValidationCB<P, V>[] {
+    return bids.map(bid => bid.payloadValidationCB).filter(notEmpty);
 }
 
 
 export function isValidPayload<P>(validationCallbacks: PayloadValidationCB<P, any>[], value: P): boolean {
+    if(validationCallbacks.length === 0) return true;
     return validationCallbacks.every(cb => isValidReturn(cb(value)));
 }
 
 
-export function validateDispatch<P, V>(isEventConnected: boolean, value: P, bidInfo?: EventBidInfo): ValidationResults<P, V> {
-    const response = {isValid: false, passed: [], failed: [], bidInfo: bidInfo, selectedBid: undefined };
-    if(!isEventConnected) return {...response, type: 'eventNotConnected'};
-    if(bidInfo === undefined) return {...response, type: 'noBidsForEvent'};
-    const askForBid = getHighestPriorityAskForBid<P>(bidInfo.waitingBids);
-    if(askForBid === undefined) return {...response, type: 'noAskForBid'};
-    const validationCallbacks = getAllPayloadValidationCallbacks<P, V>(askForBid, bidInfo.validateBids);
-    if(bidInfo.blockedBy) {
-        return {...response, type: 'eventIsBlocked', selectedBid: askForBid};
+export function validateDispatch<P, V>(value: P, event?: BEvent<P, V>): ValidationResults<P, V> {
+    const response = {isValid: false, passed: [], failed: [], selectedBid: undefined };
+    if(event?.isConnected !== true) return {...response, type: 'eventNotConnected'};
+    const askForBids = event.getBids('askForBid');
+    if(askForBids === undefined) return {...response, type: 'noAskForBid'};
+    const validationCallbacks = getAllPayloadValidationCallbacks<P, V>([...askForBids, ...(event.getBids('validateBid') || [])]);
+    if(event.getBids('blockBid') !== undefined) {
+        return {...response, type: 'eventIsBlocked', selectedBids: askForBids};
     }
-    if(bidInfo.pendingBy) {
-        return {...response, type: 'eventIsPending', selectedBid: askForBid};
+    if(event.isPending) {
+        return {...response, type: 'eventIsPending', selectedBids: askForBids};
     }
     let isValid = true;
     let failed: V[] = [];
@@ -86,5 +77,5 @@ export function validateDispatch<P, V>(isEventConnected: boolean, value: P, bidI
             passed = passed.concat(validationResult.passed);
         }
     });
-    return {type: 'payloadValidation', isValid, failed, passed, bidInfo, selectedBid: askForBid};
+    return {type: 'payloadValidation', isValid, failed, passed, selectedBids: askForBids};
 }

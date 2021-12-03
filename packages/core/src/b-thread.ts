@@ -1,7 +1,7 @@
 
-import { BThreadContext, BThreadGenerator, BThreadPublicContext } from './bthread-core';
-import { NameKeyId, NameKeyMap } from './name-key-map';
-import { PendingBid } from './pending-bid';
+import { BThreadCore, BThreadUtilities } from '.';
+import { BThreadGenerator } from './bthread-core';
+import { NameKeyId } from './name-key-map';
 
 
 export interface BThreadInfo {
@@ -11,7 +11,7 @@ export interface BThreadInfo {
     description?: string;
 }
 
-export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadContext, props: P) => BThreadGenerator;
+export type BThreadGeneratorFunction<P extends Record<string, any> | void> = (this: BThreadUtilities, props: P) => BThreadGenerator;
 
 
 function toInfoObj(info: BThreadInfo | string): BThreadInfo {
@@ -33,13 +33,17 @@ function toInfoObj(info: BThreadInfo | string): BThreadInfo {
     }
 }
 
+export interface BThreadState {
+    isCompleted: boolean;
+}
+
 
 export class BThread<P = void> {
     public readonly id: NameKeyId;
     private _generatorFunction: BThreadGeneratorFunction<P>;
     public readonly destroyOnDisable: boolean;
-    private _bThreadContext?: BThreadPublicContext;
     public readonly description?: string;
+    private _bThreadCore?: BThreadCore<P>
 
     constructor(info: BThreadInfo | string, generatorFn: BThreadGeneratorFunction<P>) {
         this._generatorFunction = generatorFn;
@@ -49,25 +53,21 @@ export class BThread<P = void> {
         this.description = i.description;
     }
 
-    /** @internal */
-    public __updateBThreadContext(nextContext: BThreadPublicContext): void {
-        this._bThreadContext = nextContext;
-    }
-
     public get generatorFunction(): BThreadGeneratorFunction<P> {
         return this._generatorFunction;
     }
 
-    public get isCompleted(): boolean {
-        return !!this._bThreadContext?.isCompleted;
+    /** @internal */
+    public __setCore(bThreadCore: BThreadCore<P>): void {
+        this._bThreadCore = bThreadCore;
     }
 
-    public get pendingRequests(): NameKeyMap<PendingBid> | undefined {
-        return this._bThreadContext?.pendingRequests;
+    public get isCompleted(): boolean | undefined {
+        return this._bThreadCore?.isCompleted;
     }
 
-    public get pendingExtends(): NameKeyMap<PendingBid> | undefined {
-        return this._bThreadContext?.pendingExtends;
+    public get isConnected(): boolean {
+        return this._bThreadCore !== undefined;
     }
 }
 

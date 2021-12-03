@@ -10,8 +10,9 @@ export function toNameKeyId(e: string | NameKeyId): NameKeyId {
     return (typeof e === 'string') ? {name: e} : {...e};
 }
 
-export function sameNameKeyId(a: NameKeyId, b: NameKeyId): boolean {
-    return (a.name === b.name) && (a.key === b.key);
+export function isSameNameKeyId(a?: NameKeyId, b?: NameKeyId): boolean {
+    if(!a || !b) return false;
+    return a.name === b.name && a.key === b.key;
 }
 
 export class NameKeyMap<T>  {

@@ -25,3 +25,8 @@ export function toArray<T>(x: T | T[]): T[] {
     if(Array.isArray(x)) return x;
     return [x];
 }
+
+
+export function notEmpty<T>(value: T | null | undefined): value is T {
+    return value !== null && value !== undefined;
+}

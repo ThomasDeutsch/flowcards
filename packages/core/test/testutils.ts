@@ -1,7 +1,7 @@
-import { AnyActionWithId, Replay, Behaviors, UpdateCallback } from '../src/index';
+import { AnyAction, Replay, Behaviors, UpdateCallback } from '../src/index';
 import { StagingCB } from '../src/staging';
 
-export function testScenarios(stagingCb: StagingCB, updateCb?: UpdateCallback, initialActionsOrReplay?: Replay | AnyActionWithId[]): Behaviors {
+export function testScenarios(stagingCb: StagingCB, updateCb?: UpdateCallback, initialActionsOrReplay?: Replay | AnyAction[]): Behaviors {
     return new Behaviors({
         stagingCb,
         updateCb,

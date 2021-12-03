@@ -1,6 +1,6 @@
 import { PlacedBid } from './bid';
 import { NameKeyId, NameKeyMap } from './name-key-map';
-import { AnyActionWithId } from './action';
+import { AnyAction } from './action';
 import { AllPlacedBids, OnFinishLoopCB } from '.';
 
 
@@ -18,7 +18,7 @@ export interface BThreadReaction {
 
 export interface LoopLog {
     actionScenarios: NameKeyMap<void>;
-    action: AnyActionWithId;
+    action: AnyAction;
     reactions: NameKeyMap<BThreadReaction>;
     placedBids: AllPlacedBids;
     allRelevantScenarios: NameKeyMap<void>;
@@ -59,9 +59,9 @@ export class Logger {
     }
 
     // 3. log action
-    public logAction(action: AnyActionWithId): void {
+    public logAction(action: AnyAction): void {
         const a = {...action};
-        if(action.type === "requestedAction" && action.resolveActionId === 'pending') {
+        if(action.type === "requestedAsyncAction") {
             delete a.payload; // do not log the promise object
         }
         if(a.type === "uiAction") {

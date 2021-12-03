@@ -52,7 +52,36 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         yield bp.extend(eventA);
         expect(eventA.isPending).toBe(true);
         expect(eventA.value).toBe(undefined); // the request is not yet resolved.
-        this.getExtend(eventA)?.resolve((x=0) => x + 10 ); // the resolve-fn will provide the extend-value ( 100 )
+        this.resolveExtend(eventA, (this.getExtendValue(eventA) || 0) + 10 );
+    })
+
+    testScenarios((enable, events) => {
+        events(eventA, eventZ);
+        enable(thread1);
+        enable(thread3);
+    }, () => {
+        if(eventZ.isValid()) {
+            expect(eventA.value).toBe(110);
+            done();
+        }
+    }
+ );
+});
+
+test("a utility generator can be used to get a typed extend value ", (done) => {
+    const eventA = new BEvent<number>('A');
+    const eventZ = new BEvent('Z');
+
+    const thread1 = new BThread('requesting thread', function* () {
+        yield bp.request(eventA, 100);
+        yield bp.askFor(eventZ);
+    });
+
+    const thread3 = new BThread('extending thread', function* () {
+        const value = yield* bp.extendBid(eventA);
+        expect(eventA.isPending).toBe(true);
+        expect(eventA.value).toBe(undefined); // the request is not yet resolved.
+        this.resolveExtend(eventA, (value || 0) + 10 );
     })
 
     testScenarios((enable, events) => {
@@ -144,7 +173,7 @@ test("if an extended thread completed, without resolving or rejecting the event,
 });
 
 
-test("extended values can be accessed with the getExtend function", (done) => {
+test("extended values can be accessed with the getExtendValue function", (done) => {
     let thread1Advanced = false;
     const eventA = new BEvent<number>('A');
 
@@ -161,7 +190,7 @@ test("extended values can be accessed with the getExtend function", (done) => {
     const thread3 = new BThread('thread3', function* () {
         yield bp.extend(eventA);
         expect(thread1Advanced).toBe(false);
-        expect(this.getExtend(eventA)?.value).toBe(1000);
+        expect(this.getExtendValue(eventA)).toBe(1000);
         expect(eventA.isPending).toBeTruthy();
         done();
     });
@@ -217,8 +246,7 @@ test("extends will extend requests", () => {
     });
 
     const thread2 = new BThread('thread2', function* () {
-        yield bp.extend(eventA);
-        extendedPayload = this.getExtend(eventA)?.value;
+        extendedPayload = yield* bp.extendBid(eventA);
     });
 
     testScenarios((enable, events) => {
@@ -300,9 +328,9 @@ test("an extend will wait for the pending-event to finish before it extends.", (
             checkFunctionIsCalled = true;
             return x === 1000
         });
-        const extend = this.getExtend(eventA);
-        expect(extend?.value).toBe(1000);
-        extend?.resolve((x=0) => x + 10 )
+        const extendValue = this.getExtendValue(eventA);
+        expect(extendValue).toBe(1000);
+        this.resolveExtend(eventA, (extendValue || 0) + 10 )
     });
 
     testScenarios((enable, events) => {
@@ -330,10 +358,9 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
     });
 
     const extendingThread = new BThread('extendingThread', function* () {
-        yield bp.extend(eventA);
-        const ext = this.getExtend(eventA);
-        expect(ext?.value).toBe('value');
-        ext?.resolve((val) => val + " extended");
+        const value = yield* bp.extendBid(eventA);
+        expect(value).toBe('value');
+        this.resolveExtend(eventA, value + " extended");
     });
 
     const waitingThread = new BThread('waitingThread', function* () {
@@ -381,7 +408,7 @@ test("an extend will keep the event-pending if the BThread with the extend compl
 });
 
 test("multiple extends will resolve after another. After all extends complete, the request and wait will continue", (done) => {
-    const eventA = new BEvent<string>('A');
+    const eventA = new BEvent<string>('Arrr');
     const eventFin = new BEvent('Fin');
 
     const requestingThread = new BThread('requestingThread', function* () {
@@ -390,18 +417,16 @@ test("multiple extends will resolve after another. After all extends complete, t
     });
 
     const extendingThread = new BThread('extendingThread', function* () {
-        yield bp.extend(eventA);
-        const ext = this.getExtend(eventA);
+        const value = yield* bp.extendBid(eventA);
         expect(eventA.value).toBe(undefined);
-        expect(ext?.value).toBe('super extend1');
-        ext?.resolve((val) => val + " extend2");
+        expect(value).toBe('super extend1');
+        this.resolveExtend(eventA, value + ' extend2');
     });
 
     const extendingThreadHigherPriority = new BThread('extendingThreadHigherPriority', function* () {
-        yield bp.extend(eventA);
-        const ext = this.getExtend(eventA);
-        expect(ext?.value).toBe('super');
-        ext?.resolve((val) => val + ' extend1');
+        const value = yield* bp.extendBid(eventA);
+        expect(value).toBe('super');
+        this.resolveExtend(eventA, value + ' extend1');
     });
 
     const waitingThread = new BThread('waitingThread', function* () {
@@ -437,11 +462,11 @@ test("an extend can have an optional validation-function", (done) => {
 
     const extendingThreadOne = new BThread('extendingThreadOne', function* () {
         yield bp.extend(eventA, (val) => val === 2);
-        this.getExtend(eventA)?.resolve(() => 99);
+        this.resolveExtend(eventA, 99);
     });
     const extendingThreadTwo = new BThread('extendingThreadTwo', function* () {
-        yield bp.extend(eventA, (val) => val === 1);
-        this.getExtend(eventA)?.resolve((val) => val + 10);
+        const value = yield* bp.extendBid(eventA, (val) => val === 1);
+        this.resolveExtend(eventA, (value || 0) + 10);
     });
 
     testScenarios((enable, events) => {

@@ -1,4 +1,4 @@
-import { AnyActionWithId, ResolveAction, ResolveExtendAction, UIAction } from './action';
+import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RejectAction } from './action';
 import { LogInfo, UpdateLoop } from './update-loop';
 import { StagingCB } from './staging';
 import { Logger, LoopLog } from './logger';
@@ -14,11 +14,11 @@ export * from "./bid";
 export * from "./staging";
 export * from './logger';
 export * from './action';
-export * from './extend-context';
 export * from './replay';
 
+export type BufferAction = UIAction | ResolveAction | ResolveExtendAction | RejectAction;
 export type UpdateCallback = (pl: {log: LogInfo, replay?: Replay}) => void;
-export type InternalDispatch = (action: UIAction | ResolveAction | ResolveExtendAction) => void;
+export type InternalDispatch = (action: BufferAction) => void;
 export type OnFinishLoopCB = (loopLog: LoopLog) => void;
 
 export interface BehaviorsProps {
@@ -26,10 +26,10 @@ export interface BehaviorsProps {
     updateCb?: UpdateCallback;
     onNextLoopCB?: OnFinishLoopCB;
     doInitialUpdate: boolean;
-    initialActionsOrReplay?: AnyActionWithId[] | Replay
+    initialActionsOrReplay?: AnyAction[] | Replay
 }
 
-function getReplay(initialActionsOrReplay?: AnyActionWithId[] | Replay): Replay | undefined {
+function getReplay(initialActionsOrReplay?: AnyAction[] | Replay): Replay | undefined {
     if(initialActionsOrReplay === undefined)  {
         return undefined;
     }
@@ -43,7 +43,7 @@ function getReplay(initialActionsOrReplay?: AnyActionWithId[] | Replay): Replay 
 }
 
 export class Behaviors {
-    private _bufferedActions: (UIAction | ResolveAction | ResolveExtendAction)[] = [];
+    private _bufferedActions: BufferAction[] = [];
     private _updateLoop: UpdateLoop;
     private _updateCB?: UpdateCallback;
     private _logger: Logger;
@@ -57,7 +57,7 @@ export class Behaviors {
         if(this._updateCB && props.doInitialUpdate) this._updateCB({log, replay}); // callback with initial value
     }
 
-    private _internalDispatch(action: UIAction | ResolveAction | ResolveExtendAction) {
+    private _internalDispatch(action: BufferAction) {
         this._bufferedActions.push(action);
         this._clearBufferOnNextTick();
     }
@@ -72,7 +72,7 @@ export class Behaviors {
         });
     }
 
-    public reset(initialActionsOrReplay?: AnyActionWithId[] | Replay): void {
+    public reset(initialActionsOrReplay?: AnyAction[] | Replay): void {
         this._bufferedActions.length = 0;
         const replay = getReplay(initialActionsOrReplay);
         this._updateLoop.reset();

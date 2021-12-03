@@ -1,119 +1,150 @@
-import { BidType, PlacedBid } from './bid';
 import { NameKeyId } from './name-key-map';
-import { AnyAction, ResolveAction, ResolveExtendAction, UIAction, RequestedAction } from './action';
-import { AllPlacedBids, getMatchingBids, unblockNameKeyId } from '.';
+import { RequestedAction } from './action';
 import { getAllPayloadValidationCallbacks, isValidPayload, isValidReturn } from './validation';
 import { BThreadMap } from './update-loop';
-import { ReactionCheck } from './reaction';
+import { AllPlacedBids } from './bid';
+import { BEvent } from './b-event';
+import { AnyAction, RejectAction, ResolveAction, ResolveExtendAction, TriggeredAction, UIAction } from '.';
 
 
-export function getProgressingBids(allPlacedBids: AllPlacedBids, type: BidType, eventId: NameKeyId, payload: unknown): PlacedBid[] | undefined {
-    const matchingBids = getMatchingBids(allPlacedBids, type, eventId);
-    if(matchingBids === undefined) return undefined;
-    const progressingBids: PlacedBid[] = [];
-    matchingBids.forEach(bid => {
+export function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, eventId: NameKeyId, payload: unknown): void {
+    const bids = allPlacedBids.waitForBid.get(eventId);
+    if(bids === undefined) return;
+    bids.forEach(bid => {
         if(bid.payloadValidationCB === undefined) {
-            progressingBids.push(bid);
+            bThreadMap.get(bid.bThreadId)?.progressBid(bid);
             return;
         }
         const validationResult = bid.payloadValidationCB(payload);
         if(isValidReturn(validationResult)) {
-            progressingBids.push(bid);
+            bThreadMap.get(bid.bThreadId)?.progressBid(bid);
         }
     });
-    return progressingBids.length === 0 ? undefined : progressingBids;
 }
 
 
-function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, type: BidType, action: AnyAction): void {
-    const bids = getProgressingBids(allPlacedBids, type, action.eventId, action.payload);
-    if(bids === undefined) return;
-    bids.forEach(bid => {
-        bThreadMap.get(bid.bThreadId)?.progressWait(bid, action.eventId);
-    });
-    return;
-}
-
-
-function extendAction(allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, extendedAction: AnyAction): boolean {
-    const matchingExtendBids = getMatchingBids(allPlacedBids, "extendBid", extendedAction.eventId);
+function extendAction(event: BEvent<unknown>, allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, extendedAction: AnyAction): boolean {
+    const matchingExtendBids = allPlacedBids.extendBid.get(extendedAction.eventId);
     if(matchingExtendBids === undefined) return false;
-    const validationBids = allPlacedBids.validateBids.get(extendedAction.eventId);
+    const validationBids = allPlacedBids.validateBid.get(extendedAction.eventId);
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.shift()!; // get bid with highest priority
-        const validationCallbacks = getAllPayloadValidationCallbacks(extendBid, validationBids);
-        if(isValidPayload(validationCallbacks, extendedAction.payload) !== true) continue
-        const extendingBThread = bThreadMap.get(extendBid.bThreadId);
-        if(extendingBThread === undefined) continue;
-        //allPlacedBids.pending.set(extendBid.eventId, extendingBThread.id);
-        const extendContext = extendingBThread.progressExtend(extendedAction);
-        if(!extendContext) continue;
+        const validationCallbacks = getAllPayloadValidationCallbacks([extendBid, ...(validationBids || [])]);
+        if(isValidPayload(validationCallbacks, extendedAction.payload) !== true) continue;
+        const extendedType = extendedAction.type === 'resolvedExtendAction' ? extendedAction.extendedActionType : extendedAction.type;
+        event.__addPendingExtend(extendBid, extendedAction.payload, extendedType, extendedAction.bThreadId, extendBid.bThreadId);
+        const extendingBThread = bThreadMap.get(extendBid.bThreadId)!;
+        extendingBThread.progressBid(extendBid);
         return true;
     }
     return false;
 }
 
 
-export function advanceRequestedAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RequestedAction): ReactionCheck {
-    const requestingBThread = bThreadMap.get(action.bThreadId);
-    if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
-    if(action.resolveActionId === 'pending') {
-        requestingBThread.addPendingRequest(action);
-        return ReactionCheck.OK;
+export function advanceTriggeredAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: TriggeredAction): void {
+    const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
+    if(wasExtended) return;
+    event.__setValue(action.payload);
+    const triggerBids = allPlacedBids.triggerBid.get(action.eventId)!;
+    triggerBids.forEach(bid => {
+        bThreadMap.get(bid.bThreadId)!.progressBid(bid);
+    });
+    const askForBids = allPlacedBids.askForBid.get(action.eventId)!;
+    askForBids.forEach(bid => {
+        bThreadMap.get(bid.bThreadId)!.progressBid(bid);
+    });
+    progressWaitingBThreads(allPlacedBids, bThreadMap, action.eventId, action.payload);
+}
+
+
+export function advanceRequestedAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RequestedAction): void {
+    const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
+    if(wasExtended) return;
+    event.__setValue(action.payload);
+    const requestBids = allPlacedBids.requestBid.get(action.eventId)!;
+    requestBids.forEach(bid => {
+        bThreadMap.get(bid.bThreadId)!.progressBid(bid);
+    });
+    progressWaitingBThreads(allPlacedBids, bThreadMap, action.eventId, action.payload);
+}
+
+
+export function advanceUiAction(event: BEvent<any, any>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: UIAction): void {
+    const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
+    if(wasExtended) return;
+    event.__setValue(action.payload);
+    const askForBids = allPlacedBids.askForBid.get(action.eventId)!;
+    askForBids.forEach(bid => {
+        bThreadMap.get(bid.bThreadId)!.progressBid(bid);
+    });
+    progressWaitingBThreads(allPlacedBids, bThreadMap, action.eventId, action.payload);
+}
+
+
+export function advanceResolveAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveAction): void {
+    event.__removePending();
+    const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
+    if(wasExtended) return;
+    const requestedAction: RequestedAction = {
+        id: action.id,
+        bThreadId: action.bThreadId,
+        eventId: action.eventId,
+        type: "requestedAction",
+        payload: action.payload
+    };
+    advanceRequestedAction(event, bThreadMap, allPlacedBids, requestedAction);
+}
+
+
+export function advanceResolveExtendAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): void {
+    event.__removePending();
+    const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
+    if(wasExtended) return;
+    if(action.extendedActionType === 'requestedAction' || action.extendedActionType === 'resolveAction') {
+        const extendAction: RequestedAction = {
+            id: action.id,
+            type: 'requestedAction',
+            bThreadId: action.bThreadId,
+            eventId: action.eventId,
+            payload: action.payload
+        }
+        advanceRequestedAction(event, bThreadMap, allPlacedBids, extendAction);
     }
-    const extendContext = extendAction(allPlacedBids, bThreadMap, action);
-    if(extendContext) return ReactionCheck.OK;
-    const checkedProgress = requestingBThread.progressBid(action.bidType, action.eventId, action.payload);
-    if(checkedProgress !== ReactionCheck.OK) return checkedProgress;
-    if(action.matchedAskForBThreadId) {
-        const askForBThread = bThreadMap.get(action.matchedAskForBThreadId);
-        askForBThread?.progressBid('askForBid', action.eventId, action.payload);
+    if(action.extendedActionType === 'triggeredAction') {
+        const extendAction: TriggeredAction = {
+            id: action.id,
+            type: action.extendedActionType,
+            bThreadId: action.bThreadId,
+            eventId: action.eventId,
+            payload: action.payload
+        }
+        advanceTriggeredAction(event, bThreadMap, allPlacedBids, extendAction);
     }
-    progressWaitingBThreads(allPlacedBids, bThreadMap, "waitForBid", action);
-    return ReactionCheck.OK;
-}
-
-
-export function advanceUiAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: UIAction): ReactionCheck {
-    if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
-    const askingBThread = bThreadMap.get(action.bThreadId);
-    if(askingBThread === undefined) return ReactionCheck.AskingBThreadNotFound;
-    askingBThread.progressBid('askForBid', action.eventId, action.payload);
-    progressWaitingBThreads(allPlacedBids, bThreadMap, "waitForBid", action);
-    return ReactionCheck.OK;
-}
-
-
-export function advanceResolveExtendAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): ReactionCheck {
-    const extendingBThread = bThreadMap.get(action.bThreadId);
-    if(!extendingBThread) return ReactionCheck.ExtendingBThreadNotFound;
-    const resolveCheck = extendingBThread.deleteResolvedExtend(action);
-    if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
-    unblockNameKeyId(allPlacedBids, action.eventId);
-    if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
-    if(action.extendedBThreadId) {
-        const requestingBThread = bThreadMap.get(action.extendedBThreadId);
-        if(requestingBThread === undefined) return ReactionCheck.ExtendedRequestingBThreadNotFound;
-        requestingBThread.progressBid(action.extendedBidType!, action.eventId, action.payload);
+    if(action.extendedActionType === 'uiAction') {
+        const extendAction: UIAction = {
+            id: action.id,
+            type: action.extendedActionType,
+            bThreadId: action.bThreadId,
+            eventId: action.eventId,
+            payload: action.payload
+        }
+        advanceUiAction(event, bThreadMap, allPlacedBids, extendAction);
     }
-    progressWaitingBThreads(allPlacedBids, bThreadMap, 'waitForBid', action);
-    return ReactionCheck.OK;
 }
 
 
-export function advanceResolveAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveAction): ReactionCheck {
-    const requestingBThread = bThreadMap.get(action.bThreadId);
-    if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
-    unblockNameKeyId(allPlacedBids, action.eventId);
-    if(extendAction(allPlacedBids, bThreadMap, action)) return ReactionCheck.OK;
-    const resolveCheck = requestingBThread.progressResolved(action.eventId, action.payload);
-    if(resolveCheck !== ReactionCheck.OK) return resolveCheck;
-    progressWaitingBThreads(allPlacedBids, bThreadMap, 'waitForBid', action);
-    return ReactionCheck.OK;
-}
+export function advanceRejectAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RejectAction): void {
+    //TODO: advance onError Bids or throw error in BThread.
+    //TODO: REMOVE PENDING??  event.removePending();
+    const catchErrorBids = allPlacedBids.catchErrorBid.get(action.eventId);
+    if(catchErrorBids) {
+        catchErrorBids.forEach(bid => {
+            bThreadMap.get(bid.bThreadId)?.progressBid(bid);
+        });
+        return;
+    }
+    else {
+        bThreadMap.get(action.bThreadId)?.throwError(action.eventId, action.error);
+    }
 
-export function advanceRejectAction(bThreadMap: BThreadMap, action: ResolveAction): ReactionCheck {
-    const requestingBThread = bThreadMap.get(action.bThreadId);
-    if(requestingBThread === undefined) return ReactionCheck.RequestingBThreadNotFound;
-    return requestingBThread.rejectPending(action.eventId, action.payload);
 }
