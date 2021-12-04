@@ -60,7 +60,7 @@ test("after an event progressed, it is not pending any longer", (done) => {
     testScenarios((enable, event) => {
         event(eventA);
         enable(requestingThread);
-    }, (log) => console.log(log.log.logs));
+    });
 });
 
 test("a dispatch returns a validation result, if the dispatch was valid", (done) => {

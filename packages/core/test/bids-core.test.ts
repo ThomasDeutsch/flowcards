@@ -61,29 +61,6 @@ test("a request will also advance waiting Scenarios", () => {
 });
 
 
-
-// test("a request function parameter is the previous request value ", () => {
-//     const eventA = new BEvent<number>('A');
-//     const eventB = new BEvent<number>('B');
-
-
-//     const requestingThread = new BThread('thread1', function*() {
-//         yield bp.request(eventA, 1);
-//         yield [bp.request(eventB, () => delay(200, 1)), bp.request(eventA, (() => {
-//             console.log('test123', x);
-//             return 3;
-//         }];
-//     });
-
-//     testScenarios((s, e) => {
-//         e(eventA);
-//         s(requestingThread);
-//     }, () => {
-//         expect(eventA.value).toBe(2);
-//         expect(requestingThread.isCompleted).toBeTruthy();
-//     });
-// });
-
 test("a bid can be wrapped in a utility function hat will return the typed value", () => {
     const eventA = new BEvent<number>('A');
 

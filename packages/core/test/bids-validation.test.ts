@@ -162,7 +162,6 @@ test("if there are multiple askFor bids for the same event, the validations are 
         enable(threadHigh);
 
     }, () => {
-        console.log('test: ', eventA.validate(3))
         expect(eventA.validate(3).isValid).toBe(true);
         expect(eventA.validate(2).isValid).toBe(false);
 

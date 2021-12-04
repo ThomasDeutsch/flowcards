@@ -74,7 +74,7 @@ export function allPlacedBids(allBThreadBids: PlacedBid[]): AllPlacedBids {
         catchErrorBid: new NameKeyMap<PlacedBid[]>()
     }
     const orderedBids = new NameKeyMap<PlacedBid>();
-    allBThreadBids.reverse().forEach(bid => {
+    allBThreadBids.reverse().forEach(bid => { // bids - from high to low priority
         switch(bid.type) {
             case 'triggerBid': {
                 result.triggerBid.update(bid.eventId, (prev = []) => [...prev, bid]);
