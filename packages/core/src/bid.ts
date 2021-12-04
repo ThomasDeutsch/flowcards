@@ -1,6 +1,6 @@
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import * as utils from './utils';
-import { BThreadGenerator, BUIEvent, isSameNameKeyId } from '.';
+import { BUIEvent, isSameNameKeyId } from '.';
 import { PayloadValidationCB } from './validation';
 import { BEvent, BEventKeyed } from './b-event';
 import { BThreadProgressInfo } from './bthread-core';
@@ -39,12 +39,11 @@ export type BidOrBids =  Bid<any> | Bid<any>[];
 export function getPlacedBidsForBThread(bThreadId: NameKeyId, bidOrBids?: BidOrBids): PlacedBid[] {
     const bids = bidOrBids ? utils.toArray(bidOrBids) : undefined;
     if(bids === undefined) return [];
-    const placedBids = bids.map(bid => {
+    return bids.map(bid => {
             const pb: PlacedBid = bid as PlacedBid;
             pb.bThreadId = bThreadId;
             return pb;
-        });
-    return placedBids;
+    }).reverse();
 }
 
 // bids from multiple BThreads
@@ -74,17 +73,21 @@ export function allPlacedBids(allBThreadBids: PlacedBid[]): AllPlacedBids {
         extendBid: new NameKeyMap<PlacedBid[]>(),
         catchErrorBid: new NameKeyMap<PlacedBid[]>()
     }
-    const orderedIds = new NameKeyMap<PlacedBid>();
-    allBThreadBids.forEach(bid => {
+    const orderedBids = new NameKeyMap<PlacedBid>();
+    allBThreadBids.reverse().forEach(bid => {
         switch(bid.type) {
             case 'triggerBid': {
                 result.triggerBid.update(bid.eventId, (prev = []) => [...prev, bid]);
-                orderedIds.set(bid.eventId, bid);
+                if(!orderedBids.has(bid.eventId)) {
+                    orderedBids.set(bid.eventId, bid);
+                }
                 break;
             }
             case 'requestBid': {
                 result.requestBid.update(bid.eventId, (prev = []) => [...prev, bid]);
-                orderedIds.set(bid.eventId, bid);
+                if(!orderedBids.has(bid.eventId)) {
+                    orderedBids.set(bid.eventId, bid);
+                }
                 break;
             }
             case 'askForBid': {
@@ -113,7 +116,7 @@ export function allPlacedBids(allBThreadBids: PlacedBid[]): AllPlacedBids {
             }
         }
     });
-    result.orderedRequestingBids = orderedIds.allValues?.reverse() || [];
+    result.orderedRequestingBids = orderedBids.allValues || [];
     return result;
 }
 

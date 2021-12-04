@@ -133,9 +133,8 @@ export function advanceResolveExtendAction(event: BEvent<unknown>, bThreadMap: B
 }
 
 
-export function advanceRejectAction(bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RejectAction): void {
-    //TODO: advance onError Bids or throw error in BThread.
-    //TODO: REMOVE PENDING??  event.removePending();
+export function advanceRejectAction(event: BEvent, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RejectAction): void {
+    event.__removePending();
     const catchErrorBids = allPlacedBids.catchErrorBid.get(action.eventId);
     if(catchErrorBids) {
         catchErrorBids.forEach(bid => {

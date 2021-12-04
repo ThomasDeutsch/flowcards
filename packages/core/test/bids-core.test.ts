@@ -1,6 +1,6 @@
 import { BThread } from "../src";
 import * as bp from "../src/bid";
-import { BEvent, BEventKeyed } from "../src/b-event";
+import { BEvent, BUIEvent, BEventKeyed } from "../src/b-event";
 import { delay, testScenarios } from "./testutils";
 
 // REQUESTS & WAITS
@@ -251,7 +251,7 @@ test("if a request value is a function, it will be called once.", () => {
     });
 });
 
-test("When there are multiple requests with the same event-name, both requests will get the payload from the highest priority request", () => {
+test("When there are multiple requests with the same event-name, all requests will get the payload from the highest priority request", () => {
     const testEvent = {
         A: new BEvent<number>('A')
     }
@@ -356,7 +356,7 @@ test("if a thread has multiple requests, the last request has the highest priori
     });
 });
 
-test("with multiple requests for the same eventId, highest priority request is selected - that is also valid", () => {
+test("with multiple requests for the same event, all requests-validation need to pass, for the request to be selected", () => {
     const eventA = new BEvent<number>('A');
 
     const requestingLow = new BThread('thread1', function*() {
@@ -389,11 +389,11 @@ test("with multiple requests for the same eventId, highest priority request is s
         enable(validating);
         enable(waiting);
     }, () => {
-        expect(requestingHigh.isCompleted).toBe(true);
-        expect(requestingInvalid.isCompleted).toBe(true);
+        expect(requestingHigh.isCompleted).toBe(false);
+        expect(requestingInvalid.isCompleted).toBe(false);
         expect(validating.isCompleted).toBe(false);
-        expect(requestingLow.isCompleted).toBe(true);
-        expect(waiting.isCompleted).toBe(true);
+        expect(requestingLow.isCompleted).toBe(false);
+        expect(waiting.isCompleted).toBe(false);
     });
 });
 

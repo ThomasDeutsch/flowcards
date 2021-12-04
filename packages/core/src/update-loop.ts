@@ -77,7 +77,7 @@ export class UpdateLoop {
                 advanceResolveExtendAction(event, this._bThreadMap, this._allPlacedBids!, action);
                 break;
             case "rejectAction":
-                advanceRejectAction(this._bThreadMap, this._allPlacedBids!, action);
+                advanceRejectAction(event, this._bThreadMap, this._allPlacedBids!, action);
                 break;
         }
         this._logger.finishLoop();

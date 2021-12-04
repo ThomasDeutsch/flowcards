@@ -74,7 +74,7 @@ export class NameKeyMap<T>  {
         }
     }
 
-    public deleteSingle(event: NameKeyId): boolean {
+    public delete(event: NameKeyId): boolean {
         if(!this.has(event)) return false;
         if(event.key === undefined) {
             return this.noKey.delete(event.name);

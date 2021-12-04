@@ -48,7 +48,7 @@ export function setupStaging(props: StagingProps): RunStaging {
             //if(bThread.destroyOnDisable) destroyOnDisableThreadIds.set(bThread.id, bThread.id);
         }
         bThreadCore.placedBids?.forEach(bid => {
-            props.bThreadBids.unshift(bid);
+            props.bThreadBids.push(bid);
         });
     }
 
@@ -84,13 +84,13 @@ export function setupStaging(props: StagingProps): RunStaging {
         props.eventMap.allValues?.forEach(event => {
             if(!connectedEventIds.has(event.id)) {
                 props.eventMap.get(event)?.__unplug();
-                props.eventMap.deleteSingle(event);
+                props.eventMap.delete(event);
             }
         });
         props.bThreadMap.allValues?.forEach(bThread => {
             if(!connectedBThreadIds.has(bThread.id)) {
                 if(bThread.willDestroyOnDisable) {
-                    props.bThreadMap.deleteSingle(bThread.id);
+                    props.bThreadMap.delete(bThread.id);
                 }
                 bThread.__cancelPending();
             }
