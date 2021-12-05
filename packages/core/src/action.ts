@@ -1,4 +1,4 @@
-import { AllPlacedBids, BufferAction, EventMap, Logger, PlacedBid } from '.';
+import { AllPlacedBids, BidType, BufferAction, EventMap, Logger, PlacedBid } from '.';
 import { NameKeyId } from './name-key-map';
 import { isThenable } from './utils';
 import { getAllPayloadValidationCallbacks, isValidPayload, validateDispatch, ValidationResults } from './validation';
@@ -87,70 +87,87 @@ export function getQueuedAction(actionQueue: BufferAction[], eventMap: EventMap,
 }
 
 
-export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger?: Logger): RequestedAsyncAction | RequestedAction | TriggeredAction | undefined {
-     let action: RequestedAsyncAction | RequestedAction | TriggeredAction | undefined;
-     const reasons = [];
-     allPlacedBids.orderedRequestingBids.some((bid) => {
-         const event = eventMap.get(bid.eventId);
-         if(event?.isConnected !== true) {
-             reasons.push({bid: bid, type:  "eventNotConnected"});
-             return false;
-         }
-         if(allPlacedBids.blockBid.has(bid.eventId)) {
-            reasons.push({bid: bid, type: "eventBlockedBy", bThreadIds: allPlacedBids.blockBid.get(bid.eventId)?.map(bid => bid.bThreadId)});
-             return false;
-         }
-         if(event.isPending) {
-             reasons.push({bid: bid, type: "eventPendingBy", bThreadId: event.pendingRequestInfo?.bThreadId});
-             return false;
-         }
-         let askForBids: PlacedBid[] | undefined;
-         if(bid.type === 'triggerBid') {
-             askForBids = allPlacedBids.askForBid.get(bid.eventId);
-             if(askForBids === undefined) {
-                reasons.push({bid: bid, type: "noAskForForTrigger", bThreadId: event.pendingRequestInfo?.bThreadId});
+
+export interface RequestSelectReason {
+    event: NameKeyId,
+    bidType: BidType,
+    type: 'EventNotConnected' | 'EventBlockedBy' | 'EventPendingBy' | 'EventNotAskedFor' | 'BidPayloadInvalid' | 'OK',
+    bThreadIds?: NameKeyId[]
+}
+
+export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger: Logger): RequestedAsyncAction | RequestedAction | TriggeredAction | undefined {
+    let action: RequestedAsyncAction | RequestedAction | TriggeredAction | undefined;
+    const reasons: RequestSelectReason[] = [];
+    allPlacedBids.orderedRequestingBids.some((bid) => {
+        const reason: RequestSelectReason = { event: bid.eventId, bidType: bid.type, type: 'OK' };
+        const event = eventMap.get(bid.eventId);
+        if(event?.isConnected !== true) {
+            reason.type = "EventNotConnected";
+            reasons.push(reason);
+            return false;
+        }
+        if(allPlacedBids.blockBid.has(bid.eventId)) {
+            reason.type = "EventBlockedBy";
+            reason.bThreadIds = allPlacedBids.blockBid.get(bid.eventId)?.map(bid => bid.bThreadId);
+            reasons.push(reason);
+            return false;
+        }
+        if(event.isPending) {
+            reason.type = "EventPendingBy";
+            reason.bThreadIds = [event.pendingBy!];
+            reasons.push(reason);
+            return false;
+        }
+        let askForBids: PlacedBid[] | undefined;
+        if(bid.type === 'triggerBid') {
+            askForBids = allPlacedBids.askForBid.get(bid.eventId);
+            if(askForBids === undefined) {
+                reason.type = "EventNotAskedFor";
+                reasons.push(reason);
                 return false;
-             }
-         }
-         else if(typeof bid.payload === "function") {
-             bid.payload = bid.payload();
-             if(isThenable(bid.payload)) {
-                 action = {
-                     eventId: event.id,
-                     id: nextActionId,
-                     bThreadId: bid.bThreadId,
-                     type: 'requestedAsyncAction',
-                     payload: bid.payload
-                 }
-                 return true;
-             }
-         }
-         const validateBids = allPlacedBids.validateBid.get(bid.eventId) || [];
-         const requestedBy = allPlacedBids[bid.type].get(bid.eventId)!;
-         const validationCallbacks = getAllPayloadValidationCallbacks([...requestedBy, ...validateBids, ...(askForBids || [])]);
-         const allBidsHaveValidPayload = isValidPayload(validationCallbacks, bid.payload);
-         if(allBidsHaveValidPayload) {
-             if(bid.type === 'triggerBid') {
-                 action = {
-                     eventId: event.id,
-                     id: nextActionId,
-                     bThreadId: bid.bThreadId,
-                     type: 'triggeredAction',
-                     payload: bid.payload
-                 }
-             } else if(bid.type === 'requestBid') {
-                 action = {
-                     eventId: event.id,
-                     id: nextActionId,
-                     bThreadId: bid.bThreadId,
-                     type: 'requestedAction',
-                     payload: bid.payload
-                 }
-             }
-             return true;
-         }
-         reasons.push({bid: bid, type: 'invalid payload'});
-         return false;
-     });
-     return action;
+            }
+        }
+        else if(typeof bid.payload === "function") {
+            bid.payload = bid.payload();
+            if(isThenable(bid.payload)) {
+                action = {
+                    eventId: event.id,
+                    id: nextActionId,
+                    bThreadId: bid.bThreadId,
+                    type: 'requestedAsyncAction',
+                    payload: bid.payload
+                }
+                return true;
+            }
+        }
+        const validateBids = allPlacedBids.validateBid.get(bid.eventId) || [];
+        const requestedBy = allPlacedBids[bid.type].get(bid.eventId)!;
+        const validationCallbacks = getAllPayloadValidationCallbacks([...requestedBy, ...validateBids, ...(askForBids || [])]);
+        const allBidsHaveValidPayload = isValidPayload(validationCallbacks, bid.payload);
+        if(allBidsHaveValidPayload) {
+            if(bid.type === 'triggerBid') {
+                action = {
+                    eventId: event.id,
+                    id: nextActionId,
+                    bThreadId: bid.bThreadId,
+                    type: 'triggeredAction',
+                    payload: bid.payload
+                }
+            } else if(bid.type === 'requestBid') {
+                action = {
+                    eventId: event.id,
+                    id: nextActionId,
+                    bThreadId: bid.bThreadId,
+                    type: 'requestedAction',
+                    payload: bid.payload
+                }
+            }
+            return true;
+        }
+        reason.type = "BidPayloadInvalid";
+        reasons.push(reason);
+        return false;
+    });
+    logger.logReasonsForSelectedRequestBid(reasons);
+    return action;
  }

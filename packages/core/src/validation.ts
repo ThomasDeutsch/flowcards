@@ -1,4 +1,4 @@
-import { BEvent } from '.';
+import { EventCore } from '.';
 import { PlacedBid } from './bid';
 import { notEmpty } from './utils';
 
@@ -25,11 +25,11 @@ export type ValidationResults<P, V> = {
     isValid: boolean,
     failed: V[],
     passed: V[],
-    selectedBids?: PlacedBid<P>[]
+    selectedBids?: PlacedBid<P, V>[]
 };
 
 
-export function getAllPayloadValidationCallbacks<P, V>(bids: PlacedBid[]): PayloadValidationCB<P, V>[] {
+export function getAllPayloadValidationCallbacks<P, V>(bids: PlacedBid<P,V>[]): PayloadValidationCB<P, V>[] {
     return bids.map(bid => bid.payloadValidationCB).filter(notEmpty);
 }
 
@@ -40,21 +40,25 @@ export function isValidPayload<P>(validationCallbacks: PayloadValidationCB<P, an
 }
 
 
-export function validateDispatch<P, V>(value: P, event?: BEvent<P, V>): ValidationResults<P, V> {
+export function validateDispatch<P, V>(value: P, event?: EventCore<P, V>): ValidationResults<P, V> {
     const response = {isValid: false, passed: [], failed: [], selectedBid: undefined };
+
+    // TODO: move this into a invalidReasonsFunction
     if(event?.isConnected !== true) return {...response, type: 'eventNotConnected'};
     const askForBids = event.getBids('askForBid');
     if(askForBids === undefined) return {...response, type: 'noAskForBid'};
-    const validationCallbacks = getAllPayloadValidationCallbacks<P, V>([...askForBids, ...(event.getBids('validateBid') || [])]);
     if(event.getBids('blockBid') !== undefined) {
         return {...response, type: 'eventIsBlocked', selectedBids: askForBids};
     }
     if(event.isPending) {
         return {...response, type: 'eventIsPending', selectedBids: askForBids};
     }
+
+
     let isValid = true;
     let failed: V[] = [];
     let passed: V[] = [];
+    const validationCallbacks = getAllPayloadValidationCallbacks<P, V>([...askForBids, ...(event.getBids('validateBid') || [])]);
     validationCallbacks.forEach((validationCB) => {
         const validationResult = validationCB(value);
         if(validationResult === true) {

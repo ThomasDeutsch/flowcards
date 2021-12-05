@@ -1,12 +1,12 @@
 // import { BThread } from "../src";
 // import * as bp from "../src/bid";
-// import { BEvent } from "../src/b-event";
+// import { TEvent } from "../src/b-event";
 // import { testScenarios } from "./testutils";
 
 // test("if a request replay has no payload, the Payload-Function will be called", () => {
 
 //     const basicEvent = {
-//         eventA: new BEvent<number>('A')
+//         eventA: new TEvent<number>('A')
 //     }
 
 //     const requestingThread = new BThread('requestingThread', function*() {
@@ -39,10 +39,10 @@
 // test("a request can be replayed with an alternative payload", () => {
 
 //     const basicEvent = {
-//         eventA: new BEvent<number>('A'),
-//         eventB: new BEvent<number>('B'),
-//         eventC: new BEvent<number>('C'),
-//         eventD: new BEvent('D')
+//         eventA: new TEvent<number>('A'),
+//         eventB: new TEvent<number>('B'),
+//         eventC: new TEvent<number>('C'),
+//         eventD: new TEvent('D')
 //     }
 
 //     const requestingThread = new BThread('requestingThread', function*() {
@@ -77,10 +77,10 @@
 // test("a replay will fail, if the requested event is not the same event as the replay event.", () => {
 
 //     const basicEvent = {
-//         eventA: new BEvent<number>('A'),
-//         eventB: new BEvent<number>('B'),
-//         eventC: new BEvent<number>('C'),
-//         eventD: new BEvent('D')
+//         eventA: new TEvent<number>('A'),
+//         eventB: new TEvent<number>('B'),
+//         eventC: new TEvent<number>('C'),
+//         eventD: new TEvent('D')
 //     }
 
 //     const requesting = new BThread('requestingThread', function*() {
@@ -115,7 +115,7 @@
 // test("if a ui replay action is found, without a matching askFor bid, the replay will be aborted", () => {
 
 //     const basicEvent = {
-//         eventA: new BEvent<number>('A')
+//         eventA: new TEvent<number>('A')
 //     }
 
 //     const waitingThread = new BThread('waitingThread', function*() {

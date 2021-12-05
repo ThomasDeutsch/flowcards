@@ -41,7 +41,7 @@ export class Replay {
         this._state = 'aborted';
     }
 
-    public getNextReplayAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger?: Logger): AnyAction | undefined {
+    public getNextReplayAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger: Logger): AnyAction | undefined {
         if(this._state !== 'running') return undefined;
         const requestAction = getNextRequestedAction(eventMap, allPlacedBids, nextActionId, logger);
         if(nextActionId > this._lastActionId) {

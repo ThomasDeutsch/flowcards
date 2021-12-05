@@ -3,11 +3,11 @@ import { Logger } from './logger';
 import { BThread } from './b-thread';
 import { BThreadMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
-import { BEvent } from './b-event';
+import { EventCore } from './b-event';
 import { BidType, InternalDispatch, PlacedBid, ResolveAction, ResolveExtendAction } from '.';
 
 export type ConnectBThread = <P>(...props: P extends void ? [BThread<P>] : [BThread<P>, P]) => void;
-export type ConnectEvents = (...events: (BEvent<any, any> | Record<string, BEvent<any>>)[]) => void;
+export type ConnectEvents = (...events: (EventCore<any, any> | Record<string, EventCore<any>>)[]) => void;
 export type StagingCB = (connectBThread: ConnectBThread, connectEvents: ConnectEvents) => void;
 export type RunStaging = () => void;
 export type GetBids = (eventId: NameKeyId, bidType: BidType) => PlacedBid<any>[] | undefined;
@@ -52,7 +52,7 @@ export function setupStaging(props: StagingProps): RunStaging {
         });
     }
 
-    function connectEvent(event: BEvent<any>) {
+    function connectEvent(event: EventCore<any>) {
         connectedEventIds.set(event.id, event.id);
         if(props.eventMap.has(event.id) === false) {
             event.__connect({
@@ -65,7 +65,7 @@ export function setupStaging(props: StagingProps): RunStaging {
 
     const connectEvents: ConnectEvents = (...events) => {
         events.forEach(event => {
-            if(event instanceof BEvent) {
+            if(event instanceof EventCore) {
                 connectEvent(event);
             }
             else {

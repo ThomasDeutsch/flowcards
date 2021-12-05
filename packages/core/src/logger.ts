@@ -1,33 +1,19 @@
 import { PlacedBid } from './bid';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { AnyAction } from './action';
-import { AllPlacedBids, OnFinishLoopCB } from '.';
-
-
-export enum BThreadReactionType {
-    progress = 'progress',
-    error = 'error',
-    newPending = 'newPending',
-    resolvedExtend = 'resolvedExtend'
-}
-
-export interface BThreadReaction {
-    reactionType: BThreadReactionType;
-    placedBid?: PlacedBid;
-}
+import { AllPlacedBids, BidType, OnFinishLoopCB, RequestSelectReason } from '.';
 
 export interface LoopLog {
-    actionScenarios: NameKeyMap<void>;
-    action: AnyAction;
-    reactions: NameKeyMap<BThreadReaction>;
     placedBids: AllPlacedBids;
-    allRelevantScenarios: NameKeyMap<void>;
+    reasons?: RequestSelectReason[];
+    action: AnyAction;
+    reactions: NameKeyMap<BidType>;
 }
 
 function getInitialLoopLog(): Partial<LoopLog> {
     return {
-        actionScenarios: new NameKeyMap(),
-        reactions: new NameKeyMap()    }
+        reactions: new NameKeyMap()
+    }
 }
 
 export class Logger {
@@ -51,11 +37,8 @@ export class Logger {
 
     // 2. log involved scenarios
     // For a requested action, what scenarios have selected the specific action?
-    public logInvolvedScenariosForNextRequestBid(scenarioIds: NameKeyId[]): void {
-        scenarioIds.forEach(id => {
-            this._loopLog.actionScenarios!.set(id);
-            this._allRelevantScenarios!.set(id)
-        })
+    public logReasonsForSelectedRequestBid(reasons: RequestSelectReason[]): void {
+        this._loopLog.reasons = reasons;
     }
 
     // 3. log action
@@ -71,14 +54,12 @@ export class Logger {
     }
 
     // 4. log reactions ( by BThread )
-    public logReaction(reactionType: BThreadReactionType, bThreadId: NameKeyId, bid?: PlacedBid): void {
+    public logReaction(bThreadId: NameKeyId, bid: PlacedBid): void {
         this._allRelevantScenarios!.set(bThreadId);
-        this._loopLog.reactions!.set(bThreadId, {
-            reactionType: reactionType,
-            placedBid: bid
-        });
+        this._loopLog.reactions!.set(bThreadId, bid.type);
     }
 
+    // 5. loop finished
     public finishLoop(): void {
         this._loopLogs.push({...this._loopLog} as LoopLog);
         this._onFinishLoopCB?.({...this._loopLog} as LoopLog);

@@ -1,6 +1,6 @@
 import { BThread } from "../src";
 import * as bp from "../src/bid";
-import { BEvent, BUIEvent, BEventKeyed } from "../src/b-event";
+import { UEvent, TEvent, TEventKeyed } from "../src/b-event";
 import { delay, testScenarios } from "./testutils";
 
 // REQUESTS & WAITS
@@ -11,8 +11,8 @@ test("a requested event that is not blocked will advance", () => {
     }
 
     const basicEvent = {
-        eventA: new BEvent<number>('A'),
-        eventB: new BEvent<number>('B')
+        eventA: new TEvent<number>('A'),
+        eventB: new TEvent<number>('B')
     }
 
     const requestingThread = new BThread<TestProps>('thread1', function*(context) {
@@ -33,14 +33,10 @@ test("a requested event that is not blocked will advance", () => {
 
 
 test("a request will also advance waiting Scenarios", () => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestingThread = new BThread('thread1', function*() {
         yield bp.request(eventA, 1);
-    });
-
-    const askingThread = new BThread('askingThread', function*() {
-        yield bp.askFor(eventA);
     });
 
     const waitingThread = new BThread('waitingThread', function*() {
@@ -50,19 +46,16 @@ test("a request will also advance waiting Scenarios", () => {
     testScenarios((s, e) => {
         e(eventA);
         s(requestingThread);
-        s(askingThread);
         s(waitingThread);
     }, () => {
         expect(eventA.value).toBe(1);
         expect(requestingThread.isCompleted).toBeTruthy();
-        expect(askingThread.isCompleted).toBeFalsy();
         expect(waitingThread.isCompleted).toBeTruthy();
     });
 });
 
-
 test("a bid can be wrapped in a utility function hat will return the typed value", () => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestingThread = new BThread('thread1', function*() {
         const value = yield* bp.bid(bp.request(eventA, 1));
@@ -78,7 +71,7 @@ test("a bid can be wrapped in a utility function hat will return the typed value
 });
 
 test("waits will return the value that has been requested", () => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestThread = new BThread('requestThread', function* () {
         yield bp.request(eventA, 1000);
@@ -99,8 +92,8 @@ test("waits will return the value that has been requested", () => {
 
 
 test("multiple requests will return information about the progressed Scenario", () => {
-    const eventA = new BEvent<number>('A');
-    const eventB = new BEvent<number>('B');
+    const eventA = new TEvent<number>('A');
+    const eventB = new TEvent<number>('B');
 
     const requestThread = new BThread('request', function* () {
         const progress = yield [bp.request(eventB, 2000), bp.request(eventA, 1000)];
@@ -124,8 +117,8 @@ test("multiple requests will return information about the progressed Scenario", 
 
 test("multiple bids at the same time will be expressed as an array.", () => {
     const testEvent = {
-        A: new BEvent<number>('A'),
-        B: new BEvent<number>('B')
+        A: new TEvent<number>('A'),
+        B: new TEvent<number>('B')
     }
 
     const requestThread = new BThread('thread1', function* () {
@@ -148,8 +141,8 @@ test("multiple bids at the same time will be expressed as an array.", () => {
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
     const testEvent = {
-        A: new BEvent<number>('A'),
-        B: new BEvent<number>('B')
+        A: new TEvent<number>('A'),
+        B: new TEvent<number>('B')
     }
 
     const requestThread = new BThread('thread1', function* () {
@@ -172,8 +165,8 @@ test("A request-value can be a function. It will get called, when the event is s
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
     const testEvent = {
-        A: new BEvent<number>('A'),
-        B: new BEvent<number>('B')
+        A: new TEvent<number>('A'),
+        B: new TEvent<number>('B')
     }
 
     const requestThread = new BThread('thread1', function* () {
@@ -196,7 +189,7 @@ test("A request-value can be a function. It will get called, when the event is s
 
 test("if a request value is a function, it will be called once.", () => {
     const testEvent = {
-        A: new BEvent<number>('A'),
+        A: new TEvent<number>('A'),
     }
 
     let fnCount = 0;
@@ -230,7 +223,7 @@ test("if a request value is a function, it will be called once.", () => {
 
 test("When there are multiple requests with the same event-name, all requests will get the payload from the highest priority request", () => {
     const testEvent = {
-        A: new BEvent<number>('A')
+        A: new TEvent<number>('A')
     }
 
     const requestThreadLower = new BThread('thread1', function* () {
@@ -263,7 +256,7 @@ test("When there are multiple requests with the same event-name, all requests wi
 
 test("events can be blocked", () => {
     const testEvent = {
-        A: new BEvent<number>('A'),
+        A: new TEvent<number>('A'),
     }
 
     let advancedRequest = false,
@@ -299,7 +292,7 @@ test("events can be blocked", () => {
 test("if an async request gets blocked, it will not call the updatePayloadCb", () => {
     let calledFunction = false;
 
-    const eventA = new BEvent('A');
+    const eventA = new TEvent('A');
 
     const requestingThread = new BThread('thread1', function* () {
         yield bp.request(eventA, () => { calledFunction = true; });
@@ -319,7 +312,7 @@ test("if an async request gets blocked, it will not call the updatePayloadCb", (
 
 test("if a thread has multiple requests, the last request has the highest priority.", () => {
 
-    const eventA = new BEventKeyed('A');
+    const eventA = new TEventKeyed('A');
 
     const requestingThread = new BThread('thread1', function*() {
         const progress = yield [bp.request(eventA.key(1)), bp.request(eventA.key(2)), bp.request(eventA.key(3)), bp.request(eventA.key(4))];
@@ -334,7 +327,7 @@ test("if a thread has multiple requests, the last request has the highest priori
 });
 
 test("with multiple requests for the same event, all requests-validation need to pass, for the request to be selected", () => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestingLow = new BThread('thread1', function*() {
         const progressInfo = yield bp.request(eventA, 1);
@@ -378,7 +371,7 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
     let lowerPrioProgressed = false;
     let higherPrioProgressed = false;
 
-    const eventA = new BEvent<number>('A');
+    const eventA = new UEvent<number>('A');
 
     const askingThreadLow = new BThread('thread1', function*() {
         yield bp.askFor(eventA);
@@ -409,7 +402,7 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
 //     let lowerPrioProgressed = false;
 //     let higherPrioProgressed = false;
 
-//     const eventA = new BEvent<number>('A');
+//     const eventA = new TEvent<number>('A');
 
 //     const askingThreadLow = new BThread('thread1', function*() {
 //         yield bp.askFor(eventA, (pl) => !!pl && pl > 10);
@@ -440,7 +433,7 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
 
 test("a BThread can return the state of completion", () => {
 
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestingThread = new BThread('thread1', function*() {
         yield [bp.request(eventA), bp.request(eventA)]
@@ -456,8 +449,8 @@ test("a BThread can return the state of completion", () => {
 
 // test("the allOf utility function will return if all bids have progressed", (done) => {
 //     let timesPromiseWasCreated = 0;
-//     const eventA = new BEvent<number>('A');
-//     const eventB = new BEvent<number>('B');
+//     const eventA = new TEvent<number>('A');
+//     const eventB = new TEvent<number>('B');
 
 
 //     const requestingThread = new BThread('thread1',
@@ -483,8 +476,8 @@ test("a BThread can return the state of completion", () => {
 
 
 test("a pending event is canceled, when another request finished before", (done) => {
-    const eventA = new BEvent<number>('A');
-    const eventB = new BEvent<number>('B');
+    const eventA = new TEvent<number | undefined>('A');
+    const eventB = new TEvent<number | undefined>('B');
 
     const requestingThread = new BThread('thread1', function*() {
         yield [bp.request(eventB, () => delay(2000, 1)), bp.request(eventA, 1)];
@@ -508,7 +501,7 @@ test("a pending event is canceled, when another request finished before", (done)
 
 
 test("askFor will enable events to be dispatched", (done) => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new UEvent<number>('A');
 
     const askingThread = new BThread('thread1', function*() {
         yield bp.askFor(eventA);
@@ -531,7 +524,7 @@ test("askFor will enable events to be dispatched", (done) => {
 });
 
 test("a trigger needs an askFor bid", () => {
-    const eventA = new BEvent('Axxx');
+    const eventA = new UEvent('A');
 
     const askingThread = new BThread('askingThread', function*() {
         yield bp.askFor(eventA);
@@ -552,7 +545,7 @@ test("a trigger needs an askFor bid", () => {
 });
 
 test("a trigger will not advance without an askFor bid", () => {
-    const eventA = new BEvent('Abc');
+    const eventA = new UEvent('Abc');
 
     const waitingBThread = new BThread('requestingThread', function*() {
         yield bp.waitFor(eventA);

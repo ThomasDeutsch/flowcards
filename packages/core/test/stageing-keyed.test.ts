@@ -1,14 +1,14 @@
 import { BThread, BThreadKeyed } from "../src";
 import * as bp from "../src/bid";
-import { BEvent, BEventKeyed } from "../src/b-event";
+import { TEvent, TEventKeyed } from "../src/b-event";
 import { testScenarios } from "./testutils";
 
 
 test("scenarios can be keyed", () => {
 
     const basicEvent = {
-        eventA: new BEvent<number>('A'),
-        eventB: new BEvent<number>('B')
+        eventA: new TEvent<number>('A'),
+        eventB: new TEvent<number>('B')
     }
 
     const requestingThread = new BThreadKeyed('thread1', function*() {
@@ -28,7 +28,7 @@ test("scenarios can be keyed", () => {
 
 test("a keyed scenario can progress without the other keyed scenario being progressed", () => {
 
-    const eventA = new BEventKeyed<number>('A');
+    const eventA = new TEventKeyed<number>('A');
 
     const waitingThread = new BThreadKeyed('thread1', function*() {
         yield bp.waitFor(eventA.key(this.key!)); //TODO: key is not undefined!!

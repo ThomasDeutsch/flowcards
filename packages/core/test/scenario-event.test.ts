@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { delay, testScenarios } from "./testutils";
-import { BEvent } from "../src/b-event";
+import { TEvent, UEvent } from "../src/b-event";
 import { BThread } from "../src";
 
 interface ScenarioProps {
@@ -8,8 +8,8 @@ interface ScenarioProps {
 }
 
 test("an event needs to be enabled in order to be requested", () => {
-    const eventA = new BEvent<number>('A');
-    const eventB = new BEvent<number>('B');
+    const eventA = new TEvent<number>('A');
+    const eventB = new TEvent<number>('B');
 
     const requestingThread = new BThread<ScenarioProps>('thread1', function*() {
         yield bp.request(eventA);
@@ -27,8 +27,8 @@ test("an event needs to be enabled in order to be requested", () => {
 
 
 test("an event value is reset to its initial value on unplug", () => {
-    const eventA = new BEvent<number>('A', 10);
-    const eventB = new BEvent('B');
+    const eventA = new TEvent<number>('A', 10);
+    const eventB = new TEvent('B');
 
     const requestingThread = new BThread<ScenarioProps>('thread1', function*() {
         yield bp.request(eventA, 20);
@@ -49,10 +49,10 @@ test("an event value is reset to its initial value on unplug", () => {
 });
 
 test("after an event progressed, it is not pending any longer", (done) => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number | undefined>('A');
 
     const requestingThread = new BThread('thread1', function*() {
-        yield bp.request(eventA, () => delay(100, 1));
+        yield bp.request(eventA, () => delay(100, undefined));
         expect(eventA.isPending).toBe(false);
         done();
     });
@@ -64,7 +64,7 @@ test("after an event progressed, it is not pending any longer", (done) => {
 });
 
 test("a dispatch returns a validation result, if the dispatch was valid", (done) => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new UEvent<number>('A');
 
     const askingScenario = new BThread('thread1', function*() {
         const x = yield* bp.bid(bp.askFor(eventA));
@@ -83,7 +83,7 @@ test("a dispatch returns a validation result, if the dispatch was valid", (done)
 });
 
 // test("the dispatch promise returns false, if another event has made the dispatch invalid.", (done) => {
-//     const eventA = new BEvent<number>('A');
+//     const eventA = new TEvent<number>('A');
 
 //     const askingScenario = new BThread('thread1', function*() {
 //         yield bp.askFor(eventA);
@@ -108,7 +108,7 @@ test("a dispatch returns a validation result, if the dispatch was valid", (done)
 
 
 test("an event that is not enabled can not be dispatched", () => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new UEvent<number>('A');
 
     const requestingThread = new BThread('thread1', function*() {
         yield bp.askFor(eventA);
@@ -124,7 +124,7 @@ test("an event that is not enabled can not be dispatched", () => {
 });
 
 test("in a validate function, the event.value represents its old value", () => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestingThread = new BThread('thread1', function*() {
         yield bp.request(eventA, 1);

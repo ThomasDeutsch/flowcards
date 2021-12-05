@@ -22,8 +22,8 @@ export interface EventConnectProps {
     getBids: GetBids;
 }
 
-interface PendingExtend<P> {
-    bid: PlacedBid<P>;
+interface PendingExtend<P, V> {
+    bid: PlacedBid<P, V>;
     extendedValue: P;
     bThreadId: NameKeyId;
     extendedBy: NameKeyId;
@@ -36,13 +36,15 @@ interface PendingRequestInfo {
     bThreadId: NameKeyId
 }
 
-export class BEvent<P = void, V = string> {
+type EventType = 'BT' | 'UI';
+export class EventCore<P = void, V = string> {
+    public readonly type: EventType;
     public readonly name: string;
-    public readonly key?: string | number;
+    public readonly key?: string | number;  //TODO: remove key from EventCore? and only use keys with KeyedEvents ?
     public readonly initialValue?: P;
     public readonly description?: string;
     private _updatedOn?: number;
-    private _pendingExtend?: PendingExtend<P>;
+    private _pendingExtend?: PendingExtend<P, V>;
     private _pendingRequestInfo?: PendingRequestInfo;
     //setup
     private _internalDispatch?: InternalDispatch;
@@ -51,7 +53,8 @@ export class BEvent<P = void, V = string> {
     private _value?: P;
     private _initialValue?: P;
 
-    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
+    constructor(nameOrNameKey: string | NameKeyId, type: EventType, initialValue?: P) {
+        this.type = type;
         this._initialValue = initialValue;
         this._value = initialValue;
         if(typeof nameOrNameKey === 'string') {
@@ -140,7 +143,7 @@ export class BEvent<P = void, V = string> {
     }
 
     /** @internal */
-    public __addPendingExtend(placedBid: PlacedBid<P>, extendedValue: P, extendedActionType: ActionType, bThreadId: NameKeyId, extendedBy: NameKeyId): void {
+    public __addPendingExtend(placedBid: PlacedBid<P, V>, extendedValue: P, extendedActionType: ActionType, bThreadId: NameKeyId, extendedBy: NameKeyId): void {
         new Promise<P>((resolve, reject) => {
             this._pendingExtend = {
                 bid: placedBid,
@@ -160,6 +163,7 @@ export class BEvent<P = void, V = string> {
                 id: -1
             }
             this._internalDispatch?.(action);
+            return value;
         });
     }
 
@@ -186,7 +190,7 @@ export class BEvent<P = void, V = string> {
         this._value = nextValue;
     }
 
-    public getBids(bidType: BidType): PlacedBid<P>[] | undefined {
+    public getBids(bidType: BidType): PlacedBid<P, any>[] | undefined {
         return this._getBids?.(this.id, bidType);
     }
 
@@ -208,6 +212,10 @@ export class BEvent<P = void, V = string> {
 
     public get isPending(): boolean {
         return this._pendingRequestInfo !== undefined || this._pendingExtend !== undefined;
+    }
+
+    public get pendingBy(): NameKeyId | undefined {
+        return this._pendingRequestInfo?.bThreadId || this._pendingExtend?.bThreadId;
     }
 
     public get pendingRequestInfo(): PendingRequestInfo | undefined {
@@ -236,13 +244,14 @@ export class BEvent<P = void, V = string> {
     }
 }
 
-
-export class BEventKeyed<P = void> {
+export class EventCoreKeyed<T extends UEvent<P,V> | TEvent<P,V>, P = void, V = string> {
+    public readonly type: EventType;
     public readonly name: string;
     private _initialValue?: P;
-    private _children = new Map<string | number, BEvent<P>>();
+    private _children = new Map<string | number, T>();
 
-    constructor(name: string, initialValue?: P) {
+    constructor(name: string, type: EventType, initialValue?: P) {
+        this.type = type;
         this._initialValue = initialValue;
         this.name = name;
     }
@@ -251,16 +260,20 @@ export class BEventKeyed<P = void> {
         return { name: this.name }
     }
 
-    public key(key: string | number): BEvent<P> {
+    public key(key: string | number): T  {
         let event = this._children.get(key);
         if(event === undefined) {
-            event = new BEvent<P>({name: this.name, key: key}, this._initialValue);
+            if(this.type === 'UI') {
+                event = new UEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
+            } else {
+                event = new TEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
+            }
             this._children.set(key, event);
         }
         return event;
     }
 
-    public keys(...keys: (string | number)[]): BEvent<P>[] {
+    public keys(...keys: (string | number)[]): T[] {
         return keys.map(key => this.key(key));
     }
 
@@ -279,8 +292,26 @@ export class BEventKeyed<P = void> {
 }
 
 
-export class BUIEvent<P = void, V = string> extends BEvent<P, V> {
+export class UEvent<P = void, V = string> extends EventCore<P, V> {
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
-        super(nameOrNameKey, initialValue);
+        super(nameOrNameKey, 'UI', initialValue);
+    }
+}
+
+export class UEventKeyed<P = void, V = string> extends EventCoreKeyed<UEvent<P,V>, P, V> {
+    constructor(nameOrNameKey: string, initialValue?: P) {
+        super(nameOrNameKey, 'UI', initialValue);
+    }
+}
+
+export class TEvent<P = void, V = string> extends EventCore<P, V> {
+    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
+        super(nameOrNameKey, 'BT', initialValue);
+    }
+}
+
+export class TEventKeyed<P = void, V = string> extends EventCoreKeyed<TEvent<P,V>, P, V> {
+    constructor(nameOrNameKey: string, initialValue?: P) {
+        super(nameOrNameKey, 'BT', initialValue);
     }
 }

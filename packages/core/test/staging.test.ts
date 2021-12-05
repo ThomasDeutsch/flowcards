@@ -1,14 +1,14 @@
 import { BThreadKeyed } from "../src";
 import * as bp from "../src/bid";
-import { BEvent } from "../src/b-event";
+import { TEvent } from "../src/b-event";
 import { testScenarios } from "./testutils";
 
 
 test("the enable-events function will accept a record of ScenarioEvents", () => {
 
     const basicEvent = {
-        eventA: new BEvent<number>('A'),
-        eventB: new BEvent<number>('B')
+        eventA: new TEvent<number>('A'),
+        eventB: new TEvent<number>('B')
     }
 
     const requestingThread = new BThreadKeyed('thread1', function*() {
@@ -27,8 +27,8 @@ test("the enable-events function will accept a record of ScenarioEvents", () => 
 
 test("the enable-events function will accept single ScenarioEvents", () => {
 
-    const eventA = new BEvent<number>('A');
-    const eventB = new BEvent<number>('B');
+    const eventA = new TEvent<number>('A');
+    const eventB = new TEvent<number>('B');
 
     const requestingThread = new BThreadKeyed('thread1', function*() {
         const progress = yield bp.request(eventA, 1);

@@ -1,15 +1,15 @@
 // import { BThread } from "../src";
 // import * as bp from "../src/bid";
-// import { BEvent } from "../src/b-event";
+// import { TEvent } from "../src/b-event";
 // import { testScenarios } from "./testutils";
 
 // test("the logger will provide a map of relevant Scenarios", () => {
 
 //     const basicEvent = {
-//         eventA: new BEvent<number>('A'),
-//         eventB: new BEvent<number>('B'),
-//         eventC: new BEvent<number>('C'),
-//         eventD: new BEvent('D')
+//         eventA: new TEvent<number>('A'),
+//         eventB: new TEvent<number>('B'),
+//         eventC: new TEvent<number>('C'),
+//         eventD: new TEvent('D')
 //     }
 
 //     const requestingThread = new BThread('requestingThread', function*() {

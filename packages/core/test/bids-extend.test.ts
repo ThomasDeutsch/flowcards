@@ -1,14 +1,14 @@
 import * as bp from "../src/bid";
 import { testScenarios, delay } from "./testutils";
 import { BThread } from '../src/b-thread';
-import { BEvent } from "../src";
+import { TEvent, UEvent } from "../src";
 
 
 // Extends
 //-------------------------------------------------------------------------
 
 test("requests can be extended", () => {
-    const eventA = new BEvent('A');
+    const eventA = new TEvent('A');
     let progressedRequest = false,
         progressedExtend = false,
         setupCount = 0;
@@ -40,8 +40,8 @@ test("requests can be extended", () => {
 
 
 test("after the extend resolved, the event is no longer pending", (done) => {
-    const eventA = new BEvent<number>('A');
-    const eventZ = new BEvent('Z');
+    const eventA = new TEvent<number>('A');
+    const eventZ = new UEvent('Z');
 
     const thread1 = new BThread('requesting thread', function* () {
         yield bp.request(eventA, 100);
@@ -69,8 +69,8 @@ test("after the extend resolved, the event is no longer pending", (done) => {
 });
 
 test("a utility generator can be used to get a typed extend value ", (done) => {
-    const eventA = new BEvent<number>('A');
-    const eventZ = new BEvent('Z');
+    const eventA = new TEvent<number>('A');
+    const eventZ = new UEvent('Z');
 
     const thread1 = new BThread('requesting thread', function* () {
         yield bp.request(eventA, 100);
@@ -103,7 +103,7 @@ test("if an extend is not applied, than the next extend will get the event", () 
     let waitCAdvanced = false;
     let waitDAdvanced = false;
 
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestThread = new BThread('requestThread', function* () {
         yield bp.request(eventA, 1000);
@@ -145,7 +145,7 @@ test("if an extended thread completed, without resolving or rejecting the event,
         progressedExtend = false,
         setupCount = 0;
 
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
 
     const thread1 = new BThread('thread1', function* () {
@@ -175,7 +175,7 @@ test("if an extended thread completed, without resolving or rejecting the event,
 
 test("extended values can be accessed with the getExtendValue function", (done) => {
     let thread1Advanced = false;
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
 
     const thread1 = new BThread('thread1', function* () {
@@ -207,7 +207,7 @@ test("blocked events can not be extended", () => {
     let thread1Advanced = false,
         extendAdvanced = false;
 
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
 
     const thread1 = new BThread('thread1', function* () {
@@ -238,7 +238,7 @@ test("blocked events can not be extended", () => {
 
 
 test("extends will extend requests", () => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
     let extendedPayload: number | undefined = 0;
 
     const thread1 = new BThread('thread1', function* () {
@@ -262,7 +262,7 @@ test("extends will extend requests", () => {
 test("the last extend that is enabled has the highest priority", () => {
     let advancedThread1 = false,
     advancedThread2 = false;
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
 
     const requestThread = new BThread('requestThread', function* () {
@@ -292,8 +292,8 @@ test("the last extend that is enabled has the highest priority", () => {
 
 
 test("an extend will create a pending event", () => {
-    const eventA = new BEvent<number>('A');
-    const eventFin = new BEvent('Fin');
+    const eventA = new TEvent<number>('A');
+    const eventFin = new UEvent('Fin');
 
 
     const requestingThread = new BThread('requestingThread', function* () {
@@ -316,7 +316,7 @@ test("an extend will create a pending event", () => {
 
 
 test("an extend will wait for the pending-event to finish before it extends.", (done) => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number | undefined>('A');
     let checkFunctionIsCalled = false;
 
     const requestingThread = new BThread('requestingThread', function* () {
@@ -348,8 +348,8 @@ test("an extend will wait for the pending-event to finish before it extends.", (
 
 
 test("an extend can be resolved. This will progress waits and requests", (done) => {
-    const eventA = new BEvent<string>('A');
-    const eventFin = new BEvent('Fin');
+    const eventA = new TEvent<string | undefined>('A');
+    const eventFin = new UEvent('Fin');
 
 
     const requestingThread = new BThread('requestingThread', function* () {
@@ -383,7 +383,7 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
 
 test("an extend will keep the event-pending if the BThread with the extend completes.", (done) => {
     let requestingThreadProgressed = false;
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
 
     const requestingThread = new BThread('requestingThread', function* () {
@@ -408,8 +408,8 @@ test("an extend will keep the event-pending if the BThread with the extend compl
 });
 
 test("multiple extends will resolve after another. After all extends complete, the request and wait will continue", (done) => {
-    const eventA = new BEvent<string>('Arrr');
-    const eventFin = new BEvent('Fin');
+    const eventA = new TEvent<string | undefined>('Arrr');
+    const eventFin = new UEvent('Fin');
 
     const requestingThread = new BThread('requestingThread', function* () {
         yield bp.request(eventA, () => delay(100, 'super'));
@@ -450,7 +450,7 @@ test("multiple extends will resolve after another. After all extends complete, t
 
 
 test("an extend can have an optional validation-function", (done) => {
-    const eventA = new BEvent<number>('A');
+    const eventA = new TEvent<number>('A');
 
     const requestingThread = new BThread('requestingThread', function* () {
         yield bp.request(eventA, 1);
@@ -478,8 +478,8 @@ test("an extend can have an optional validation-function", (done) => {
 });
 
 test("an askFor can be extended. during the extension, the event is pending", (done) => {
-    const eventA = new BEvent('A');
-    const eventFin = new BEvent('Fin');
+    const eventA = new UEvent('A');
+    const eventFin = new UEvent('Fin');
 
     const waitingThread = new BThread('waitingThread', function* () {
         yield bp.askFor(eventA);

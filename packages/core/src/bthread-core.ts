@@ -1,8 +1,8 @@
 import { PlacedBid, getPlacedBidsForBThread, BidOrBids } from './bid';
 import { NameKeyId, NameKeyMap } from './name-key-map';
-import { Logger, BThreadReactionType } from './logger';
+import { Logger } from './logger';
 import { ResolveActionCB } from './update-loop';
-import { BEvent } from './b-event';
+import { EventCore } from './b-event';
 import { BThreadGeneratorFunction } from './b-thread';
 import * as utils from './utils';
 import { isRequestBid, isSameBid, isSameNameKeyId } from '.';
@@ -11,13 +11,13 @@ export type ErrorInfo = {event: NameKeyId, error: any}
 export type BThreadGenerator = Generator<BidOrBids, void, BThreadProgressInfo>;
 export interface BThreadUtilities {
     key?: string | number;
-    resolveExtend: <T>(event: BEvent<T>, value: T) => boolean;
-    cancelPending: (event: BEvent) => boolean;
-    isExtending: (event: BEvent) => boolean;
-    getExtendValue: <T>(event: BEvent<T>) => T | undefined;
+    resolveExtend: <T>(event: EventCore<T>, value: T) => boolean;
+    cancelPending: (event: EventCore) => boolean;
+    isExtending: (event: EventCore) => boolean;
+    getExtendValue: <T>(event: EventCore<T>) => T | undefined;
 }
 export interface BThreadProgressInfo {
-    event: BEvent<any>;
+    event: EventCore<any>;
     eventId: NameKeyId;
     bThreadId: NameKeyId;
     remainingBids?: PlacedBid<any>[];
@@ -27,7 +27,7 @@ export interface BThreadParameters<P> {
     id: NameKeyId,
     generatorFunction: BThreadGeneratorFunction<P>;
     resolveActionCB: ResolveActionCB;
-    eventMap: NameKeyMap<BEvent>;
+    eventMap: NameKeyMap<EventCore>;
     logger: Logger;
     props: P;
     willDestroyOnDisable: boolean;
@@ -36,7 +36,7 @@ export interface BThreadParameters<P> {
 export class BThreadCore<P> {
     public readonly id: NameKeyId;
     private readonly _logger: Logger;
-    private readonly _eventMap: NameKeyMap<BEvent<any>>
+    private readonly _eventMap: NameKeyMap<EventCore<any>>
     private _thread: BThreadGenerator;
     private _placedBids: PlacedBid[] | undefined;
     private _context: BThreadUtilities;
@@ -95,7 +95,7 @@ export class BThreadCore<P> {
             next = this._thread.next(progressInfo); // progress BThread to next bid
         }
         this._setPlacedBids(next);
-        this._logger.logReaction(BThreadReactionType.progress ,this.id, {...bid, bThreadId: this.id});
+        this._logger.logReaction(this.id, {...bid, bThreadId: this.id});
     }
 
     // --- public

@@ -3,7 +3,7 @@ import { RequestedAction } from './action';
 import { getAllPayloadValidationCallbacks, isValidPayload, isValidReturn } from './validation';
 import { BThreadMap } from './update-loop';
 import { AllPlacedBids } from './bid';
-import { BEvent } from './b-event';
+import { EventCore } from './b-event';
 import { AnyAction, RejectAction, ResolveAction, ResolveExtendAction, TriggeredAction, UIAction } from '.';
 
 
@@ -23,7 +23,7 @@ export function progressWaitingBThreads(allPlacedBids: AllPlacedBids, bThreadMap
 }
 
 
-function extendAction(event: BEvent<unknown>, allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, extendedAction: AnyAction): boolean {
+function extendAction(event: EventCore<unknown>, allPlacedBids: AllPlacedBids, bThreadMap: BThreadMap, extendedAction: AnyAction): boolean {
     const matchingExtendBids = allPlacedBids.extendBid.get(extendedAction.eventId);
     if(matchingExtendBids === undefined) return false;
     const validationBids = allPlacedBids.validateBid.get(extendedAction.eventId);
@@ -41,7 +41,7 @@ function extendAction(event: BEvent<unknown>, allPlacedBids: AllPlacedBids, bThr
 }
 
 
-export function advanceTriggeredAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: TriggeredAction): void {
+export function advanceTriggeredAction(event: EventCore<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: TriggeredAction): void {
     const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
     if(wasExtended) return;
     event.__setValue(action.payload);
@@ -57,7 +57,7 @@ export function advanceTriggeredAction(event: BEvent<unknown>, bThreadMap: BThre
 }
 
 
-export function advanceRequestedAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RequestedAction): void {
+export function advanceRequestedAction(event: EventCore<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RequestedAction): void {
     const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
     if(wasExtended) return;
     event.__setValue(action.payload);
@@ -69,7 +69,7 @@ export function advanceRequestedAction(event: BEvent<unknown>, bThreadMap: BThre
 }
 
 
-export function advanceUiAction(event: BEvent<any, any>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: UIAction): void {
+export function advanceUiAction(event: EventCore<any, any>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: UIAction): void {
     const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
     if(wasExtended) return;
     event.__setValue(action.payload);
@@ -81,7 +81,7 @@ export function advanceUiAction(event: BEvent<any, any>, bThreadMap: BThreadMap,
 }
 
 
-export function advanceResolveAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveAction): void {
+export function advanceResolveAction(event: EventCore<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveAction): void {
     event.__removePending();
     const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
     if(wasExtended) return;
@@ -96,7 +96,7 @@ export function advanceResolveAction(event: BEvent<unknown>, bThreadMap: BThread
 }
 
 
-export function advanceResolveExtendAction(event: BEvent<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): void {
+export function advanceResolveExtendAction(event: EventCore<unknown>, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: ResolveExtendAction): void {
     event.__removePending();
     const wasExtended = extendAction(event, allPlacedBids, bThreadMap, action);
     if(wasExtended) return;
@@ -133,7 +133,7 @@ export function advanceResolveExtendAction(event: BEvent<unknown>, bThreadMap: B
 }
 
 
-export function advanceRejectAction(event: BEvent, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RejectAction): void {
+export function advanceRejectAction(event: EventCore, bThreadMap: BThreadMap, allPlacedBids: AllPlacedBids, action: RejectAction): void {
     event.__removePending();
     const catchErrorBids = allPlacedBids.catchErrorBid.get(action.eventId);
     if(catchErrorBids) {

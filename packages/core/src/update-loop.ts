@@ -7,7 +7,7 @@ import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, adva
 import { RunStaging, setupStaging, StagingCB } from './staging';
 import { allPlacedBids, AllPlacedBids, AnyAction, BufferAction, getQueuedAction, InternalDispatch } from './index';
 import { Replay } from './replay';
-import { BEvent, BUIEvent } from './b-event';
+import { EventCore, UEvent } from './b-event';
 
 
 // update loop
@@ -17,7 +17,7 @@ export type UpdateLoopFunction = () => void;
 export type ReplayMap = Map<number, AnyAction>;
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
 export type BThreadMap = NameKeyMap<BThreadCore<any>>;
-export type EventMap = NameKeyMap<BEvent<any, any> | BUIEvent<any, any>>;
+export type EventMap = NameKeyMap<EventCore<any, any> | UEvent<any, any>>;
 export interface LogInfo {
     logs: LoopLog[];
     allRelevantScenarios: NameKeyMap<void>;
@@ -30,7 +30,7 @@ export class UpdateLoop {
     private readonly _bThreadBids: PlacedBid<unknown>[] = [];
     private readonly _logger: Logger;
     private readonly _stageBThreadsAndEvents: RunStaging;
-    private readonly _eventMap: EventMap = new NameKeyMap<BEvent<any, any> | BUIEvent<any, any>>();
+    private readonly _eventMap: EventMap = new NameKeyMap<EventCore<any, any> | UEvent<any, any>>();
     private readonly _actionQueue: BufferAction[] = [];
     private _replay?: Replay;
 
