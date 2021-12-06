@@ -5,8 +5,8 @@ import { delay } from './testutils';
 import { TEvent, UEvent } from "../src";
 
 test("a pending event is cancelled, if the thread completes", (done) => {
-    const eventA = new TEvent<number | undefined>('A');
-    const eventB = new TEvent<number | undefined>('B');
+    const eventA = new TEvent<number>('A');
+    const eventB = new TEvent<number>('B');
 
     const requestingThread = new BThread('thread1', function*() {
         yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];

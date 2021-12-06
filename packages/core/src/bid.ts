@@ -2,7 +2,6 @@ import { NameKeyId, NameKeyMap } from './name-key-map';
 import * as utils from './utils';
 import { isSameNameKeyId, UEvent, TEvent } from '.';
 import { PayloadValidationCB } from './validation';
-import { EventCore, EventCoreKeyed } from './b-event';
 import { BThreadProgressInfo } from './bthread-core';
 
 export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "triggerBid" |  "waitForBid" | "validateBid" | "catchErrorBid";
@@ -10,8 +9,8 @@ export type BidType = "requestBid" | "askForBid" | "blockBid" | "extendBid" | "t
 export interface Bid<P, V> {
     type: BidType;
     eventId: NameKeyId;
-    payload?: P | PayloadCB<P>;
-    payloadValidationCB?: PayloadValidationCB<P, V>;
+    payload?: P | PayloadCB<P | undefined>;
+    payloadValidationCB?: PayloadValidationCB<any, V>;
 }
 
 export interface PlacedBid<P = any, V = any> extends Bid<P, V> {
@@ -128,11 +127,11 @@ function getNameKeyId<P>(event: UEvent<P> | TEvent<P> | NameKeyId ): NameKeyId {
 
 // bids user-API --------------------------------------------------------------------
 
-export function request<P, V>(event: TEvent<P, V>, payload?: P | PayloadCB<P>, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P, V> {
+export function request<P, V>(event: TEvent<P, V>, payload?: P | PayloadCB<P | undefined>, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P, V> {
     return { type: 'requestBid', eventId: getNameKeyId(event), payload: payload, payloadValidationCB: payloadValidationCB };
 }
 
-export function trigger<P, V>(event: UEvent<P, V>, payload?: P, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P, V> {
+export function trigger<P, V>(event: UEvent<P, V>, payload?: P | undefined, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P, V> {
     return { type: 'triggerBid', eventId: getNameKeyId(event), payload: payload, payloadValidationCB: payloadValidationCB };
 }
 
