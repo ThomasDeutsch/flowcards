@@ -16,8 +16,9 @@ export * from './logger';
 export * from './action';
 export * from './replay';
 
+export type BehaviorContext = {log: LogInfo, replay?: Replay}
 export type BufferAction = UIAction | ResolveAction | ResolveExtendAction | RejectAction;
-export type UpdateCallback = (pl: {log: LogInfo, replay?: Replay}) => void;
+export type UpdateCallback = (pl: BehaviorContext) => void;
 export type InternalDispatch = (action: BufferAction) => void;
 export type OnFinishLoopCB = (loopLog: LoopLog) => void;
 
