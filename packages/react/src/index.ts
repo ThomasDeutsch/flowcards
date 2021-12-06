@@ -1,13 +1,14 @@
 import { useState, useRef, useMemo } from "react";
-import { Scenarios, UpdateCallback, StagingFunction, ScenariosContext } from "@flowcards/core";
+import { UpdateCallback, Behaviors, StagingCB, BehaviorContext } from "@flowcards/core";
+
 export * from '@flowcards/core';
 
-export function useScenarios(stagingFunction: StagingFunction, dependencies?: any[]): ScenariosContext {
-    const [context, setContext] = useState<ScenariosContext>();
-    const scenariosRef = useRef<Scenarios | null>(null);
+export function useScenarios(stagingCb: StagingCB, dependencies?: any[]): BehaviorContext {
+    const [context, setContext] = useState<BehaviorContext>();
+    const scenariosRef = useRef<Behaviors | null>(null);
     if(scenariosRef.current === null) {
-        const updateCallback: UpdateCallback = (newContext: ScenariosContext) => { setContext(newContext) }
-        scenariosRef.current = new Scenarios(stagingFunction, updateCallback);
+        const updateCb: UpdateCallback = (newContext: BehaviorContext) => { setContext(newContext) }
+        scenariosRef.current = new Behaviors({stagingCb, updateCb, doInitialUpdate: true});
     }
     useMemo(() => {
         if(scenariosRef.current !== null) {
@@ -15,5 +16,5 @@ export function useScenarios(stagingFunction: StagingFunction, dependencies?: an
         }
     }, dependencies);
 
-    return context || scenariosRef.current.initialScenariosContext;
+    return context!;
 }
