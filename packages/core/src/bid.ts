@@ -131,7 +131,7 @@ export function request<P, V>(event: TEvent<P, V>, payload?: P | PayloadCB<P | u
     return { type: 'requestBid', eventId: getNameKeyId(event), payload: payload, payloadValidationCB: payloadValidationCB };
 }
 
-export function trigger<P, V>(event: UEvent<P, V>, payload?: P | undefined, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P, V> {
+export function trigger<P, V>(event: UEvent<P, V>, payload?: P, payloadValidationCB?: PayloadValidationCB<P, V>): Bid<P, V> {
     return { type: 'triggerBid', eventId: getNameKeyId(event), payload: payload, payloadValidationCB: payloadValidationCB };
 }
 

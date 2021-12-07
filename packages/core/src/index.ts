@@ -48,6 +48,7 @@ export class Behaviors {
     private _updateLoop: UpdateLoop;
     private _updateCB?: UpdateCallback;
     private _logger: Logger;
+    public readonly initialContext: BehaviorContext;
 
     constructor(props: BehaviorsProps) {
         this._logger = new Logger(props.onNextLoopCB);
@@ -56,6 +57,7 @@ export class Behaviors {
         const replay = getReplay(props.initialActionsOrReplay);
         const log = this._updateLoop.runStagingAndLoopSync(true, replay);
         if(this._updateCB && props.doInitialUpdate) this._updateCB({log, replay}); // callback with initial value
+        this.initialContext = {log, replay};
     }
 
     private _internalDispatch(action: BufferAction) {

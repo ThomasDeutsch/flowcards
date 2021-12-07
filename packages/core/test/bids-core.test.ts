@@ -497,9 +497,6 @@ test("a pending event is canceled, when another request finished before", (done)
 });
 
 
-
-
-
 test("askFor will enable events to be dispatched", (done) => {
     const eventA = new UEvent<number>('A');
 

@@ -43,12 +43,14 @@ export class Replay {
 
     public getNextReplayAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger: Logger): AnyAction | undefined {
         if(this._state !== 'running') return undefined;
-        const requestAction = getNextRequestedAction(eventMap, allPlacedBids, nextActionId, logger);
         if(nextActionId > this._lastActionId) {
             this._state = 'completed';
             return undefined;
         }
         const replayAction = this._actions.get(nextActionId)!;
+        const payloadOverride = 'payload' in replayAction ? {value: replayAction.payload} : undefined;
+        const requestAction = getNextRequestedAction(eventMap, allPlacedBids, nextActionId, logger, payloadOverride);
+
         if(replayAction === undefined) return undefined;
         // UI ACTION
         if(replayAction.type === 'uiAction') {
@@ -68,6 +70,9 @@ export class Replay {
             if(!isSameNameKeyId(requestAction.bThreadId, replayAction.bThreadId) || !isSameNameKeyId(requestAction.eventId, replayAction.eventId)) {
                 this.abortReplay(replayAction, `the replay action and the requested action ${replayAction.eventId.name} do not match.`);
                 return undefined;
+            }
+            if(replayAction.payload === undefined) {
+                replayAction.payload = requestAction.payload
             }
         }
         else if(replayAction.type === 'requestedAsyncAction' && replayAction.resolveActionId) {

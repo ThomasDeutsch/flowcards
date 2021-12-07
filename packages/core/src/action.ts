@@ -95,7 +95,7 @@ export interface RequestSelectReason {
     bThreadIds?: NameKeyId[]
 }
 
-export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger: Logger): RequestedAsyncAction | RequestedAction | TriggeredAction | undefined {
+export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger: Logger, replayActionPayload?: {value: unknown}): RequestedAsyncAction | RequestedAction | TriggeredAction | undefined {
     let action: RequestedAsyncAction | RequestedAction | TriggeredAction | undefined;
     const reasons: RequestSelectReason[] = [];
     allPlacedBids.orderedRequestingBids.some((bid) => {
@@ -126,6 +126,9 @@ export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPla
                 reasons.push(reason);
                 return false;
             }
+        }
+        if(replayActionPayload !== undefined) {
+            bid.payload = replayActionPayload.value;
         }
         else if(typeof bid.payload === "function") {
             bid.payload = bid.payload();
