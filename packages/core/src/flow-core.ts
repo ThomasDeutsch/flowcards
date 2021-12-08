@@ -1,31 +1,31 @@
-import { PlacedBid, getPlacedBidsForBThread, BidOrBids } from './bid';
+import { PlacedBid, getPlacedBidsForFlow, BidOrBids } from './bid';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger } from './logger';
 import { ResolveActionCB } from './update-loop';
-import { EventCore } from './b-event';
-import { BThreadGeneratorFunction } from './b-thread';
+import { EventCore } from './flow-event';
+import { FlowGeneratorFunction } from './flow';
 import * as utils from './utils';
 import { isRequestBid, isSameBid, isSameNameKeyId } from '.';
 
 export type ErrorInfo = {event: NameKeyId, error: any}
-export type BThreadGenerator = Generator<BidOrBids, void, BThreadProgressInfo>;
-export interface BThreadUtilities {
+export type FlowGenerator = Generator<BidOrBids, void, FlowProgressInfo>;
+export interface FlowUtilities {
     key?: string | number;
     resolveExtend: <T>(event: EventCore<T>, value: T) => boolean;
     cancelPending: (event: EventCore) => boolean;
     isExtending: (event: EventCore) => boolean;
     getExtendValue: <T>(event: EventCore<T>) => T | undefined;
 }
-export interface BThreadProgressInfo {
+export interface FlowProgressInfo {
     event: EventCore<any>;
     eventId: NameKeyId;
-    bThreadId: NameKeyId;
+    flowId: NameKeyId;
     remainingBids?: PlacedBid<any>[];
 }
 
-export interface BThreadParameters<P> {
+export interface FlowParameters<P> {
     id: NameKeyId,
-    generatorFunction: BThreadGeneratorFunction<P>;
+    generatorFunction: FlowGeneratorFunction<P>;
     resolveActionCB: ResolveActionCB;
     eventMap: NameKeyMap<EventCore>;
     logger: Logger;
@@ -33,22 +33,22 @@ export interface BThreadParameters<P> {
     willDestroyOnDisable: boolean;
 }
 
-export class BThreadCore<P> {
+export class FlowCore<P> {
     public readonly id: NameKeyId;
     private readonly _logger: Logger;
     private readonly _eventMap: NameKeyMap<EventCore<any>>
-    private _thread: BThreadGenerator;
+    private _thread: FlowGenerator;
     private _placedBids: PlacedBid[] | undefined;
-    private _context: BThreadUtilities;
+    private _context: FlowUtilities;
     private _currentProps?: P
     public readonly willDestroyOnDisable: boolean;
 
-    public constructor(params: BThreadParameters<P>) {
+    public constructor(params: FlowParameters<P>) {
         this.id = params.id;
         this._logger = params.logger;
         this._eventMap = params.eventMap;
         this._currentProps = params.props;
-        this._context = this._createBThreadUtilities();
+        this._context = this._createFlowUtilities();
         this._thread = params.generatorFunction.bind(this._context)(params.props);
         const next = this._thread.next();
         this._setPlacedBids(next);
@@ -57,7 +57,7 @@ export class BThreadCore<P> {
 
      // --- private
 
-    private _createBThreadUtilities(): BThreadUtilities {
+    private _createFlowUtilities(): FlowUtilities {
         return {
             key:  this.id.key,
             resolveExtend: (event, value) => event.__resolveExtend(this.id, value),
@@ -72,15 +72,15 @@ export class BThreadCore<P> {
         if (next.done) {
             this._placedBids = undefined;
         } else {
-            this._placedBids = getPlacedBidsForBThread(this.id, next.value);
+            this._placedBids = getPlacedBidsForFlow(this.id, next.value);
         }
     }
 
     private _processNextBid(bid: PlacedBid<unknown>, error?: any): void {
         let next: IteratorResult<BidOrBids, void>;
-        let progressInfo: BThreadProgressInfo | undefined;
+        let progressInfo: FlowProgressInfo | undefined;
         if(error !== undefined) {
-            next = this._thread.throw(error); // progress BThread to next bid
+            next = this._thread.throw(error); // progress Flow to next bid
         }
         else {
             const remainingBids = this._placedBids?.filter(b => {
@@ -90,12 +90,12 @@ export class BThreadCore<P> {
                 event: this._eventMap.get(bid.eventId)!,
                 eventId: bid.eventId,
                 remainingBids,
-                bThreadId: this.id
+                flowId: this.id
             }
-            next = this._thread.next(progressInfo); // progress BThread to next bid
+            next = this._thread.next(progressInfo); // progress Flow to next bid
         }
         this._setPlacedBids(next);
-        this._logger.logReaction(this.id, {...bid, bThreadId: this.id});
+        this._logger.logReaction(this.id, {...bid, flowId: this.id});
     }
 
     // --- public
@@ -104,7 +104,7 @@ export class BThreadCore<P> {
         return this._placedBids;
     }
 
-    public resetBThreadOnPropsChange(generatorFunction: BThreadGeneratorFunction<any>, nextProps?: P): boolean {
+    public resetFlowOnPropsChange(generatorFunction: FlowGeneratorFunction<any>, nextProps?: P): boolean {
         const changedProps = utils.getChangedProps(this._currentProps, nextProps);
         if(changedProps === undefined) return false;
         //TODO: log props change?
@@ -118,7 +118,7 @@ export class BThreadCore<P> {
     public __cancelPending(): void {
         this._placedBids?.filter(isRequestBid).forEach(b => {
             const event = this._eventMap.get(b.eventId);
-            if(!isSameNameKeyId(event?.pendingRequestInfo?.bThreadId, this.id)) return;
+            if(!isSameNameKeyId(event?.pendingRequestInfo?.flowId, this.id)) return;
             event?.__cancelPending();
             //TODO: log cancel
         })

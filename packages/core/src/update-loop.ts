@@ -1,13 +1,13 @@
 import { ResolveAction, ResolveExtendAction, getNextRequestedAction } from './action';
 import { BidType, PlacedBid } from './bid';
-import { BThreadCore } from './bthread-core';
+import { FlowCore } from './flow-core';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger, LoopLog } from './logger';
-import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction, advanceTriggeredAction } from './advance-bthreads';
+import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction, advanceTriggeredAction } from './advance-flows';
 import { RunStaging, setupStaging, StagingCB } from './staging';
 import { allPlacedBids, AllPlacedBids, AnyAction, BufferAction, getQueuedAction, InternalDispatch } from './index';
 import { Replay } from './replay';
-import { EventCore, UEvent } from './b-event';
+import { EventCore, UserEvent } from './flow-event';
 
 
 // update loop
@@ -16,8 +16,8 @@ import { EventCore, UEvent } from './b-event';
 export type UpdateLoopFunction = () => void;
 export type ReplayMap = Map<number, AnyAction>;
 export type ResolveActionCB = (action: ResolveAction | ResolveExtendAction) => void;
-export type BThreadMap = NameKeyMap<BThreadCore<any>>;
-export type EventMap = NameKeyMap<EventCore<any, any> | UEvent<any, any>>;
+export type FlowMap = NameKeyMap<FlowCore<any>>;
+export type EventMap = NameKeyMap<EventCore<any, any> | UserEvent<any, any>>;
 export interface LogInfo {
     logs: LoopLog[];
     allRelevantScenarios: NameKeyMap<void>;
@@ -26,21 +26,21 @@ export interface LogInfo {
 export class UpdateLoop {
     private _currentActionId = 0;
     private _allPlacedBids?: AllPlacedBids;
-    private readonly _bThreadMap: BThreadMap = new NameKeyMap<BThreadCore<any>>();
-    private readonly _bThreadBids: PlacedBid<unknown>[] = [];
+    private readonly _flowMap: FlowMap = new NameKeyMap<FlowCore<any>>();
+    private readonly _flowBids: PlacedBid<unknown>[] = [];
     private readonly _logger: Logger;
-    private readonly _stageBThreadsAndEvents: RunStaging;
-    private readonly _eventMap: EventMap = new NameKeyMap<EventCore<any, any> | UEvent<any, any>>();
+    private readonly _stageFlowsAndEvents: RunStaging;
+    private readonly _eventMap: EventMap = new NameKeyMap<EventCore<any, any> | UserEvent<any, any>>();
     private readonly _actionQueue: BufferAction[] = [];
     private _replay?: Replay;
 
     constructor(stagingCb: StagingCB, internalDispatch: InternalDispatch, logger: Logger) {
         this._logger = logger;
-        this._stageBThreadsAndEvents = setupStaging({
+        this._stageFlowsAndEvents = setupStaging({
             stagingCb,
-            bThreadMap: this._bThreadMap,
+            flowMap: this._flowMap,
             eventMap: this._eventMap,
-            bThreadBids: this._bThreadBids,
+            flowBids: this._flowBids,
             internalDispatch,
             getBids: (eventId: NameKeyId, bidType: BidType) => this._allPlacedBids?.[bidType].get(eventId),
             logger: this._logger
@@ -59,25 +59,25 @@ export class UpdateLoop {
         const event = this._eventMap.get(action.eventId)!;
         switch(action.type) {
             case "uiAction":
-                advanceUiAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                advanceUiAction(event, this._flowMap, this._allPlacedBids!, action);
                 break;
             case "requestedAction":
-                advanceRequestedAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                advanceRequestedAction(event, this._flowMap, this._allPlacedBids!, action);
                 break;
             case "triggeredAction":
-                advanceTriggeredAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                advanceTriggeredAction(event, this._flowMap, this._allPlacedBids!, action);
                 break;
             case "requestedAsyncAction":
                 event.__dispatchOnPromiseResolve(action);
                 break;
             case "resolveAction":
-                advanceResolveAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                advanceResolveAction(event, this._flowMap, this._allPlacedBids!, action);
                 break;
             case "resolvedExtendAction":
-                advanceResolveExtendAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                advanceResolveExtendAction(event, this._flowMap, this._allPlacedBids!, action);
                 break;
             case "rejectAction":
-                advanceRejectAction(event, this._bThreadMap, this._allPlacedBids!, action);
+                advanceRejectAction(event, this._flowMap, this._allPlacedBids!, action);
                 break;
         }
         this._logger.finishLoop();
@@ -86,8 +86,8 @@ export class UpdateLoop {
     }
 
     private runStaging() {
-        this._stageBThreadsAndEvents();
-        this._allPlacedBids = allPlacedBids(this._bThreadBids);
+        this._stageFlowsAndEvents();
+        this._allPlacedBids = allPlacedBids(this._flowBids);
         this._logger.logPlacedBids(this._allPlacedBids);
     }
 
@@ -117,7 +117,7 @@ export class UpdateLoop {
         this._eventMap.allValues?.forEach(event => {
             event.__unplug();
         });
-        this._bThreadMap.clear();
+        this._flowMap.clear();
         this._eventMap.clear();
         this._logger.resetLog();
     }

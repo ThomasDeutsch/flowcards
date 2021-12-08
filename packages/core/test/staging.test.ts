@@ -1,17 +1,17 @@
-import { BThreadKeyed } from "../src";
+import { FlowKeyed } from "../src";
 import * as bp from "../src/bid";
-import { TEvent } from "../src/b-event";
+import { FlowEvent } from "../src/flow-event";
 import { testScenarios } from "./testutils";
 
 
 test("the enable-events function will accept a record of ScenarioEvents", () => {
 
     const basicEvent = {
-        eventA: new TEvent<number>('A'),
-        eventB: new TEvent<number>('B')
+        eventA: new FlowEvent<number>('A'),
+        eventB: new FlowEvent<number>('B')
     }
 
-    const requestingThread = new BThreadKeyed('thread1', function*() {
+    const requestingThread = new FlowKeyed('thread1', function*() {
         const progress = yield bp.request(basicEvent.eventA, 1);
         expect(progress.event).toBe(basicEvent.eventA);
         expect(this.key).toBe(1);
@@ -27,10 +27,10 @@ test("the enable-events function will accept a record of ScenarioEvents", () => 
 
 test("the enable-events function will accept single ScenarioEvents", () => {
 
-    const eventA = new TEvent<number>('A');
-    const eventB = new TEvent<number>('B');
+    const eventA = new FlowEvent<number>('A');
+    const eventB = new FlowEvent<number>('B');
 
-    const requestingThread = new BThreadKeyed('thread1', function*() {
+    const requestingThread = new FlowKeyed('thread1', function*() {
         const progress = yield bp.request(eventA, 1);
         expect(progress.event).toBe(eventA);
         expect(this.key).toBe(1);

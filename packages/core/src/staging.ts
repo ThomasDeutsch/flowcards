@@ -1,22 +1,22 @@
-import { BThreadCore } from './bthread-core';
+import { FlowCore } from './flow-core';
 import { Logger } from './logger';
-import { BThread } from './b-thread';
-import { BThreadMap, EventMap } from './update-loop';
+import { Flow } from './flow';
+import { FlowMap, EventMap } from './update-loop';
 import { NameKeyId, NameKeyMap } from './name-key-map';
-import { EventCore } from './b-event';
+import { EventCore } from './flow-event';
 import { BidType, InternalDispatch, PlacedBid, ResolveAction, ResolveExtendAction } from '.';
 
-export type ConnectBThread = <P>(...props: P extends void ? [BThread<P>] : [BThread<P>, P]) => void;
+export type ConnectFlow = <P>(...props: P extends void ? [Flow<P>] : [Flow<P>, P]) => void;
 export type ConnectEvents = (...events: (EventCore<any, any> | Record<string, EventCore<any>>)[]) => void;
-export type StagingCB = (connectBThread: ConnectBThread, connectEvents: ConnectEvents) => void;
+export type StagingCB = (connectFlow: ConnectFlow, connectEvents: ConnectEvents) => void;
 export type RunStaging = () => void;
 export type GetBids = (eventId: NameKeyId, bidType: BidType) => PlacedBid<any>[] | undefined;
 
 export interface StagingProps {
     stagingCb: StagingCB;
-    bThreadMap: BThreadMap;
+    flowMap: FlowMap;
     eventMap: EventMap;
-    bThreadBids: PlacedBid<unknown>[];
+    flowBids: PlacedBid<unknown>[];
     internalDispatch: InternalDispatch;
     getBids: GetBids;
     logger: Logger;
@@ -24,31 +24,31 @@ export interface StagingProps {
 
 export function setupStaging(props: StagingProps): RunStaging {
     const resolveActionCb = (action: ResolveAction | ResolveExtendAction) => props.internalDispatch(action);
-    const connectedBThreadIds = new NameKeyMap<NameKeyId>();
+    const connectedFlowIds = new NameKeyMap<NameKeyId>();
     const connectedEventIds = new NameKeyMap<NameKeyId>();
 
-    const connectBThread: ConnectBThread = <P>(...[bThread, bThreadProps]: [BThread<P>, P] | [BThread<P>]) => {
-        connectedBThreadIds.set(bThread.id, bThread.id);
-        let bThreadCore = props.bThreadMap.get(bThread.id) as BThreadCore<P>;
-        if (bThreadCore !== undefined) {
-            bThreadCore.resetBThreadOnPropsChange(bThread.generatorFunction, bThreadProps);
+    const connectFlow: ConnectFlow = <P>(...[flow, flowProps]: [Flow<P>, P] | [Flow<P>]) => {
+        connectedFlowIds.set(flow.id, flow.id);
+        let flowCore = props.flowMap.get(flow.id) as FlowCore<P>;
+        if (flowCore !== undefined) {
+            flowCore.resetFlowOnPropsChange(flow.generatorFunction, flowProps);
         }
         else {
-            bThreadCore = new BThreadCore<P>({
-                id: bThread.id,
-                generatorFunction: bThread.generatorFunction,
-                props: bThreadProps!,
+            flowCore = new FlowCore<P>({
+                id: flow.id,
+                generatorFunction: flow.generatorFunction,
+                props: flowProps!,
                 resolveActionCB: resolveActionCb,
                 eventMap: props.eventMap,
                 logger: props.logger,
-                willDestroyOnDisable: bThread.destroyOnDisable
+                willDestroyOnDisable: flow.destroyOnDisable
             });
-            props.bThreadMap.set(bThread.id, bThreadCore);
-            bThread.__setCore(bThreadCore);
-            //if(bThread.destroyOnDisable) destroyOnDisableThreadIds.set(bThread.id, bThread.id);
+            props.flowMap.set(flow.id, flowCore);
+            flow.__setCore(flowCore);
+            //if(flow.destroyOnDisable) destroyOnDisableThreadIds.set(flow.id, flow.id);
         }
-        bThreadCore.placedBids?.forEach(bid => {
-            props.bThreadBids.push(bid);
+        flowCore.placedBids?.forEach(bid => {
+            props.flowBids.push(bid);
         });
     }
 
@@ -77,22 +77,22 @@ export function setupStaging(props: StagingProps): RunStaging {
     }
 
     function run() {
-        props.bThreadBids.length = 0;
-        connectedBThreadIds.clear();
+        props.flowBids.length = 0;
+        connectedFlowIds.clear();
         connectedEventIds.clear();
-        props.stagingCb(connectBThread, connectEvents); // do the staging
+        props.stagingCb(connectFlow, connectEvents); // do the staging
         props.eventMap.allValues?.forEach(event => {
             if(!connectedEventIds.has(event.id)) {
                 props.eventMap.get(event)?.__unplug();
                 props.eventMap.delete(event);
             }
         });
-        props.bThreadMap.allValues?.forEach(bThread => {
-            if(!connectedBThreadIds.has(bThread.id)) {
-                if(bThread.willDestroyOnDisable) {
-                    props.bThreadMap.delete(bThread.id);
+        props.flowMap.allValues?.forEach(flow => {
+            if(!connectedFlowIds.has(flow.id)) {
+                if(flow.willDestroyOnDisable) {
+                    props.flowMap.delete(flow.id);
                 }
-                bThread.__cancelPending();
+                flow.__cancelPending();
             }
         })
     }

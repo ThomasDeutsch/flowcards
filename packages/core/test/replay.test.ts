@@ -1,15 +1,15 @@
-import { BThread } from "../src";
+import { Flow } from "../src";
 import * as bp from "../src/bid";
-import { TEvent } from "../src/b-event";
+import { FlowEvent } from "../src/flow-event";
 import { testScenarios } from "./testutils";
 
 test("if a request replay has no payload, the Payload-Function will be called", () => {
 
     const basicEvent = {
-        eventA: new TEvent<number>('A')
+        eventA: new FlowEvent<number>('A')
     }
 
-    const requestingThread = new BThread('requestingThread', function*() {
+    const requestingThread = new Flow('requestingThread', function*() {
         let isCalled = false;
         const n = yield* bp.bid(bp.request(basicEvent.eventA, () => {
             isCalled = true;
@@ -28,7 +28,7 @@ test("if a request replay has no payload, the Payload-Function will be called", 
         {
           id: 0,
           type: 'requestedAction',
-          bThreadId: { name: 'requestingThread', key: undefined },
+          flowId: { name: 'requestingThread', key: undefined },
           eventId: { name: 'A' }
         }
       ]);
@@ -37,13 +37,13 @@ test("if a request replay has no payload, the Payload-Function will be called", 
 test("a request can be replayed with an alternative payload", () => {
 
     const basicEvent = {
-        eventA: new TEvent<number>('A'),
-        eventB: new TEvent<number>('B'),
-        eventC: new TEvent<number>('C'),
-        eventD: new TEvent('D')
+        eventA: new FlowEvent<number>('A'),
+        eventB: new FlowEvent<number>('B'),
+        eventC: new FlowEvent<number>('C'),
+        eventD: new FlowEvent('D')
     }
 
-    const requestingThread = new BThread('requestingThread', function*() {
+    const requestingThread = new Flow('requestingThread', function*() {
         let isCalled = false;
         const n = yield* bp.bid(bp.request(basicEvent.eventC, () => {
             isCalled = true;
@@ -63,7 +63,7 @@ test("a request can be replayed with an alternative payload", () => {
         {
           id: 0,
           type: 'requestedAction',
-          bThreadId: { name: 'requestingThread', key: undefined },
+          flowId: { name: 'requestingThread', key: undefined },
           eventId: { name: 'C' },
           payload: 1000 // payload override
         }
@@ -74,17 +74,17 @@ test("a request can be replayed with an alternative payload", () => {
 test("a replay will fail, if the requested event is not the same event as the replay event.", () => {
 
     const basicEvent = {
-        eventA: new TEvent<number>('A'),
-        eventB: new TEvent<number>('B'),
-        eventC: new TEvent<number>('C'),
-        eventD: new TEvent('D')
+        eventA: new FlowEvent<number>('A'),
+        eventB: new FlowEvent<number>('B'),
+        eventC: new FlowEvent<number>('C'),
+        eventD: new FlowEvent('D')
     }
 
-    const requesting = new BThread('requestingThread', function*() {
+    const requesting = new Flow('requestingThread', function*() {
         yield bp.request(basicEvent.eventA, 1);
     });
 
-    const secondRequesting = new BThread('secondRequesting', function*() {
+    const secondRequesting = new Flow('secondRequesting', function*() {
         yield [bp.request(basicEvent.eventB, 1), bp.block(basicEvent.eventA)];
     });
 
@@ -100,7 +100,7 @@ test("a replay will fail, if the requested event is not the same event as the re
         {
           id: 0,
           type: 'requestedAction',
-          bThreadId: { name: 'requestingThread', key: undefined },
+          flowId: { name: 'requestingThread', key: undefined },
           eventId: { name: 'A' },
           payload: 1000 // payload override
         }
@@ -111,10 +111,10 @@ test("a replay will fail, if the requested event is not the same event as the re
 // test("if a ui replay action is found, without a matching askFor bid, the replay will be aborted", () => {
 
 //     const basicEvent = {
-//         eventA: new TEvent<number>('A')
+//         eventA: new FlowEvent<number>('A')
 //     }
 
-//     const waitingThread = new BThread('waitingThread', function*() {
+//     const waitingThread = new Flow('waitingThread', function*() {
 //         yield bp.waitFor(basicEvent.eventA); // not asking for event
 //     });
 
@@ -129,7 +129,7 @@ test("a replay will fail, if the requested event is not the same event as the re
 //           id: 0,
 //           type: 'uiAction',
 //           eventId: { name: 'A' },
-//           bThreadId: { name: 'waitingThread' },
+//           flowId: { name: 'waitingThread' },
 //           payload: 1
 //         }
 //     ]);

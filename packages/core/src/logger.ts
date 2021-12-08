@@ -53,10 +53,10 @@ export class Logger {
         this._loopLog.action = a;
     }
 
-    // 4. log reactions ( by BThread )
-    public logReaction(bThreadId: NameKeyId, bid: PlacedBid): void {
-        this._allRelevantScenarios!.set(bThreadId);
-        this._loopLog.reactions!.set(bThreadId, bid.type);
+    // 4. log reactions ( by Flow )
+    public logReaction(flowId: NameKeyId, bid: PlacedBid): void {
+        this._allRelevantScenarios!.set(flowId);
+        this._loopLog.reactions!.set(flowId, bid.type);
     }
 
     // 5. loop finished

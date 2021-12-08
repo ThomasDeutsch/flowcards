@@ -1,13 +1,13 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { BThread } from '../src/b-thread';
-import { TEvent, UEvent } from "../src";
+import { Flow } from '../src/flow';
+import { FlowEvent, UserEvent } from "../src";
 
 
 test("a validation result can be a boolean", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.request(eventA, 1), bp.validate(eventA, (n) => n > 100)]
     });
 
@@ -22,9 +22,9 @@ test("a validation result can be a boolean", () => {
 
 
 test("a validation result can be an array of failed values", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ['error'])]
     });
 
@@ -39,9 +39,9 @@ test("a validation result can be an array of failed values", () => {
 
 
 test("a validation result can be an array of failed values - the validation is passed if the array is empty", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => [])]
     });
 
@@ -56,9 +56,9 @@ test("a validation result can be an array of failed values - the validation is p
 
 
 test("a validation result can also be an object with failed and passed arrays", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({failed: ['123']}))]
     });
 
@@ -73,9 +73,9 @@ test("a validation result can also be an object with failed and passed arrays", 
 
 
 test("a validation result can also be an object with failed and passed arrays - if the failed array is empty, the validation is passed", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({failed: []}))]
     });
 
@@ -90,9 +90,9 @@ test("a validation result can also be an object with failed and passed arrays - 
 
 
 test("a validation result can also be an object - if the object has a missing failed array, the validation is passed", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({passed: []}))]
     });
 
@@ -107,9 +107,9 @@ test("a validation result can also be an object - if the object has a missing fa
 
 
 test("multiple validations are combined", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({passed: []})), bp.validate(eventA, () => false)]
     });
 
@@ -124,9 +124,9 @@ test("multiple validations are combined", () => {
 
 
 test("a validate function will return the combined event validation result", () => {
-    const eventA = new UEvent<number, string>('A');
+    const eventA = new UserEvent<number, string>('A');
 
-    const thread1 = new BThread('requesting thread', function* () {
+    const thread1 = new Flow('requesting thread', function* () {
         yield [bp.askFor(eventA),
             bp.validate(eventA, () => ({passed: ['passed']})),
             bp.validate(eventA, () => ({failed: ['failed']}))]
@@ -146,13 +146,13 @@ test("a validate function will return the combined event validation result", () 
 
 
 test("if there are multiple askFor bids for the same event, the validations are combined", () => {
-    const eventA = new UEvent<number, string>('A');
+    const eventA = new UserEvent<number, string>('A');
 
-    const threadLow = new BThread('threadLow', function* () {
+    const threadLow = new Flow('threadLow', function* () {
         yield bp.askFor(eventA, (x) => x > 2);
     });
 
-    const threadHigh = new BThread('threadHigh', function* () {
+    const threadHigh = new Flow('threadHigh', function* () {
         yield bp.askFor(eventA, (x) => x > 1);
     });
 
@@ -175,9 +175,9 @@ interface ValidationReturn {
 }
 
 test("an event can be provided with a validation type", () => {
-    const eventA = new UEvent<number, ValidationReturn>('A');
+    const eventA = new UserEvent<number, ValidationReturn>('A');
 
-    const askingThread = new BThread('askingThread', function* () {
+    const askingThread = new Flow('askingThread', function* () {
         yield bp.askFor(eventA, () => ({failed: [{description: '123'}]}));
     });
 

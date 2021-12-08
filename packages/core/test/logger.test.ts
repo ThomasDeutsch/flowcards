@@ -1,40 +1,40 @@
-// import { BThread } from "../src";
+// import { Flow } from "../src";
 // import * as bp from "../src/bid";
-// import { TEvent } from "../src/b-event";
+// import { FlowEvent } from "../src/flow-event";
 // import { testScenarios } from "./testutils";
 
 // test("the logger will provide a map of relevant Scenarios", () => {
 
 //     const basicEvent = {
-//         eventA: new TEvent<number>('A'),
-//         eventB: new TEvent<number>('B'),
-//         eventC: new TEvent<number>('C'),
-//         eventD: new TEvent('D')
+//         eventA: new FlowEvent<number>('A'),
+//         eventB: new FlowEvent<number>('B'),
+//         eventC: new FlowEvent<number>('C'),
+//         eventD: new FlowEvent('D')
 //     }
 
-//     const requestingThread = new BThread('requestingThread', function*() {
+//     const requestingThread = new Flow('requestingThread', function*() {
 //         yield [bp.request(basicEvent.eventC, 1), bp.request(basicEvent.eventA, 1)];
 //         yield bp.askFor(basicEvent.eventD);
 //     });
-//     const waitingThread = new BThread('waitingThread', function*() {
+//     const waitingThread = new Flow('waitingThread', function*() {
 //         yield bp.waitFor(basicEvent.eventA);
 //     });
-//     const relevantBlock = new BThread('relevantBlock', function*() {
+//     const relevantBlock = new Flow('relevantBlock', function*() {
 //         yield bp.block(basicEvent.eventC);
 //     });
-//     const notRelevantBlock = new BThread('notRelevantBlock', function*() {
+//     const notRelevantBlock = new Flow('notRelevantBlock', function*() {
 //         yield bp.block(basicEvent.eventB);
 //     });
-//     const notRelevantValidation = new BThread('notRelevantValidation', function*() {
+//     const notRelevantValidation = new Flow('notRelevantValidation', function*() {
 //         yield bp.validate(basicEvent.eventB, (v) => v !== undefined && v > 0);
 //     });
-//     const relevantValidation = new BThread('relevantValidation', function*() {
+//     const relevantValidation = new Flow('relevantValidation', function*() {
 //         yield bp.validate(basicEvent.eventA, (v) => v !== undefined && v > 0);
 //     });
-//     const relevantTrigger = new BThread('relevantTrigger', function*() {
+//     const relevantTrigger = new Flow('relevantTrigger', function*() {
 //         yield bp.trigger(basicEvent.eventD);
 //     });
-//     const notRelevantTrigger = new BThread('notRelevantTrigger', function*() {
+//     const notRelevantTrigger = new Flow('notRelevantTrigger', function*() {
 //         yield bp.trigger(basicEvent.eventB);
 //     });
 

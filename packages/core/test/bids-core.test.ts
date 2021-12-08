@@ -1,6 +1,6 @@
-import { BThread } from "../src";
+import { Flow } from "../src";
 import * as bp from "../src/bid";
-import { UEvent, TEvent, TEventKeyed } from "../src/b-event";
+import { UserEvent, FlowEvent, FlowEventKeyed } from "../src/flow-event";
 import { delay, testScenarios } from "./testutils";
 
 // REQUESTS & WAITS
@@ -11,11 +11,11 @@ test("a requested event that is not blocked will advance", () => {
     }
 
     const basicEvent = {
-        eventA: new TEvent<number>('A'),
-        eventB: new TEvent<number>('B')
+        eventA: new FlowEvent<number>('A'),
+        eventB: new FlowEvent<number>('B')
     }
 
-    const requestingThread = new BThread<TestProps>('thread1', function*(context) {
+    const requestingThread = new Flow<TestProps>('thread1', function*(context) {
         const progress = yield bp.request(basicEvent.eventA, 1);
         expect(progress.event).toBe(basicEvent.eventA);
         expect(context.a).toEqual(123);
@@ -33,13 +33,13 @@ test("a requested event that is not blocked will advance", () => {
 
 
 test("a request will also advance waiting Scenarios", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         yield bp.request(eventA, 1);
     });
 
-    const waitingThread = new BThread('waitingThread', function*() {
+    const waitingThread = new Flow('waitingThread', function*() {
         yield bp.waitFor(eventA);
     });
 
@@ -55,9 +55,9 @@ test("a request will also advance waiting Scenarios", () => {
 });
 
 test("a bid can be wrapped in a utility function hat will return the typed value", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         const value = yield* bp.bid(bp.request(eventA, 1));
         expect(value).toBe(1);
     });
@@ -71,13 +71,13 @@ test("a bid can be wrapped in a utility function hat will return the typed value
 });
 
 test("waits will return the value that has been requested", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const requestThread = new BThread('requestThread', function* () {
+    const requestThread = new Flow('requestThread', function* () {
         yield bp.request(eventA, 1000);
     });
 
-    const receiveThread = new BThread('receiveThread', function* () {
+    const receiveThread = new Flow('receiveThread', function* () {
         const progress = yield bp.waitFor(eventA);
         expect(progress.event).toBe(eventA);
         expect(progress.event.value).toBe(1000);
@@ -92,17 +92,17 @@ test("waits will return the value that has been requested", () => {
 
 
 test("multiple requests will return information about the progressed Scenario", () => {
-    const eventA = new TEvent<number>('A');
-    const eventB = new TEvent<number>('B');
+    const eventA = new FlowEvent<number>('A');
+    const eventB = new FlowEvent<number>('B');
 
-    const requestThread = new BThread('request', function* () {
+    const requestThread = new Flow('request', function* () {
         const progress = yield [bp.request(eventB, 2000), bp.request(eventA, 1000)];
         expect(progress.event).toBe(eventB);
         expect(progress.remainingBids?.length).toEqual(1);
         expect(progress.remainingBids?.[0]?.eventId.name).toBe(eventA.id.name)
     });
 
-    const receiveThreadB = new BThread('receive', function* () {
+    const receiveThreadB = new Flow('receive', function* () {
         const progress = yield [bp.waitFor(eventA), bp.waitFor(eventB)];
         expect(progress.event).toBe(eventB);
     });
@@ -117,15 +117,15 @@ test("multiple requests will return information about the progressed Scenario", 
 
 test("multiple bids at the same time will be expressed as an array.", () => {
     const testEvent = {
-        A: new TEvent<number>('A'),
-        B: new TEvent<number>('B')
+        A: new FlowEvent<number>('A'),
+        B: new FlowEvent<number>('B')
     }
 
-    const requestThread = new BThread('thread1', function* () {
+    const requestThread = new Flow('thread1', function* () {
         yield bp.request(testEvent.A, 1000);
     });
 
-    const receiveThread = new BThread('thread1', function* () {
+    const receiveThread = new Flow('thread1', function* () {
         const progress = yield [bp.waitFor(testEvent.A), bp.waitFor(testEvent.B)];
         expect(testEvent.A.value).toBe(1000);
         expect(progress.event).toBe(testEvent.A);
@@ -141,15 +141,15 @@ test("multiple bids at the same time will be expressed as an array.", () => {
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
     const testEvent = {
-        A: new TEvent<number>('A'),
-        B: new TEvent<number>('B')
+        A: new FlowEvent<number>('A'),
+        B: new FlowEvent<number>('B')
     }
 
-    const requestThread = new BThread('thread1', function* () {
+    const requestThread = new Flow('thread1', function* () {
         yield bp.request(testEvent.A, () => 1000);
     })
 
-    const receiveThread = new BThread('thread1', function* () {
+    const receiveThread = new Flow('thread1', function* () {
         const progress = yield [bp.waitFor(testEvent.A), bp.waitFor(testEvent.B)];
         expect(testEvent.A.value).toBe(1000);
         expect(progress.event).toBe(testEvent.A);
@@ -165,15 +165,15 @@ test("A request-value can be a function. It will get called, when the event is s
 
 test("A request-value can be a function. It will get called, when the event is selected", () => {
     const testEvent = {
-        A: new TEvent<number>('A'),
-        B: new TEvent<number>('B')
+        A: new FlowEvent<number>('A'),
+        B: new FlowEvent<number>('B')
     }
 
-    const requestThread = new BThread('thread1', function* () {
+    const requestThread = new Flow('thread1', function* () {
         yield bp.request(testEvent.A, () => 1000);
     })
 
-    const receiveThread = new BThread('thread1', function* () {
+    const receiveThread = new Flow('thread1', function* () {
         const progress = yield [bp.waitFor(testEvent.A), bp.waitFor(testEvent.B)];
         expect(testEvent.A.value).toBe(1000);
         expect(progress.event).toBe(testEvent.A);
@@ -189,23 +189,23 @@ test("A request-value can be a function. It will get called, when the event is s
 
 test("if a request value is a function, it will be called once.", () => {
     const testEvent = {
-        A: new TEvent<number>('A'),
+        A: new FlowEvent<number>('A'),
     }
 
     let fnCount = 0;
 
-    const requestThread = new BThread('thread1', function* () {
+    const requestThread = new Flow('thread1', function* () {
         yield bp.request(testEvent.A, () => {
             fnCount++;
             return 1000;
         });
     });
 
-    const receiveThread1 = new BThread("receiveThread1", function* () {
+    const receiveThread1 = new Flow("receiveThread1", function* () {
         yield bp.waitFor(testEvent.A);
     });
 
-    const receiveThread2 = new BThread("receiveThread2", function* () {
+    const receiveThread2 = new Flow("receiveThread2", function* () {
         yield bp.waitFor(testEvent.A);
     })
 
@@ -223,18 +223,18 @@ test("if a request value is a function, it will be called once.", () => {
 
 test("When there are multiple requests with the same event-name, all requests will get the payload from the highest priority request", () => {
     const testEvent = {
-        A: new TEvent<number>('A')
+        A: new FlowEvent<number>('A')
     }
 
-    const requestThreadLower = new BThread('thread1', function* () {
+    const requestThreadLower = new Flow('thread1', function* () {
         yield bp.request(testEvent.A, 1);
     });
 
-    const requestThreadHigher = new BThread('thread2', function* () {
+    const requestThreadHigher = new Flow('thread2', function* () {
         yield bp.request(testEvent.A, 2);
     });
 
-    const receiveThread = new BThread('thread3', function* () {
+    const receiveThread = new Flow('thread3', function* () {
         const value = yield* bp.bid(bp.waitFor(testEvent.A));
         expect(value).toBe(2);
     })
@@ -256,23 +256,23 @@ test("When there are multiple requests with the same event-name, all requests wi
 
 test("events can be blocked", () => {
     const testEvent = {
-        A: new TEvent<number>('A'),
+        A: new FlowEvent<number>('A'),
     }
 
     let advancedRequest = false,
         advancedWait = false;
 
-    const requestThread = new BThread('thread1', function* () {
+    const requestThread = new Flow('thread1', function* () {
         yield bp.request(testEvent.A, 13);
         advancedRequest = true;
     });
 
-    const waitingThread = new BThread('thread1', function* () {
+    const waitingThread = new Flow('thread1', function* () {
         yield bp.waitFor(testEvent.A);
         advancedWait = true;
     });
 
-    const blockingThread = new BThread('thread2', function* () {
+    const blockingThread = new Flow('thread2', function* () {
         yield bp.block(testEvent.A);
     });
 
@@ -292,13 +292,13 @@ test("events can be blocked", () => {
 test("if an async request gets blocked, it will not call the updatePayloadCb", () => {
     let calledFunction = false;
 
-    const eventA = new TEvent('A');
+    const eventA = new FlowEvent('A');
 
-    const requestingThread = new BThread('thread1', function* () {
+    const requestingThread = new Flow('thread1', function* () {
         yield bp.request(eventA, () => { calledFunction = true; });
     })
 
-    const blockingThread = new BThread('thread2', function* () {
+    const blockingThread = new Flow('thread2', function* () {
         yield bp.block(eventA);
     })
 
@@ -312,9 +312,9 @@ test("if an async request gets blocked, it will not call the updatePayloadCb", (
 
 test("if a thread has multiple requests, the last request has the highest priority.", () => {
 
-    const eventA = new TEventKeyed('A');
+    const eventA = new FlowEventKeyed('A');
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         const progress = yield [bp.request(eventA.key(1)), bp.request(eventA.key(2)), bp.request(eventA.key(3)), bp.request(eventA.key(4))];
         expect(progress.event).toEqual(eventA.key(1));
         expect(progress.eventId.key).toEqual(1);
@@ -327,26 +327,26 @@ test("if a thread has multiple requests, the last request has the highest priori
 });
 
 test("with multiple requests for the same event, all requests-validation need to pass, for the request to be selected", () => {
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const requestingLow = new BThread('thread1', function*() {
+    const requestingLow = new Flow('thread1', function*() {
         const progressInfo = yield bp.request(eventA, 1);
         expect(progressInfo.event.value).toBe(2);
     });
 
-    const requestingHigh = new BThread('thread2', function*() {
+    const requestingHigh = new Flow('thread2', function*() {
         yield bp.request(eventA, 2);
     });
 
-    const requestingInvalid = new BThread('thread3', function*() {
+    const requestingInvalid = new Flow('thread3', function*() {
         yield bp.request(eventA, 100);
     });
 
-    const validating = new BThread('thread4', function*() {
+    const validating = new Flow('thread4', function*() {
         yield bp.validate(eventA, (nr) => !!nr && nr < 4);
     });
 
-    const waiting = new BThread('thread5', function*() {
+    const waiting = new Flow('thread5', function*() {
         const value = yield* bp.bid(bp.waitFor(eventA));
         expect(value).toBe(2);
     });
@@ -371,19 +371,19 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
     let lowerPrioProgressed = false;
     let higherPrioProgressed = false;
 
-    const eventA = new UEvent<number>('A');
+    const eventA = new UserEvent<number>('A');
 
-    const askingThreadLow = new BThread('thread1', function*() {
+    const askingThreadLow = new Flow('thread1', function*() {
         yield bp.askFor(eventA);
         lowerPrioProgressed = true;
     });
 
-    const askingThreadHigh = new BThread('thread2', function*() {
+    const askingThreadHigh = new Flow('thread2', function*() {
         yield bp.askFor(eventA);
         higherPrioProgressed = true;
     });
 
-    const triggerThread = new BThread('thread3', function*() {
+    const triggerThread = new Flow('thread3', function*() {
         yield bp.trigger(eventA, 1);
     });
 
@@ -402,19 +402,19 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
 //     let lowerPrioProgressed = false;
 //     let higherPrioProgressed = false;
 
-//     const eventA = new TEvent<number>('A');
+//     const eventA = new FlowEvent<number>('A');
 
-//     const askingThreadLow = new BThread('thread1', function*() {
+//     const askingThreadLow = new Flow('thread1', function*() {
 //         yield bp.askFor(eventA, (pl) => !!pl && pl > 10);
 //         lowerPrioProgressed = true;
 //     });
 
-//     const askingThreadHigh = new BThread('thread2', function*() {
+//     const askingThreadHigh = new Flow('thread2', function*() {
 //         yield bp.askFor(eventA, (pl) => !!pl && pl < 10);
 //         higherPrioProgressed = true;
 //     });
 
-//     const requestingThread = new BThread('thread3', function*() {
+//     const requestingThread = new Flow('thread3', function*() {
 //         yield bp.trigger(eventA, 11);
 //     });
 
@@ -431,11 +431,11 @@ test("with multiple askFor for the same eventId, all askFor bids are progressed"
 // });
 
 
-test("a BThread can return the state of completion", () => {
+test("a Flow can return the state of completion", () => {
 
-    const eventA = new TEvent<number>('A');
+    const eventA = new FlowEvent<number>('A');
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         yield [bp.request(eventA), bp.request(eventA)]
     });
 
@@ -449,11 +449,11 @@ test("a BThread can return the state of completion", () => {
 
 // test("the allOf utility function will return if all bids have progressed", (done) => {
 //     let timesPromiseWasCreated = 0;
-//     const eventA = new TEvent<number>('A');
-//     const eventB = new TEvent<number>('B');
+//     const eventA = new FlowEvent<number>('A');
+//     const eventB = new FlowEvent<number>('B');
 
 
-//     const requestingThread = new BThread('thread1',
+//     const requestingThread = new Flow('thread1',
 //         function*() {
 //             yield* bp.allOf(bp.request(eventA, 1), bp.request(eventB, () => {
 //                 timesPromiseWasCreated++;
@@ -476,10 +476,10 @@ test("a BThread can return the state of completion", () => {
 
 
 test("a pending event is canceled, when another request finished before", (done) => {
-    const eventA = new TEvent<number | undefined>('A');
-    const eventB = new TEvent<number | undefined>('B');
+    const eventA = new FlowEvent<number | undefined>('A');
+    const eventB = new FlowEvent<number | undefined>('B');
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         yield [bp.request(eventB, () => delay(2000, 1)), bp.request(eventA, 1)];
     });
 
@@ -498,9 +498,9 @@ test("a pending event is canceled, when another request finished before", (done)
 
 
 test("askFor will enable events to be dispatched", (done) => {
-    const eventA = new UEvent<number>('A');
+    const eventA = new UserEvent<number>('A');
 
-    const askingThread = new BThread('thread1', function*() {
+    const askingThread = new Flow('thread1', function*() {
         yield bp.askFor(eventA);
         expect(eventA.value).toBe(11);
     })
@@ -521,13 +521,13 @@ test("askFor will enable events to be dispatched", (done) => {
 });
 
 test("a trigger needs an askFor bid", () => {
-    const eventA = new UEvent('A');
+    const eventA = new UserEvent('A');
 
-    const askingThread = new BThread('askingThread', function*() {
+    const askingThread = new Flow('askingThread', function*() {
         yield bp.askFor(eventA);
     });
 
-    const triggerThread = new BThread('trigger', function*() {
+    const triggerThread = new Flow('trigger', function*() {
         yield bp.trigger(eventA);
     });
 
@@ -542,22 +542,22 @@ test("a trigger needs an askFor bid", () => {
 });
 
 test("a trigger will not advance without an askFor bid", () => {
-    const eventA = new UEvent('Abc');
+    const eventA = new UserEvent('Abc');
 
-    const waitingBThread = new BThread('requestingThread', function*() {
+    const waitingFlow = new Flow('requestingThread', function*() {
         yield bp.waitFor(eventA);
     });
 
-    const triggerThread = new BThread('triggerThread', function*() {
+    const triggerThread = new Flow('triggerThread', function*() {
         yield bp.trigger(eventA);
     });
 
     testScenarios((s, e) => {
         e(eventA);
-        s(waitingBThread);
+        s(waitingFlow);
         s(triggerThread);
     }, () => {
         expect(triggerThread.isCompleted).toBe(false);
-        expect(waitingBThread.isCompleted).toBe(false);
+        expect(waitingFlow.isCompleted).toBe(false);
     });
 });

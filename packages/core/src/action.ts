@@ -10,7 +10,7 @@ interface Action {
     id: number;
     type: ActionType;
     eventId: NameKeyId;
-    bThreadId: NameKeyId;
+    flowId: NameKeyId;
     payload?: unknown;
 }
 
@@ -76,7 +76,7 @@ export function getQueuedAction(actionQueue: BufferAction[], eventMap: EventMap,
         return {...action, id: nextActionId};
     }
     if(action.type === 'resolvedExtendAction') {
-        // todo: validate: extendingBThread is still there
+        // todo: validate: extendingFlow is still there
         return {...action, id: nextActionId};
     }
     if(action.type === 'rejectAction') {
@@ -92,7 +92,7 @@ export interface RequestSelectReason {
     event: NameKeyId,
     bidType: BidType,
     type: 'EventNotConnected' | 'EventBlockedBy' | 'EventPendingBy' | 'EventNotAskedFor' | 'BidPayloadInvalid' | 'OK',
-    bThreadIds?: NameKeyId[]
+    flowIds?: NameKeyId[]
 }
 
 export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPlacedBids, nextActionId: number, logger: Logger, replayActionPayload?: {value: unknown}): RequestedAsyncAction | RequestedAction | TriggeredAction | undefined {
@@ -108,13 +108,13 @@ export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPla
         }
         if(allPlacedBids.blockBid.has(bid.eventId)) {
             reason.type = "EventBlockedBy";
-            reason.bThreadIds = allPlacedBids.blockBid.get(bid.eventId)?.map(bid => bid.bThreadId);
+            reason.flowIds = allPlacedBids.blockBid.get(bid.eventId)?.map(bid => bid.flowId);
             reasons.push(reason);
             return false;
         }
         if(event.isPending) {
             reason.type = "EventPendingBy";
-            reason.bThreadIds = [event.pendingBy!];
+            reason.flowIds = [event.pendingBy!];
             reasons.push(reason);
             return false;
         }
@@ -136,7 +136,7 @@ export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPla
                 action = {
                     eventId: event.id,
                     id: nextActionId,
-                    bThreadId: bid.bThreadId,
+                    flowId: bid.flowId,
                     type: 'requestedAsyncAction',
                     payload: bid.payload
                 }
@@ -152,7 +152,7 @@ export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPla
                 action = {
                     eventId: event.id,
                     id: nextActionId,
-                    bThreadId: bid.bThreadId,
+                    flowId: bid.flowId,
                     type: 'triggeredAction',
                     payload: bid.payload
                 }
@@ -160,7 +160,7 @@ export function getNextRequestedAction(eventMap: EventMap, allPlacedBids: AllPla
                 action = {
                     eventId: event.id,
                     id: nextActionId,
-                    bThreadId: bid.bThreadId,
+                    flowId: bid.flowId,
                     type: 'requestedAction',
                     payload: bid.payload
                 }

@@ -25,7 +25,7 @@ export interface EventConnectProps {
 interface PendingExtend<P, V> {
     bid: PlacedBid<P, V>;
     extendedValue: P;
-    bThreadId: NameKeyId;
+    flowId: NameKeyId;
     extendedBy: NameKeyId;
     resolve: (value: P | PromiseLike<P>) => void
     reject: (reason?: any) => void
@@ -33,7 +33,7 @@ interface PendingExtend<P, V> {
 
 interface PendingRequestInfo {
     actionId: number,
-    bThreadId: NameKeyId
+    flowId: NameKeyId
 }
 
 type EventType = 'BT' | 'UI';
@@ -92,7 +92,7 @@ export class EventCore<P = void, V = string> {
     public __dispatchOnPromiseResolve(action: RequestedAsyncAction): void {
         this._pendingRequestInfo = {
             actionId: action.id,
-            bThreadId: action.bThreadId
+            flowId: action.flowId
         }
         const promise = action.payload as Promise<P>;
         promise.then(value => {
@@ -101,7 +101,7 @@ export class EventCore<P = void, V = string> {
                     type: "resolveAction",
                     eventId: this.id,
                     payload: value,
-                    bThreadId: action.bThreadId,
+                    flowId: action.flowId,
                     requestActionId: action.id,
                     id: -1
                 }
@@ -112,7 +112,7 @@ export class EventCore<P = void, V = string> {
                 const dispatchAction: RejectAction = {
                     type: "rejectAction",
                     eventId: this.id,
-                    bThreadId: action.bThreadId,
+                    flowId: action.flowId,
                     payload: undefined,
                     error: error,
                     requestActionId: action.id,
@@ -137,17 +137,17 @@ export class EventCore<P = void, V = string> {
     }
 
     /** @internal */
-    public __isExtending(bThreadId: NameKeyId): boolean {
+    public __isExtending(flowId: NameKeyId): boolean {
         if(this._pendingExtend === undefined) return false;
-        return isSameNameKeyId(this._pendingExtend.extendedBy, bThreadId);
+        return isSameNameKeyId(this._pendingExtend.extendedBy, flowId);
     }
 
     /** @internal */
-    public __addPendingExtend(placedBid: PlacedBid<P, V>, extendedValue: P, extendedActionType: ActionType, bThreadId: NameKeyId, extendedBy: NameKeyId): void {
+    public __addPendingExtend(placedBid: PlacedBid<P, V>, extendedValue: P, extendedActionType: ActionType, flowId: NameKeyId, extendedBy: NameKeyId): void {
         new Promise<P>((resolve, reject) => {
             this._pendingExtend = {
                 bid: placedBid,
-                bThreadId,
+                flowId,
                 extendedBy,
                 extendedValue,
                 resolve,
@@ -156,7 +156,7 @@ export class EventCore<P = void, V = string> {
         }).then(value => {
             const action: ResolveExtendAction = {
                 type: "resolvedExtendAction",
-                bThreadId,
+                flowId,
                 eventId: this.id,
                 extendedActionType,
                 payload: value,
@@ -168,16 +168,16 @@ export class EventCore<P = void, V = string> {
     }
 
     /** @internal */
-    public __resolveExtend(bThreadId: NameKeyId, value: P): boolean {
+    public __resolveExtend(flowId: NameKeyId, value: P): boolean {
         if(this._pendingExtend === undefined) return false;
-        if(!isSameNameKeyId(bThreadId, this._pendingExtend.extendedBy)) return false;
+        if(!isSameNameKeyId(flowId, this._pendingExtend.extendedBy)) return false;
         this._pendingExtend?.resolve(value);
         return true;
     }
 
     /** @internal */
-    public __getExtendValue(bThreadId: NameKeyId): P | undefined {
-        if(this._pendingExtend && this._pendingExtend.extendedBy === bThreadId) return this._pendingExtend.extendedValue;
+    public __getExtendValue(flowId: NameKeyId): P | undefined {
+        if(this._pendingExtend && this._pendingExtend.extendedBy === flowId) return this._pendingExtend.extendedValue;
         return undefined;
     }
 
@@ -215,7 +215,7 @@ export class EventCore<P = void, V = string> {
     }
 
     public get pendingBy(): NameKeyId | undefined {
-        return this._pendingRequestInfo?.bThreadId || this._pendingExtend?.bThreadId;
+        return this._pendingRequestInfo?.flowId || this._pendingExtend?.flowId;
     }
 
     public get pendingRequestInfo(): PendingRequestInfo | undefined {
@@ -233,7 +233,7 @@ export class EventCore<P = void, V = string> {
                 this._internalDispatch!({
                     type: "uiAction",
                     eventId: this.id,
-                    bThreadId: result.selectedBids![0].bThreadId,
+                    flowId: result.selectedBids![0].flowId,
                     payload: value,
                     dispatchResultCB: resolve,
                     id: -1
@@ -244,7 +244,7 @@ export class EventCore<P = void, V = string> {
     }
 }
 
-export class EventCoreKeyed<T extends UEvent<P,V> | TEvent<P,V>, P = void, V = string> {
+export class EventCoreKeyed<T extends UserEvent<P,V> | FlowEvent<P,V>, P = void, V = string> {
     public readonly type: EventType;
     public readonly name: string;
     private _initialValue?: P;
@@ -264,9 +264,9 @@ export class EventCoreKeyed<T extends UEvent<P,V> | TEvent<P,V>, P = void, V = s
         let event = this._children.get(key);
         if(event === undefined) {
             if(this.type === 'UI') {
-                event = new UEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
+                event = new UserEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
             } else {
-                event = new TEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
+                event = new FlowEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
             }
             this._children.set(key, event);
         }
@@ -292,25 +292,25 @@ export class EventCoreKeyed<T extends UEvent<P,V> | TEvent<P,V>, P = void, V = s
 }
 
 
-export class UEvent<P = void, V = string> extends EventCore<P, V> {
+export class UserEvent<P = void, V = string> extends EventCore<P, V> {
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
         super(nameOrNameKey, 'UI', initialValue);
     }
 }
 
-export class UEventKeyed<P = void, V = string> extends EventCoreKeyed<UEvent<P,V>, P, V> {
+export class UserEventKeyed<P = void, V = string> extends EventCoreKeyed<UserEvent<P,V>, P, V> {
     constructor(nameOrNameKey: string, initialValue?: P) {
         super(nameOrNameKey, 'UI', initialValue);
     }
 }
 
-export class TEvent<P = void, V = string> extends EventCore<P, V> {
+export class FlowEvent<P = void, V = string> extends EventCore<P, V> {
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
         super(nameOrNameKey, 'BT', initialValue);
     }
 }
 
-export class TEventKeyed<P = void, V = string> extends EventCoreKeyed<TEvent<P,V>, P, V> {
+export class FlowEventKeyed<P = void, V = string> extends EventCoreKeyed<FlowEvent<P,V>, P, V> {
     constructor(nameOrNameKey: string, initialValue?: P) {
         super(nameOrNameKey, 'BT', initialValue);
     }

@@ -1,17 +1,17 @@
-import { BThread, BThreadKeyed } from "../src";
+import { Flow, FlowKeyed } from "../src";
 import * as bp from "../src/bid";
-import { TEvent, TEventKeyed } from "../src/b-event";
+import { FlowEvent, FlowEventKeyed } from "../src/flow-event";
 import { testScenarios } from "./testutils";
 
 
 test("scenarios can be keyed", () => {
 
     const basicEvent = {
-        eventA: new TEvent<number>('A'),
-        eventB: new TEvent<number>('B')
+        eventA: new FlowEvent<number>('A'),
+        eventB: new FlowEvent<number>('B')
     }
 
-    const requestingThread = new BThreadKeyed('thread1', function*() {
+    const requestingThread = new FlowKeyed('thread1', function*() {
         const progress = yield bp.request(basicEvent.eventA, 1);
         expect(progress.event).toBe(basicEvent.eventA);
         expect(this.key).toBe(1);
@@ -28,16 +28,16 @@ test("scenarios can be keyed", () => {
 
 test("a keyed scenario can progress without the other keyed scenario being progressed", () => {
 
-    const eventA = new TEventKeyed<number>('A');
+    const eventA = new FlowEventKeyed<number>('A');
 
-    const waitingThread = new BThreadKeyed('thread1', function*() {
+    const waitingThread = new FlowKeyed('thread1', function*() {
         yield bp.waitFor(eventA.key(this.key!)); //TODO: key is not undefined!!
         if(this.key === 1) {
             expect(eventA.key(this.key).value).toBe(1);
         }
     });
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         yield bp.request(eventA.key(1), 1);
     });
 

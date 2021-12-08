@@ -1,13 +1,13 @@
-import { BThread } from "../src";
+import { Flow } from "../src";
 import * as bp from "../src/bid";
-import { TEvent, TEventKeyed, UEventKeyed } from "../src/b-event";
+import { FlowEvent, FlowEventKeyed, UserEventKeyed } from "../src/flow-event";
 import { testScenarios } from "./testutils";
 
 
 test("keys can be a string or a number", () => {
-    const eventA = new UEventKeyed('A');
+    const eventA = new UserEventKeyed('A');
 
-    const thread1 = new BThread('thread1', function* () {
+    const thread1 = new Flow('thread1', function* () {
         yield bp.askFor(eventA.key('1'));
     });
 
@@ -25,14 +25,14 @@ test("a requested event with a key is blocked by a block for the same name and k
 
     let progressedRequestThread = false;
 
-    const eventA = new TEventKeyed('A');
+    const eventA = new FlowEventKeyed('A');
 
-    const requestingThread = new BThread('thread1', function* () {
+    const requestingThread = new Flow('thread1', function* () {
         yield bp.request(eventA.key(1));
         progressedRequestThread = true;
     })
 
-    const blockingThread = new BThread('thread2', function* () {
+    const blockingThread = new Flow('thread2', function* () {
         yield bp.block(eventA.key(1));
     })
 
@@ -48,9 +48,9 @@ test("a requested event with a disabled key will not progress", () => {
 
     let progressedRequestThread = false;
 
-    const eventA = new TEventKeyed('A');
+    const eventA = new FlowEventKeyed('A');
 
-    const requestingThread = new BThread('thread1', function* () {
+    const requestingThread = new Flow('thread1', function* () {
         yield bp.request(eventA.key(1));
         progressedRequestThread = true;
     })
@@ -67,9 +67,9 @@ test("a requested event with a disabled key will not progress", () => {
 
 //     let progressedRequestThread = false;
 
-//     const eventA = new TEventKeyed('A');
+//     const eventA = new FlowEventKeyed('A');
 
-//     const requestingThread = new BThread('thread1', function* () {
+//     const requestingThread = new Flow('thread1', function* () {
 //         yield bp.request(eventA.key(1));
 //         progressedRequestThread = true;
 //     })
@@ -86,15 +86,15 @@ test("a requested event with a disabled key will not progress", () => {
 test("a keyed waitFor will not advance on the same Event-Name without a Key", () => {
     let requestProgressed = false, waitProgressed = false;
 
-    const eventAUnkeyed = new TEvent('A');
-    const eventA = new TEventKeyed('A');
+    const eventAUnkeyed = new FlowEvent('A');
+    const eventA = new FlowEventKeyed('A');
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         yield bp.request(eventAUnkeyed);
         requestProgressed = true;
     });
 
-    const waitingThread = new BThread('thread1', function*() {
+    const waitingThread = new Flow('thread1', function*() {
         yield [bp.waitFor(eventA.key(1)), bp.waitFor(eventA.key(2))];
         waitProgressed = true;
     });
@@ -114,15 +114,15 @@ test("a wait without a key will not react to keyed events with the same name", (
     let requestProgressed = false,
         waitProgressed = false;
 
-    const eventA = new TEventKeyed('A');
-    const eventAUK = new TEvent('A');
+    const eventA = new FlowEventKeyed('A');
+    const eventAUK = new FlowEvent('A');
 
-    const requestingThread = new BThread('thread1', function*() {
+    const requestingThread = new Flow('thread1', function*() {
         yield bp.request(eventA.key(1));
         requestProgressed = true;
     });
 
-    const waitingThread = new BThread('thread2', function*() {
+    const waitingThread = new Flow('thread2', function*() {
         yield bp.waitFor(eventAUK);
         waitProgressed = true;
     });
@@ -142,23 +142,23 @@ test("an event with a key will be blocked by a block with the same name and key"
     let advancedKey1 = false;
     let advancedKey2 = false;
 
-    const eventA = new TEventKeyed('A');
+    const eventA = new FlowEventKeyed('A');
 
-    const thread1 = new BThread('thread1', function* () {
+    const thread1 = new Flow('thread1', function* () {
         yield bp.waitFor(eventA.key(1));
         advancedKey1 = true;
     });
 
-    const thread2 = new BThread('thread2', function* () {
+    const thread2 = new Flow('thread2', function* () {
         yield bp.waitFor(eventA.key(2));
         advancedKey2 = true;
     });
 
-    const blockingThread = new BThread('thread3', function* () {
+    const blockingThread = new Flow('thread3', function* () {
         yield bp.block(eventA.key(1));
     });
 
-    const requestingThread = new BThread('thread4', function* () {
+    const requestingThread = new Flow('thread4', function* () {
         yield bp.request(eventA.key(2));
         yield bp.request(eventA.key(1));
     });
@@ -180,20 +180,20 @@ test("a request without a key will not advance waiting threads with a key", () =
     let advancedWait1 = false;
     let advancedWait2 = false;
 
-    const eventA = new TEvent('A');
-    const eventAK = new TEventKeyed('A');
+    const eventA = new FlowEvent('A');
+    const eventAK = new FlowEventKeyed('A');
 
-    const waitThreadWithKey1 = new BThread('thread1', function* () {
+    const waitThreadWithKey1 = new Flow('thread1', function* () {
         yield bp.waitFor(eventAK.key(1));
         advancedWait1 = true;
     });
 
-    const waitThreadWithKey2 = new BThread('thread2', function* () {
+    const waitThreadWithKey2 = new Flow('thread2', function* () {
         yield bp.waitFor(eventAK.key(2));
         advancedWait2 = true;
     });
 
-    const requestThread = new BThread('thread3', function* () {
+    const requestThread = new Flow('thread3', function* () {
         yield bp.request(eventA);
     });
 
@@ -211,15 +211,15 @@ test("a request without a key will not advance waiting threads with a key", () =
 
 test("an request without a key will not advance extends with a key", () => {
     let advancedExtend = false;
-    const eventA = new TEvent('A');
-    const eventAK = new TEventKeyed('A');
+    const eventA = new FlowEvent('A');
+    const eventAK = new FlowEventKeyed('A');
 
-    const extending = new BThread('thread1', function* () {
+    const extending = new Flow('thread1', function* () {
         yield bp.extend(eventAK.key(1));
         advancedExtend = true;
     });
 
-    const requesting = new BThread('thread1', function* () {
+    const requesting = new Flow('thread1', function* () {
         yield bp.request(eventA);
     });
 
@@ -238,25 +238,25 @@ test("a request with a key, will only advance the matching wait with the same ke
     let advancedWait2 = false;
     let advancedWaitNoKey = false;
 
-    const eventA = new TEvent('A');
-    const eventAK = new TEventKeyed('A');
+    const eventA = new FlowEvent('A');
+    const eventAK = new FlowEventKeyed('A');
 
-    const waitThreadWithKey1 = new BThread('thread1', function* () {
+    const waitThreadWithKey1 = new Flow('thread1', function* () {
         yield bp.waitFor(eventAK.key(1));
         advancedWait1 = true;
     });
 
-    const waitThreadWithKey2 = new BThread('thread2', function* () {
+    const waitThreadWithKey2 = new Flow('thread2', function* () {
         yield bp.waitFor(eventAK.key(2));
         advancedWait2 = true;
     });
 
-    const waitThreadWithoutKey = new BThread('thread3', function* () {
+    const waitThreadWithoutKey = new Flow('thread3', function* () {
         yield bp.waitFor(eventA);
         advancedWaitNoKey = true;
     });
 
-    const requestThread = new BThread('thread4', function* () {
+    const requestThread = new Flow('thread4', function* () {
         yield bp.request(eventAK.key(1));
     });
 

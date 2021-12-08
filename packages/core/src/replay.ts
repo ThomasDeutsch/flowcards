@@ -64,10 +64,10 @@ export class Replay {
         // REQUESTED ACTION
         else if(replayAction.type === "requestedAction") {
             if(requestAction === undefined) {
-                this.abortReplay(replayAction, `invalid request. Was this action requested by scenario '${replayAction.bThreadId}'?. or is it blocked by another scenario?`);
+                this.abortReplay(replayAction, `invalid request. Was this action requested by scenario '${replayAction.flowId}'?. or is it blocked by another scenario?`);
                 return undefined
             }
-            if(!isSameNameKeyId(requestAction.bThreadId, replayAction.bThreadId) || !isSameNameKeyId(requestAction.eventId, replayAction.eventId)) {
+            if(!isSameNameKeyId(requestAction.flowId, replayAction.flowId) || !isSameNameKeyId(requestAction.eventId, replayAction.eventId)) {
                 this.abortReplay(replayAction, `the replay action and the requested action ${replayAction.eventId.name} do not match.`);
                 return undefined;
             }

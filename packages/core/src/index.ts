@@ -5,9 +5,9 @@ import { Logger, LoopLog } from './logger';
 import { Replay } from './replay';
 
 //TODO: remove this and let the user use deep imports ( better for tree-shaking )
-export * from './b-thread';
-export * from './b-event';
-export * from './bthread-core';
+export * from './flow';
+export * from './flow-event';
+export * from './flow-core';
 export * from './update-loop';
 export * from './name-key-map';
 export * from "./bid";
