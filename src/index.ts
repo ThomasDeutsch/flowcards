@@ -4,13 +4,14 @@ import { StagingCB } from './staging';
 import { LoopLog } from './logger';
 import { EventCore } from './event-core';
 import { Replay, getReplay } from './replay';
+import { FlowEvent, UserEvent } from './event';
 
 export type FlowCardsContext = {log: LogInfo, replay?: Replay}
 export type UpdateCB = (pl: FlowCardsContext) => void;
 export type OnFinishLoopCB = (loopLog: LoopLog) => void;
 
-export type NestedEventObject = EventCore<any, any> | EventCore<any, any>[] |
-    { [key: string]: EventCore<any, any> | EventCore<any,any>[] | NestedEventObject };
+export type NestedEventObject = UserEvent<any, any> | FlowEvent<any, any> | (FlowEvent<any, any> | UserEvent<any, any>)[] |
+    { [key: string]: NestedEventObject };
 
 
 function getEvents(obj: NestedEventObject): EventCore<any, any>[] {
