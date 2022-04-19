@@ -1,6 +1,6 @@
-import { AnyAction } from 'action';
-import { FlowCards, NestedEventObject, UpdateCB } from 'index';
-import { Replay } from 'replay';
+import { AnyAction } from '../src/action';
+import { FlowCards, NestedEventObject, UpdateCB } from '../src/index';
+import { Replay } from '../src/replay';
 import { StagingCB } from '../src/staging';
 
 export function testScenarios(stagingCB: StagingCB, events: NestedEventObject, updateCB?: UpdateCB, initialActionsOrReplay?: Replay | AnyAction[]): FlowCards {

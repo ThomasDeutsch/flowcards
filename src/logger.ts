@@ -1,8 +1,8 @@
 import { AllPlacedBids, BidType, PlacedBid } from './bid';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { AnyAction } from './action';
-import { OnFinishLoopCB } from 'index';
-import { ExplainEventResult } from 'guard';
+import { OnFinishLoopCB } from './index';
+import { ExplainEventResult } from './guard';
 
 export interface LoopLog {
     placedBids: AllPlacedBids;

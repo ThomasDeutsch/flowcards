@@ -1,7 +1,7 @@
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { GuardCB, GuardResult } from './guard';
 import { FlowProgressInfo } from './flow-core';
-import { FlowEvent, UserEvent } from 'event';
+import { FlowEvent, UserEvent } from './event';
 
 export type NotRequestingBidType = "askForBid" |  "extendBid" |  "waitForBid" | "validateBid" | "blockBid";
 export type BidType = NotRequestingBidType | 'triggerBid' | 'requestBid';

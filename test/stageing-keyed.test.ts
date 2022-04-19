@@ -1,5 +1,5 @@
-import { Flow, FlowKeyed } from "flow";
-import * as bp from "bid";
+import { Flow, FlowKeyed } from "../src/flow";
+import * as bp from "../src/bid";
 import { FlowEvent, FlowEventKeyed } from "../src/event";
 import { testScenarios } from "./testutils";
 

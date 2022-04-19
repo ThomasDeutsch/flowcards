@@ -1,7 +1,7 @@
-import * as bp from "bid";
+import * as bp from "../src/bid";
 import { testScenarios, delay, failedDelay } from "./testutils";
-import { Flow } from 'flow';
-import { FlowEvent, UserEvent } from "event";
+import { Flow } from '../src/flow';
+import { FlowEvent, UserEvent } from "../src/event";
 
 
 // Extends

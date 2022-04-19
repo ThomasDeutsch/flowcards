@@ -6,9 +6,9 @@ import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, adva
 import { Staging, StagingCB } from './staging';
 import { Replay } from './replay';
 import { EventCore } from './event-core';
-import { BufferedQueue } from 'buffered-queue';
-import { UpdateCB } from 'index';
-import { FlowEvent, UserEvent } from 'event';
+import { BufferedQueue } from './buffered-queue';
+import { UpdateCB } from './index';
+import { FlowEvent, UserEvent } from './event';
 
 
 // update loop

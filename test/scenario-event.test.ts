@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { FlowEvent, UserEvent } from "../src/event";
-import { Flow } from "flow";
+import { Flow } from "../src/flow";
 
 
 test("an event needs to be enabled in order to be requested", () => {

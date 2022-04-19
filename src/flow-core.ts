@@ -1,10 +1,10 @@
-import { PlacedBid, BidOrBids } from 'bid';
-import { isSameNameKeyId, NameKeyId, NameKeyMap } from 'name-key-map';
-import { Logger } from 'logger';
-import { EventCore } from 'event-core';
-import { FlowGeneratorFunction } from 'flow';
-import { ActionType, QueueAction, RejectAction, RequestedAsyncAction, ResolveAction, ResolveExtendAction } from 'action';
-import { toArray } from 'utils';
+import { PlacedBid, BidOrBids } from './bid';
+import { isSameNameKeyId, NameKeyId, NameKeyMap } from './name-key-map';
+import { Logger } from './logger';
+import { EventCore } from './event-core';
+import { FlowGeneratorFunction } from './flow';
+import { ActionType, QueueAction, RejectAction, RequestedAsyncAction, ResolveAction, ResolveExtendAction } from './action';
+import { toArray } from './utils';
 
 export type ErrorInfo = {event: NameKeyId, error: any}
 export type FlowGenerator = Generator<BidOrBids, void, FlowProgressInfo>;

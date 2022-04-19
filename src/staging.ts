@@ -4,7 +4,7 @@ import { Flow } from './flow';
 import { FlowMap } from './scheduler';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { allPlacedBids, AllPlacedBids, BidType, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from './bid';
-import { QueueAction, RequestedAsyncAction } from 'action';
+import { QueueAction, RequestedAsyncAction } from './action';
 
 export type EnableFlow = (flow: Flow) => void;
 export type StagingCB = (enableFlow: EnableFlow) => void;

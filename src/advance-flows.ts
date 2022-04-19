@@ -1,9 +1,9 @@
 import { AnyAction, RejectAction, RequestedAction, RequestedAsyncAction, ResolveAction, ResolveExtendAction, TriggeredAction, UIAction } from './action';
 import { EventCore } from './event-core';
-import { Staging } from 'staging';
-import { explainExtend, isValidReturn } from 'guard';
-import { isSameNameKeyId, NameKeyId } from 'name-key-map';
-import { PlacedExtendBid } from 'bid';
+import { Staging } from './staging';
+import { explainExtend, isValidReturn } from './guard';
+import { isSameNameKeyId, NameKeyId } from './name-key-map';
+import { PlacedExtendBid } from './bid';
 
 
 function progressWaitingFlows(event: EventCore<unknown>, staging: Staging, action: AnyAction): void {

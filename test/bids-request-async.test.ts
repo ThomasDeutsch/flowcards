@@ -2,7 +2,7 @@ import * as bp from "../src/bid";
 import { failedDelay, testScenarios } from "./testutils";
 import { Flow } from '../src/flow'
 import { delay } from './testutils';
-import { FlowEvent, UserEvent } from "event";
+import { FlowEvent, UserEvent } from "../src/event";
 
 
 test("an async request is not called if proceeded by a not-async request", (done) => {

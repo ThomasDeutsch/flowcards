@@ -1,4 +1,4 @@
-import { Flow } from "flow";
+import { Flow } from "../src/flow";
 import * as bp from "../src/bid";
 import { FlowEvent, FlowEventKeyed, UserEventKeyed } from "../src/event";
 import { testScenarios } from "./testutils";

@@ -1,9 +1,9 @@
 import { BufferedQueue } from "./buffered-queue";
 import { QueueAction } from "./action";
-import { BidType, PlacedBid, PlacedBlockBid } from "./bid";
+import { BidType, PlacedBid } from "./bid";
 import { NameKeyId } from "./name-key-map";
-import { GetPending, GetPlacedBids } from "staging";
-import { explainAskFor, ExplainEventResult, isValidReturn } from "guard";
+import { GetPending, GetPlacedBids } from "./staging";
+import { ExplainEventResult } from "./guard";
 
 export type NextValueFn<P> = (current: P | undefined) => P;
 type ValidationResultCB<V> = (value: ExplainEventResult<V>) => void;

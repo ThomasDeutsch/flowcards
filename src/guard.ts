@@ -1,6 +1,6 @@
-import { ResolveAction } from 'action';
-import { EventCore } from 'event-core';
-import { NameKeyId } from 'name-key-map';
+import { ResolveAction } from './action';
+import { EventCore } from './event-core';
+import { NameKeyId } from './name-key-map';
 import { ExtendBid, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from './bid';
 import { isThenable, notEmpty } from './utils';
 

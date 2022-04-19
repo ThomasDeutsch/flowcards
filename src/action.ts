@@ -1,10 +1,10 @@
-import { BufferedQueue } from 'buffered-queue';
-import { Logger } from 'logger';
-import { EventMap, GetEvent } from 'scheduler';
+import { BufferedQueue } from './buffered-queue';
+import { Logger } from './logger';
+import { EventMap, GetEvent } from './scheduler';
 import { NameKeyId } from './name-key-map';
 import { isThenable } from './utils';
-import { Staging } from 'staging';
-import { explainAskFor, ExplainEventResult, explainRequest, explainResolve, explainTrigger } from 'guard';
+import { Staging } from './staging';
+import { explainAskFor, ExplainEventResult, explainRequest, explainResolve, explainTrigger } from './guard';
 
 
 export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectAction" | "resolvedExtendAction" | "requestedAsyncAction" | "triggeredAction";

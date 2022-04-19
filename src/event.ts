@@ -1,8 +1,8 @@
-import { QueueAction } from "action";
-import { EventCore, EventCoreKeyed } from "event-core";
-import { explainAskFor, ExplainEventResult } from "guard";
-import { getHighestPriorityAskForBid } from "index";
-import { NameKeyId } from "name-key-map";
+import { QueueAction } from "./action";
+import { EventCore, EventCoreKeyed } from "./event-core";
+import { explainAskFor, ExplainEventResult } from "./guard";
+import { getHighestPriorityAskForBid } from "./index";
+import { NameKeyId } from "./name-key-map";
 
 export class UserEvent<P = void, V = string> extends EventCore<P, V> {
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {

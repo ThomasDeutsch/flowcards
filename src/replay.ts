@@ -2,7 +2,7 @@ import { AnyAction, getNextRequestedAction } from "./action";
 import { GetEvent } from "./scheduler";
 import { Logger } from "./logger";
 import { isSameNameKeyId } from "./name-key-map";
-import { Staging } from "staging";
+import { Staging } from "./staging";
 
 
 export type ReplayFinishedCB = () => void;
