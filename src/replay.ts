@@ -68,11 +68,11 @@ export class Replay {
         // UI ACTION
         if(replayAction.type === 'uiAction') {
             //TODO: instead of isValidPayload, use validateAskFor!! (validateAll)
-            const isValidPayload = getEvent(replayAction.eventId)?.isValid(replayAction.payload);
-            if(!isValidPayload) {
-                this.abortReplay(replayAction, 'event can not be dispatched');
-                return undefined;
-            }
+            // const isValidPayload = getEvent(replayAction.eventId)?.isValid!.(replayAction.payload);
+            // if(!isValidPayload) {
+            //     this.abortReplay(replayAction, 'event can not be dispatched');
+            //     return undefined;
+            // }
         }
         // REQUESTED ACTION
         else if(replayAction.type === "requestedAction") {
