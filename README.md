@@ -1,122 +1,23 @@
-![flowcards](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/banner-flowcards-2.png)
+## @flowcards/core
+Scenario based programming for JavaScript/TypeScript
 
-Scenario-Based Programming (SBP) for JavaScript / TypeScript applications
+The flowcards core package has one main `scenarios` function.<br/>
+It will create an update-loop and make the initial setup call.<br/>
+When there is a new update, the update callback function gets called with an a new scenarios-context and dispatcher.<br/>
 
-## Use It For
-flowcards is a replacement for traditional state-management solutions.<br/>
-```App(state) => UI``` becomes ```App(flowcards(scenarios)) => UI```<br/>
-Use flowcards for well defined state transitions, based on scenarios you want to enable.<br/>
+ ```ts
+scenarios(StagingFunction, UpdateCallback)
+ ```
+ 
+<img src="/docs/img/update-loop-chart.svg" width="730">
 
-## Why
-flowcards primary goal, is to enable teams to build better software.<br/>
-It is more than providing a new tool for developers and hope for the benefits to "trickle-down".<br/>
-flowcards enables developers to write code, that is aligned to the work done by UX, RE and Testing.<br/>
-Opening up new possibilites for effective teams.<br/>
+ 
+ ### The architecture is based on these principles
+ - The behavioral programming infrastructure causes b-threads to synchronize with each other (e.g., waiting for each other) before generating events. This gives b-threads the opportunity to forbid or override each other's events. The synchronization is automatic and occurs at the point "setup and delete BThreads".
+ - When a b-thread generates an event it recognizes this as merely putting forward a request for consideration in the execution, and it is prepared to handle situations where the event will in fact not be triggered, or will be postponed, briefly or indefinitely. A b-thread may wish to wait indefinitely until the event is triggered, and the system, in turn, is not negatively affected by a large number of such waiting b-threads. Alternatively, a b-thread may monitor certain events that occur as it waits for the triggering of its requested event, and then withdraw its own request before the requested events are actually triggered.
+ - Only events that are requested and not blocked can be triggered ( not blocked bids are calculated at the "get bids" step )
+ - A b-thread can progress past a synchronization point when an event that it requested or waited for is triggered ( this is done at the step "advance BThreads")
+ - When a selected event is requested by two or more b-threads, all b-threads requesting it are notified (in addition to those who are only listening-out for it). Each requesting b-thread will advance in the same manner as it would have had it been the only requester. If the event is associated with some execution external to the b-threads, such as logging or execution of an associated method, this processing/effect will occur only once. (also done by the "advance BThreads step)
+ - B-threads can use standard interfaces to their environment (e.g., access services, other js-libs, ...) in order to translate external occurrences into behavioral events and vice versa.
 
-## How
-flowcards gives JavaScript developers the option to use Scenario-Based Programming.<br/>
-Instead of describing a reactive system object-by-object, the developer is now able to write modular<br/>
-scenarios, flow-by-flow. The power lies in the interconnection of different disciplines - for example: DEV and UX<br/>
-
-## Example
-To demonstrate the scenario approach, we take a look at user-flows.<br/>
-A user flow is a series of steps a user takes to achieve a meaningful goal.<br/>
-If we want to build an e-commerce app, we might start with:<br/>
-<br/>
-![flow-1](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/purchase-flow-1.png)
-
-this can be translated to a JavaScript generator function
-```js
-function* userCanPurchaseSelectedProduct() {
-  const productId = yield wait('selectProduct');
-  yield request('nextPage', `/product-details/${productId}`);
-  const paymentDetails = yield wait('confirmPaymentDetails');
-  yield request('nextPage', `/payment-details`);
-  yield wait('confirmAndPurchase');
-  yield request('apiCall', () => apiPurchase(productId, paymentDetails))
-  yield request('nextPage', `/purchase-confirmation`);
-}
-```
-This is a direct translation: From a scenario as a user-flow to a scenario in code.<br/>
-flowcards provides a modular system for your scenarios, so that developers are able to model<br/>
-frontend applications flow-by-flow, the same way as a UX-Designer.<br/>
-
-## Benefits
-The code-structure can be based on the requirements you want to fulfill.<br/>
-They are execuatable specifications and will help developers to make confident changes, even after<br/>
-months into a project.<br/> 
-UX, Testing and DEV will always be able to refer to the same scenario - a shared artifact that will enable<br/>
-new possibilites for team interactions.
-
-## Real World Use
-If you are interested how this can be used in real-world applications, there are two ways to get started.<br/>
-1. UX <-> DEV tutorial that makes use of user-flows and demonstrates UX - DEV interactions.<br/>
-2. [RE  -> DEV tutorial](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/tutorialTodoMvc.md) that demonstrates how a list of requirements can be translated into code.<br/>
-
-
-## Packages
-flowcards can be easily integrated into modern frontend applications.
-
-- [🌀 `@flowcards/core (documentation)`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/core) - core library (typed, tested & dependency-free)
-- [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-react.png) `@flowcards/react`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/react) - React hook
-- [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-svelte.png) `@flowcards/svelte`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/svelte) - Svelte store
-- [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-mobx.png) `@flowcards/mobx`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/mobx) - MobX store
-- [![-](https://github.com/ThomasDeutsch/flowcards/blob/master/docs/img/icon-rxjs.png) `@flowcards/rxjs`](https://github.com/ThomasDeutsch/flowcards/tree/master/packages/rxjs) - Observable from BehaviorSubject
-<br/>
-
-## Contribute
-If this hits a spot, send me a message and tell me about it.<br/>
-You can be a developer, a designer or someone new to software development, i will appreciate your help.<br/>
-
-## Scenario Based Programming (SBP) 
-flowcards is an opinionated flavour of SBP<br/>
-Based on [behavioural programmin principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html), flowcards adds pending-events, intercepts, event-chaches and a scaffolding-function, to enable a better integration to frontend app development.
-
-## Quick Start 
-- [`core codesandbox`](https://codesandbox.io/s/hello-flowcards-dk9yl?file=/src/index.ts)
-- [`react codesandbox (TodoMVC App + EventTool)`](https://codesandbox.io/s/flowcardsreact-playground-knebp)
-- [`svelte codesandbox`](https://codesandbox.io/s/flowcards-hello-svelte-sscxp?file=/App.svelte)
-```
-npm install @flowcards/core
-```
-
-```ts
-import { scenarios, request, wait } from "@flowcards/core";
-
-const delayed = (data: any, ms: number) => new Promise(r => setTimeout(() => r(data), ms));
-const delayedMessage = () => delayed("taking a look at flowcards", 3000);
-
-function* sender() {
-  yield request("eventOne", "thank you for ..."); // request
-  yield [request("eventTwo", delayedMessage), wait("cancel")];
-}
-
-function* receiver() {
-  let messageOne = yield wait("eventOne"); // wait for event
-  console.log(messageOne);
-  let [type, messageTwo] = yield [wait("eventTwo"), wait("cancel")];
-  if (type === "eventTwo") {
-    console.log(messageTwo);
-  } else {
-    console.log("async call has been cancelled");
-  }
-}
-
-scenarios(
-  enable => {
-    enable(sender);
-    enable(receiver);
-  },
-  ({ dispatch }) => {
-    const btn = <HTMLInputElement>document.getElementById("cancelBtn");
-    if(!btn) return;
-    if (dispatch.cancel) {
-      btn.onclick = dispatch.cancel();
-    } else {
-      btn.disabled = true;
-    }
-  }
-);
-```
-
-
+ All [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html) are provided by the BP-Team around [Prof. David Harel](http://www.wisdom.weizmann.ac.il/~harel/) - the mind behind Statecharts.

@@ -12,10 +12,7 @@
     "moduleResolution": "node",
     "jsx": "preserve",
     /* Module Resolution Options */
-    "baseUrl": "./" /* Base directory to resolve non-absolute module names. */,
-    "paths": {
-      "@flowcards/*": ["packages/*/src"]
-    } /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */,
+    "baseUrl": "./src" /* Base directory to resolve non-absolute module names. */,
     "esModuleInterop": false /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
   },
   "exclude": ["node_modules", "build"]

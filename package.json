@@ -1,12 +1,27 @@
 {
-  "name": "flowcards",
-  "private": true,
+  "name": "@flowcards/core",
+  "version": "4.0.0",
+  "description": "",
+  "author": {
+    "name": "Thomas Deutsch",
+    "email": "deutsch.thomas+flowcards@gmail.com",
+    "url": "https://thomasdeutsch.de"
+  },
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "directories": {
+    "test": "test"
+  },
   "scripts": {
-    "test": "node --trace-warnings node_modules/.bin/jest --no-cache --detectOpenHandles --unhandled-rejections=strict",
-    "new-version": "lerna version --conventional-commits --yes",
-    "bootstrap": "lerna bootstrap --hoist",
-    "build": "lerna run build",
-    "publish": "lerna publish"
+    "test": "jest --detectOpenHandles",
+    "test:watch": "jest --watch --detectOpenHandles",
+    "build": "tsc -p tsconfig.json",
+    "prepublish": "npm run build"
+  },
+  "license": "MIT",
+  "gitHead": "72b889283715a75efedc99c20e9fe79319f31063",
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@types/jest": "^26.0.19",
@@ -15,7 +30,6 @@
     "eslint": "^7.15.0",
     "eslint-config-standard": "^16.0.2",
     "jest": "^26.6.3",
-    "lerna": "^3.22.1",
     "ts-jest": "^26.4.4",
     "typescript": "^4.1.3"
   }
