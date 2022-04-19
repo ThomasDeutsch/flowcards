@@ -38,7 +38,7 @@ export function isValidReturn(result: GuardResult<any>): boolean {
 }
 
 
-function getHighestPriorityAskForBid<P, V>(event: EventCore<P, V>): PlacedBid<P,V> | undefined {
+export function getHighestPriorityAskForBid<P, V>(event: EventCore<P, V>): PlacedBid<P,V> | undefined {
     return event.getBids('askForBid')?.[0];
 }
 

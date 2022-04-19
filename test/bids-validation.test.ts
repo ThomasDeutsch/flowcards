@@ -1,7 +1,7 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
 import { Flow } from '../src/flow';
-import { FlowEvent, UserEvent } from "event-core";
+import { FlowEvent, UserEvent } from "event";
 
 
 test("a validation result can be a boolean", () => {

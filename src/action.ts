@@ -1,5 +1,4 @@
 import { BufferedQueue } from 'buffered-queue';
-import { PlacedRequestBid, PlacedTriggerBid } from 'bid';
 import { Logger } from 'logger';
 import { EventMap, GetEvent } from 'scheduler';
 import { NameKeyId } from './name-key-map';
@@ -106,6 +105,7 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
 }
 
 
+// TODO: implement Replay behaviour
 export function getNextRequestedAction(getEvent: GetEvent, staging: Staging, nextActionId: number, logger: Logger, replayActionPayload?: {value: unknown}): ActionFromBid | undefined {
     let action: RequestedAsyncAction | RequestedAction | TriggeredAction | undefined;
     staging.orderedRequestingBids?.some((bid) => {

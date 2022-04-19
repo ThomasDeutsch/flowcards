@@ -1,6 +1,6 @@
 import { Flow, FlowKeyed } from "flow";
 import * as bp from "bid";
-import { FlowEvent, FlowEventKeyed } from "../src/event-core";
+import { FlowEvent, FlowEventKeyed } from "../src/event";
 import { testScenarios } from "./testutils";
 
 

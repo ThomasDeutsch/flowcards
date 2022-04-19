@@ -5,9 +5,10 @@ import { Logger, LoopLog } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction, advanceTriggeredAction, advanceAsyncRequest } from './advance-flows';
 import { Staging, StagingCB } from './staging';
 import { Replay } from './replay';
-import { EventCore, FlowEvent, UserEvent } from './event-core';
+import { EventCore } from './event-core';
 import { BufferedQueue } from 'buffered-queue';
 import { UpdateCB } from 'index';
+import { FlowEvent, UserEvent } from 'event';
 
 
 // update loop

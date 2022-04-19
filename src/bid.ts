@@ -1,7 +1,7 @@
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { GuardCB, GuardResult } from './guard';
 import { FlowProgressInfo } from './flow-core';
-import { FlowEvent, UserEvent } from 'event-core';
+import { FlowEvent, UserEvent } from 'event';
 
 export type NotRequestingBidType = "askForBid" |  "extendBid" |  "waitForBid" | "validateBid" | "blockBid";
 export type BidType = NotRequestingBidType | 'triggerBid' | 'requestBid';
@@ -43,7 +43,7 @@ export interface ValidateBid<P,V> extends BaseBid<P,V> {
 
 export interface BlockBid<P,V> extends BaseBid<P,V> {
     type: 'blockBid';
-    guard?: () => GuardResult<V>;
+    guard?: () => V[];
 }
 
 
@@ -208,7 +208,7 @@ export function validate<P, V>(event: FlowEvent<P, V> | UserEvent<P, V>, guard: 
     return { type: 'validateBid', eventId: getNameKeyId(event), guard };
 }
 
-export function block<P, V>(event: FlowEvent<P, V> | UserEvent<P, V>, guard?: () => GuardResult<V>): BlockBid<P, V> {
+export function block<P, V>(event: FlowEvent<P, V> | UserEvent<P, V>, guard?: () => V[]): BlockBid<P, V> {
     return { type: 'blockBid', eventId: getNameKeyId(event), guard };
 }
 

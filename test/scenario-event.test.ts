@@ -1,6 +1,6 @@
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { FlowEvent, UserEvent } from "../src/event-core";
+import { FlowEvent, UserEvent } from "../src/event";
 import { Flow } from "flow";
 
 
@@ -53,11 +53,8 @@ test("the dispatch promise returns false, if another event has made the dispatch
     testScenarios((enable) => {
         enable(askingScenario);
     }, eventA, () => {
+        eventA.dispatch(100);
         eventA.dispatch(100).then((result) => {
-            console.log('result: ', result)
-        });
-        eventA.dispatch(100).then((result) => {
-            console.log('result2', result)
             expect(result.isValid).toBe(false);
             expect(result.askForBid).toBeUndefined();
             done();

@@ -61,7 +61,7 @@ export class EventCore<P = void, V = string> {
         return this._updatedOn;
     }
 
-    public describe(description: string): EventCore<P,V> {
+    public will(description: string): EventCore<P,V> {
         this._description = description;
         return this;
     }
@@ -102,6 +102,7 @@ export class EventCore<P = void, V = string> {
         this._value = nextValue;
     }
 
+    // TODO: better typing
     public getBids(bidType: BidType): PlacedBid<P, V>[] | undefined {
         return this._getPlacedBids?.(bidType, this.id);
     }
@@ -112,8 +113,7 @@ export class EventCore<P = void, V = string> {
 
     public get isBlocked(): boolean {
         const bids = this.getBids('blockBid'); //TODO: better typing
-        if(bids === undefined) return false;
-        return (bids as PlacedBlockBid<P,V>[]).every(bid => bid.guard ? isValidReturn(bid.guard()) : true);
+        return bids !== undefined;
     }
 
     public get extendedBy(): NameKeyId | undefined {
@@ -121,11 +121,11 @@ export class EventCore<P = void, V = string> {
     }
 }
 
-export class EventCoreKeyed<T extends UserEvent<P,V> | FlowEvent<P,V>, P = void, V = string> {
+export class EventCoreKeyed<T, P = void> {
     public readonly type: EventType;
     public readonly name: string;
-    private _initialValue?: P;
-    private _children = new Map<string | number, T>();
+    protected _initialValue?: P;
+    protected _children = new Map<string | number, T>();
 
     constructor(name: string, type: EventType, initialValue?: P) {
         this.type = type;
@@ -137,83 +137,7 @@ export class EventCoreKeyed<T extends UserEvent<P,V> | FlowEvent<P,V>, P = void,
         return { name: this.name }
     }
 
-    public key(key: string | number): T  {
-        let event = this._children.get(key);
-        if(event === undefined) {
-            if(this.type === 'UI') {
-                event = new UserEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
-            } else {
-                event = new FlowEvent<P, V>({name: this.name, key: key}, this._initialValue) as T;
-            }
-            this._children.set(key, event);
-        }
-        return event;
-    }
-
-    public keys(...keys: (string | number)[]): T[] {
-        return keys.map(key => this.key(key));
-    }
-
     public allKeys(): (string | number)[] {
         return [...this._children].map(([k]) => k);
-    }
-}
-
-
-export class UserEvent<P = void, V = string> extends EventCore<P, V> {
-    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
-        super(nameOrNameKey, 'UI', initialValue);
-    }
-
-    private _maybeAddToQueue(action: QueueAction): void {
-        if(this._addToQueue === undefined ) {
-            throw new Error('event not connected');
-        }
-        this._addToQueue(action);
-    }
-
-    public dispatch(value: P): Promise<ExplainEventResult<V>> {
-        const explain = explainAskFor<P, V>(this, value);
-        if(explain.isValid) {
-            return new Promise<ExplainEventResult<V>>((resolve) => {
-                this._maybeAddToQueue!({
-                    type: "uiAction",
-                    eventId: this.id,
-                    payload: value,
-                    id: -1,
-                    bidId: explain.askForBid!.bidId,
-                    flowId: explain.askForBid!.flowId
-                });
-                this._openResolves.add(resolve);
-            });
-        }
-        return Promise.resolve(explain);
-    }
-
-    public explain(value: P): ExplainEventResult<V> {
-        return explainAskFor<P, V>(this, value);
-    }
-
-    public isValid(value: P): boolean {
-        // TODO: cache explain(value) call
-        return this.explain(value).isValid === true;
-    }
-}
-
-export class UserEventKeyed<P = void, V = string> extends EventCoreKeyed<UserEvent<P,V>, P, V> {
-    constructor(nameOrNameKey: string, initialValue?: P) {
-        super(nameOrNameKey, 'UI', initialValue);
-    }
-}
-
-export class FlowEvent<P = void, V = string> extends EventCore<P, V> {
-    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
-        super(nameOrNameKey, 'FIBER', initialValue);
-    }
-}
-
-export class FlowEventKeyed<P = void, V = string> extends EventCoreKeyed<FlowEvent<P,V>, P, V> {
-    constructor(nameOrNameKey: string, initialValue?: P) {
-        super(nameOrNameKey, 'FIBER', initialValue);
     }
 }

@@ -1,7 +1,7 @@
 import { FlowKeyed } from "../src/flow";
 import * as bp from "../src/bid";
-import { FlowEvent } from "../src/event-core";
 import { testScenarios } from "./testutils";
+import { FlowEvent } from "event";
 
 
 test("events can be passed as an array", () => {

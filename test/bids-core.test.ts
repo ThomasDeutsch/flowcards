@@ -1,7 +1,7 @@
 import { Flow } from "../src/flow";
 import * as bp from "../src/bid";
-import { FlowEvent, FlowEventKeyed, UserEvent } from "../src/event-core";
 import { delay, testScenarios } from "./testutils";
+import { FlowEvent, FlowEventKeyed, UserEvent } from "../src";
 
 test("throw an error if two different flows with the same ID are enabled", () => {
     const basicEvent = {
@@ -618,6 +618,27 @@ test("waitFor guards are not combined (one waitFor might pass, the other not)", 
     });
 });
 
+
+test("a blocked askFor event will still be marked as asked for.", () => {
+    const eventA = new UserEvent<number>('Abc');
+
+    const waitingFlow = new Flow('waiting', function*() {
+        yield bp.askFor(eventA);
+    });
+
+    const blockingFlow = new Flow('blocking', function*() {
+        yield bp.block(eventA);
+    });
+
+    testScenarios((s) => {
+        s(waitingFlow);
+        s(blockingFlow);
+    }, eventA, () => {
+        expect(eventA.isAskedFor).toBe(true);
+        expect(eventA.isValid(1)).toBe(false);
+        expect(eventA.explain(1).invalidReason).toBe('Blocked')
+    });
+});
 
 // TODO: a request Guard will have no arguments
 // TODO: a trigger guard will have no arguments

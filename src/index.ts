@@ -5,8 +5,8 @@ import { LoopLog } from './logger';
 import { EventCore } from './event-core';
 import { Replay, getReplay } from './replay';
 
-export type BehaviorContext = {log: LogInfo, replay?: Replay}
-export type UpdateCB = (pl: BehaviorContext) => void;
+export type FlowCardsContext = {log: LogInfo, replay?: Replay}
+export type UpdateCB = (pl: FlowCardsContext) => void;
 export type OnFinishLoopCB = (loopLog: LoopLog) => void;
 
 export type NestedEventObject = EventCore<any, any> | EventCore<any, any>[] |
@@ -30,7 +30,7 @@ export interface FlowCardsProps {
 
 export class FlowCards {
     private readonly _scheduler: Scheduler;
-    public readonly initialContext: BehaviorContext;
+    public readonly initialContext: FlowCardsContext;
 
     constructor(props: FlowCardsProps) {
         this._scheduler = new Scheduler({
@@ -44,3 +44,12 @@ export class FlowCards {
         this.initialContext = {log, replay};
     }
 }
+
+export * from './action';
+export * from './bid';
+export * from './event';
+export * from './flow';
+export * from './guard';
+export * from './logger';
+export * from './scheduler';
+export * from './staging';

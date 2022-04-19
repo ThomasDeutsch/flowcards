@@ -1,11 +1,11 @@
 import { AnyAction } from 'action';
-import { BiFi, NestedEventObject, UpdateCB } from 'index';
+import { FlowCards, NestedEventObject, UpdateCB } from 'index';
 import { Replay } from 'replay';
 import { StagingCB } from '../src/staging';
 
-export function testScenarios(stagingCB: StagingCB, events: NestedEventObject, updateCB?: UpdateCB, initialActionsOrReplay?: Replay | AnyAction[]): BiFi {
+export function testScenarios(stagingCB: StagingCB, events: NestedEventObject, updateCB?: UpdateCB, initialActionsOrReplay?: Replay | AnyAction[]): FlowCards {
     if(updateCB === undefined) updateCB = ()=>{const x = 1;}
-    return new BiFi({
+    return new FlowCards({
         stagingCB,
         updateCB,
         doInitialUpdate: true,

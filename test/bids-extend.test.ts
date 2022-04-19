@@ -1,7 +1,7 @@
 import * as bp from "bid";
 import { testScenarios, delay, failedDelay } from "./testutils";
 import { Flow } from 'flow';
-import { FlowEvent, UserEvent } from "event-core";
+import { FlowEvent, UserEvent } from "event";
 
 
 // Extends
