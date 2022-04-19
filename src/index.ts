@@ -19,7 +19,7 @@ function getEvents(obj: NestedEventObject): EventCore<any, any>[] {
     return Object.values(obj).map(getEvents).flat();
 }
 
-export interface BiFiProps {
+export interface FlowCardsProps {
     stagingCB: StagingCB;
     updateCB: UpdateCB;
     onNextLoopCB?: OnFinishLoopCB;
@@ -28,11 +28,11 @@ export interface BiFiProps {
     initialActionsOrReplay?: AnyAction[] | Replay
 }
 
-export class BiFi {
+export class FlowCards {
     private readonly _scheduler: Scheduler;
     public readonly initialContext: BehaviorContext;
 
-    constructor(props: BiFiProps) {
+    constructor(props: FlowCardsProps) {
         this._scheduler = new Scheduler({
             stagingCB: props.stagingCB,
             events: getEvents(props.events),
