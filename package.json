@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/core",
-  "version": "4.0.5",
+  "version": "4.0.6",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -9,7 +9,7 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["./dist/src"],
+  "files": ["dist"],
   "scripts": {
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
