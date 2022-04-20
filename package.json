@@ -1,17 +1,15 @@
 {
   "name": "@flowcards/core",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
     "email": "deutsch.thomas+flowcards@gmail.com",
     "url": "https://thomasdeutsch.de"
   },
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
-  "directories": {
-    "test": "test"
-  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["./dist"],
   "scripts": {
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
