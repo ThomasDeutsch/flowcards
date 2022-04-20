@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/core",
-  "version": "4.0.8",
+  "version": "4.0.10",
   "description": "",
   "author": {
     "name": "Thomas Deutsch",
@@ -14,8 +14,7 @@
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
     "build": "tsc -p tsconfig.json",
-    "prepublish": "npm run build",
-    "publish": "npm run build && cd dist && npm publish"
+    "publish": "npm run build && cp package.json dist/ && cp README.md dist/ && cd dist && npm publish"
   },
   "license": "MIT",
   "gitHead": "72b889283715a75efedc99c20e9fe79319f31063",
