@@ -32,9 +32,9 @@ export function isValidReturn(result: GuardResult<any>): boolean {
         return result;
     }
     if(Array.isArray(result)) {
-        return result.length === 0;
+        return result.filter(notEmpty).length === 0;
     }
-    return !result.failed?.length;
+    return !result.failed?.filter(notEmpty).length;
 }
 
 
