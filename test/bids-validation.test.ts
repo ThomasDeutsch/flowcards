@@ -115,6 +115,29 @@ test("multiple validations are combined", () => {
  );
 });
 
+test("validation results can be null", () => {
+    const eventA = new FlowEvent<number, string>('A');
+    const eventB = new FlowEvent<number, string>('B');
+
+
+    const thread1 = new Flow('requesting thread', function* () {
+        yield [bp.request(eventA, 1), bp.validate(eventA, () => ({failed: [null]}))]
+    });
+
+    const thread2 = new Flow('requesting thread2', function* () {
+        yield [bp.request(eventB, 1), bp.validate(eventB, () => ({failed: ['reason1', null]}))]
+    });
+
+    testScenarios((enable) => {
+        enable(thread1);
+        enable(thread2);
+    }, [eventA, eventB], () => {
+        expect(thread1.isCompleted).toBe(true);
+        expect(thread2.isCompleted).toBe(false);
+    }
+ );
+});
+
 
 test("a validate function will return the combined event validation result", () => {
     const eventA = new UserEvent<number, string>('A');

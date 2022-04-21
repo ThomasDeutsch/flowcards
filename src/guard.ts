@@ -5,7 +5,7 @@ import { ExtendBid, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from './bid'
 import { isThenable, notEmpty } from './utils';
 
 
-export type GuardResult<V> = boolean | V[] | { failed?: V[], passed?: V[] }
+export type GuardResult<V> = boolean | (V | null)[] | { failed?: (V | null)[], passed?: (V | null)[] }
 export type GuardCB<P, V> = (value: P) => GuardResult<V>;
 
 
@@ -51,19 +51,22 @@ function addGuardResult<V>(result: ExplainEventResult<V>, guardResult?: GuardRes
         return result;
     }
     if(Array.isArray(guardResult)) {
-        if(guardResult.length === 0) return result;
+        const notEmptyGuardResult = guardResult.filter(notEmpty);
+        if(notEmptyGuardResult.length === 0) return result;
         result.invalidReason = 'Guard';
         result.isValid = false;
-        result.failed = [...result.failed, ...guardResult];
+        result.failed = [...result.failed, ...notEmptyGuardResult];
         return result;
     }
-    if(guardResult.failed?.length){
+    const notEmptyFailed = guardResult.failed?.filter(notEmpty);
+    if(notEmptyFailed?.length){
         result.invalidReason = 'Guard';
         result.isValid = false;
-        result.failed = [...result.failed, ...guardResult.failed];
+        result.failed = [...result.failed, ...notEmptyFailed];
     }
-    if(guardResult.passed?.length) {
-        result.passed = [...result.passed, ...guardResult.passed];
+    const notEmptyPassed = guardResult.passed?.filter(notEmpty);
+    if(notEmptyPassed?.length) {
+        result.passed = [...result.passed, ...notEmptyPassed];
     }
     return result;
 }
