@@ -10,7 +10,7 @@ function progressWaitingFlows(event: EventCore<unknown>, staging: Staging, actio
     const bids = staging.getPlacedBids('waitForBid', action.eventId);
     if(bids === undefined) return;
     bids.forEach(bid => {
-        if(isSameNameKeyId(bid.flowId, action.flowId)) return; // TODO: the waitfor is already progressed.
+        if(isSameNameKeyId(bid.flowId, action.flowId)) return; // the waitfor flow already progressed.
         if(bid.guard === undefined) {
             staging.getFlow(bid.flowId)?.progressBid(event, bid);
             return;

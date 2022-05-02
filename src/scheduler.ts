@@ -71,7 +71,7 @@ export class Scheduler {
             });
             this._eventMap.set(event.id, event);
         });
-        this._staging.run();
+        this._staging.run('initial');
     }
 
     private _getEvent<P,V>(eventId: NameKeyId): EventCore<P,V> | undefined {
@@ -84,10 +84,10 @@ export class Scheduler {
         getNextRequestedAction(this._getEvent.bind(this), this._staging, this._currentActionId, this._logger);
     }
 
-    private _executeNextAction(): boolean {
+    private _executeNextAction(): NameKeyId | undefined {
         const action = this._getNextAction();
         if(action === undefined) {
-            return false;
+            return undefined;
         }
         this._logger.logAction(action);
         const event = this._getEvent(action.eventId);
@@ -97,7 +97,7 @@ export class Scheduler {
         advanceStrategyByActionType[action.type](event, this._staging, action);
         this._logger.finishLoop();
         this._currentActionId++;
-        return true;
+        return action.eventId;
     }
 
     private _addToQueueAsync(action: QueueAction) {
@@ -116,8 +116,10 @@ export class Scheduler {
     // public ----------------------------------------------------------------------
     public run(replay?: Replay): LogInfo {
         if(replay) this._replay = replay;
-        while(this._executeNextAction()) {
-            this._staging.run();
+        let latestEventId = this._executeNextAction();
+        while(latestEventId !== undefined) {
+            this._staging.run(this._eventMap.get(latestEventId)!);
+            latestEventId = this._executeNextAction()
         }
         return {
             allRelevantScenarios: this._logger.allRelevantScenarios,

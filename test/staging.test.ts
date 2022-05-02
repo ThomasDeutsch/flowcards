@@ -1,5 +1,5 @@
 import { FlowKeyed } from "../src/flow";
-import * as bp from "../src/bid";
+import * as bp from "../src";
 import { testScenarios } from "./testutils";
 import { FlowEvent } from "../src/event";
 
@@ -80,6 +80,34 @@ test("events can be inside a nested object", () => {
         s(requestingThread.key(1));
     }, basicEvent
     ,()=> {
+        expect(requestingThread.key(1).isCompleted).toBe(true);
+    });
+});
+
+
+test("a latestEvent parameter is the second argument", () => {
+
+    const basicEvent = {
+        eventA: new FlowEvent<number>('A'),
+        eventB: new FlowEvent<number>('B')
+    }
+
+    const latestEvents: (bp.UserEvent<any,any> | bp.FlowEvent<any,any> | 'initial')[] = []
+
+    const requestingThread = new FlowKeyed('thread1', function*() {
+        yield bp.request(basicEvent.eventA, 1);
+        yield bp.request(basicEvent.eventB, 1);
+    });
+
+    testScenarios((s, latestEvent) => {
+        latestEvents.push(latestEvent);
+        s(requestingThread.key(1));
+    }, [basicEvent.eventA, basicEvent.eventB]
+    ,()=> {
+        expect(latestEvents.length).toBe(3);
+        expect(latestEvents[0]).toEqual('initial');
+        expect(latestEvents[1]).toBe(basicEvent.eventA);
+        expect(latestEvents[2]).toBe(basicEvent.eventB);
         expect(requestingThread.key(1).isCompleted).toBe(true);
     });
 });

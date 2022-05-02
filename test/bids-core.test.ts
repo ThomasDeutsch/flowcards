@@ -51,6 +51,26 @@ test("a requested event that is not blocked will advance", () => {
     });
 });
 
+test("a flow will only advance once, if it is requesting and waiting for the same event", () => {
+    const basicEvent = {
+        eventA: new FlowEvent<number>('A', 0)
+    }
+
+    const requestingFlow = new Flow('requestingFlow', function*() {
+            yield [bp.waitFor(basicEvent.eventA), bp.request(basicEvent.eventA, 2)]
+            expect(basicEvent.eventA.value).toBe(2);
+            yield bp.waitFor(basicEvent.eventA);
+    });
+
+    testScenarios((s) => {
+        s(requestingFlow);
+    }, [basicEvent.eventA], ()=> {
+        expect(requestingFlow.isCompleted).toBe(false);
+        expect(basicEvent.eventA.value).toBe(2)
+
+    });
+});
+
 test("If two flows are requesting at the same time, each request will be advanced separately", () => {
     const basicEvent = {
         eventA: new FlowEvent<number>('A', 0)

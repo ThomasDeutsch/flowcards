@@ -5,9 +5,10 @@ import { FlowMap } from './scheduler';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { allPlacedBids, AllPlacedBids, BidType, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from './bid';
 import { QueueAction, RequestedAsyncAction } from './action';
+import { FlowEvent, UserEvent } from './event';
 
 export type EnableFlow = (flow: Flow) => void;
-export type StagingCB = (enableFlow: EnableFlow) => void;
+export type StagingCB = (enableFlow: EnableFlow, latestEvent: UserEvent<any,any> | FlowEvent<any,any> | 'initial') => void;
 export type RunStaging = () => void;
 export type GetPlacedBids = (bidType: BidType, eventId: NameKeyId) => PlacedBid<any>[] | undefined;
 export type GetPending = (eventId: NameKeyId) => {pendingBy: NameKeyId | undefined, extendedBy: NameKeyId | undefined};
@@ -70,12 +71,12 @@ export class Staging {
         });
     }
 
-    public run(): void {
+    public run(latestEvent: UserEvent | FlowEvent | 'initial'): void {
         this._flowBids.length = 0;
         this._enabledFlowIds.clear();
         this._pendingExtends.clear();
         this._pendingRequests.clear();
-        this._stagingCB(this._enableFlow);
+        this._stagingCB(this._enableFlow, latestEvent);
         this._flowMap.allValues?.forEach(flow => {
             if(!this._enabledFlowIds.has(flow.id)) {
                 flow.cancelAllPendingRequests();
