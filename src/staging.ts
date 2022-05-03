@@ -24,6 +24,8 @@ export class Staging {
     private readonly _flowMap: FlowMap = new NameKeyMap<FlowCore>();
     private readonly _flowBids: PlacedBid<unknown>[] = [];
     private _allPlacedBids?: AllPlacedBids;
+    private readonly _nextPendingRequests: [NameKeyId, NameKeyId][] = [];
+    private readonly _nextPendingExtends: [NameKeyId, NameKeyId][] = [];
     private readonly _pendingRequests = new NameKeyMap<NameKeyId>();
     private readonly _pendingExtends = new NameKeyMap<NameKeyId>();
     private readonly _enabledFlowIds = new NameKeyMap<NameKeyId>();
@@ -64,18 +66,16 @@ export class Staging {
             this._flowBids.unshift(bid);
         });
         flowCore.pendingRequests?.forEach(eventId => {
-            this._pendingRequests.set(eventId, flowCore!.id);
+            this._nextPendingRequests.push([eventId, flowCore!.id]);
         });
         flowCore.pendingExtends?.forEach(eventId => {
-            this._pendingExtends.set(eventId, flowCore!.id);
+            this._nextPendingExtends.push([eventId, flowCore!.id]);
         });
     }
 
     public run(latestEvent: UserEvent | FlowEvent | 'initial'): void {
         this._flowBids.length = 0;
         this._enabledFlowIds.clear();
-        this._pendingExtends.clear();
-        this._pendingRequests.clear();
         this._stagingCB(this._enableFlow, latestEvent);
         this._flowMap.allValues?.forEach(flow => {
             if(!this._enabledFlowIds.has(flow.id)) {
@@ -86,6 +86,12 @@ export class Staging {
                 }
             }
         });
+        this._pendingExtends.clear();
+        this._nextPendingExtends.forEach(([eventId, flowId]) => this._pendingExtends.set(eventId, flowId));
+        this._nextPendingExtends.length = 0;
+        this._pendingRequests.clear();
+        this._nextPendingRequests.forEach(([eventId, flowId]) => this._pendingRequests.set(eventId, flowId));
+        this._nextPendingRequests.length = 0;
         this._allPlacedBids = allPlacedBids(this._flowBids);
         this._logger.logPlacedBids(this._allPlacedBids);
     }

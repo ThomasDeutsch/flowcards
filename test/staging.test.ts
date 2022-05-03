@@ -1,6 +1,6 @@
-import { FlowKeyed } from "../src/flow";
+import { FlowKeyed, Flow } from "../src/flow";
 import * as bp from "../src";
-import { testScenarios } from "./testutils";
+import { delay, testScenarios } from "./testutils";
 import { FlowEvent } from "../src/event";
 
 
@@ -110,4 +110,22 @@ test("a latestEvent parameter is the second argument", () => {
         expect(latestEvents[2]).toBe(basicEvent.eventB);
         expect(requestingThread.key(1).isCompleted).toBe(true);
     });
+});
+
+
+test("a pending event is shown as pending in the staging function", (done) => {
+
+    const eventA = new FlowEvent<number>('A')
+
+    const requestingThread = new Flow('thread1', function*() {
+        yield bp.request(eventA, () => delay(200, 1));
+    });
+
+    testScenarios((enable, latestEvent) => {
+        if(!requestingThread.isCompleted && latestEvent !== 'initial') {
+            expect(eventA.isPending).toBe(true);
+            done();
+        }
+        enable(requestingThread);
+    }, eventA);
 });
