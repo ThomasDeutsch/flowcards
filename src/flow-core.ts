@@ -104,11 +104,11 @@ export class FlowCore {
     private _getPlacedBidsForFlow(flowId: NameKeyId, bidOrBids?: BidOrBids): PlacedBid[] {
         const bids = bidOrBids ? toArray(bidOrBids) : undefined;
         if(bids === undefined) return [];
-        return bids.reverse().map(bid => {
+        return bids.map(bid => {
                 const bidId = 'id' in bid ? bid.id : this._getLocalBidId();
                 const pb: any = {...bid, flowId: flowId, id: bidId};  //TODO: remove any
                 return pb;
-        });
+        }).reverse();
     }
 
     private _setPlacedBids(next: IteratorResult<BidOrBids, void>): void {
