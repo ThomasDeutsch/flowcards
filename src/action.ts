@@ -56,6 +56,9 @@ export interface RejectAction extends Action {
     error: ExplainEventResult<any>;
 }
 
+export function isActionFromBid(action: AnyAction): boolean {
+    return (action.type === 'requestedAction' || action.type === 'requestedAsyncAction' || action.type === 'triggeredAction');
+}
 
 export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<QueueAction>, eventMap: EventMap, staging: Staging, nextActionId: number): QueueAction | undefined {
     const action = actionQueue.get;

@@ -91,7 +91,6 @@ export interface PlacedBlockBid<P,V> extends BlockBid<P,V> {
 export type PlacedBid<P= any, V=any> = PlacedRequestBid<P,V> | PlacedTriggerBid<P,V> | PlacedWaitForBid<P,V> | PlacedAskForBid<P,V> | PlacedExtendBid<P,V> | PlacedValidateBid<P,V> | PlacedBlockBid<P, V>;
 
 
-
 export function isRequestBid(bid: Bid<unknown, unknown>): boolean {
     return (bid.type === 'requestBid');
 }
