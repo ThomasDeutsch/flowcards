@@ -1,7 +1,7 @@
 import { Flow } from "../src/flow";
 import * as bp from "../src/bid";
 import { testScenarios } from "./testutils";
-import { FlowEvent, RequestedAction } from "../src";
+import { FlowEvent, RequestedAction, UIAction, UserEvent } from "../src";
 import { Replay } from "../src/replay";
 
 test("a request can be replayed", (done) => {
@@ -84,6 +84,34 @@ test("if a guard fails, the replay will be aborted", (done) => {
         expect(replay!.state === 'aborted').toBe(true);
         expect(replay!.abortInfo!.error).toBe(`invalidReason: Guard`)
         expect(eventA.value).toBe(2)
+        done();
+    }, replayObj)
+});
+
+
+test("if a guard fails, the replay will be aborted (askFor)", (done) => {
+    const eventA = new UserEvent<number>('A');
+
+    const requestingFlow = new Flow('thread1', function*() {
+        yield [bp.askFor(eventA), bp.validate(eventA, (v) => v === 2)];
+    });
+
+    const replayAction: UIAction = {
+        id: 0,
+        type: 'uiAction',
+        eventId: {name: 'A'},
+        flowId: {name: 'thread1'},
+        bidId: 0,
+        payload: 4
+    }
+
+    const replayObj = new Replay([replayAction]);
+
+    testScenarios((enable) => {
+        enable(requestingFlow);
+    }, eventA, ({replay}) => {
+        expect(replay!.state === 'aborted').toBe(true);
+        expect(replay!.abortInfo!.error).toBe(`invalidReason: Guard`);
         done();
     }, replayObj)
 });

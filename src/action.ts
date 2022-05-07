@@ -71,6 +71,7 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
         // TODO: do not validate if action has the same dispatch-id as the current loop-index.
         const explain = explainAskFor(event, action.payload);
         event.__queueValidationResult(explain);
+        logger.logExplain(explain);
         if(explain.isValid) {
             return {...action, id: nextActionId};
         }  else {
@@ -80,6 +81,7 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
     }
     if(action.type === 'resolveAction') {
         const explain = explainResolve(event, action.payload);
+        logger.logExplain(explain);
         if(!explain.isValid) {
             const rejectAction: RejectAction = {
                 ...action,
@@ -97,7 +99,6 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
         }
     }
     if(action.type === 'resolvedExtendAction') {
-        // todo: validate: extendingFlow is still there
         return {...action, id: nextActionId};
     }
     if(action.type === 'rejectAction') {
