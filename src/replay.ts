@@ -62,17 +62,16 @@ export class Replay {
             return undefined;
         }
         const replayAction = this._actions.get(nextActionId)!;
-        const payloadOverride = 'payload' in replayAction ? {value: replayAction.payload} : undefined;
         if(replayAction === undefined) return undefined;
 
-        const bid = staging.getFlow(replayAction.flowId)?.getBid(replayAction.bidId);
+        let bid = staging.getFlow(replayAction.flowId)?.getBid(replayAction.bidId);
         if(bid === undefined) {
             this.abortReplay(replayAction, `no bid for this action: '${replayAction}'`);
             return undefined;
         }
 
         if(isActionFromBid(replayAction)) {
-            const expectedAction = getNextRequestedAction(getEvent, staging, nextActionId, logger, payloadOverride);
+            const expectedAction = getNextRequestedAction(getEvent, staging, nextActionId, logger);
             if(expectedAction === undefined) {
                 this.abortReplay(replayAction, `action was not requested!`);
                 return undefined;
@@ -90,6 +89,10 @@ export class Replay {
                     return undefined;
                 }
                 replayAction.payload = new Promise(() => null); // a promise that will never resolve
+                return replayAction;
+            }
+            if(!('payload' in replayAction)) {
+                replayAction.payload = expectedAction.payload;
             }
         }
         // check guards!
@@ -98,21 +101,25 @@ export class Replay {
             this.abortReplay(replayAction, `event not found: ${replayAction.eventId}`);
             return undefined;
         }
+        const payloadOverride = 'payload' in replayAction ? {value: replayAction.payload} : undefined;
+
         let explain: ExplainEventResult<any> | undefined = undefined;
         if(bid.type === 'requestBid') {
+            bid = {...bid, payload: payloadOverride ? payloadOverride.value : bid.payload}
             explain = explainRequest(event, bid);
         }
         else if(bid.type === 'triggerBid') {
+            bid = {...bid, payload: payloadOverride ? payloadOverride.value : bid.payload}
             explain = explainTrigger(event, bid);
         }
         else if(bid.type === 'askForBid') {
-            explain = explainAskFor(event, replayAction.payload);
+            explain = explainAskFor(event, payloadOverride ? payloadOverride.value : replayAction.payload);
         }
         else if(bid.type === 'extendBid') {
             explain = explainExtend(event, bid, replayAction);
         }
         if(explain && !explain.isValid) {
-            this.abortReplay(replayAction, `invalid action: ${replayAction}, explain: ${explain?.failed.join(',')}`);
+            this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
             return undefined;
         }
         replayAction.testCb?.(replayAction.payload);
