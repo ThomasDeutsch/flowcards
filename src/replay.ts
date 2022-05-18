@@ -33,6 +33,10 @@ export function getReplay(initialActionsOrReplay?: AnyAction[] | Replay): Replay
     return initialActionsOrReplay;
 }
 
+interface ReplayProps {
+    actions: AnyAction[]
+}
+
 export class Replay {
     public title = "";
     private _state: ReplayState = 'running';

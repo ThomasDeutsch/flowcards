@@ -7,6 +7,7 @@ import { ExplainEventResult } from "./guard";
 
 export type NextValueFn<P> = (current: P | undefined) => P;
 type ValidationResultCB<V> = (value: ExplainEventResult<V>) => void;
+type CallbackFunction<P> = (value: P | undefined) => any;
 
 export interface AllBidsForEvent {
     blockBid: PlacedBid[];
@@ -32,6 +33,7 @@ export class EventCore<P = void, V = string> {
     public readonly initialValue?: P;
     private _description?: string;
     private _updatedOn?: number;
+    private _updateCallbacks: CallbackFunction<P>[] = [];
     //setup
     protected _addToQueue?: (value: QueueAction) => void;
     private _getPlacedBids?: GetPlacedBids;
@@ -90,7 +92,9 @@ export class EventCore<P = void, V = string> {
     }
 
     public get isPending(): boolean {
-        return !!(this._getPending?.(this.id).pendingBy)
+        const pending = this._getPending?.(this.id);
+        if(!pending) return false;
+        return !!(pending.pendingBy || pending.extendedBy)
     }
 
     public get pendingBy(): NameKeyId | undefined {
@@ -100,6 +104,7 @@ export class EventCore<P = void, V = string> {
     /** @internal */
     public __setValue(nextValue: P): void {
         this._value = nextValue;
+        this._updateCallbacks.forEach(cb => cb(nextValue))
     }
 
     // TODO: better typing
@@ -118,6 +123,10 @@ export class EventCore<P = void, V = string> {
 
     public get extendedBy(): NameKeyId | undefined {
         return this._getPending?.(this.id).extendedBy;
+    }
+
+    public registerCallback(callbackFn: CallbackFunction<P>): void {
+        this._updateCallbacks.push(callbackFn);
     }
 }
 

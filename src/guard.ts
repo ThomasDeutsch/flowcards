@@ -91,7 +91,7 @@ export function getInitialExplainResult<P, V>(event: EventCore<P, V> | undefined
         result.invalidReason = 'Blocked';
         return result;
     }
-    if(event.isPending && ignore !== 'pending') {  //TODO: what about   event.pendingBy !== action.flowId
+    if(event.pendingBy && ignore !== 'pending') {
         result.isValid = false;
         result.invalidReason = 'Pending'
     }

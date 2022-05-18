@@ -38,7 +38,7 @@ function extendAction<P, V>(event: EventCore<P, V>, staging: Staging, extendedAc
     if(matchingExtendBids === undefined) return false;
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.shift()! as PlacedExtendBid<P,V>; // get bid with highest priority
-        if(event.isPending === false) {
+        if(!event.pendingBy) {
             const explain = explainExtend(event, extendBid, extendedAction.payload as P);
             if(explain.isValid === false) continue;
         }
@@ -52,7 +52,7 @@ function extendAction<P, V>(event: EventCore<P, V>, staging: Staging, extendedAc
             extendedBidId: extendedAction.bidId
         });
         staging.addExtend(event.id, extendingFlow.id);
-        if(event.isPending === false) {
+        if(!event.pendingBy) {
             extendingFlow.progressBid(event, extendBid);
         }
         return true;

@@ -103,3 +103,44 @@ test("in a validate function, the event.value represents its old value", () => {
 
     }, eventA);
 });
+
+
+test("a callback on value change can be registered", () => {
+    const eventA = new UserEvent<number>('A');
+    let callbackValue: number | undefined = -1;
+    let callbackCalled = 0;
+    eventA.registerCallback((value) => {
+        callbackValue = value;
+        callbackCalled++;
+    })
+
+    const requestingThread = new Flow('thread1', function*() {
+        yield bp.request(eventA, 1000);
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread);
+    }, [eventA],() => {
+        expect(callbackValue).toBe(1000);
+        expect(callbackCalled).toBe(1);
+    });
+});
+
+
+test("if an event is extended, it will register as pending", () => {
+    const eventA = new UserEvent<number>('A');
+
+    const requestingThread = new Flow('thread1', function*() {
+        yield bp.request(eventA, 1000);
+    });
+    const extendingThread = new Flow('thread2', function*() {
+        yield bp.extend(eventA);
+    });
+
+    testScenarios((enable) => {
+        enable(requestingThread);
+        enable(extendingThread);
+    }, [eventA],() => {
+        expect(eventA.isPending).toBe(true)
+    });
+});
