@@ -38,6 +38,9 @@ function extendAction<P, V>(event: EventCore<P, V>, staging: Staging, extendedAc
     if(matchingExtendBids === undefined) return false;
     while(matchingExtendBids && matchingExtendBids.length > 0) {
         const extendBid = matchingExtendBids.shift()! as PlacedExtendBid<P,V>; // get bid with highest priority
+        if(extendedAction.type === 'resolvedExtendAction' && isSameNameKeyId(extendedAction.extendedBy, extendBid.flowId)) {
+            continue;
+        }
         if(!event.pendingBy) {
             const explain = explainExtend(event, extendBid, extendedAction.payload as P);
             if(explain.isValid === false) continue;

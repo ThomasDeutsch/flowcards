@@ -47,6 +47,7 @@ export interface ResolveAction extends Action {
 export interface ResolveExtendAction extends Action {
     type: "resolvedExtendAction";
     extendedActionType: ActionType;
+    extendedBy: NameKeyId;
     askForBid?: {flowId: NameKeyId, bidId: number}
 }
 

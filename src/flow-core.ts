@@ -87,6 +87,7 @@ export class FlowCore {
                     eventId: event.id,
                     extendedActionType: context.extendedActionType,
                     payload: value,
+                    extendedBy: this.id,
                     id: -1,
                 }
                 this._addToQueue(resolveExtendAction);
@@ -123,7 +124,7 @@ export class FlowCore {
         let next: IteratorResult<BidOrBids, void>;
         let progressInfo: FlowProgressInfo | undefined;
         if(error !== undefined) {
-            next = this._thread.throw(error); // progress Flow to next bid
+            next = this._thread.throw(error);
             this._logger.logErrorReaction(this.id, event.id, error);
         }
         else {

@@ -146,15 +146,15 @@ export function explainTrigger<P, V>(event: EventCore<P,V> | undefined, triggerB
 export function explainRequest<P, V>(event: EventCore<P,V> | undefined, requestBid: PlacedRequestBid<P,V>): ExplainEventResult<V> {
     let result = getInitialExplainResult(event);
     if(!result.isValid) return result;
-    const nextValue = result.nextValue = (requestBid.payload instanceof Function) ? requestBid.payload() : requestBid.payload;
     result = addGuardResult(result, requestBid.guard?.());
+    if(!result.isValid) return result;
+    const nextValue = result.nextValue = (requestBid.payload instanceof Function) ? requestBid.payload() : requestBid.payload;
     if(!isThenable(nextValue)) {
         const v = nextValue as P;
         const validateGuards = getGuards(event!.getBids('validateBid'));
         validateGuards?.forEach(guard => {
             result = addGuardResult(result, guard(v));
-        });
-    }
+        });    }
     return result;
 }
 

@@ -556,3 +556,70 @@ test("an extended pending event will throw an error in the extending flow if val
         }
     });
 });
+
+
+test("an extend can not extend its own resolve", () => {
+    const eventA = new FlowEvent<string | undefined>('AEvent');
+    let whileCount = 0;
+
+    const requestingThread = new Flow('requestingThread', function* () {
+        yield bp.request(eventA, 'A');
+    });
+
+    const extendThread = new Flow({name: 'extendThread'}, function* () {
+        while(whileCount < 5) {
+            whileCount++;
+            yield bp.extend(eventA);
+            this.resolveExtend(eventA, 'B');
+        }
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread);
+        enable(extendThread);
+    }, [eventA], ({log}) => {
+        if(requestingThread.isCompleted) {
+            expect(whileCount).toBe(2);
+            expect(eventA.value).toBe('B');
+        }
+    });
+});
+
+
+
+test("an extend can be resolved in the catch-clause", (done) => {
+    const eventA = new FlowEvent<string | undefined>('AEvent');
+    let whileCount = 0;
+
+    const requestingThread = new Flow('requestingThread', function* () {
+        yield bp.request(eventA, () => failedDelay(100, 'error message'));
+    });
+
+    const exceptionHandlingThread = new Flow({name: 'handlePSI'}, function* () {
+        while(whileCount < 5) {
+            whileCount++;
+            try {
+                yield bp.extend(eventA);
+                const result = this.getExtendValue(eventA);
+                if(result) {
+                    this.resolveExtend(eventA, 'B');
+                }
+            }
+            catch(error) {
+              this.resolveExtend(eventA, 'C');
+            }
+        }
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread);
+        enable(exceptionHandlingThread);
+    }, [eventA], ({log}) => {
+        if(requestingThread.isCompleted) {
+            expect(whileCount).toBe(2);
+            expect(eventA.value).toBe('C');
+            done();
+        }
+    });
+});
+

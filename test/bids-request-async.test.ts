@@ -355,3 +355,28 @@ test("A block will block the async-call", (done) => {
         done();
     });
 });
+
+test("a failed guard for a request will block the validation function from being called", () => {
+    const asyncEvent = new FlowEvent<string>('asyncEvent888', 'not set');
+    let serviceCalled = 0;
+    let validationFunctionCalled = false;
+
+    const requestingThread = new Flow('thread1', function*() {
+        yield bp.request(asyncEvent, () => {
+            serviceCalled++;
+            return delay(200, 'wrong result')
+        }, () => {
+            validationFunctionCalled = true;
+            return false;
+        });
+    })
+
+    testScenarios((enable) => {
+        enable(requestingThread);
+    }, [asyncEvent], ()=> {
+        expect(requestingThread.isCompleted).toBe(false);
+        expect(asyncEvent.isPending).toBe(false);
+        expect(serviceCalled).toBe(0);
+        expect(validationFunctionCalled).toBe(true);
+    });
+});
