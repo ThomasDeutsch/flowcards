@@ -11,9 +11,10 @@ test("keys can be a string or a number", () => {
         yield bp.askFor(eventA.key('1'));
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA.keys("1", 2), ()=> {
+    testScenarios((e, f) => {
+        e(eventA.keys("1", 2));
+        f(thread1);
+    }, ()=> {
         expect(eventA.key("1").isConnected).toBe(true);
         expect(eventA.key(1).isConnected).toBe(false);
         expect(eventA.key(2).isConnected).toBe(true);
@@ -35,10 +36,11 @@ test("a requested event with a key is blocked by a block for the same name and k
         yield bp.validate(eventA.key(1), () => false);
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(blockingThread);
-    }, eventA.key(1));
+    testScenarios((e, f) => {
+        e(eventA.key(1));
+        f(requestingThread);
+        f(blockingThread);
+    });
     expect(progressedRequestThread).toBe(false);
 });
 
@@ -53,9 +55,10 @@ test("a requested event with a disabled key will not progress", () => {
         progressedRequestThread = true;
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, eventA.key(2));
+    testScenarios((e, f) => {
+        e(eventA.key(2));
+        f(requestingThread);
+    });
     expect(progressedRequestThread).toBe(false);
 });
 
@@ -76,10 +79,11 @@ test("a keyed waitFor will not advance on the same Event-Name without a Key", ()
         waitProgressed = true;
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(waitingThread);
-    }, [eventAUnkeyed, ...eventA.keys(1,2)], () => {
+    testScenarios((e, f) => {
+        e([eventAUnkeyed, ...eventA.keys(1,2)]);
+        f(requestingThread);
+        f(waitingThread);
+    }, () => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(false);
     });
@@ -103,10 +107,11 @@ test("a wait without a key will not react to keyed events with the same name", (
         waitProgressed = true;
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(waitingThread);
-    }, [eventA.key(1), eventAUK], () => {
+    testScenarios((e, f) => {
+        e([eventA.key(1), eventAUK]);
+        f(requestingThread);
+        f(waitingThread);
+    }, () => {
         expect(requestProgressed).toBe(true);
         expect(waitProgressed).toBe(false);
     });
@@ -138,12 +143,13 @@ test("an event with a key will be blocked by a block with the same name and key"
         yield bp.request(eventA.key(1));
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
-        enable(blockingThread);
-        enable(requestingThread);
-    }, [...eventA.keys(1, 2)], ()=> {
+    testScenarios((e, f) => {
+        e([...eventA.keys(1, 2)]);
+        f(thread1);
+        f(thread2);
+        f(blockingThread);
+        f(requestingThread);
+    }, ()=> {
         expect(advancedKey1).toEqual(false);
         expect(advancedKey2).toEqual(true);
     });
@@ -171,11 +177,12 @@ test("a request without a key will not advance waiting threads with a key", () =
         yield bp.request(eventA);
     });
 
-    testScenarios((enable) => {
-        enable(waitThreadWithKey1);
-        enable(waitThreadWithKey2);
-        enable(requestThread);
-    }, [eventA, ...eventAK.keys(1, 2)], ()=> {
+    testScenarios((e, f) => {
+        e([eventA, ...eventAK.keys(1, 2)]);
+        f(waitThreadWithKey1);
+        f(waitThreadWithKey2);
+        f(requestThread);
+    }, ()=> {
         expect(advancedWait1).toEqual(false);
         expect(advancedWait2).toEqual(false);
     });
@@ -196,10 +203,11 @@ test("an request without a key will not advance extends with a key", () => {
         yield bp.request(eventA);
     });
 
-    testScenarios((enable) => {
-        enable(extending);
-        enable(requesting);
-    }, [eventA, ...eventAK.keys(1)], ()=> {
+    testScenarios((e, f) => {
+        e([eventA, ...eventAK.keys(1)]);
+        f(extending);
+        f(requesting);
+    }, ()=> {
         expect(advancedExtend).toEqual(false);
     });
 });
@@ -232,12 +240,13 @@ test("a request with a key, will only advance the matching wait with the same ke
         yield bp.request(eventAK.key(1));
     });
 
-    testScenarios((enable) => {
-        enable(waitThreadWithKey1);
-        enable(waitThreadWithKey2);
-        enable(waitThreadWithoutKey);
-        enable(requestThread);
-    }, [eventA, ...eventAK.keys(1,2)], ()=> {
+    testScenarios((e, f) => {
+        e([eventA, ...eventAK.keys(1,2)]);
+        f(waitThreadWithKey1);
+        f(waitThreadWithKey2);
+        f(waitThreadWithoutKey);
+        f(requestThread);
+    }, ()=> {
         expect(advancedWait1).toEqual(true);
         expect(advancedWait2).toEqual(false);
         expect(advancedWaitNoKey).toEqual(false);

@@ -17,9 +17,10 @@ test("scenarios can be keyed", () => {
         expect(this.key).toBe(1);
     });
 
-    testScenarios((s) => {
-        s(requestingThread.key(1));
-    }, basicEvent, ()=> {
+    testScenarios((e, f) => {
+        e(basicEvent);
+        f(requestingThread.key(1));
+    }, ()=> {
         expect(requestingThread.key(1).isCompleted).toBe(true);
     });
 });
@@ -41,11 +42,12 @@ test("a keyed scenario can progress without the other keyed scenario being progr
         yield bp.request(eventA.key(1), 1);
     });
 
-    testScenarios((s) => {
-        s(requestingThread);
-        s(waitingThread.key(1));
-        s(waitingThread.key(2));
-    }, [...eventA.keys(1, 2)], ()=> {
+    testScenarios((e, f) => {
+        e([...eventA.keys(1, 2)]);
+        f(requestingThread);
+        f(waitingThread.key(1));
+        f(waitingThread.key(2));
+    }, ()=> {
         expect(waitingThread.key(1).isCompleted).toBe(true);
         expect(waitingThread.key(2).isCompleted).toBe(false);
     });

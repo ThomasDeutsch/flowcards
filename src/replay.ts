@@ -59,7 +59,7 @@ export class Replay {
         this._state = 'aborted';
     }
 
-    public getNextReplayAction(getEvent: GetEvent, staging: Staging, nextActionId: number, logger: Logger): AnyAction | undefined {
+    public getNextReplayAction(staging: Staging, nextActionId: number, logger: Logger): AnyAction | undefined {
         if(this._state !== 'running') return undefined;
         if(nextActionId > this._lastActionId) {
             this._state = 'completed';
@@ -75,7 +75,7 @@ export class Replay {
         }
 
         if(isActionFromBid(replayAction)) {
-            const expectedAction = getNextRequestedAction(getEvent, staging, nextActionId, logger);
+            const expectedAction = getNextRequestedAction(staging, nextActionId, logger);
             if(expectedAction === undefined) {
                 this.abortReplay(replayAction, `action was not requested!`);
                 return undefined;
@@ -100,7 +100,7 @@ export class Replay {
             }
         }
         // check guards!
-        const event = getEvent(replayAction.eventId);
+        const event = staging.getEvent(replayAction.eventId);
         if(event === undefined) {
             this.abortReplay(replayAction, `event not found: ${replayAction.eventId}`);
             return undefined;

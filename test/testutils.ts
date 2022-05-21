@@ -1,16 +1,15 @@
 import { AnyAction } from '../src/action';
-import { FlowCards, NestedEventObject, UpdateCB } from '../src/index';
+import { FlowCards, UpdateCB } from '../src/index';
 import { Replay } from '../src/replay';
 import { StagingCB } from '../src/staging';
 
-export function testScenarios(stagingCB: StagingCB, events: NestedEventObject, updateCB?: UpdateCB, initialActionsOrReplay?: Replay | AnyAction[]): FlowCards {
+export function testScenarios(stagingCB: StagingCB, updateCB?: UpdateCB, initialActionsOrReplay?: Replay | AnyAction[]): FlowCards {
     if(updateCB === undefined) updateCB = ()=>{const x = 1;}
     return new FlowCards({
         stagingCB,
         updateCB,
         doInitialUpdate: true,
-        initialActionsOrReplay,
-        events
+        initialActionsOrReplay
     });
 }
 

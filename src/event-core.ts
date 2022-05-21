@@ -32,6 +32,7 @@ export class EventCore<P = void, V = string> {
     public readonly key?: string | number;  //TODO: remove key from EventCore? and only use keys with KeyedEvents ?
     public readonly initialValue?: P;
     private _description?: string;
+    private _resetValueOnDisconnect = false
     private _updatedOn?: number;
     private _updateCallbacks: CallbackFunction<P>[] = [];
     //setup
@@ -63,13 +64,18 @@ export class EventCore<P = void, V = string> {
         return this._updatedOn;
     }
 
-    public will(description: string): EventCore<P,V> {
+    public is(description: string): EventCore<P,V> {
         this._description = description;
         return this;
     }
 
     public get description(): string | undefined {
         return this._description;
+    }
+
+    public resetValueOnDisconnect(): EventCore<P, V> {
+        this._resetValueOnDisconnect = true;
+        return this;
     }
 
     /** @internal */
@@ -79,6 +85,17 @@ export class EventCore<P = void, V = string> {
         this._addToQueue = props.addToQueue;
         this._getPlacedBids = props.getPlacedBids;
         this._getPending = props.getPending;
+    }
+
+    /** @internal */
+    public __disconnect(): void {
+        this._openResolves.clear();
+        if(this._resetValueOnDisconnect) {
+            this._value = this._initialValue;
+        }
+        delete this._addToQueue
+        delete this._getPlacedBids;
+        delete this._getPending;
     }
 
     /** @internal */

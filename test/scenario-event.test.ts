@@ -13,9 +13,10 @@ test("an event needs to be enabled in order to be requested", () => {
         yield bp.request(eventB);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, eventA, ()=> {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+    }, ()=> {
         expect(eventB.isConnected).toBe(false)
         expect(requestingThread.isCompleted).toBe(false)
     });
@@ -30,9 +31,10 @@ test("a dispatch returns a validation result, if the dispatch was valid", (done)
         expect(x).toBe(100);
     });
 
-    testScenarios((enable) => {
-        enable(askingScenario);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(askingScenario);
+    }, () => {
         if(eventA.isValid(100)) {
             eventA.dispatch(100).then(result => {
                 expect(result.isValid).toBe(true);
@@ -50,9 +52,10 @@ test("the dispatch promise returns false, if another event has made the dispatch
         yield bp.askFor(eventA);
     });
 
-    testScenarios((enable) => {
-        enable(askingScenario);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(askingScenario);
+    }, () => {
         eventA.dispatch(100);
         eventA.dispatch(100).then((result) => {
             expect(result.isValid).toBe(false);
@@ -63,16 +66,16 @@ test("the dispatch promise returns false, if another event has made the dispatch
 });
 
 
-test("an event that is not enabled can not be dispatched", () => {
+test("an event that is not connected can not be dispatched", () => {
     const eventA = new UserEvent<number>('A');
 
     const requestingThread = new Flow('thread1', function*() {
         yield bp.askFor(eventA);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [],() => {
+    testScenarios((e, f) => {
+        f(requestingThread);
+    },() => {
         expect(eventA.isValid(1)).toBe(false);
         expect(eventA.isConnected).toBe(false);
     });
@@ -97,11 +100,11 @@ test("in a validate function, the event.value represents its old value", () => {
         });
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(validatingThread);
-
-    }, eventA);
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+        f(validatingThread);
+    });
 });
 
 
@@ -118,9 +121,10 @@ test("a callback on value change can be registered", () => {
         yield bp.request(eventA, 1000);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [eventA],() => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+    },() => {
         expect(callbackValue).toBe(1000);
         expect(callbackCalled).toBe(1);
     });
@@ -137,10 +141,29 @@ test("if an event is extended, it will register as pending", () => {
         yield bp.extend(eventA);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-    }, [eventA],() => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+        f(extendingThread);
+    }, () => {
         expect(eventA.isPending).toBe(true)
+    });
+});
+
+
+test("if an event is disconnected, the value is reset if defined", () => {
+    const eventA = new UserEvent<number>('A', 0).resetValueOnDisconnect();
+
+    const requestingThread = new Flow('thread1', function*() {
+        yield bp.request(eventA, 1000);
+    });
+
+    testScenarios((e, f) => {
+        f(requestingThread);
+        if(!requestingThread.isCompleted) {
+            e(eventA);
+        }
+    },() => {
+        expect(eventA.value).toBe(0);
     });
 });

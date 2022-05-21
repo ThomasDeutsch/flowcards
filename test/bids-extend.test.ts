@@ -23,11 +23,12 @@ test("requests can be extended", () => {
         progressedExtend = true;
     })
 
-    testScenarios(enable => {
-        enable(thread1);
-        enable(thread3);
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+        f(thread3);
         setupCount++;
-    }, eventA, () => {
+    }, () => {
         expect(progressedExtend).toBe(true);
         expect(progressedRequest).toBe(false);
         expect(eventA.extendedBy?.name).toBe('extending thread');
@@ -52,10 +53,11 @@ test("after the extend resolved, the event is no longer pending", (done) => {
         this.resolveExtend(eventA, (this.getExtendValue(eventA) || 0) + 10);
     })
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread3);
-    }, [eventA, eventZ], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventZ]);
+        f(thread1);
+        f(thread3);
+    }, () => {
         if(eventZ.isValid()) {
             expect(eventA.value).toBe(110);
             done();
@@ -81,10 +83,11 @@ test("a utility generator can be used to get a typed extend value ", (done) => {
         this.resolveExtend(eventA, (value || 0) + 10 );
     })
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread3);
-    }, [eventA, eventZ], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventZ]);
+        f(thread1);
+        f(thread3);
+    }, () => {
         if(eventZ.isValid()) {
             expect(eventA.value).toBe(110);
             done();
@@ -121,12 +124,13 @@ test("if an extend is not applied, than the next extend will get the event", () 
         waitDAdvanced = true;
     });
 
-    testScenarios((enable) => {
-        enable(requestThread);
-        enable(waitThread);
-        enable(extendPriorityLowThread);
-        enable(extendPriorityHighThread);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA)
+        f(requestThread);
+        f(waitThread);
+        f(extendPriorityLowThread);
+        f(extendPriorityHighThread);
+    }, () => {
         expect(waitBAdvanced).toBe(false);
         expect(waitCAdvanced).toBe(true);
         expect(waitDAdvanced).toBe(false);
@@ -153,11 +157,12 @@ test("if an extended thread completed, without resolving or rejecting the event,
         progressedExtend = true;
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread3);
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+        f(thread3);
         setupCount++;
-    }, eventA, () => {
+    }, () => {
         expect(eventA.extendedBy).toBeDefined();
     }
  );
@@ -189,11 +194,12 @@ test("extended values can be accessed with the getExtendValue function", (done) 
         done();
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
-        enable(thread3);
-    }, eventA);
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+        f(thread2);
+        f(thread3);
+    });
 });
 
 test("blocked events can not be extended", () => {
@@ -217,11 +223,12 @@ test("blocked events can not be extended", () => {
         extendAdvanced = true;
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
-        enable(thread3);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+        f(thread2);
+        f(thread3);
+    }, () => {
         expect(thread1Advanced).toBe(false);
         expect(extendAdvanced).toBe(false);
         expect(eventA.extendedBy).toBeUndefined();
@@ -241,10 +248,11 @@ test("extends will extend requests", () => {
         extendedPayload = yield* bp.extendBid(eventA);
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+        f(thread2);
+    }, () => {
         expect(extendedPayload).toEqual(1000);
     });
 });
@@ -270,11 +278,12 @@ test("the last extend that is enabled has the highest priority", () => {
         advancedThread2 = true;
     });
 
-    testScenarios((enable) => {
-        enable(requestThread);
-        enable(extendThread1);
-        enable(extendThread2);
-    }, eventA,() => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestThread);
+        f(extendThread1);
+        f(extendThread2);
+    }, () => {
         expect(advancedThread1).toBeFalsy();
         expect(advancedThread2).toBe(true);
     });
@@ -295,10 +304,11 @@ test("an extend will set the event into a pending state", () => {
         yield bp.askFor(eventFin);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-    }, [eventA, eventFin], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventFin]);
+        f(requestingThread);
+        f(extendingThread);
+    }, () => {
         expect(eventA.extendedBy).toBeDefined();
     });
 });
@@ -322,10 +332,11 @@ test("async events can be extended", (done) => {
         this.resolveExtend(eventA, (extendValue || 0) + 10 )
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+        f(extendingThread);
+    }, () => {
         if(requestingThread.isCompleted) {
             expect(eventA.value).toBe(110);
             expect(checkFunctionIsCalled).toBe(true);
@@ -353,10 +364,11 @@ test("an extended pending event can be canceled by the extending flow", (done) =
         this.resolveExtend(eventA, 'extendResolved');
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-    }, [eventA, eventX, eventCancel], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventX, eventCancel]);
+        f(requestingThread);
+        f(extendingThread);
+    }, () => {
         if(requestingThread.isCompleted) {
             expect(eventA.value).toBe('extendResolved');
             expect(checkFunctionIsCalled).toBe(false);
@@ -386,11 +398,12 @@ test("an extend can be resolved. This will progress waits and requests", (done) 
         yield bp.askFor(eventFin);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-        enable(waitingThread);
-    }, [eventA, eventFin], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventFin]);
+        f(requestingThread);
+        f(extendingThread);
+        f(waitingThread);
+    }, () => {
         if(eventFin.isValid()) {
             done();
         }
@@ -413,10 +426,11 @@ test("an extend will keep the event-pending if the Flow with the extend complete
         // after the extend, this Flow completes, keeping the extend active.
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+        f(extendingThread);
+    }, () => {
         expect(eventA.extendedBy).toBeDefined();
         expect(requestingThreadProgressed).toBe(false);
         done();
@@ -451,12 +465,13 @@ test("multiple extends will resolve after another. After all extends complete, t
         yield bp.askFor(eventFin);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-        enable(extendingThreadHigherPriority); // this Flow is enabled after the first extendingThread, giving it a higher priority
-        enable(waitingThread);
-    }, [eventA, eventFin], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventFin]);
+        f(requestingThread);
+        f(extendingThread);
+        f(extendingThreadHigherPriority); // this Flow is enabled after the first extendingThread, giving it a higher priority
+        f(waitingThread);
+    }, () => {
         if(eventFin.isValid()) {
             done();
         }
@@ -484,11 +499,12 @@ test("an extend can have an optional validation-function", (done) => {
         this.resolveExtend(eventA, (value || 0) + 10);
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThreadOne);
-        enable(extendingThreadTwo);
-    }, eventA);
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+        f(extendingThreadOne);
+        f(extendingThreadTwo);
+    });
 });
 
 test("an askFor can be extended. during the extension, the event is pending", (done) => {
@@ -505,10 +521,11 @@ test("an askFor can be extended. during the extension, the event is pending", (d
     });
 
 
-    testScenarios((enable) => {
-        enable(waitingThread);
-        enable(extendingThread);
-    }, [eventA, eventFin], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventFin]);
+        f(waitingThread);
+        f(extendingThread);
+    }, () => {
         if(eventA.isValid()) eventA.dispatch();
         else {
             expect(eventA.extendedBy).toBeDefined();
@@ -544,10 +561,11 @@ test("an extended pending event will throw an error in the extending flow if val
         this.resolveExtend(eventA, 'extendResolved');
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendingThread);
-    }, [eventA, eventX, eventCancel], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventX, eventCancel]);
+        f(requestingThread);
+        f(extendingThread);
+    }, () => {
         if(requestingThread.isCompleted) {
             expect(catchByRequestingThread).toBe(false);
             expect(catchByExtendingThread).toBe(true);
@@ -574,10 +592,11 @@ test("an extend can not extend its own resolve", () => {
         }
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(extendThread);
-    }, [eventA], ({log}) => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+        f(extendThread);
+    }, () => {
         if(requestingThread.isCompleted) {
             expect(whileCount).toBe(2);
             expect(eventA.value).toBe('B');
@@ -611,10 +630,11 @@ test("an extend can be resolved in the catch-clause", (done) => {
         }
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-        enable(exceptionHandlingThread);
-    }, [eventA], ({log}) => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread);
+        f(exceptionHandlingThread);
+    }, () => {
         if(requestingThread.isCompleted) {
             expect(whileCount).toBe(2);
             expect(eventA.value).toBe('C');

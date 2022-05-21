@@ -1,6 +1,5 @@
 import { BufferedQueue } from './buffered-queue';
 import { Logger } from './logger';
-import { EventMap, GetEvent } from './scheduler';
 import { NameKeyId } from './name-key-map';
 import { isThenable } from './utils';
 import { Staging } from './staging';
@@ -61,10 +60,10 @@ export function isActionFromBid(action: AnyAction): boolean {
     return (action.type === 'requestedAction' || action.type === 'requestedAsyncAction' || action.type === 'triggeredAction');
 }
 
-export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<QueueAction>, eventMap: EventMap, staging: Staging, nextActionId: number): QueueAction | undefined {
+export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<QueueAction>, staging: Staging, nextActionId: number): QueueAction | undefined {
     const action = actionQueue.get;
     if(action === undefined) return undefined;
-    const event = eventMap.get(action.eventId);
+    const event = staging.getEvent(action.eventId);
     if(event === undefined)  {
         throw new Error('event not connected');
     }
@@ -77,7 +76,7 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
             return {...action, id: nextActionId};
         }  else {
             //TODO: log dropped action
-            return getQueuedAction(logger, actionQueue, eventMap, staging, nextActionId);
+            return getQueuedAction(logger, actionQueue, staging, nextActionId);
         }
     }
     if(action.type === 'resolveAction') {
@@ -106,17 +105,17 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
         return {...action, id: nextActionId};
     }
     logger.logDroppedAction(action);
-    return getQueuedAction(logger, actionQueue, eventMap, staging, nextActionId);
+    return getQueuedAction(logger, actionQueue, staging, nextActionId);
 }
 
 
 // TODO: implement Replay behaviour
-export function getNextRequestedAction(getEvent: GetEvent, staging: Staging, nextActionId: number, logger: Logger, payloadOverride?: {value: any}): ActionFromBid | undefined {
+export function getNextRequestedAction(staging: Staging, nextActionId: number, logger: Logger, payloadOverride?: {value: any}): ActionFromBid | undefined {
     let action: RequestedAsyncAction | RequestedAction | TriggeredAction | undefined;
     staging.orderedRequestingBids?.some((bid) => {
         let explain: ExplainEventResult<any>;
         if(bid.type === 'requestBid') {
-            const event = getEvent(bid.eventId);
+            const event = staging.getEvent(bid.eventId);
             explain = explainRequest(event, bid);
             logger.logExplain(explain);
             if(explain.isValid === false) {
@@ -146,7 +145,7 @@ export function getNextRequestedAction(getEvent: GetEvent, staging: Staging, nex
             }
         }
         else {
-            const event = getEvent(bid.eventId);
+            const event = staging.getEvent(bid.eventId);
             explain = explainTrigger(event, bid);
             logger.logExplain(explain);
             if(explain.isValid === false) {

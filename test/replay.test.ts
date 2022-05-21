@@ -24,9 +24,10 @@ test("a request can be replayed", (done) => {
 
     const replayObj = new Replay([replayAction]);
 
-    testScenarios((enable) => {
-        enable(requestingFlow);
-    }, [basicEvent.eventA], ({replay}) => {
+    testScenarios((e, f) => {
+        e(basicEvent)
+        f(requestingFlow);
+    }, ({replay}) => {
         expect(replay!.state === 'completed').toBe(true);
         done();
     }, replayObj)
@@ -50,9 +51,10 @@ test("if a request has no payload, the replay will use the payload from the flow
 
     const replayObj = new Replay([replayAction]);
 
-    testScenarios((enable) => {
-        enable(requestingFlow);
-    }, eventA, ({replay}) => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingFlow);
+    }, ({replay}) => {
         expect(replay!.state === 'completed').toBe(true);
         expect(eventA.value).toBe(2)
         done();
@@ -78,9 +80,10 @@ test("if a guard fails, the replay will be aborted", (done) => {
 
     const replayObj = new Replay([replayAction]);
 
-    testScenarios((enable) => {
-        enable(requestingFlow);
-    }, eventA, ({replay}) => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingFlow);
+    }, ({replay}) => {
         expect(replay!.state === 'aborted').toBe(true);
         expect(replay!.abortInfo!.error).toBe(`invalidReason: Guard`)
         expect(eventA.value).toBe(2)
@@ -107,9 +110,10 @@ test("if a guard fails, the replay will be aborted (askFor)", (done) => {
 
     const replayObj = new Replay([replayAction]);
 
-    testScenarios((enable) => {
-        enable(requestingFlow);
-    }, eventA, ({replay}) => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingFlow);
+    }, ({replay}) => {
         expect(replay!.state === 'aborted').toBe(true);
         expect(replay!.abortInfo!.error).toBe(`invalidReason: Guard`);
         done();

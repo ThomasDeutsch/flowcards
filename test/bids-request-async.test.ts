@@ -13,9 +13,10 @@ test("an async request is not called if proceeded by a not-async request", (done
         yield [bp.request(eventA, 1), bp.request(eventB, () => delay(200, 1))];
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [eventA, eventB], ({log})=> {
+    testScenarios((e, f) => {
+        e([eventA, eventB]);
+        f(requestingThread);
+    }, ({log})=> {
 
         if(requestingThread.isCompleted) {
             expect(eventB.pendingBy).toBe(undefined);
@@ -37,9 +38,10 @@ test("a pending event is cancelled, if the thread completes", (done) => {
         yield [bp.request(eventB, () => delay(200, 1)), bp.request(eventA, 1)];
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [eventA, eventB], ({log})=> {
+    testScenarios((e, f) => {
+        e([eventA, eventB]);
+        f(requestingThread);
+    }, ({log})=> {
 
         if(requestingThread.isCompleted) {
             expect(eventB.pendingBy).toBe(undefined);
@@ -48,7 +50,6 @@ test("a pending event is cancelled, if the thread completes", (done) => {
         }
         else {
             expect(eventB.pendingBy?.name).toBe('thread1');
-
         }
     });
 });
@@ -61,9 +62,10 @@ test("A function, returning a promise can be requested and will create a pending
         yield bp.request(eventA, () => delay(100, 10));
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         if(thread1.isCompleted) {
             expect(eventA.value).toBe(10);
             done();
@@ -93,9 +95,10 @@ test("multiple async-requests can be executed sequentially", (done) => {
         }
     );
 
-    testScenarios((enable) => {
-        enable(scenario1);
-    }, [eventWaitForCard, eventLoadAccount, eventValidateCard, eventWaitForPin], (() => {
+    testScenarios((e, f) => {
+        e([eventWaitForCard, eventLoadAccount, eventValidateCard, eventWaitForPin]);
+        f(scenario1);
+    }, (() => {
         if(scenario1.isCompleted) {
             expect(threadResetCounter).toEqual(0);
             done();
@@ -125,11 +128,12 @@ test("for multiple active promises in one yield, only one resolve will progress 
         progressed3 = true;
     });
 
-    testScenarios((enable) => {
-        enable(requestingScenario);
-        enable(thread2);
-        enable(thread3);
-    }, [eventA, eventB], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventB]);
+        f(requestingScenario);
+        f(thread2);
+        f(thread3);
+    }, () => {
         if(requestingScenario.isCompleted) {
             expect(progressed2).not.toBe(progressed3);
             done();
@@ -151,12 +155,13 @@ test("if a scenario gets disabled, pending events will be canceled", (done) => {
         yield bp.request(eventB, () => delay(2000, undefined));
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
+    testScenarios((e, f) => {
+        e([eventA, eventB]);
+        f(thread1);
         if(eventA.isPending) {
-            enable(thread2);
+            f(thread2);
         }
-    }, [eventA, eventB], () => {
+    }, () => {
         if(thread1.isCompleted) {
             expect(eventB.isPending).toBe(false);
             done();
@@ -177,10 +182,11 @@ test("a scenario in a pending-event state can place additional bids.", (done) =>
         yield bp.askFor(eventB);
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
-    }, [eventA, eventB], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventB]);
+        f(thread1);
+        f(thread2);
+    }, () => {
         if(eventA.isPending) {
             expect(eventB.isValid()).toBe(false);
         }
@@ -207,10 +213,11 @@ test("a canceled request will not progress a pending event with the same event-i
         yield bp.trigger(eventCancel);
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
-    }, [eventA, eventB, eventCancel], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventB, eventCancel]);
+        f(thread1);
+        f(thread2);
+    }, () => {
         if(thread1.isCompleted) {
             done();
         }
@@ -228,9 +235,10 @@ test("a failed async request will throw", (done) => {
         }
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [asyncEvent], ()=> {
+    testScenarios((e, f) => {
+        e([asyncEvent]);
+        f(requestingThread);
+    }, ()=> {
         if(requestingThread.isCompleted) {
             expect(asyncEvent.isPending).toBe(false);
             done();
@@ -253,9 +261,10 @@ test("a failed async request validation will throw", (done) => {
         }
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [asyncEvent], ()=> {
+    testScenarios((e, f) => {
+        e([asyncEvent]);
+        f(requestingThread);
+    }, ()=> {
         if(requestingThread.isCompleted) {
             expect(asyncEvent.isPending).toBe(false);
             expect(validationFunctionCalled).toBe(true);
@@ -277,9 +286,10 @@ test("a request is cancelled if the bid is not repeated", (done) => {
         yield bp.askFor(finEvent);
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [asyncEvent, cancelEvent, finEvent], ()=> {
+    testScenarios((e, f) => {
+        e([asyncEvent, cancelEvent, finEvent]);
+        f(requestingThread);
+    }, ()=> {
         if(finEvent.isValid('test')) {
             expect(asyncEvent.isPending).toBe(false);
             expect(asyncEvent.value).toBe('not set');
@@ -300,9 +310,10 @@ test("a request is resumed if the placed bid is repeated", (done) => {
         yield progress.remainingBids;
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [asyncEvent, cancelEvent, finEvent], ()=> {
+    testScenarios((e, f) => {
+        e([asyncEvent, cancelEvent, finEvent]);
+        f(requestingThread);
+    }, ()=> {
         if(requestingThread.isCompleted) {
             expect(asyncEvent.isPending).toBe(false);
             expect(asyncEvent.value).toBe('Next Value');
@@ -322,9 +333,10 @@ test("a request is resumed if the bid is repeated - and it needs to be the same 
         yield bp.request(asyncEvent, () => 'sync value');
     });
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [asyncEvent, cancelEvent, finEvent], ({log})=> {
+    testScenarios((e, f) => {
+        e([asyncEvent, cancelEvent, finEvent]);
+        f(requestingThread);
+    }, ({log})=> {
         if(requestingThread.isCompleted) {
             expect(asyncEvent.isPending).toBe(false);
             expect(asyncEvent.value).toBe('sync value');
@@ -346,9 +358,10 @@ test("A block will block the async-call", (done) => {
         }), bp.block(eventA)];
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(promiseCreated).toBe(false);
         expect(eventA.isBlocked).toBe(true);
         expect(eventA.isPending).toBe(false);
@@ -371,9 +384,10 @@ test("a failed guard for a request will block the validation function from being
         });
     })
 
-    testScenarios((enable) => {
-        enable(requestingThread);
-    }, [asyncEvent], ()=> {
+    testScenarios((e, f) => {
+        e([asyncEvent]);
+        f(requestingThread);
+    }, ()=> {
         expect(requestingThread.isCompleted).toBe(false);
         expect(asyncEvent.isPending).toBe(false);
         expect(serviceCalled).toBe(0);

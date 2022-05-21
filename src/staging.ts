@@ -6,13 +6,26 @@ import { NameKeyId, NameKeyMap } from './name-key-map';
 import { allPlacedBids, AllPlacedBids, BidType, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from './bid';
 import { QueueAction, RequestedAsyncAction } from './action';
 import { FlowEvent, UserEvent } from './event';
+import { EventCore } from './event-core';
 
 export type EnableFlow = (flow: Flow) => void;
-export type StagingCB = (enableFlow: EnableFlow, latestEvent: UserEvent<any,any> | FlowEvent<any,any> | 'initial') => void;
+export type EnableEvents = (neo: NestedEventObject) => void;
+export type StagingCB = (enableEvents: EnableEvents, enableFlow: EnableFlow, latestEvent: UserEvent<any,any> | FlowEvent<any,any> | 'initial') => void;
 export type RunStaging = () => void;
 export type GetPlacedBids = (bidType: BidType, eventId: NameKeyId) => PlacedBid<any>[] | undefined;
 export type GetPending = (eventId: NameKeyId) => {pendingBy: NameKeyId | undefined, extendedBy: NameKeyId | undefined};
 export type GetFlow = (flowId: NameKeyId) => FlowCore | undefined;
+
+
+export type NestedEventObject = UserEvent<any, any> | FlowEvent<any, any> | (FlowEvent<any, any> | UserEvent<any, any>)[] |
+    { [key: string]: NestedEventObject };
+
+
+function getEvents(neo: NestedEventObject): EventCore<any, any>[] {
+    if(Array.isArray(neo)) return neo;
+    if(neo instanceof EventCore) return [neo];
+    return Object.values(neo).map(getEvents).flat();
+}
 
 export interface StagingProps {
     stagingCB: StagingCB;
@@ -22,16 +35,19 @@ export interface StagingProps {
 
 export class Staging {
     private readonly _flowMap: FlowMap = new NameKeyMap<FlowCore>();
+    private readonly _enabledFlowIds = new NameKeyMap<NameKeyId>();
+    private readonly _eventMap = new NameKeyMap<FlowEvent<any, any> | UserEvent<any, any>>();
+    private readonly _enabledEventIds = new NameKeyMap<NameKeyId>();
     private readonly _flowBids: PlacedBid<unknown>[] = [];
     private _allPlacedBids?: AllPlacedBids;
     private readonly _nextPendingRequests: [NameKeyId, NameKeyId][] = [];
     private readonly _nextPendingExtends: [NameKeyId, NameKeyId][] = [];
     private readonly _pendingRequests = new NameKeyMap<NameKeyId>();
     private readonly _pendingExtends = new NameKeyMap<NameKeyId>();
-    private readonly _enabledFlowIds = new NameKeyMap<NameKeyId>();
     private readonly _logger: Logger;
     private readonly _stagingCB: StagingCB;
     private readonly _addToQueue: (action: QueueAction) => void;
+
 
     constructor(props: StagingProps) {
         this._logger = props.logger;
@@ -73,10 +89,30 @@ export class Staging {
         });
     }
 
+    private _enableEvents: EnableEvents = (neo: NestedEventObject) => {
+        const events = getEvents(neo);
+        events.forEach(event => {
+            if(this._enabledEventIds.has(event.id)) {
+                throw new Error('event in enabled multiple times: ' + event.id)
+            }
+            this._enabledEventIds.set(event.id, event.id);
+            const isConnected = this._eventMap.has(event.id);
+            if(!isConnected) {
+                event.__connect({
+                    addToQueue: this._addToQueue,
+                    getPlacedBids: this.getPlacedBids.bind(this),
+                    getPending: this.getPending.bind(this)
+                });
+                this._eventMap.set(event.id, event);
+            }
+        });
+    }
+
     public run(latestEvent: UserEvent | FlowEvent | 'initial'): void {
         this._flowBids.length = 0;
         this._enabledFlowIds.clear();
-        this._stagingCB(this._enableFlow, latestEvent);
+        this._enabledEventIds.clear();
+        this._stagingCB(this._enableEvents, this._enableFlow, latestEvent);
         this._flowMap.allValues?.forEach(flow => {
             if(!this._enabledFlowIds.has(flow.id)) {
                 flow.cancelAllPendingRequests();
@@ -84,6 +120,11 @@ export class Staging {
                     flow.cancelAllPendingExtends();
                     this._flowMap.delete(flow.id);
                 }
+            }
+        });
+        this._eventMap.allValues?.forEach(event => {
+            if(!this._enabledEventIds.has(event.id)) {
+                event.__disconnect()
             }
         });
         this._pendingExtends.clear();
@@ -96,8 +137,6 @@ export class Staging {
         this._logger.logPlacedBids(this._allPlacedBids);
     }
 
-
-
     public getPlacedBids(type: BidType, eventId: NameKeyId): PlacedBid[] | undefined {
         return this._allPlacedBids?.[type].get(eventId);
     }
@@ -108,6 +147,10 @@ export class Staging {
 
     public getFlow(flowId: NameKeyId): FlowCore | undefined {
         return this._flowMap.get(flowId);
+    }
+
+    public getEvent<P,V>(eventId: NameKeyId): EventCore<P,V> | undefined {
+        return this._eventMap.get(eventId);
     }
 
     public addPendingRequest(action: RequestedAsyncAction): void {

@@ -11,9 +11,10 @@ test("a validation result can be a boolean", () => {
         yield [bp.request(eventA, 1), bp.validate(eventA, (n) => n > 100)]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(thread1.isCompleted).toBe(false);
     }
  );
@@ -27,9 +28,10 @@ test("a validation result can be an array of failed values", () => {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ['error'])]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(thread1.isCompleted).toBe(false);
     }
  );
@@ -43,9 +45,10 @@ test("a validation result can be an array of failed values - the validation is p
         yield [bp.request(eventA, 1), bp.validate(eventA, () => [])]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(thread1.isCompleted).toBe(true);
     }
  );
@@ -59,9 +62,10 @@ test("a validation result can also be an object with failed and passed arrays", 
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({failed: ['123']}))]
     });
 
-    testScenarios((enable) => {
-       enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(thread1.isCompleted).toBe(false);
     }
  );
@@ -75,9 +79,10 @@ test("a validation result can also be an object with failed and passed arrays - 
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({failed: []}))]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(thread1.isCompleted).toBe(true);
     }
  );
@@ -91,9 +96,10 @@ test("a validation result can also be an object - if the object has a missing fa
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({passed: []}))]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(thread1.isCompleted).toBe(true);
     }
  );
@@ -107,9 +113,10 @@ test("multiple validations are combined", () => {
         yield [bp.request(eventA, 1), bp.validate(eventA, () => ({passed: []})), bp.validate(eventA, () => false)]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(thread1.isCompleted).toBe(false);
     }
  );
@@ -128,10 +135,11 @@ test("validation results can be null", () => {
         yield [bp.request(eventB, 1), bp.validate(eventB, () => ({failed: ['reason1', null]}))]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-        enable(thread2);
-    }, [eventA, eventB], () => {
+    testScenarios((e, f) => {
+        e([eventA, eventB]);
+        f(thread1);
+        f(thread2);
+    }, () => {
         expect(thread1.isCompleted).toBe(true);
         expect(thread2.isCompleted).toBe(false);
     }
@@ -148,9 +156,10 @@ test("a validate function will return the combined event validation result", () 
             bp.validate(eventA, () => ({failed: ['failed']}))]
     });
 
-    testScenarios((enable) => {
-        enable(thread1);
-    }, eventA, () => {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(thread1);
+    }, () => {
         expect(eventA.explain(1).isValid).toBe(false);
         expect(eventA.explain(1).passed.length).toBe(1);
         expect(eventA.explain(1).passed[0]).toBe('passed');
@@ -171,14 +180,14 @@ test("if there are multiple askFor bids for the same event, the validations are 
         yield bp.askFor(eventA, (x) => x > 5);
     });
 
-    testScenarios((enable) => {
-        enable(threadLow);
-        enable(threadHigh);
+    testScenarios((e, f) => {
+        e(eventA);
+        f(threadLow);
+        f(threadHigh);
 
-    }, eventA, () => {
+    }, () => {
         expect(eventA.isValid(1)).toBe(false);
         expect(eventA.isValid(6)).toBe(true);
-
     }
  );
 });
@@ -195,12 +204,12 @@ test("an event can be provided with a validation type", () => {
         yield bp.askFor(eventA, () => ({failed: [{description: '123'}]}));
     });
 
-    testScenarios((enable) => {
-        enable(askingThread);
+    testScenarios((e, f) => {
+        e(eventA);
+        f(askingThread);
 
-    }, eventA, () => {
+    }, () => {
         expect(eventA.explain(1).isValid).toBe(false);
-
     }
  );
 });

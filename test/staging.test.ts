@@ -3,6 +3,47 @@ import * as bp from "../src";
 import { delay, testScenarios } from "./testutils";
 import { FlowEvent } from "../src/event";
 
+test("throw an error if two different flows with the same ID are enabled", () => {
+    const basicEvent = {
+        eventA: new FlowEvent<number>('A')
+    }
+
+    const first = new Flow('thread1', function*() {
+        yield bp.request(basicEvent.eventA, 1);
+    });
+    const second = new Flow('thread1', function*() {
+        yield bp.request(basicEvent.eventA, 2);
+    });
+
+    const updateCB = ()=> {const x = 1;};
+
+    try {
+        expect(
+            testScenarios((e, f) => {
+                e(basicEvent);
+                f(first);
+                f(second);
+            }, updateCB)).toThrow('[Error: thread1 enabled more than once]')
+    } catch(e) {
+        const X = e;
+    }
+});
+
+test("throw an error if two different events with the same ID are enabled", () => {
+    const basicEvent = {
+        eventA: new FlowEvent<number>('A')
+    }
+    const updateCB = ()=> {const x = 1;};
+    try {
+        expect(
+            testScenarios((e, f) => {
+                e(basicEvent);
+                e(basicEvent);
+            }, updateCB)).toThrow('event in enabled multiple times: A')
+    } catch(e) {
+        const X = e;
+    }
+});
 
 test("events can be passed as an array", () => {
 
@@ -17,10 +58,10 @@ test("events can be passed as an array", () => {
         expect(this.key).toBe(1);
     });
 
-    testScenarios((s) => {
-        s(requestingThread.key(1));
-    }, [basicEvent.eventA, basicEvent.eventB]
-    ,()=> {
+    testScenarios((e, f) => {
+        e([basicEvent.eventA, basicEvent.eventB])
+        f(requestingThread.key(1));
+    }, ()=> {
         expect(requestingThread.key(1).isCompleted).toBe(true);
     });
 });
@@ -35,9 +76,10 @@ test("a single event can be provided", () => {
         expect(this.key).toBe(1);
     });
 
-    testScenarios((s) => {
-        s(requestingThread.key(1));
-    }, eventA, ()=> {
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingThread.key(1));
+    }, ()=> {
         expect(requestingThread.key(1).isCompleted).toBe(true);
     });
 });
@@ -55,9 +97,10 @@ test("events can be passed as an object", () => {
         expect(this.key).toBe(1);
     });
 
-    testScenarios((s) => {
-        s(requestingThread.key(1));
-    }, basicEvent
+    testScenarios((e, f) => {
+        e(basicEvent);
+        f(requestingThread.key(1));
+    }
     ,()=> {
         expect(requestingThread.key(1).isCompleted).toBe(true);
     });
@@ -76,10 +119,10 @@ test("events can be inside a nested object", () => {
         expect(this.key).toBe(1);
     });
 
-    testScenarios((s) => {
-        s(requestingThread.key(1));
-    }, basicEvent
-    ,()=> {
+    testScenarios((e, f) => {
+        e(basicEvent);
+        f(requestingThread.key(1));
+    }, ()=> {
         expect(requestingThread.key(1).isCompleted).toBe(true);
     });
 });
@@ -99,11 +142,11 @@ test("a latestEvent parameter is the second argument", () => {
         yield bp.request(basicEvent.eventB, 1);
     });
 
-    testScenarios((s, latestEvent) => {
+    testScenarios((e, f, latestEvent) => {
+        e([basicEvent.eventA, basicEvent.eventB]);
         latestEvents.push(latestEvent);
-        s(requestingThread.key(1));
-    }, [basicEvent.eventA, basicEvent.eventB]
-    ,()=> {
+        f(requestingThread.key(1));
+    }, ()=> {
         expect(latestEvents.length).toBe(3);
         expect(latestEvents[0]).toEqual('initial');
         expect(latestEvents[1]).toBe(basicEvent.eventA);
@@ -121,11 +164,12 @@ test("a pending event is shown as pending in the staging function", (done) => {
         yield bp.request(eventA, () => delay(200, 1));
     });
 
-    testScenarios((enable, latestEvent) => {
+    testScenarios((e, f, latestEvent) => {
+        e(eventA);
         if(!requestingThread.isCompleted && latestEvent !== 'initial') {
             expect(eventA.isPending).toBe(true);
             done();
         }
-        enable(requestingThread);
-    }, eventA);
+        f(requestingThread);
+    });
 });
