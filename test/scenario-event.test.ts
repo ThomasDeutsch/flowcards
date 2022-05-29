@@ -1,5 +1,5 @@
 import * as bp from "../src/bid";
-import { testScenarios } from "./testutils";
+import { delay, testScenarios } from "./testutils";
 import { FlowEvent, UserEvent } from "../src/event";
 import { Flow } from "../src/flow";
 
@@ -151,8 +151,8 @@ test("if an event is extended, it will register as pending", () => {
 });
 
 
-test("if an event is disconnected, the value is reset if defined", () => {
-    const eventA = new UserEvent<number>('A', 0).resetValueOnDisconnect();
+test("if an event is disconnected, the value is undefined", () => {
+    const eventA = new UserEvent<number>('A', 0);
 
     const requestingThread = new Flow('thread1', function*() {
         yield bp.request(eventA, 1000);
@@ -164,6 +164,22 @@ test("if an event is disconnected, the value is reset if defined", () => {
             e(eventA);
         }
     },() => {
-        expect(eventA.value).toBe(0);
+        expect(eventA.value).toBe(undefined);
     });
 });
+
+test("the event initial value can be a function", () => {
+    const eventA = new UserEvent<number>('A', () => 1);
+
+    const t1 = new Flow('thread1', function*() {
+        yield bp.waitFor(eventA);
+    });
+
+    testScenarios((e, f) => {
+        e(eventA)
+        f(t1);
+    },() => {
+        expect(eventA.value).toBe(1);
+    });
+});
+

@@ -42,12 +42,16 @@ export class EventCore<P = void, V = string> {
     protected _openResolves = new BufferedQueue<ValidationResultCB<V>>();
     // value
     private _value?: P;
-    private _initialValue?: P;
+    private readonly _initialValue?: P | (() => P);
 
-    constructor(nameOrNameKey: string | NameKeyId, type: EventType, initialValue?: P) {
+    private setInitialValue(): void {
+        this._value = (this._initialValue instanceof Function) ? this._initialValue() : this._initialValue;
+    }
+
+    constructor(nameOrNameKey: string | NameKeyId, type: EventType, initialValue?: P | (() => P)) {
         this.type = type;
         this._initialValue = initialValue;
-        this._value = initialValue;
+        this.setInitialValue();
         if(typeof nameOrNameKey === 'string') {
             this.name = nameOrNameKey;
         } else {
@@ -73,15 +77,10 @@ export class EventCore<P = void, V = string> {
         return this._description;
     }
 
-    public resetValueOnDisconnect(): EventCore<P, V> {
-        this._resetValueOnDisconnect = true;
-        return this;
-    }
-
     /** @internal */
     public __connect(props: EventConnectProps): void {
         this._openResolves.clear();
-        this._value = this._initialValue;
+        this.setInitialValue();
         this._addToQueue = props.addToQueue;
         this._getPlacedBids = props.getPlacedBids;
         this._getPending = props.getPending;
@@ -90,9 +89,6 @@ export class EventCore<P = void, V = string> {
     /** @internal */
     public __disconnect(): void {
         this._openResolves.clear();
-        if(this._resetValueOnDisconnect) {
-            this._value = this._initialValue;
-        }
         delete this._addToQueue
         delete this._getPlacedBids;
         delete this._getPending;
@@ -105,6 +101,7 @@ export class EventCore<P = void, V = string> {
     }
 
     public get value(): P | undefined {
+        if(!this.isConnected) return undefined;
         return this._value;
     }
 
@@ -150,10 +147,10 @@ export class EventCore<P = void, V = string> {
 export class EventCoreKeyed<T, P = void> {
     public readonly type: EventType;
     public readonly name: string;
-    protected _initialValue?: P;
+    protected readonly _initialValue?: P | (()=> P);
     protected _children = new Map<string | number, T>();
 
-    constructor(name: string, type: EventType, initialValue?: P) {
+    constructor(name: string, type: EventType, initialValue?: P | (()=> P)) {
         this.type = type;
         this._initialValue = initialValue;
         this.name = name;

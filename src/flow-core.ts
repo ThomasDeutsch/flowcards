@@ -27,7 +27,7 @@ export interface FlowProps {
     id: NameKeyId,
     generatorFunction: FlowGeneratorFunction;
     logger: Logger;
-    willDestroyOnDisable: boolean;
+    keepProgressOnDisable: boolean;
     addToQueue: (action: QueueAction) => void;
     cancelPending: (flowId: NameKeyId, eventId: NameKeyId) => void;
 }
@@ -51,7 +51,7 @@ export class FlowCore {
     private _thread: FlowGenerator;
     private _placedBids: PlacedBid[] | undefined;
     private _context: FlowUtilities;
-    public readonly willDestroyOnDisable: boolean;
+    public readonly keepProgressOnDisable: boolean;
     private _pendingExtends = new NameKeyMap<ExtendContext>();
     private _pendingRequests = new NameKeyMap<RequestedAsyncAction>();
     private _addToQueue: (action: QueueAction) => void;
@@ -65,7 +65,7 @@ export class FlowCore {
         this._thread = params.generatorFunction.bind(this._context)();
         const next = this._thread.next();
         this._setPlacedBids(next);
-        this.willDestroyOnDisable = params.willDestroyOnDisable;
+        this.keepProgressOnDisable = params.keepProgressOnDisable;
         this._addToQueue = params.addToQueue;
         this._cancelPending = params.cancelPending;
     }

@@ -5,7 +5,7 @@ import { getHighestPriorityAskForBid } from "./index";
 import { NameKeyId } from "./name-key-map";
 
 export class UserEvent<P = void, V = string> extends EventCore<P, V> {
-    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
+    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P | (()=> P)) {
         super(nameOrNameKey, 'UI', initialValue);
     }
 
@@ -50,7 +50,7 @@ export class UserEvent<P = void, V = string> extends EventCore<P, V> {
 
 
 export class UserEventKeyed<P = void, V = string> extends EventCoreKeyed<UserEvent<P,V>, P> {
-    constructor(nameOrNameKey: string, initialValue?: P) {
+    constructor(nameOrNameKey: string, initialValue?: P | (()=> P)) {
         super(nameOrNameKey, 'UI', initialValue);
     }
 
@@ -69,13 +69,13 @@ export class UserEventKeyed<P = void, V = string> extends EventCoreKeyed<UserEve
 }
 
 export class FlowEvent<P = void, V = string> extends EventCore<P, V> {
-    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P) {
+    constructor(nameOrNameKey: string | NameKeyId, initialValue?: P | (()=> P)) {
         super(nameOrNameKey, 'FIBER', initialValue);
     }
 }
 
 export class FlowEventKeyed<P = void, V = string> extends EventCoreKeyed<FlowEvent<P,V>, P> {
-    constructor(nameOrNameKey: string, initialValue?: P) {
+    constructor(nameOrNameKey: string, initialValue?: P | (()=> P)) {
         super(nameOrNameKey, 'FIBER', initialValue);
     }
 

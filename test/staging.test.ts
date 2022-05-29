@@ -173,3 +173,34 @@ test("a pending event is shown as pending in the staging function", (done) => {
         f(requestingThread);
     });
 });
+
+
+test("a flow gets disabled, its progress will be reset.", (done) => {
+
+    const eventA = new FlowEvent<number>('A');
+    const eventB = new FlowEvent<number>('B');
+    const eventC = new FlowEvent<number>('C');
+
+
+    const t1 = new Flow('thread1', function*() {
+        yield bp.request(eventA, () => delay(100, 9));
+        yield bp.request(eventB, () => delay(100, 9));
+        yield bp.request(eventC, () => delay(100, 9));
+    });
+    const t2 = new Flow('thread2', function*() {
+        yield bp.waitFor(eventA);
+        yield bp.waitFor(eventC);
+    });
+
+    testScenarios((e, f) => {
+        e([eventA, eventB, eventC]);
+        f(t1);
+        if(!eventB.isPending) {
+            f(t2);
+        }
+        if(t1.isCompleted) {
+            expect(t2.isCompleted).toBe(false);
+            done();
+        }
+    });
+});

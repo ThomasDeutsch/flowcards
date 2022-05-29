@@ -70,7 +70,7 @@ export class Staging {
                 id: flow.id,
                 generatorFunction: flow.generatorFunction,
                 logger: this._logger,
-                willDestroyOnDisable: flow.destroyOnDisable,
+                keepProgressOnDisable: flow.keepProgressOnDisable,
                 addToQueue: this._addToQueue,
                 cancelPending: this._cancelPending.bind(this)
             });
@@ -116,7 +116,7 @@ export class Staging {
         this._flowMap.allValues?.forEach(flow => {
             if(!this._enabledFlowIds.has(flow.id)) {
                 flow.cancelAllPendingRequests();
-                if(flow.willDestroyOnDisable) {
+                if(!flow.keepProgressOnDisable) {
                     flow.cancelAllPendingExtends();
                     this._flowMap.delete(flow.id);
                 }
