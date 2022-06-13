@@ -502,6 +502,36 @@ test("the allOf utility function will return if all bids have progressed", (done
 });
 
 
+test("the allOf utility function will return if all bids have progressed", (done) => {
+    let timesPromiseWasCreated = 0;
+    const eventA = new FlowEvent<number>('A');
+    const eventB = new FlowEvent<number>('B');
+    const eventC = new UserEvent<number>('C');
+
+
+
+    const requestingThread = new Flow('thread1',
+        function*() {
+            yield* bp.allOf(bp.block(eventC), bp.request(eventA, 1), bp.request(eventB, () => {
+                timesPromiseWasCreated++;
+                return delay(200, 3);
+            }));
+            yield bp.askFor(eventC);
+    });
+
+    testScenarios((event, flow) => {
+        event([eventA, eventB, eventC]);
+        flow(requestingThread);
+    }, ()=> {
+        if(eventC.isValid(1)) {
+            expect(eventB.value).toBe(3);
+            expect(eventA.value).toBe(1);
+            expect(timesPromiseWasCreated).toBe(1);
+            done();
+        }
+    });
+});
+
 test("a pending event is canceled, when another request finished before", (done) => {
     const eventA = new FlowEvent<number | undefined>('A');
     const eventB = new FlowEvent<number | undefined>('B');

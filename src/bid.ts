@@ -223,8 +223,12 @@ export function* extendBid<P,V>(event: FlowEvent<P, V> | UserEvent<P, V>, guard?
 }
 
 export function* allOf(...bids: Bid<any, any>[]): Generator<BidOrBids, void, FlowProgressInfo> {
-    while(bids && bids.length > 0) {
+    while(bids && bids.filter(isProgressingBid).length > 0) {
         const progress = yield bids;
         bids = progress.remainingBids || [];
     }
+}
+
+export function isProgressingBid(bid: Bid<any, any>): boolean {
+    return bid.type !== 'blockBid' && bid.type !== 'validateBid';
 }
