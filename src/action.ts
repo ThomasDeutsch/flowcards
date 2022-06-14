@@ -109,8 +109,7 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
 }
 
 
-// TODO: implement Replay behaviour
-export function getNextRequestedAction(staging: Staging, nextActionId: number, logger: Logger, payloadOverride?: {value: any}): ActionFromBid | undefined {
+export function getNextActionFromBid(staging: Staging, nextActionId: number, logger: Logger): ActionFromBid | undefined {
     let action: RequestedAsyncAction | RequestedAction | TriggeredAction | undefined;
     staging.orderedRequestingBids?.some((bid) => {
         let explain: ExplainEventResult<any>;

@@ -1,4 +1,4 @@
-import { ResolveAction, ResolveExtendAction, AnyAction, QueueAction, getQueuedAction, ActionType, getNextRequestedAction } from './action';
+import { ResolveAction, ResolveExtendAction, AnyAction, QueueAction, getQueuedAction, ActionType, getNextActionFromBid } from './action';
 import { FlowCore } from './flow-core';
 import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger, LoopLog } from './logger';
@@ -64,7 +64,7 @@ export class Scheduler {
     private _getNextAction(): AnyAction | undefined {
         return this._replay?.getNextReplayAction(this._staging, this._currentActionId, this._logger) ||
         getQueuedAction(this._logger, this._actionQueue, this._staging, this._currentActionId) ||
-        getNextRequestedAction(this._staging, this._currentActionId, this._logger);
+        getNextActionFromBid(this._staging, this._currentActionId, this._logger);
     }
 
     private _executeNextAction(): NameKeyId | undefined {

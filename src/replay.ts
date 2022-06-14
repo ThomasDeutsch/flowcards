@@ -1,9 +1,8 @@
-import { AnyAction, getNextRequestedAction } from "./action";
-import { GetEvent } from "./scheduler";
+import { AnyAction } from "./action";
 import { Logger } from "./logger";
-import { isSameNameKeyId } from "./name-key-map";
 import { Staging } from "./staging";
-import { explainAskFor, ExplainEventResult, explainExtend, explainRequest, explainTrigger, isActionFromBid } from ".";
+import { explainAskFor, explainRequest, explainResolve, explainTrigger, getInitialExplainResult, isActionFromBid, PlacedRequestBid, PlacedTriggerBid } from ".";
+import { isThenable } from "./utils";
 
 
 export type ReplayFinishedCB = () => void;
@@ -17,7 +16,6 @@ export interface AbortReplayInfo {
 }
 
 export type ReplayState = 'running' | "aborted" | "completed";
-export type ReplayAction = AnyAction & { testCb?: (payload: unknown) => void }
 
 
 export function getReplay(initialActionsOrReplay?: AnyAction[] | Replay): Replay | undefined {
@@ -33,20 +31,16 @@ export function getReplay(initialActionsOrReplay?: AnyAction[] | Replay): Replay
     return initialActionsOrReplay;
 }
 
-interface ReplayProps {
-    actions: AnyAction[]
-}
-
 export class Replay {
     public title = "";
     private _state: ReplayState = 'running';
     public get state(): ReplayState { return this._state }
     private _abortInfo?: AbortReplayInfo;
     public get abortInfo(): AbortReplayInfo | undefined { return this._abortInfo }
-    private _actions: Map<number, ReplayAction> = new Map();
+    private _actions: Map<number, AnyAction> = new Map();
     private _lastActionId: number;
 
-    constructor(actions: ReplayAction[]) {
+    constructor(actions: AnyAction[]) {
         actions.forEach(action => this._actions.set(action.id!, action));
         this._lastActionId = actions[actions.length-1]?.id || 0;
     }
@@ -65,68 +59,144 @@ export class Replay {
             this._state = 'completed';
             return undefined;
         }
-        const replayAction = this._actions.get(nextActionId)!;
+        const replayAction = this._actions.get(nextActionId);
         if(replayAction === undefined) return undefined;
 
-        let bid = staging.getFlow(replayAction.flowId)?.getBid(replayAction.bidId);
-        if(bid === undefined) {
-            this.abortReplay(replayAction, `no bid for this action: '${replayAction}'`);
+        const flow = staging.getFlow(replayAction.flowId)
+        if(flow === undefined) {
+            this.abortReplay(replayAction, `flow for this action is not enabled`);
             return undefined;
         }
 
-        if(isActionFromBid(replayAction)) {
-            const expectedAction = getNextRequestedAction(staging, nextActionId, logger);
-            if(expectedAction === undefined) {
-                this.abortReplay(replayAction, `action was not requested!`);
-                return undefined;
-            }
-            // check if the requested action matches the replay-action
-            if(expectedAction.bidId !== replayAction.bidId || !isSameNameKeyId(expectedAction.flowId, replayAction.flowId)) {
-                this.abortReplay(replayAction, `action not expected: '${replayAction.bidId}, ${replayAction.flowId.name}', expected: '${expectedAction!.bidId}, ${expectedAction!.flowId.name}'`);
-                return undefined;
-            }
-            // do not make the async call again - use the resolved value if there is one.
-            if(replayAction.type === 'requestedAsyncAction' && replayAction.resolveActionId) {
-                const resolveAction = this._actions.get(replayAction.resolveActionId);
-                if(resolveAction === undefined) {
-                    this.abortReplay(replayAction, `a resolve action with id '${replayAction.resolveActionId}' is expected, but no resolve action was found.`);
-                    return undefined;
-                }
-                replayAction.payload = new Promise(() => null); // a promise that will never resolve
-                return replayAction;
-            }
-            if(!('payload' in replayAction)) {
-                replayAction.payload = expectedAction.payload;
-            }
-        }
-        // check guards!
         const event = staging.getEvent(replayAction.eventId);
         if(event === undefined) {
             this.abortReplay(replayAction, `event not found: ${replayAction.eventId}`);
             return undefined;
         }
-        const payloadOverride = 'payload' in replayAction ? {value: replayAction.payload} : undefined;
 
-        let explain: ExplainEventResult<any> | undefined = undefined;
-        if(bid.type === 'requestBid') {
-            bid = {...bid, payload: payloadOverride ? payloadOverride.value : bid.payload}
-            explain = explainRequest(event, bid);
+        if(replayAction.type === 'requestedAsyncAction') {
+            const bid = flow.getBid(replayAction.bidId);
+            if(bid === undefined) {
+                this.abortReplay(replayAction, `flow has not placed a bid for this action`);
+                return undefined;
+            }
+            // check if the event is valid
+            const result = getInitialExplainResult(event);
+            if(!result.isValid) {
+                this.abortReplay(replayAction, `event is not valid`);
+                return undefined;
+            }
+            // do not make the async call again - use the resolved value if there is one.
+            if(replayAction.resolveActionId) {
+                const resolveAction = this._actions.get(replayAction.resolveActionId);
+                if(resolveAction === undefined) {
+                    this.abortReplay(replayAction, `a resolve action with id '${replayAction.resolveActionId}' is expected, but no resolve action was found.`);
+                    return undefined;
+                }
+                if(resolveAction && ("payload" in replayAction)) {
+                    this.abortReplay(replayAction, `a payload for the requestedAsyncAction was provided, as well as a resolve-Action payload`);
+                    return undefined;
+                }
+                if('payload' in (this._actions.get(replayAction.resolveActionId) || {})) {
+                    return {...replayAction, payload: new Promise(() => null)};
+                }
+                return replayAction;
+
+            }
+            // use a different api-call
+            else if("payload" in replayAction) {
+                if(replayAction.payload instanceof Function) {
+                    return {...replayAction, payload: replayAction.payload() }
+                } else {
+                    this.abortReplay(replayAction, `the payload for an requestedAsyncAction needs to be a function that returns a promise`);
+                    return undefined;
+                }
+            }
+            // make async-call again.
+            const payloadFn = (bid as PlacedRequestBid<any, any>).payload;
+            if(!(payloadFn instanceof Function)) {
+                this.abortReplay(replayAction, `the payload of the requestig flow needs to be a function that returns a promise`);
+                return undefined;
+            }
+            const promise = payloadFn();
+            if(!isThenable(promise)) {
+                this.abortReplay(replayAction, `the payload of the requestig flow needs to be a function that returns a promise`);
+                return undefined;
+            }
+            return {...replayAction, payload: promise};
         }
-        else if(bid.type === 'triggerBid') {
-            bid = {...bid, payload: payloadOverride ? payloadOverride.value : bid.payload}
-            explain = explainTrigger(event, bid);
+
+        if(replayAction.type === 'requestedAction') {
+            let bid = flow.getBid(replayAction.bidId) as PlacedRequestBid<any, any> | undefined;
+            if(bid === undefined) {
+                this.abortReplay(replayAction, `flow has not placed a bid for this action`);
+                return undefined;
+            }
+            if("payload" in replayAction) {
+                bid = {...bid, payload: replayAction.payload}
+            } else {
+                replayAction.payload = bid.payload;
+            }
+            const explain = explainRequest(event, bid as PlacedRequestBid<any, any> );
+            if(!explain.isValid) {
+                this.abortReplay(replayAction, explain.invalidReason);
+                return undefined;
+            }
+            return replayAction;
         }
-        else if(bid.type === 'askForBid') {
-            explain = explainAskFor(event, payloadOverride ? payloadOverride.value : replayAction.payload);
+
+        if(replayAction.type === 'triggeredAction') {
+            let bid = flow.getBid(replayAction.bidId) as PlacedTriggerBid<any, any> | undefined;
+            if(bid === undefined) {
+                this.abortReplay(replayAction, `flow has not placed a bid for this action`);
+                return undefined;
+            }
+            if("payload" in replayAction) {
+                bid = {...bid, payload: replayAction.payload}
+            } else {
+                replayAction.payload = bid.payload;
+            }
+            const explain = explainTrigger(event, bid as PlacedTriggerBid<any, any> );
+            if(!explain.isValid) {
+                this.abortReplay(replayAction, explain.invalidReason);
+                return undefined;
+            }
+            return replayAction;
         }
-        else if(bid.type === 'extendBid') {
-            explain = explainExtend(event, bid, replayAction);
+
+        if(replayAction.type === 'uiAction') {
+            const payloadOverride = "payload" in replayAction ? {value: replayAction.payload} : undefined;
+            const explain = explainAskFor(event, payloadOverride ? payloadOverride.value : replayAction.payload);
+            if(!explain.isValid) {
+                this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
+                return undefined;
+            }
+            return replayAction;
         }
-        if(explain && !explain.isValid) {
-            this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
-            return undefined;
+
+        if(replayAction.type === 'rejectAction') {
+            return replayAction;
         }
-        replayAction.testCb?.(replayAction.payload);
-        return replayAction;
+
+        if(replayAction.type === 'resolvedExtendAction') {
+            const explain = getInitialExplainResult(event, 'extend');
+            if(!explain.isValid) {
+                this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
+                return undefined;
+            }
+            return replayAction;
+        }
+
+        if(replayAction.type === 'resolveAction') {
+            const explain = explainResolve(event, replayAction.payload);
+            if(!explain.isValid) {
+                this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
+                return undefined;
+            }
+            return replayAction;
+        }
+
+
+
     }
 }
