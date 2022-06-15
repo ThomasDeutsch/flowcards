@@ -155,8 +155,6 @@ test("an async request will not be send again, if a resolveAction is provided", 
         e(eventA);
         f(requestingFlow);
     }, ({replay}) => {
-        console.log(replay?.abortInfo);
-
         expect(replay!.state).toBe('completed');
         expect(eventA.value).toBe(4);
         expect(delayFnCalled).toBe(0)

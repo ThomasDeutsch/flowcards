@@ -75,7 +75,7 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
         if(explain.isValid) {
             return {...action, id: nextActionId};
         }  else {
-            //TODO: log dropped action
+            logger.logDroppedAction(action);
             return getQueuedAction(logger, actionQueue, staging, nextActionId);
         }
     }
