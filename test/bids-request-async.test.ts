@@ -67,7 +67,7 @@ test("A function, returning a promise can be requested and will create a pending
         if(thread1.isCompleted) {
             expect(eventA.value).toBe(10);
             const l = info.logs[info.logs.length-1];
-            expect(l.explain.map(e => e.invalidReason)[0]).toBe('None')
+            expect(l.explain.map(e => e.invalidReason)[0]).toBe(undefined)
             done();
         } else if (eventA.pendingBy) {
             expect(thread1.isCompleted).toBe(false);
