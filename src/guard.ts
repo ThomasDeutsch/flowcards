@@ -10,6 +10,7 @@ export type GuardCB<P, V> = (value: P) => GuardResult<V>;
 
 
 export interface ExplainEventResult<V> {
+    eventId?: NameKeyId;
     isValid: boolean;
     failed: V[];
     passed: V[];
@@ -74,6 +75,7 @@ function addGuardResult<V>(result: ExplainEventResult<V>, guardResult?: GuardRes
 
 export function getInitialExplainResult<P, V>(event: EventCore<P, V> | undefined, ignore?: 'pending' | 'extend'): ExplainEventResult<V> {
     const result: ExplainEventResult<V> = {
+        eventId: event?.id,
         isValid: true,
         failed: [],
         passed: [],
@@ -82,22 +84,16 @@ export function getInitialExplainResult<P, V>(event: EventCore<P, V> | undefined
         nextValue: undefined
     }
     if(event?.isConnected !== true){
-        result.isValid = false;
-        result.invalidReason = 'NotConnected';
-        return result;
+        return {...result, isValid: false, invalidReason: 'NotConnected'};
     }
     if(event.isBlocked && ignore !== 'pending') {
-        result.isValid = false;
-        result.invalidReason = 'Blocked';
-        return result;
+        return {...result, isValid: false, invalidReason: 'Blocked'};
     }
     if(event.pendingBy && ignore !== 'pending') {
-        result.isValid = false;
-        result.invalidReason = 'Pending'
+        return {...result, isValid: false, invalidReason: 'Pending'};
     }
     if(event.extendedBy && ignore !== 'extend' && ignore !== 'pending') {
-        result.isValid = false;
-        result.invalidReason = 'Extended'
+        return {...result, isValid: false, invalidReason: 'Extended'};
     }
     return result;
 }

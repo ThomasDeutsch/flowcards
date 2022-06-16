@@ -16,11 +16,10 @@ test("an async request is not called if proceeded by a not-async request", (done
     testScenarios((e, f) => {
         e([eventA, eventB]);
         f(requestingThread);
-    }, ({log})=> {
-
+    }, ({info})=> {
         if(requestingThread.isCompleted) {
             expect(eventB.pendingBy).toBe(undefined);
-            expect(log.logs[log.logs.length-1].canceled.length).toBe(0);
+            expect(info.logs[info.logs.length-1].canceled.length).toBe(0);
             done();
         }
         else {
@@ -41,11 +40,10 @@ test("a pending event is cancelled, if the thread completes", (done) => {
     testScenarios((e, f) => {
         e([eventA, eventB]);
         f(requestingThread);
-    }, ({log})=> {
-
+    }, ({info})=> {
         if(requestingThread.isCompleted) {
             expect(eventB.pendingBy).toBe(undefined);
-            expect(log.logs[log.logs.length-1].canceled[0].eventId.name === 'asyncEvent')
+            expect(info.logs[info.logs.length-1].canceled[0].eventId.name === 'asyncEvent')
             done();
         }
         else {
@@ -56,7 +54,7 @@ test("a pending event is cancelled, if the thread completes", (done) => {
 
 
 test("A function, returning a promise can be requested and will create a pending-event", (done) => {
-    const eventA = new FlowEvent<number | undefined>('Axxl');
+    const eventA = new FlowEvent<number | undefined>('TEST12222');
 
     const thread1 = new Flow('requestingThread', function* () {
         yield bp.request(eventA, () => delay(100, 10));
@@ -65,9 +63,11 @@ test("A function, returning a promise can be requested and will create a pending
     testScenarios((e, f) => {
         e(eventA);
         f(thread1);
-    }, () => {
+    }, ({info}) => {
         if(thread1.isCompleted) {
             expect(eventA.value).toBe(10);
+            const l = info.logs[info.logs.length-1];
+            expect(l.explain.map(e => e.invalidReason)[0]).toBe('None')
             done();
         } else if (eventA.pendingBy) {
             expect(thread1.isCompleted).toBe(false);
@@ -336,11 +336,11 @@ test("a request is resumed if the bid is repeated - and it needs to be the same 
     testScenarios((e, f) => {
         e([asyncEvent, cancelEvent, finEvent]);
         f(requestingThread);
-    }, ({log})=> {
+    }, ({info})=> {
         if(requestingThread.isCompleted) {
             expect(asyncEvent.isPending).toBe(false);
             expect(asyncEvent.value).toBe('sync value');
-            expect(log.logs[1].canceled[0]?.eventId.name).toBe('asyncEvent');
+            expect(info.logs[1].canceled[0]?.eventId.name).toBe('asyncEvent');
             done();
         }
     });

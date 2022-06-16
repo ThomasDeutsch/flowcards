@@ -1,12 +1,12 @@
 import { AnyAction } from './action';
-import { LogInfo, Scheduler } from './scheduler';
+import { FlowsInfo, Scheduler } from './scheduler';
 import { StagingCB } from './staging';
-import { LoopLog } from './logger';
+import { ActionReactionLog } from './logger';
 import { Replay, getReplay } from './replay';
 
-export type FlowCardsContext = {log: LogInfo, replay?: Replay}
+export type FlowCardsContext = {info: FlowsInfo, replay?: Replay}
 export type UpdateCB = (pl: FlowCardsContext) => void;
-export type OnFinishLoopCB = (loopLog: LoopLog) => void;
+export type OnFinishLoopCB = (log: ActionReactionLog) => void;
 
 export interface FlowCardsProps {
     stagingCB: StagingCB;
@@ -26,9 +26,9 @@ export class FlowCards {
             updateCB: props.updateCB
         });
         const replay = getReplay(props.initialActionsOrReplay);
-        const log = this._scheduler.run(replay);
-        if(props.doInitialUpdate) props.updateCB({log, replay}); // callback with initial value
-        this.initialContext = {log, replay};
+        const info = this._scheduler.run(replay);
+        if(props.doInitialUpdate) props.updateCB({info, replay}); // callback with initial value
+        this.initialContext = {info, replay};
     }
 }
 

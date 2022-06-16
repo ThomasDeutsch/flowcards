@@ -134,11 +134,14 @@ export class Staging {
         this._nextPendingRequests.forEach(([eventId, flowId]) => this._pendingRequests.set(eventId, flowId));
         this._nextPendingRequests.length = 0;
         this._allPlacedBids = allPlacedBids(this._flowBids);
-        this._logger.logPlacedBids(this._allPlacedBids);
     }
 
     public getPlacedBids(type: BidType, eventId: NameKeyId): PlacedBid[] | undefined {
         return this._allPlacedBids?.[type].get(eventId);
+    }
+
+    public get allPlacedBids(): AllPlacedBids | undefined {
+        return this._allPlacedBids
     }
 
     public get orderedRequestingBids(): (PlacedTriggerBid<any, any> | PlacedRequestBid<any, any>)[] | undefined {

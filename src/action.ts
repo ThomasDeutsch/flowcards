@@ -71,18 +71,17 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
         // TODO: do not validate if action has the same dispatch-id as the current loop-index.
         const explain = explainAskFor(event, action.payload);
         event.__queueValidationResult(explain);
-        logger.logExplain(explain);
         if(explain.isValid) {
             return {...action, id: nextActionId};
         }  else {
-            logger.logDroppedAction(action);
+            logger.logExplain(explain);
             return getQueuedAction(logger, actionQueue, staging, nextActionId);
         }
     }
     if(action.type === 'resolveAction') {
         const explain = explainResolve(event, action.payload);
-        logger.logExplain(explain);
         if(!explain.isValid) {
+            logger.logExplain(explain);
             const rejectAction: RejectAction = {
                 ...action,
                 type: 'rejectAction',
@@ -94,6 +93,7 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
         const flow = staging.getFlow(action.flowId);
         if(flow === undefined) {
             logger.logCanceledPending(action.flowId, action.eventId, 'request', 'flow disabled');
+            return getQueuedAction(logger, actionQueue, staging, nextActionId);
         } else {
             return {...action, id: nextActionId};
         }
@@ -104,8 +104,6 @@ export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<Queue
     if(action.type === 'rejectAction') {
         return {...action, id: nextActionId};
     }
-    logger.logDroppedAction(action);
-    return getQueuedAction(logger, actionQueue, staging, nextActionId);
 }
 
 
@@ -116,8 +114,8 @@ export function getNextActionFromBid(staging: Staging, nextActionId: number, log
         if(bid.type === 'requestBid') {
             const event = staging.getEvent(bid.eventId);
             explain = explainRequest(event, bid);
-            logger.logExplain(explain);
-            if(explain.isValid === false) {
+            if(!explain.isValid) {
+                logger.logExplain(explain);
                 return false;
             }
             if(isThenable(explain.nextValue)) {
@@ -146,8 +144,8 @@ export function getNextActionFromBid(staging: Staging, nextActionId: number, log
         else {
             const event = staging.getEvent(bid.eventId);
             explain = explainTrigger(event, bid);
-            logger.logExplain(explain);
-            if(explain.isValid === false) {
+            if(!explain.isValid) {
+                logger.logExplain(explain);
                 return false;
             }
             action = {
