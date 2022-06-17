@@ -23,6 +23,7 @@ export interface FlowsInfo {
     logs: ActionReactionLog[];
     allPlacedBids?: AllPlacedBids;
     allRelevantFlows: NameKeyMap<void>;
+    getEvent: GetEvent;
 }
 
 export interface SchedulerProps {
@@ -109,6 +110,7 @@ export class Scheduler {
         return {
             allRelevantFlows: this._logger.allRelevantFlows,
             allPlacedBids: this._staging.allPlacedBids,
+            getEvent: this._staging.getEvent.bind(this._staging),
             logs: this._logger.getLoopLogs()
         };
     }
