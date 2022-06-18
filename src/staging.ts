@@ -152,7 +152,7 @@ export class Staging {
         return this._flowMap.get(flowId);
     }
 
-    public getEvent<P,V>(eventId: NameKeyId): EventCore<P,V> | undefined {
+    public getEvent<P,V>(eventId: NameKeyId): FlowEvent<P,V> | UserEvent<P,V> | undefined {
         return this._eventMap.get(eventId);
     }
 
