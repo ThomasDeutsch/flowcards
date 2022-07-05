@@ -691,6 +691,3 @@ test("a blocked askFor event will still be marked as asked for.", () => {
         expect(eventA.explain(1).invalidReason).toBe('Blocked')
     });
 });
-
-// TODO: a request Guard will have no arguments
-// TODO: a trigger guard will have no arguments
