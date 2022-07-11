@@ -90,11 +90,11 @@ export class Scheduler {
     }
 
     private _runSchedulerOnNextMicrotask(): void {
-        Promise.resolve().then(() => { // start a microtask
+        queueMicrotask(() => {
             if(this._actionQueue.size === 0) return
             const info = this.run();
             this._updateCB({info});
-        });
+        })
     }
 
     // public ----------------------------------------------------------------------
