@@ -1,9 +1,19 @@
 import { AnyAction } from "./action";
-import { Logger } from "./logger";
 import { Staging } from "./staging";
-import { explainAskFor, explainRequest, explainResolve, explainTrigger, getInitialExplainResult, isActionFromBid, PlacedRequestBid, PlacedTriggerBid } from ".";
+import { explainAskFor, explainRequest, explainResolve, explainTrigger, getInitialExplainResult, PlacedRequestBid, PlacedTriggerBid } from ".";
 import { isThenable } from "./utils";
 
+
+export interface ReplaySection {
+    title: string;
+    fromTo: [number, number]
+}
+
+export interface Replay {
+    title: string;
+    actions: AnyAction[];
+    sections: ReplaySection[];
+}
 
 export type ReplayFinishedCB = () => void;
 export interface PayloadOverride {
@@ -18,31 +28,44 @@ export interface AbortReplayInfo {
 export type ReplayState = 'running' | "aborted" | "completed";
 
 
-export function getReplay(initialActionsOrReplay?: AnyAction[] | Replay): Replay | undefined {
+export function getReplay(initialActionsOrReplay?: AnyAction[] | Replay): SelectedReplay | undefined {
     if(initialActionsOrReplay === undefined)  {
         return undefined;
     }
     else if(Array.isArray(initialActionsOrReplay) ) {
         if(initialActionsOrReplay.length > 0) {
-            return new Replay(initialActionsOrReplay);
+            return new SelectedReplay(initialActionsOrReplay);
         }
         return undefined;
     }
-    return initialActionsOrReplay;
+    return new SelectedReplay(initialActionsOrReplay);
 }
 
-export class Replay {
+export class SelectedReplay {
     public title = "";
     private _state: ReplayState = 'running';
     public get state(): ReplayState { return this._state }
     private _abortInfo?: AbortReplayInfo;
     public get abortInfo(): AbortReplayInfo | undefined { return this._abortInfo }
     private _actions: Map<number, AnyAction> = new Map();
-    private _lastActionId: number;
+    private _sections: ReplaySection[] = [];
+    private _lastActionId = 0;
 
-    constructor(actions: AnyAction[]) {
-        actions.forEach(action => this._actions.set(action.id!, action));
-        this._lastActionId = actions[actions.length-1]?.id || 0;
+    constructor(actionData: AnyAction[] | Replay) {
+        if(Array.isArray(actionData)) {
+            actionData.forEach(action => {
+                this._actions.set(action.id!, action);
+                this._lastActionId = action.id;
+            });
+        }
+        else {
+            this.title = actionData.title;
+            this._sections = actionData.sections;
+            actionData.actions.forEach(action => {
+                this._actions.set(action.id!, action);
+                this._lastActionId = action.id;
+            });
+        }
     }
 
     public abortReplay(action: AnyAction, error: string): void {
@@ -53,7 +76,7 @@ export class Replay {
         this._state = 'aborted';
     }
 
-    public getNextReplayAction(staging: Staging, nextActionId: number, logger: Logger): AnyAction | undefined {
+    public getNextReplayAction(staging: Staging, nextActionId: number): AnyAction | undefined {
         if(this._state !== 'running') return undefined;
         if(nextActionId > this._lastActionId) {
             this._state = 'completed';

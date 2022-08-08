@@ -150,7 +150,8 @@ export function explainRequest<P, V>(event: EventCore<P,V> | undefined, requestB
         const validateGuards = getGuards(event!.getBids('validateBid'));
         validateGuards?.forEach(guard => {
             result = addGuardResult(result, guard(v));
-        });    }
+        });
+    }
     return result;
 }
 

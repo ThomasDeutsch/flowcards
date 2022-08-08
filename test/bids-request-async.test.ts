@@ -355,7 +355,7 @@ test("A block will block the async-call", (done) => {
         yield [bp.request(eventA, () => {
             promiseCreated = true
             return delay(100, 10)
-        }), bp.block(eventA)];
+        }), bp.block(eventA, () => true)];
     });
 
     testScenarios((e, f) => {

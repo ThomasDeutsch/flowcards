@@ -43,7 +43,7 @@ export interface ValidateBid<P,V> extends BaseBid<P,V> {
 
 export interface BlockBid<P,V> extends BaseBid<P,V> {
     type: 'blockBid';
-    guard?: () => V[];
+    guard?: () => boolean;
 }
 
 
@@ -207,7 +207,7 @@ export function validate<P, V>(event: FlowEvent<P, V> | UserEvent<P, V>, guard: 
     return { type: 'validateBid', eventId: getNameKeyId(event), guard };
 }
 
-export function block<P, V>(event: FlowEvent<P, V> | UserEvent<P, V>, guard?: () => V[]): BlockBid<P, V> {
+export function block<P, V>(event: FlowEvent<P, V>, guard?: () => boolean): BlockBid<P, V> {
     return { type: 'blockBid', eventId: getNameKeyId(event), guard };
 }
 

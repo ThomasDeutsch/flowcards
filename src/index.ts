@@ -2,9 +2,9 @@ import { AnyAction } from './action';
 import { FlowsInfo, Scheduler } from './scheduler';
 import { StagingCB } from './staging';
 import { ActionReactionLog } from './logger';
-import { Replay, getReplay } from './replay';
+import { SelectedReplay, getReplay, Replay } from './replay';
 
-export type FlowCardsContext = {info: FlowsInfo, replay?: Replay}
+export type FlowCardsContext = {info: FlowsInfo, replay?: SelectedReplay}
 export type UpdateCB = (pl: FlowCardsContext) => void;
 export type OnFinishLoopCB = (log: ActionReactionLog) => void;
 

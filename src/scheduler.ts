@@ -4,7 +4,7 @@ import { NameKeyId, NameKeyMap } from './name-key-map';
 import { Logger, ActionReactionLog } from './logger';
 import { advanceRejectAction, advanceRequestedAction, advanceResolveAction, advanceUiAction, advanceResolveExtendAction, advanceTriggeredAction, advanceAsyncRequest } from './advance-flows';
 import { Staging, StagingCB } from './staging';
-import { Replay } from './replay';
+import { SelectedReplay } from './replay';
 import { EventCore } from './event-core';
 import { BufferedQueue } from './buffered-queue';
 import { AllPlacedBids, UpdateCB } from './index';
@@ -47,7 +47,7 @@ export class Scheduler {
     private _currentActionId = 0;
     private readonly _logger = new Logger();
     private _actionQueue = new BufferedQueue<QueueAction>();
-    private _replay?: Replay;
+    private _replay?: SelectedReplay;
     private _staging: Staging;
     private _updateCB: UpdateCB;
 
@@ -64,7 +64,7 @@ export class Scheduler {
 
 
     private _getNextAction(): AnyAction | undefined {
-        return this._replay?.getNextReplayAction(this._staging, this._currentActionId, this._logger) ||
+        return this._replay?.getNextReplayAction(this._staging, this._currentActionId) ||
         getQueuedAction(this._logger, this._actionQueue, this._staging, this._currentActionId) ||
         getNextActionFromBid(this._staging, this._currentActionId, this._logger);
     }
@@ -98,7 +98,7 @@ export class Scheduler {
     }
 
     // public ----------------------------------------------------------------------
-    public run(replay?: Replay): FlowsInfo {
+    public run(replay?: SelectedReplay): FlowsInfo {
         if(replay) this._replay = replay;
         let latestEventId = this._executeNextAction();
         this._logger.finishLoop();

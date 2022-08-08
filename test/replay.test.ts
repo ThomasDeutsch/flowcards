@@ -2,7 +2,6 @@ import { Flow } from "../src/flow";
 import * as bp from "../src/bid";
 import { delay, testScenarios } from "./testutils";
 import { FlowEvent, RequestedAction, RequestedAsyncAction, ResolveAction, UIAction, UserEvent } from "../src";
-import { Replay } from "../src/replay";
 
 test("a request can be replayed", (done) => {
     const basicEvent = {
@@ -22,7 +21,7 @@ test("a request can be replayed", (done) => {
         bidId: 0
     }
 
-    const replayObj = new Replay([replayAction]);
+    const replayObj = [replayAction];
 
     testScenarios((e, f) => {
         e(basicEvent)
@@ -49,7 +48,7 @@ test("if a request has no payload, the replay will use the payload from the flow
         bidId: 0
     }
 
-    const replayObj = new Replay([replayAction]);
+    const replayObj = [replayAction];
 
     testScenarios((e, f) => {
         e(eventA);
@@ -78,7 +77,7 @@ test("if a guard fails, the replay will be aborted", (done) => {
         payload: 4
     }
 
-    const replayObj = new Replay([replayAction]);
+    const replayObj = [replayAction];
 
     testScenarios((e, f) => {
         e(eventA);
@@ -108,7 +107,7 @@ test("if a guard fails, the replay will be aborted (askFor)", (done) => {
         payload: 4
     }
 
-    const replayObj = new Replay([replayAction]);
+    const replayObj = [replayAction];
 
     testScenarios((e, f) => {
         e(eventA);
@@ -149,7 +148,7 @@ test("an async request will not be send again, if a resolveAction is provided", 
         payload: 4
     }
 
-    const replayObj = new Replay([replayAction1, replayAction2]);
+    const replayObj = [replayAction1, replayAction2];
 
     testScenarios((e, f) => {
         e(eventA);
