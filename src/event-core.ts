@@ -25,14 +25,13 @@ export interface EventConnectProps {
     getPending: GetPending;
 }
 
-type EventType = 'FIBER' | 'UI';
+type EventType = 'Flow' | 'UI';
 export class EventCore<P = void, V = string> {
     public readonly type: EventType;
     public readonly name: string;
-    public readonly key?: string | number;  //TODO: remove key from EventCore? and only use keys with KeyedEvents ?
+    public readonly key?: string | number;
     public readonly initialValue?: P;
     private _description?: string;
-    private _resetValueOnDisconnect = false
     private _updatedOn?: number;
     private _updateCallbacks: CallbackFunction<P>[] = [];
     //setup
@@ -44,14 +43,14 @@ export class EventCore<P = void, V = string> {
     private _value?: P;
     private readonly _initialValue?: P | (() => P);
 
-    private setInitialValue(): void {
+    private _setValueToInitial(): void {
         this._value = (this._initialValue instanceof Function) ? this._initialValue() : this._initialValue;
     }
 
     constructor(nameOrNameKey: string | NameKeyId, type: EventType, initialValue?: P | (() => P)) {
         this.type = type;
         this._initialValue = initialValue;
-        this.setInitialValue();
+        this._setValueToInitial();
         if(typeof nameOrNameKey === 'string') {
             this.name = nameOrNameKey;
         } else {
@@ -80,7 +79,6 @@ export class EventCore<P = void, V = string> {
     /** @internal */
     public __connect(props: EventConnectProps): void {
         this._openResolves.clear();
-        this.setInitialValue();
         this._addToQueue = props.addToQueue;
         this._getPlacedBids = props.getPlacedBids;
         this._getPending = props.getPending;
@@ -92,6 +90,11 @@ export class EventCore<P = void, V = string> {
         delete this._addToQueue
         delete this._getPlacedBids;
         delete this._getPending;
+    }
+
+    /** @internal */
+    public __resetValue(): void {
+        this._setValueToInitial();
     }
 
     /** @internal */

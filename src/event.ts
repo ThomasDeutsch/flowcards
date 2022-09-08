@@ -70,13 +70,13 @@ export class UserEventKeyed<P = void, V = string> extends EventCoreKeyed<UserEve
 
 export class FlowEvent<P = void, V = string> extends EventCore<P, V> {
     constructor(nameOrNameKey: string | NameKeyId, initialValue?: P | (()=> P)) {
-        super(nameOrNameKey, 'FIBER', initialValue);
+        super(nameOrNameKey, 'Flow', initialValue);
     }
 }
 
 export class FlowEventKeyed<P = void, V = string> extends EventCoreKeyed<FlowEvent<P,V>, P> {
     constructor(nameOrNameKey: string, initialValue?: P | (()=> P)) {
-        super(nameOrNameKey, 'FIBER', initialValue);
+        super(nameOrNameKey, 'Flow', initialValue);
     }
 
     public key(key: string | number): FlowEvent<P,V> {

@@ -6,7 +6,6 @@ import { NameKeyId } from './name-key-map';
 export interface FlowInfo {
     name: string;
     key?: string | number;
-    keepProgressOnDisable?: boolean;
     description?: string;
 }
 
@@ -17,7 +16,6 @@ function toInfoObj(info: FlowInfo | string): FlowInfo {
     if(typeof info === 'string') {
         return {
             name: info,
-            keepProgressOnDisable: false,
             description: "",
             key: undefined
         }
@@ -26,8 +24,7 @@ function toInfoObj(info: FlowInfo | string): FlowInfo {
         return {
             name: info.name,
             key: info.key,
-            description: info.description || "",
-            keepProgressOnDisable: !!info.keepProgressOnDisable
+            description: info.description || ""
         }
     }
 }
@@ -40,7 +37,6 @@ export interface FlowState {
 export class Flow {
     public readonly id: NameKeyId;
     private _generatorFunction: FlowGeneratorFunction;
-    public readonly keepProgressOnDisable: boolean;
     public readonly description?: string;
     private _flowCore?: FlowCore;
 
@@ -48,7 +44,6 @@ export class Flow {
         this._generatorFunction = generatorFn;
         const i = toInfoObj(info);
         this.id = {name: i.name, key: i.key}
-        this.keepProgressOnDisable = i.keepProgressOnDisable || false;
         this.description = i.description;
     }
 

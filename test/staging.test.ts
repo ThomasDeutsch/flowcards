@@ -175,12 +175,11 @@ test("a pending event is shown as pending in the staging function", (done) => {
 });
 
 
-test("a flow gets disabled, its progress will be reset.", (done) => {
+test("a flow gets reset on disable, if the ResetOnDisable key is provided", (done) => {
 
     const eventA = new FlowEvent<number>('A');
     const eventB = new FlowEvent<number>('B');
     const eventC = new FlowEvent<number>('C');
-
 
     const t1 = new Flow('thread1', function*() {
         yield bp.request(eventA, () => delay(100, 9));
@@ -196,11 +195,60 @@ test("a flow gets disabled, its progress will be reset.", (done) => {
         e([eventA, eventB, eventC]);
         f(t1);
         if(!eventB.isPending) {
-            f(t2);
+            f(t2, 'ResetOnDisable');
         }
         if(t1.isCompleted) {
             expect(t2.isCompleted).toBe(false);
             done();
         }
+    });
+});
+
+test("a flow gets reset, if the reset value is true", (done) => {
+
+    const eventA = new FlowEvent<number>('A');
+    const eventB = new FlowEvent<number>('B');
+    const eventC = new FlowEvent<number>('C');
+
+    const t1 = new Flow('thread1', function*() {
+        yield bp.request(eventA, () => delay(100, 9));
+        yield bp.request(eventB, () => delay(100, 9));
+        yield bp.request(eventC, () => delay(100, 9));
+    });
+    const t2 = new Flow('thread2', function*() {
+        yield bp.waitFor(eventA);
+        yield bp.waitFor(eventC);
+    });
+
+    testScenarios((e, f) => {
+        e([eventA, eventB, eventC]);
+        f(t1);
+        f(t2, eventB.isPending);
+        if(t1.isCompleted) {
+            expect(t2.isCompleted).toBe(false);
+            done();
+        }
+    });
+});
+
+test("an enabled event can be reset", (done) => {
+
+    const eventA = new FlowEvent<number>('A');
+    const eventB = new FlowEvent<number>('B')
+
+    const requestingThread = new Flow('thread1', function*() {
+        yield bp.request(eventA, () => delay(200, 4));
+        yield bp.request(eventB, () => delay(200, 2));
+    });
+
+    testScenarios((e, f, latestEvent) => {
+        e(eventB);
+        e(eventA, latestEvent === eventB)
+        if(requestingThread.isCompleted) {
+            expect(eventA.isPending).toBe(false);
+            expect(eventA.value === 4);
+            done();
+        }
+        f(requestingThread);
     });
 });

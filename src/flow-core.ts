@@ -27,7 +27,6 @@ export interface FlowProps {
     id: NameKeyId,
     generatorFunction: FlowGeneratorFunction;
     logger: Logger;
-    keepProgressOnDisable: boolean;
     addToQueue: (action: QueueAction) => void;
     cancelPending: (flowId: NameKeyId, eventId: NameKeyId) => void;
 }
@@ -51,21 +50,22 @@ export class FlowCore {
     private _thread: FlowGenerator;
     private _placedBids: PlacedBid[] | undefined;
     private _context: FlowUtilities;
-    public readonly keepProgressOnDisable: boolean;
     private _pendingExtends = new NameKeyMap<ExtendContext>();
     private _pendingRequests = new NameKeyMap<RequestedAsyncAction>();
     private _addToQueue: (action: QueueAction) => void;
+    private _generatorFunction: FlowGeneratorFunction;
     private _cancelPending: (flowId: NameKeyId, eventId: NameKeyId) => void;
     private _currentBidPlacementId = 0;
+    private _inInitialState = true;
 
     public constructor(params: FlowProps) {
         this.id = params.id;
         this._logger = params.logger;
         this._context = this._createFlowUtilities();
+        this._generatorFunction = params.generatorFunction;
         this._thread = params.generatorFunction.bind(this._context)();
         const next = this._thread.next();
         this._setPlacedBids(next);
-        this.keepProgressOnDisable = params.keepProgressOnDisable;
         this._addToQueue = params.addToQueue;
         this._cancelPending = params.cancelPending;
     }
@@ -98,6 +98,16 @@ export class FlowCore {
         }
     }
 
+    public reset(): void {
+        // do not reset flow if it is in inital state
+        if(this._inInitialState) return;
+        this.cancelAllPendingExtends();
+        this.cancelAllPendingRequests();
+        this._thread = this._generatorFunction.bind(this._context)();
+        const next = this._thread.next();
+        this._setPlacedBids(next);
+    }
+
     private _getLocalBidId(): number {
         return this._currentBidPlacementId++;
     }
@@ -121,6 +131,7 @@ export class FlowCore {
     }
 
     private _processNextBid(event: EventCore<any, any>, progressedBid?: PlacedBid<unknown>, error?: any): void {
+        this._inInitialState = false;
         let next: IteratorResult<BidOrBids, void>;
         let progressInfo: FlowProgressInfo | undefined;
         if(error !== undefined) {

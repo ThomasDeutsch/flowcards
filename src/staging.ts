@@ -8,8 +8,8 @@ import { QueueAction, RequestedAsyncAction } from './action';
 import { FlowEvent, UserEvent } from './event';
 import { EventCore } from './event-core';
 
-export type EnableFlow = (flow: Flow) => void;
-export type EnableEvents = (neo: NestedEventObject) => void;
+export type EnableFlow = (flow: Flow, reset?: boolean | 'ResetOnDisable') => void;
+export type EnableEvents = (neo: NestedEventObject, reset?: boolean | 'resetOnDisable') => void;
 export type StagingCB = (enableEvents: EnableEvents, enableFlow: EnableFlow, latestEvent: UserEvent<any,any> | FlowEvent<any,any> | 'initial') => void;
 export type RunStaging = () => void;
 export type GetPlacedBids = (bidType: BidType, eventId: NameKeyId) => PlacedBid<any>[] | undefined;
@@ -35,8 +35,10 @@ export interface StagingProps {
 
 export class Staging {
     private readonly _flowMap: FlowMap = new NameKeyMap<FlowCore>();
+    private readonly _resetFlowOnDisable = new NameKeyMap<boolean>();
     private readonly _enabledFlowIds = new NameKeyMap<NameKeyId>();
     private readonly _eventMap = new NameKeyMap<FlowEvent<any, any> | UserEvent<any, any>>();
+    private readonly _resetEventOnDisable = new NameKeyMap<boolean>();
     private readonly _enabledEventIds = new NameKeyMap<NameKeyId>();
     private readonly _flowBids: PlacedBid<unknown>[] = [];
     private _allPlacedBids?: AllPlacedBids;
@@ -59,7 +61,7 @@ export class Staging {
         this.getFlow(flowId)?.cancelSinglePendingRequest(eventId);
     }
 
-    private _enableFlow: EnableFlow = (flow: Flow) => {
+    private _enableFlow: EnableFlow = (flow, reset) => {
         if(this._enabledFlowIds.has(flow.id)) {
             throw new Error(`${flow.id.name}${flow.id.key ? flow.id.key : ""} enabled more than once`);
         }
@@ -70,12 +72,17 @@ export class Staging {
                 id: flow.id,
                 generatorFunction: flow.generatorFunction,
                 logger: this._logger,
-                keepProgressOnDisable: flow.keepProgressOnDisable,
                 addToQueue: this._addToQueue,
                 cancelPending: this._cancelPending.bind(this)
             });
             this._flowMap.set(flow.id, flowCore);
             flow.__setCore(flowCore);
+        }
+        if(reset === 'ResetOnDisable') {
+            this._resetFlowOnDisable.set(flow.id, true);
+        }
+        if(reset) {
+            flowCore.reset();
         }
 
         flowCore.placedBids?.forEach(bid => {
@@ -89,7 +96,7 @@ export class Staging {
         });
     }
 
-    private _enableEvents: EnableEvents = (neo: NestedEventObject) => {
+    private _enableEvents: EnableEvents = (neo, reset) => {
         const events = getEvents(neo);
         events.forEach(event => {
             if(this._enabledEventIds.has(event.id)) {
@@ -105,18 +112,25 @@ export class Staging {
                 });
                 this._eventMap.set(event.id, event);
             }
+            if(reset === 'resetOnDisable') {
+                this._resetEventOnDisable.set(event.id, true);
+            } else if(reset) {
+                event.__resetValue();
+            }
         });
     }
 
     public run(latestEvent: UserEvent | FlowEvent | 'initial'): void {
         this._flowBids.length = 0;
+        this._resetFlowOnDisable.clear();
         this._enabledFlowIds.clear();
         this._enabledEventIds.clear();
+        this._resetEventOnDisable.clear();
         this._stagingCB(this._enableEvents, this._enableFlow, latestEvent);
         this._flowMap.allValues?.forEach(flow => {
             if(!this._enabledFlowIds.has(flow.id)) {
                 flow.cancelAllPendingRequests();
-                if(!flow.keepProgressOnDisable) {
+                if(this._resetFlowOnDisable.get(flow.id)) {
                     flow.cancelAllPendingExtends();
                     this._flowMap.delete(flow.id);
                 }
@@ -124,7 +138,10 @@ export class Staging {
         });
         this._eventMap.allValues?.forEach(event => {
             if(!this._enabledEventIds.has(event.id)) {
-                event.__disconnect()
+                if(this._resetEventOnDisable.has(event.id)) {
+                    event.__resetValue();
+                }
+                event.__disconnect();
             }
         });
         this._pendingExtends.clear();
