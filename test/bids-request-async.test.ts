@@ -394,3 +394,35 @@ test("a failed guard for a request will block the validation function from being
         expect(validationFunctionCalled).toBe(true);
     });
 });
+
+
+test("if a flow does not handle an exception, it will reset", (done) => {
+    const askForEvent = new UserEvent('askForEvent');
+    const asyncEvent = new FlowEvent<string>('asyncEvent');
+    let isAskedForOnce = false;
+    let wasCompleted = false;
+    let initCount = 0;
+
+    const requestingThread = new Flow('thread1', function*() {
+        initCount++;
+        yield bp.askFor(askForEvent);
+        yield bp.request(asyncEvent, () => failedDelay(200, 'request failed'));
+        wasCompleted = true;
+    })
+
+    testScenarios((e, f) => {
+        e([asyncEvent, askForEvent]);
+        f(requestingThread);
+    }, (d)=> {
+        if(isAskedForOnce === false) {
+            isAskedForOnce = true;
+            askForEvent.dispatch();
+        }
+        else if(asyncEvent.isPending === false) {
+            expect(wasCompleted).toBe(false);
+            expect(initCount).toBe(2);
+            expect(d.info.allPlacedBids?.askForBid.allKeys?.length).toBe(1);
+            done();
+        }
+    });
+});

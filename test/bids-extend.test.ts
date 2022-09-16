@@ -643,3 +643,39 @@ test("an extend can be resolved in the catch-clause", (done) => {
     });
 });
 
+
+test("an extend can be aborted. After the abort, the event is no longer pending and the extended flow has not progressed", (done) => {
+    const eventA = new UserEvent('A');
+    const eventB = new UserEvent('B');
+    let eventADispatched = 0;
+
+    const thread1 = new Flow('requesting thread', function* () {
+        yield bp.askFor(eventA);
+    });
+
+    const thread2 = new Flow('extending thread', function* () {
+        yield bp.extend(eventA);
+        yield bp.askFor(eventB);
+        this.abortExtend(eventA)
+    })
+
+    testScenarios((e, f) => {
+        e([eventA, eventB]);
+        f(thread1);
+        f(thread2);
+    }, () => {
+        if(eventA.isValid() && eventADispatched === 0) {
+            eventADispatched++;
+            eventA.dispatch();
+        }
+        else if(eventB.isValid()) {
+            eventB.dispatch();
+        }
+        if(thread2.isCompleted) {
+            expect(eventA.isValid()).toBe(true);
+            done();
+        }
+    }
+ );
+});
+

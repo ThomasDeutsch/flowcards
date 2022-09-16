@@ -12,6 +12,7 @@ export type FlowGenerator = Generator<BidOrBids, void, FlowProgressInfo>;
 export interface FlowUtilities {
     key?: string | number;
     resolveExtend: <T>(event: EventCore<T>, value: T) => boolean;
+    abortExtend: (event: EventCore) => void;
     isExtending: (event: EventCore) => boolean;
     getExtendValue: <T, V>(event: EventCore<T, V>) => T | undefined;
 }
@@ -93,6 +94,9 @@ export class FlowCore {
                 this._addToQueue(resolveExtendAction);
                 return true;
             },
+            abortExtend: (event: EventCore) => {
+                this._pendingExtends.delete(event.id);
+            },
             isExtending: (event) => this._pendingExtends.has(event.id),
             getExtendValue: <T>(event: EventCore<T, any>) => this._pendingExtends.get(event.id)?.value as T
         }
@@ -117,8 +121,7 @@ export class FlowCore {
         if(bids === undefined) return [];
         return bids.map(bid => {
                 const bidId = 'id' in bid ? bid.id : this._getLocalBidId();
-                const pb: any = {...bid, flowId: flowId, id: bidId};  //TODO: remove any
-                return pb;
+                return {...bid, flowId: flowId, id: bidId} as PlacedBid;
         }).reverse();
     }
 
@@ -135,7 +138,14 @@ export class FlowCore {
         let next: IteratorResult<BidOrBids, void>;
         let progressInfo: FlowProgressInfo | undefined;
         if(error !== undefined) {
-            next = this._thread.throw(error);
+            try {
+                next = this._thread.throw(error);
+            }
+            catch(error) {
+                // a flow is reset, if an error was not handled
+                this.reset();
+                return;
+            }
             this._logger.logErrorReaction(this.id, event.id, error);
         }
         else {
