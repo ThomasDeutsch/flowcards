@@ -1,7 +1,8 @@
-import { NameKeyId, NameKeyMap } from './name-key-map';
+import { isSameNameKeyId, NameKeyId, NameKeyMap } from './name-key-map';
 import { GuardCB, GuardResult } from './guard';
 import { FlowProgressInfo } from './flow-core';
 import { FlowEvent, UserEvent } from './event';
+import { getEvents, NestedEventObject } from '.';
 
 export type NotRequestingBidType = "askForBid" |  "extendBid" |  "waitForBid" | "validateBid" | "blockBid";
 export type BidType = NotRequestingBidType | 'triggerBid' | 'requestBid';
@@ -227,6 +228,12 @@ export function* allOf(...bids: Bid<any, any>[]): Generator<BidOrBids, void, Flo
         const progress = yield bids;
         bids = progress.remainingBids || [];
     }
+}
+
+export function* extendAll(nestedEvents: NestedEventObject[], exclude?: NestedEventObject[]): Generator<BidOrBids, void, FlowProgressInfo> {
+    const events = nestedEvents.map(nestedEventObject => getEvents(nestedEventObject)).flat();
+    const excludeEvents = exclude?.map(nestedEventObject => getEvents(nestedEventObject)).flat();
+    yield events.filter(event => !excludeEvents?.some(e => isSameNameKeyId(e.id, event.id))).map(event => extend(event));
 }
 
 export function isProgressingBid(bid: Bid<any, any>): boolean {

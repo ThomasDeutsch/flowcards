@@ -21,7 +21,7 @@ export type NestedEventObject = UserEvent<any, any> | FlowEvent<any, any> | (Flo
     { [key: string]: NestedEventObject };
 
 
-function getEvents(neo: NestedEventObject): EventCore<any, any>[] {
+export function getEvents(neo: NestedEventObject): EventCore<any, any>[] {
     if(Array.isArray(neo)) return neo;
     if(neo instanceof EventCore) return [neo];
     return Object.values(neo).map(getEvents).flat();
