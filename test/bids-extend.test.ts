@@ -679,3 +679,47 @@ test("an extend can be aborted. After the abort, the event is no longer pending 
  );
 });
 
+
+test("the utility function extendAll will extend multiple bids from an NestedEventObject", (done) => {
+    const events = {
+        A: new UserEvent('A'),
+        B: new UserEvent('B'),
+        C: new UserEvent('C'),
+        notExtend: {
+            A: new UserEvent('allowed.A'),
+            B: new UserEvent('allowed.B')
+        }
+    }
+    let eventExtended = 0;
+    let eventNotExtended = 0;
+
+    const thread1 = new Flow('requesting thread', function* () {
+        while(true) {
+            yield [bp.askFor(events.A), bp.askFor(events.notExtend.A)];
+        }
+    });
+
+    const extendThread = new Flow('extending thread', function* () {
+        while(true) {
+            yield* bp.extendAll([events], [events.notExtend]);
+            expect(this.isExtending(events.notExtend.A)).toBe(false);
+            expect(this.isExtending(events.A)).toBe(true);
+            done();
+        }
+    })
+    testScenarios((e, f) => {
+        e(events);
+        f(thread1);
+        f(extendThread);
+    }, () => {
+        if(eventExtended === 0 && events.A.isValid()) {
+            eventExtended++;
+            events.A.dispatch();
+        }
+        if(eventNotExtended === 0 && events.notExtend.A.isValid()) {
+            eventNotExtended++;
+            events.notExtend.A.dispatch();
+        }
+    }
+ );
+});
