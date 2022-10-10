@@ -11,9 +11,9 @@ export type FlowGenerator = Generator<BidOrBids, void, FlowProgressInfo>;
 
 export interface FlowUtilities {
     key?: string | number;
-    resolveExtend: <T>(event: EventCore<T>, value: T) => boolean;
-    abortExtend: (event: EventCore) => void;
-    isExtending: (event: EventCore) => boolean;
+    resolveExtend: <T,V>(event: EventCore<T,V>, value: T) => boolean;
+    abortExtend:  <T,V>(event: EventCore<T,V>) => void;
+    isExtending:  <T,V>(event: EventCore<T,V>) => boolean;
     getExtendValue: <T, V>(event: EventCore<T, V>) => T | undefined;
 }
 export interface FlowProgressInfo {
@@ -94,11 +94,11 @@ export class FlowCore {
                 this._addToQueue(resolveExtendAction);
                 return true;
             },
-            abortExtend: (event: EventCore) => {
+            abortExtend: (event) => {
                 this._pendingExtends.delete(event.id);
             },
             isExtending: (event) => this._pendingExtends.has(event.id),
-            getExtendValue: <T>(event: EventCore<T, any>) => this._pendingExtends.get(event.id)?.value as T
+            getExtendValue: (event) => this._pendingExtends.get(event.id)?.value
         }
     }
 

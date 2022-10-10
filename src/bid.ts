@@ -230,10 +230,17 @@ export function* allOf(...bids: Bid<any, any>[]): Generator<BidOrBids, void, Flo
     }
 }
 
-export function* extendAll(nestedEvents: NestedEventObject[], exclude?: NestedEventObject[]): Generator<BidOrBids, void, FlowProgressInfo> {
+export function* extendAll(nestedEvents: NestedEventObject[], exclude?: NestedEventObject[]): Generator<BidOrBids, FlowProgressInfo, FlowProgressInfo> {
     const events = nestedEvents.map(nestedEventObject => getEvents(nestedEventObject)).flat();
     const excludeEvents = exclude?.map(nestedEventObject => getEvents(nestedEventObject)).flat();
-    yield events.filter(event => !excludeEvents?.some(e => isSameNameKeyId(e.id, event.id))).map(event => extend(event));
+    const progress = yield events.filter(event => !excludeEvents?.some(e => isSameNameKeyId(e.id, event.id))).map(event => extend(event));
+    return progress;
+}
+
+export function* blockAll(nestedEvents: NestedEventObject[], exclude?: NestedEventObject[]): Generator<BidOrBids, void, FlowProgressInfo> {
+    const events = nestedEvents.map(nestedEventObject => getEvents(nestedEventObject)).flat();
+    const excludeEvents = exclude?.map(nestedEventObject => getEvents(nestedEventObject)).flat();
+    yield events.filter(event => !excludeEvents?.some(e => isSameNameKeyId(e.id, event.id))).map(event => block(event));
 }
 
 export function isProgressingBid(bid: Bid<any, any>): boolean {

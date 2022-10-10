@@ -160,3 +160,43 @@ test("an async request will not be send again, if a resolveAction is provided", 
         done();
     }, replayObj)
 });
+
+test("an async request resolved with an undefined payload, it can be replayed", (done) => {
+    const eventA = new FlowEvent<number>('A');
+    let delayFnCalled = 0;
+
+    const requestingFlow = new Flow('thread1', function*() {
+        yield bp.request(eventA, () => {
+            delayFnCalled++;
+            return delay(2000, 2);
+        });
+    });
+
+    const replayAction1: RequestedAsyncAction = {
+        id: 0,
+        type: 'requestedAsyncAction',
+        eventId: {name: 'A'},
+        flowId: {name: 'thread1'},
+        bidId: 0,
+        resolveActionId: 1
+    }
+    const replayAction2: ResolveAction = {
+        id: 1,
+        type: 'resolveAction',
+        eventId: {name: 'A'},
+        flowId: {name: 'thread1'},
+        bidId: 0,
+        requestActionId: 0
+    }
+
+    const replayObj = [replayAction1, replayAction2];
+
+    testScenarios((e, f) => {
+        e(eventA);
+        f(requestingFlow);
+    }, ({replay}) => {
+        expect(replay!.state).toBe('completed');
+        expect(delayFnCalled).toBe(0)
+        done();
+    }, replayObj)
+});
