@@ -1,164 +1,89 @@
-import { BufferedQueue } from './buffered-queue';
-import { Logger } from './logger';
-import { NameKeyId } from './name-key-map';
-import { isThenable } from './utils';
-import { Staging } from './staging';
-import { explainAskFor, ExplainEventResult, explainRequest, explainResolve, explainTrigger } from './guard';
+import { TupleId } from "./tuple-map";
 
+// TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
-export type ActionType = "requestedAction" | "uiAction" | "resolveAction" | "rejectAction" | "resolvedExtendAction" | "requestedAsyncAction" | "triggeredAction";
-export type QueueAction = UIAction | ResolveAction | RejectAction | ResolveExtendAction;
-export type ActionFromBid = RequestedAction | TriggeredAction | RequestedAsyncAction;
-export type AnyAction = QueueAction | ActionFromBid;
+/**
+ * @internal
+ * all action types
+ */
+export type ActionType = "external" | "requested" | "triggered" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";
 
-interface Action {
-    id: number;
+/**
+ * @internal
+ * The action defines a construct that flows can react to. (action -> reaction).
+ * An action is taken/created from a queue or from a request/trigger bid.
+ * All actions that are processed by the scheduler are logged, and can be replayed, to restore a state.
+ * An action with the id = null is an action that was not selected as the next action by the scheduler, yet.
+ */
+interface BaseAction {
     type: ActionType;
-    eventId: NameKeyId;
-    payload?: any;
-    flowId: NameKeyId;
+    id: number | null;
+    eventId: TupleId;
+    flowId: TupleId;
     bidId: number;
 }
 
-export interface UIAction extends Action {
-    type: "uiAction";
+/**
+ * an external action is created if a flow has placed a valid askFor bid and
+ * the event is triggered by an external source (for example by a user/UI)
+ */
+export interface ExternalAction<P> extends BaseAction {
+    type: "external";
+    payload: P;
 }
 
-export interface RequestedAction extends Action {
-    type: "requestedAction";
+/**
+ * a requested action is created from a valid request bid
+ */
+export interface RequestedAction<P> extends BaseAction {
+    type: "requested";
+    id: number;
+    payload: P;
 }
 
-export interface RequestedAsyncAction extends Action {
-    type: "requestedAsyncAction";
-    resolveActionId?: number;
+/**
+ * a triggered action is created if a flow has placed a valid askFor bid
+ * and the event is triggered by a flow with a trigger-bid
+ */
+export interface TriggeredAction<P> extends BaseAction {
+    type: "triggered";
+    id: number;
+    payload: P;
 }
 
-export interface TriggeredAction extends Action {
-    type: "triggeredAction";
-    askForBid: {flowId: NameKeyId, bidId: number}
+/**
+ * a requested async action is created from a valid request bid that
+ * has a promise callback as payload.
+ * it will create a pending event for the promise and after the promise is resolved/rejected,
+ * a resolveAsyncRequest/rejectAsyncRequest action is created and added to the ActionQueue.
+ */
+ export interface RequestedAsyncAction<P> extends BaseAction {
+    type: "requestedAsync";
+    id: number;
+    payload: Promise<P>;
 }
-
-export interface ResolveAction extends Action {
-    type: 'resolveAction';
+/**
+ * a resolve async request action is created if a pending event is resolved
+ */
+export interface ResolvePendingRequestAction<P> extends BaseAction {
+    type: 'resolvePendingRequest';
+    payload: P;
     requestActionId: number;
 }
 
-export interface ResolveExtendAction extends Action {
-    type: "resolvedExtendAction";
-    extendedActionType: ActionType;
-    extendedBy: NameKeyId;
-    askForBid?: {flowId: NameKeyId, bidId: number}
-}
-
-export interface RejectAction extends Action {
-    type: "rejectAction";
+/**
+ * a reject async request action is created if a pending event is rejected
+ */
+export interface RejectPendingRequestAction extends BaseAction {
+    type: "rejectPendingRequest";
     requestActionId: number;
-    error: ExplainEventResult<any>;
 }
 
-export function isActionFromBid(action: AnyAction): boolean {
-    return (action.type === 'requestedAction' || action.type === 'requestedAsyncAction' || action.type === 'triggeredAction');
-}
+/** actions that will be created by a bid, placed by a flow */
+export type ActionFromBid<P> = RequestedAction<P> | TriggeredAction<P> | RequestedAsyncAction<P>;
 
-export function getQueuedAction(logger: Logger, actionQueue: BufferedQueue<QueueAction>, staging: Staging, nextActionId: number): QueueAction | undefined {
-    const action = actionQueue.get;
-    if(action === undefined) return undefined;
-    const event = staging.getEvent(action.eventId);
-    if(event === undefined)  {
-        throw new Error('event not connected');
-    }
-    if(action.type === 'uiAction') {
-        // TODO: do not validate if action has the same dispatch-id as the current loop-index.
-        const explain = explainAskFor(event, action.payload);
-        event.__queueValidationResult(explain);
-        if(explain.isValid) {
-            return {...action, id: nextActionId};
-        }  else {
-            logger.logExplain(explain);
-            return getQueuedAction(logger, actionQueue, staging, nextActionId);
-        }
-    }
-    if(action.type === 'resolveAction') {
-        const explain = explainResolve(event, action.payload);
-        if(!explain.isValid) {
-            logger.logExplain(explain);
-            const rejectAction: RejectAction = {
-                ...action,
-                type: 'rejectAction',
-                error: explain,
-                payload: action.payload
-            }
-            return rejectAction;
-        }
-        const flow = staging.getFlow(action.flowId);
-        if(flow === undefined) {
-            logger.logCanceledPending(action.flowId, action.eventId, 'request', 'flow disabled');
-            return getQueuedAction(logger, actionQueue, staging, nextActionId);
-        } else {
-            return {...action, id: nextActionId};
-        }
-    }
-    if(action.type === 'resolvedExtendAction') {
-        return {...action, id: nextActionId};
-    }
-    if(action.type === 'rejectAction') {
-        return {...action, id: nextActionId};
-    }
-}
+/** all possible actions */
+export type Action<P> = ExternalAction<P> | ResolvePendingRequestAction<P> | RejectPendingRequestAction | ActionFromBid<P>;
 
-
-export function getNextActionFromBid(staging: Staging, nextActionId: number, logger: Logger): ActionFromBid | undefined {
-    let action: RequestedAsyncAction | RequestedAction | TriggeredAction | undefined;
-    staging.orderedRequestingBids?.some((bid) => {
-        let explain: ExplainEventResult<any>;
-        if(bid.type === 'requestBid') {
-            const event = staging.getEvent(bid.eventId);
-            explain = explainRequest(event, bid);
-            if(!explain.isValid) {
-                logger.logExplain(explain);
-                return false;
-            }
-            if(isThenable(explain.nextValue)) {
-                action = {
-                    eventId: bid.eventId,
-                    id: -1,
-                    flowId: bid.flowId,
-                    type: 'requestedAsyncAction',
-                    payload: explain.nextValue,
-                    bidId: bid.id
-                }
-                return true;
-            }
-            else {
-                action = {
-                    eventId: bid.eventId,
-                    id: -1,
-                    flowId: bid.flowId,
-                    type: 'requestedAction',
-                    payload: explain.nextValue,
-                    bidId: bid.id
-                }
-                return true;
-            }
-        }
-        else {
-            const event = staging.getEvent(bid.eventId);
-            explain = explainTrigger(event, bid);
-            if(!explain.isValid) {
-                logger.logExplain(explain);
-                return false;
-            }
-            action = {
-                eventId: bid.eventId,
-                id: -1,
-                flowId: bid.flowId,
-                type: 'triggeredAction',
-                askForBid: explain.askForBid!,
-                payload: explain.nextValue,
-                bidId: bid.id
-            }
-            return true;
-        }
-    })
-    return action ? {...action, id: nextActionId} : undefined;
- }
+/** all possible actions that can be extended */
+export type ExtendableAction<P> =  RequestedAction<P> | TriggeredAction<P> | ExternalAction<P> | ResolvePendingRequestAction<P>;

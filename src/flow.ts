@@ -1,96 +1,439 @@
+import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
+import { Bid, toBids, PlacedBid, filterRemainingBids, PlacedRequestBid } from "./bid";
+import { Event } from  "./event";
+import { BaseValidationReturn } from "./action-explain";
+import { toTupleIdString, TupleId, TupleMap } from "./tuple-map";
+import { ActionReactionLogger } from "./action-reaction-logger";
+import { areDepsEqual, isThenable } from "./utils";
 
-import { FlowCore, FlowGenerator, FlowUtilities } from './flow-core';
-import { NameKeyId } from './name-key-map';
+/**
+ * type used for the iterator result of a flow generator
+ * a flow generators next value can return a bid or an array of bids.
+ * if a flow places the same bid again, it is a PlacedBid.
+ */
+export type TNext = Bid<any, any> | PlacedBid<any, any> | (Bid<any, any> | PlacedBid<any, any>)[] | undefined;
 
+/**
+ * The progress info contains information about the latest progression of this flow.
+ * The information contains the latest progressed event and the remaining bids for this flow.
+*/
+export type FlowProgressInfo = [Event<unknown>, PlacedBid<unknown, unknown>[] | undefined];
 
-export interface FlowInfo {
-    name: string;
-    key?: string | number;
-    description?: string;
+/**
+ * a generator function returns a flow-generator that is bound to the flow
+ */
+export type FlowGenerator = Generator<TNext, void, FlowProgressInfo>;
+export type FlowGeneratorFunction = (this: Flow, ...parameters: any[]) => FlowGenerator;
+
+/**
+ * @internal
+ * iterator result of a flow generator
+ */
+type FlowIteratorResult = IteratorResult<TNext | undefined, void>;
+
+/**
+ * all parameters needed to create a flow
+ */
+export interface FlowParameters {
+    id: TupleId;
+    generatorFunction: FlowGeneratorFunction;
+    executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    logger: ActionReactionLogger;
+    parameters?: any[];
 }
 
-export type FlowGeneratorFunction = (this: FlowUtilities) => FlowGenerator;
-
-
-function toInfoObj(info: FlowInfo | string): FlowInfo {
-    if(typeof info === 'string') {
-        return {
-            name: info,
-            description: "",
-            key: undefined
-        }
-    }
-    else {
-        return {
-            name: info.name,
-            key: info.key,
-            description: info.description || ""
-        }
-    }
+/**
+ * information about the flow bids and pending events
+ */
+export interface FlowBidsAndPendingInformation {
+    placedBids: PlacedBid<unknown, unknown>[];
+    pendingRequests?: TupleMap<PlacedRequestBid<any, any>>;
+    pendingExtends?: TupleMap<PendingExtend<any, any>>;
 }
 
-export interface FlowState {
-    isCompleted: boolean;
+/**
+ * all needed information about a pending extend
+ * the eventId is the key of the TupleMap entry, where data implementing this interface is stored
+ */
+ export interface PendingExtend<P, V> {
+    value?: P;
+    event: Event<P,V>;
+    extendingFlow: Flow;
+    extendedBid: PlacedBid<P, V>;
 }
 
-
+/**
+ * a flow is a wrapper for a generator function.
+ * a flow is able to place bids and react to actions.
+ */
 export class Flow {
-    public readonly id: NameKeyId;
-    private _generatorFunction: FlowGeneratorFunction;
-    public readonly description?: string;
-    private _flowCore?: FlowCore;
+    public readonly id: TupleId;
+    private readonly _generatorFunction: FlowGeneratorFunction;
+    private _generator: FlowGenerator;
+    private _children: TupleMap<Flow> = new TupleMap();
+    private _hasEnded: boolean;
+    private _currentBidId: number;
+    private _placedBids: PlacedBid<unknown, unknown>[] | undefined;
+    private _pendingRequests: TupleMap<PlacedRequestBid<any, any>> = new TupleMap();
+    private _pendingExtends: TupleMap<PendingExtend<any, any>> = new TupleMap();
+    private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    private _latestActionIdThisFlowProgressedOn?: number;
+    private _nrAddedChildren = 0;
+    private _logger: ActionReactionLogger;
+    private _currentParameters?: any[];
 
-    constructor(info: FlowInfo | string, generatorFn: FlowGeneratorFunction) {
-        this._generatorFunction = generatorFn;
-        const i = toInfoObj(info);
-        this.id = {name: i.name, key: i.key}
-        this.description = i.description;
-    }
-
-    public get generatorFunction(): FlowGeneratorFunction {
-        return this._generatorFunction;
-    }
-
-    /** @internal */
-    public __setCore(flowCore: FlowCore): void {
-        this._flowCore = flowCore;
-    }
-
-    public get isCompleted(): boolean | undefined {
-        return this._flowCore?.isCompleted;
-    }
-
-    public get isConnected(): boolean {
-        return this._flowCore !== undefined;
-    }
-}
-
-
-export class FlowKeyed {
-    private _generatorFunction: FlowGeneratorFunction;
-    private _info: FlowInfo;
-    private _children = new Map<string | number, Flow>()
-
-    constructor(info: FlowInfo | string, generatorFn: FlowGeneratorFunction) {
-        this._info = toInfoObj(info);
-        this._generatorFunction = generatorFn;
-    }
-
-    public key(key: string | number): Flow {
-        let flow = this._children.get(key);
-        if(flow === undefined) {
-            const infoWithKey: FlowInfo = {...this._info, key: key};
-            flow = new Flow(infoWithKey, this._generatorFunction);
-            this._children.set(key, flow);
+    constructor(parameters: FlowParameters) {
+        // this initialization is only done once
+        this.id = parameters.id;
+        this._generatorFunction = parameters.generatorFunction.bind(this);
+        this._executeAction = parameters.executeAction;
+        this._logger = parameters.logger;
+        // this initialization is also done in the restart method
+        this._currentBidId = 0;
+        this._hasEnded = false;
+        this._currentParameters = parameters.parameters;
+        this._generator = this._generatorFunction(...(parameters.parameters || []));
+        try {
+            this._handleNext.bind(this)(this._generator.next());
+        } catch(error) {
+            console.error('error in flow ', toTupleIdString(this.id), ': ', error);
         }
-        return flow;
     }
 
-    public keys(...keys: (string | number)[]): Flow[] {
-        return keys.map(key => this.key(key));
+    // PRIVATE -------------------------------------------------------------------------------------------
+
+    /**
+     * place the next bids of this flow
+     * @param next the iterator result of the generator
+     * @internalRemarks mutates: ._currentBidId, ._placedBids
+     */
+    private _placeBids(nextBids?: (Bid<any, any> | PlacedBid<any, any>)[]): void {
+        const nextPlacedBids = nextBids?.map(bid => {
+            if('id' in bid) {
+                return {...bid, flow: this, id: bid.id} as PlacedBid<any, any>;
+            }
+            else {
+                if(bid.type === 'askFor' || bid.type === 'validate' || bid.type === 'block') {
+                    this._logger.logChangedEvent(bid.event);
+                }
+                return {...bid, flow: this, id: this._currentBidId++} as PlacedBid<any, any>;
+            }
+        });
+        // get all bids that are no longer placed
+        this._placedBids?.forEach((placedBid) => {
+            const isRemoved = !nextPlacedBids?.some(nextBid => nextBid.id === placedBid.id);
+            if(!isRemoved) return;
+            if(this._pendingRequests.delete(placedBid.event.id)) {
+                this._logger.logChangedEvent(placedBid.event);
+                this._logger.logFlowReaction(this.id, 'pending request cancelled');
+            }
+            if (placedBid.type === 'askFor' || placedBid.type === 'validate' || placedBid.type === 'block') {
+                this._logger.logChangedEvent(placedBid.event);
+            }
+        });
+        this._placedBids = nextPlacedBids;
     }
 
-    public allKeys(): (string | number)[] {
-        return [...this._children].map(([k]) => k);
+    /**
+     * handle the next iterator result
+     * @param next the iterator result of the generator
+     */
+    private _handleNext(next: FlowIteratorResult): void {
+        if(this._hasEnded) return;
+        const nextBids = toBids(next.value);
+        if(next.done) {
+            this.__end();
+        } else {
+            this._placeBids(nextBids);
+        }
+    }
+
+    /**
+     * used by restart and end.
+     * will reset all mutated values of a flow;
+     * @param ended true if the flow ended, false if it was restarted
+     */
+    private _reset(ended: boolean): void {
+        this._placeBids(undefined);
+        this._hasEnded = ended;
+        this._currentBidId = 0;
+        this._nrAddedChildren = 0;
+    };
+
+    /**
+     * @internal
+     * restarts the flow
+     * @param nextParameters the parameters that will be checked against the current parameters. If changed, the flow will be restarted with the new parameters.
+     */
+    public __restart(nextParameters?: any[]): void {
+        this._reset(false);
+        this._pendingExtends.clear();
+        if(nextParameters !== undefined) {
+            this._currentParameters = [...nextParameters];
+        }
+        this._generator = this._generatorFunction(...(this._currentParameters || []));
+        try {
+            this._handleNext.bind(this)(this._generator.next());
+        } catch(error) {
+            console.error('error in flow ', this.id, ': ', error);
+        }
+    }
+
+
+    // INTERNAL ------------------------------------------------------------------------------------------
+
+    /**
+     * get the current bids and pending bids of this flow
+     * @internal
+     * @returns all bids and pending information (see FlowBidsAndPendingInformation)
+     */
+    public __getBidsAndPendingInformation(): FlowBidsAndPendingInformation {
+        const result = {
+            placedBids: this._placedBids || [],
+            pendingRequests: this._pendingRequests,
+            pendingExtends: this._pendingExtends,
+        };
+        this._children.forEach((child) => {
+            const childBidsAndPendingInformation = child.__getBidsAndPendingInformation();
+            result.placedBids = [...childBidsAndPendingInformation.placedBids, ...result.placedBids];
+            result.pendingRequests = result.pendingRequests.merge(childBidsAndPendingInformation.pendingRequests);
+            result.pendingExtends = result.pendingExtends.merge(childBidsAndPendingInformation.pendingExtends);
+        });
+        return result;
+    }
+
+    /**
+     * react to an error. continue/restart the flow based on an error that occurred.
+     * if the error is not handled by the flow, it will act as an error boundary and restart the flow.
+     * @internal
+     * @internalRemarks mutates: ._generator (next)
+     */
+    public __onRejectAsyncAction(event: Event<any, any>): void {
+        this._pendingRequests.delete(event.id);
+        this._logger.logChangedEvent(event);
+        let next: FlowIteratorResult;
+        try {
+            next = this._generator.throw(new Error('async request rejected'));
+        }
+        catch(error) {
+            console.error('error in flow ', toTupleIdString(this.id), ': ', error);
+            this._logger.logFlowReaction(this.id, 'error hot handled -> flow restarted');
+            this.__restart();
+            return;
+        }
+        this._logger.logFlowReaction(this.id, 'error handled -> flow progressed');
+        this._handleNext(next);
+    }
+
+    /**
+     * react to an event. Continue the flow based on an occurred event
+     * @internal
+     * @param event the event that occurred
+     * @param bidId the id of the bid that was placed and corresponds to the event
+     * @internalRemarks mutates: ._generator (next)
+     */
+    public __onEvent(event: Event<any, any>, bidId: number, actionId: number): void {
+        if(this._latestActionIdThisFlowProgressedOn === actionId) return; // prevent from progressing twice on the same action
+        this._logger.logChangedEvent(event);
+        this._latestActionIdThisFlowProgressedOn = actionId;
+        try {
+            const next = this._generator.next([event, filterRemainingBids(bidId, this._placedBids)]);
+            this._logger.logFlowReaction(this.id, 'flow progressed');
+            this._handleNext(next);
+        } catch(error) {
+            console.error('error in flow ', this.id, ': ', error);
+        }
+    }
+
+    /**
+     * react to an extend action. Continue the flow based on an occurred extend action
+     * @internal
+     * @param event the event that occurred
+     * @param bidId the id of the bid that was placed and corresponds to the event
+     * @param extend the pending extend information
+     */
+    public __onExtend<P, V>(event: Event<P, V>, bidId: number, extend: PendingExtend<P,V>, actionId: number): void {
+        this._pendingExtends.set(event.id, extend);
+        this._logger.logFlowReaction(this.id, 'pending extend added');
+        if(isThenable(extend.value)) return;
+        this.__onEvent(event, bidId, actionId);
+    }
+
+    /**
+     * react to an async event. Add a pending request.
+     * if the promise is resolved or rejected, a corresponding action will be added to the queue.
+     * @internal
+     * @param action the action that holds the promise payload
+     */
+    public __onRequestedAsync<P, V>(bid: PlacedRequestBid<P,V>, payload: Promise<P>, requestActionId: number): void {
+        this._pendingRequests.set(bid.event.id, bid);
+        this._logger.logFlowReaction(this.id, 'pending request added');
+        this._logger.logChangedEvent(bid.event);
+        payload.then((value: P) => {
+            const resolveAction: ResolvePendingRequestAction<P> = {
+                id: null,
+                eventId: bid.event.id,
+                type: 'resolvePendingRequest',
+                flowId: this.id,
+                bidId: bid.id,
+                payload: value,
+                requestActionId: requestActionId
+            };
+            this._executeAction(resolveAction);
+        }).catch((error: unknown) => {
+            const rejectAction: RejectPendingRequestAction = {
+                id: null,
+                eventId: bid.event.id,
+                type: 'rejectPendingRequest',
+                flowId: this.id,
+                bidId: bid.id,
+                requestActionId: requestActionId
+            };
+            this._executeAction(rejectAction);
+        });
+    }
+
+    /**
+     * remove a pending request
+     * this function will not progress the flow, because the resolved pending event could be extended again by another flow
+     * @internal
+     * @param eventId the id of the event that was extended by this flow
+     */
+     public __resolvePendingRequest(event: Event<any,any>): void {
+        const wasRemoved = this._pendingRequests.delete(event.id);
+        if(wasRemoved) {
+            this._logger.logFlowReaction(this.id, 'pending request resolved');
+            this._logger.logChangedEvent(event);
+        }
+    }
+
+    /**
+     * @internal
+     * end the flow execution
+     */
+    public __end(): void {
+        this._reset(true);
+        this._logger.logFlowReaction(this.id, 'flow ended');
+        this._children.forEach((child) => {
+            child.__end();
+        });
+        this._children.clear();
+    }
+
+
+    // PUBLIC --------------------------------------------------------------------------------------------
+
+    /**
+     * start a new child flow
+     * @param generatorFunction a generator function that will used to create the child flow
+     * @param key the key of the child instance
+     * @internalRemarks mutates: ._children
+     */
+    public flow<T extends FlowGeneratorFunction>(generatorFunction: T, parameters?: Parameters<T>, key?: string): Flow {
+        let flowName = generatorFunction.name;
+        if(flowName === "anonymous" || flowName === "") { //fat arrow functions have a name of "anonymous"
+            flowName = this._nrAddedChildren.toString();
+        }
+        const currentChild = this._children.get([flowName, key]);
+        if(currentChild) {
+            if(!areDepsEqual(currentChild.parameters || [], parameters || [])) {
+                this._logger.logFlowReaction(currentChild.id, 'parameters changed -> flow restarted');
+                currentChild.__restart(parameters);
+            }
+            return currentChild;
+        }
+        const childName = `${toTupleIdString(this.id)}>${flowName}`;
+        const newChild = new Flow({
+            id: [childName, key],
+            generatorFunction: generatorFunction,
+            executeAction: this._executeAction,
+            logger: this._logger,
+            parameters,
+        });
+        this._children.set([flowName, key], newChild);
+        this._nrAddedChildren++;
+        return newChild;
+    }
+
+    /**
+     * restarts the flow
+     */
+    public restart(nextParameters?: any[]): void {
+        this._logger.logFlowReaction(this.id, 'flow restarted manually by calling flow.restart');
+        this.__restart(nextParameters);
+    }
+
+    /**
+     * remove a pending extend
+     * this function will not progress the flow, because the resolved extend could be extended again by another flow
+     * @param eventId the id of the event that was extended by this flow
+     */
+    public resolveExtend(event: Event<any,any>): boolean {
+        const wasRemoved = this._pendingExtends.delete(event.id);
+        if(wasRemoved) {
+            this._logger.logFlowReaction(this.id, 'pending extend resolved');
+            this._logger.logChangedEvent(event);
+        }
+        return wasRemoved;
+    }
+
+
+    // GETTER --------------------------------------------------------------------------------------------
+
+    /**
+     * getter that returns the first part of the flow id - its name
+     * @returns the name of the flow
+     */
+    public get name(): string {
+        return this.id[0];
+    }
+
+    /**
+     * getter that returns the second part of the flow id - its key
+     * @returns the key of the flow (or undefined if the flow has no key)
+     */
+    public get key(): string | number | undefined {
+        return this.id[1];
+    }
+
+    /**
+     * getter that returns true if the flow has ended
+     * a flow that has ended will not place any bids, or hold any pending requests or extends
+     * @returns true if the flow has ended
+     */
+    public get hasEnded(): boolean {
+        return this._hasEnded;
+    }
+
+    /**
+     * getter that returns all pending extends by this flow
+     * @returns a map of all pending requests information by this flow (see PendingRequest)
+     */
+    public get pendingExtends(): TupleMap<PendingExtend<any, any>> {
+        return this._pendingExtends;
+    }
+
+    /**
+     * getter that returns all pending extends by this flow
+     * @returns a map of all pending requests information by this flow (see PendingRequest)
+     */
+    public get pendingRequests(): TupleMap<PlacedRequestBid<any, any>> {
+        return this._pendingRequests;
+    }
+
+    /**
+     * getter that returns the current parameters of the flow
+     * @returns the current parameters of the flow
+     */
+    public get parameters(): any[] | undefined {
+        return this._currentParameters;
+    }
+
+    /**
+     * get the latest action id where this flow has progressed
+     * @returns the latest action id where this flow has progressed
+     */
+    public get latestActionId(): number | undefined {
+        return this._latestActionIdThisFlowProgressedOn;
     }
 }

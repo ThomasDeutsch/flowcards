@@ -1,34 +1,52 @@
 {
   "name": "@flowcards/core",
-  "version": "6.2.3",
-  "description": "",
-  "author": {
-    "name": "Thomas Deutsch",
-    "email": "deutsch.thomas+flowcards@gmail.com",
-    "url": "https://thomasdeutsch.de"
-  },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": ["dist/"],
+  "version": "7.0.0",
+  "description": "use case based flows for state management",
+  "keywords": [
+    "use case centered programming",
+    "behavioral programming",
+    "scenario based programming",
+    "scenario",
+    "behavioral",
+    "TypeScript",
+    "JavaScript"
+  ],
+  "main": "dist/ucflows.cjs.js",
+  "module": "dist/ucflows.esm.js",
+  "browser": "dist/ucflows.umd.min.js",
+  "files": [
+    "dist/ucflows.cjs.js",
+    "dist/ucflows.esm.js",
+    "dist/ucflows.umd.min.js",
+    "dist/ucflows.d.ts",
+    "dist/ucflows.umd.min.js.map"
+  ],
+  "types": "dist/ucflows.d.ts",
   "scripts": {
-    "test": "jest --detectOpenHandles",
-    "test:watch": "jest --watch --detectOpenHandles",
-    "build": "tsc -p tsconfig.json",
-    "prepublish": "npm run build"
+    "build": "rollup -c",
+    "test": "jest",
+    "prepublishOnly": "node ./prepublish.mjs",
+    "docs": "npx typedoc",
+    "publish": "npm "
   },
-  "license": "MIT",
-  "gitHead": "72b889283715a75efedc99c20e9fe79319f31063",
-  "publishConfig": {
-    "access": "public"
-  },
+  "author": "Thomas Deutsch",
+  "license": "ISC",
   "devDependencies": {
-    "@types/jest": "^26.0.19",
-    "@typescript-eslint/eslint-plugin": "^4.9.1",
-    "@typescript-eslint/parser": "^4.9.1",
-    "eslint": "^7.15.0",
-    "eslint-config-standard": "^16.0.2",
-    "jest": "^26.6.3",
-    "ts-jest": "^26.4.4",
-    "typescript": "^4.6.3"
+    "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-typescript": "^10.0.1",
+    "@types/jest": "^28.1.8",
+    "@typescript-eslint/eslint-plugin": "^5.47.1",
+    "@typescript-eslint/parser": "^5.47.1",
+    "eslint": "^8.30.0",
+    "jest": "^28.1.3",
+    "rollup": "^2.79.1",
+    "rollup-plugin-dts": "^5.1.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "ts-jest": "^28.0.8",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.4.1",
+    "typedoc": "^0.23.23",
+    "typescript": "^4.9.4"
   }
 }

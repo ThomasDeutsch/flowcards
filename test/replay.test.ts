@@ -1,202 +1,46 @@
 import { Flow } from "../src/flow";
-import * as bp from "../src/bid";
-import { delay, testScenarios } from "./testutils";
-import { FlowEvent, RequestedAction, RequestedAsyncAction, ResolveAction, UIAction, UserEvent } from "../src";
-
-test("a request can be replayed", (done) => {
-    const basicEvent = {
-        eventA: new FlowEvent<number>('A')
-    }
-
-    const requestingFlow = new Flow('thread1', function*() {
-        yield bp.request(basicEvent.eventA, 1);
-    });
-
-    const replayAction: RequestedAction = {
-        id: 0,
-        type: 'requestedAction',
-        eventId: {name: 'A'},
-        payload: 1,
-        flowId: {name: 'thread1'},
-        bidId: 0
-    }
-
-    const replayObj = [replayAction];
-
-    testScenarios((e, f) => {
-        e(basicEvent)
-        f(requestingFlow);
-    }, ({replay}) => {
-        expect(replay!.state === 'completed').toBe(true);
-        done();
-    }, replayObj)
-});
+import { Event } from "../src/event";
+import { request } from "../src/bid";
+import { Scheduler, SchedulerCompletedCallback } from "../src/scheduler";
+import { Replay, ReplayAction } from "../src/replay";
 
 
-test("if a request has no payload, the replay will use the payload from the flow", (done) => {
-    const eventA = new FlowEvent<number>('A');
+describe("the replay behavior", () => {
 
-    const requestingFlow = new Flow('thread1', function*() {
-        yield bp.request(eventA, 2);
-    });
+    test('an askFor can be replayed', (done) => {
+        const eventA = new Event<number>('eventA');
+        let requestProgressed = 0;
 
-    const replayAction: RequestedAction = {
-        id: 0,
-        type: 'requestedAction',
-        eventId: {name: 'A'},
-        flowId: {name: 'thread1'},
-        bidId: 0
-    }
-
-    const replayObj = [replayAction];
-
-    testScenarios((e, f) => {
-        e(eventA);
-        f(requestingFlow);
-    }, ({replay}) => {
-        expect(replay!.state === 'completed').toBe(true);
-        expect(eventA.value).toBe(2)
-        done();
-    }, replayObj)
-});
-
-
-test("if a guard fails, the replay will be aborted", (done) => {
-    const eventA = new FlowEvent<number>('A');
-
-    const requestingFlow = new Flow('thread1', function*() {
-        yield [bp.request(eventA, 2), bp.validate(eventA, (v) => v === 2)];
-    });
-
-    const replayAction: RequestedAction = {
-        id: 0,
-        type: 'requestedAction',
-        eventId: {name: 'A'},
-        flowId: {name: 'thread1'},
-        bidId: 0,
-        payload: 4
-    }
-
-    const replayObj = [replayAction];
-
-    testScenarios((e, f) => {
-        e(eventA);
-        f(requestingFlow);
-    }, ({replay}) => {
-        expect(replay!.state === 'aborted').toBe(true);
-        expect(replay!.abortInfo!.error).toBe(`Guard`)
-        expect(eventA.value).toBe(2)
-        done();
-    }, replayObj)
-});
-
-
-test("if a guard fails, the replay will be aborted (askFor)", (done) => {
-    const eventA = new UserEvent<number>('A');
-
-    const requestingFlow = new Flow('thread1', function*() {
-        yield [bp.askFor(eventA), bp.validate(eventA, (v) => v === 2)];
-    });
-
-    const replayAction: UIAction = {
-        id: 0,
-        type: 'uiAction',
-        eventId: {name: 'A'},
-        flowId: {name: 'thread1'},
-        bidId: 0,
-        payload: 4
-    }
-
-    const replayObj = [replayAction];
-
-    testScenarios((e, f) => {
-        e(eventA);
-        f(requestingFlow);
-    }, ({replay}) => {
-        expect(replay!.state === 'aborted').toBe(true);
-        expect(replay!.abortInfo!.error).toBe(`invalidReason: Guard`);
-        done();
-    }, replayObj)
-});
-
-test("an async request will not be send again, if a resolveAction is provided", (done) => {
-    const eventA = new FlowEvent<number>('A');
-    let delayFnCalled = 0;
-
-    const requestingFlow = new Flow('thread1', function*() {
-        yield bp.request(eventA, () => {
-            delayFnCalled++;
-            return delay(2000, 2);
+        const rootFlow = function*(this: Flow) {
+            this.flow(function* () {
+                yield request(eventA, requestProgressed);
+                requestProgressed++;
+            })
+            yield undefined;
+        }
+        const actions: ReplayAction<any>[] = [];
+        const logAction: SchedulerCompletedCallback = (actionInfo) => {
+            actionInfo.forEach(info => {
+                if(info.processedAction) {
+                    actions.push(info.processedAction);
+                }
+            });
+        }
+        let scheduler = new Scheduler({
+            rootFlow,
+            completedCB: logAction
         });
-    });
-
-    const replayAction1: RequestedAsyncAction = {
-        id: 0,
-        type: 'requestedAsyncAction',
-        eventId: {name: 'A'},
-        flowId: {name: 'thread1'},
-        bidId: 0,
-        resolveActionId: 1
-    }
-    const replayAction2: ResolveAction = {
-        id: 1,
-        type: 'resolveAction',
-        eventId: {name: 'A'},
-        flowId: {name: 'thread1'},
-        bidId: 0,
-        requestActionId: 0,
-        payload: 4
-    }
-
-    const replayObj = [replayAction1, replayAction2];
-
-    testScenarios((e, f) => {
-        e(eventA);
-        f(requestingFlow);
-    }, ({replay}) => {
-        expect(replay!.state).toBe('completed');
-        expect(eventA.value).toBe(4);
-        expect(delayFnCalled).toBe(0)
-        done();
-    }, replayObj)
-});
-
-test("an async request resolved with an undefined payload, it can be replayed", (done) => {
-    const eventA = new FlowEvent<number>('A');
-    let delayFnCalled = 0;
-
-    const requestingFlow = new Flow('thread1', function*() {
-        yield bp.request(eventA, () => {
-            delayFnCalled++;
-            return delay(2000, 2);
+        expect(actions[0].eventId[0]).toBe(eventA.id[0]);
+        const replay: Replay = {
+            id: 'test',
+            actions: actions
+        };
+        scheduler = new Scheduler({
+            rootFlow,
+            completedCB: logAction,
+            replay
         });
-    });
-
-    const replayAction1: RequestedAsyncAction = {
-        id: 0,
-        type: 'requestedAsyncAction',
-        eventId: {name: 'A'},
-        flowId: {name: 'thread1'},
-        bidId: 0,
-        resolveActionId: 1
-    }
-    const replayAction2: ResolveAction = {
-        id: 1,
-        type: 'resolveAction',
-        eventId: {name: 'A'},
-        flowId: {name: 'thread1'},
-        bidId: 0,
-        requestActionId: 0
-    }
-
-    const replayObj = [replayAction1, replayAction2];
-
-    testScenarios((e, f) => {
-        e(eventA);
-        f(requestingFlow);
-    }, ({replay}) => {
-        expect(replay!.state).toBe('completed');
-        expect(delayFnCalled).toBe(0)
+        expect(requestProgressed).toBe(2);
         done();
-    }, replayObj)
-});
+    });
+})

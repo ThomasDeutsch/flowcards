@@ -1,225 +1,279 @@
-import { AnyAction } from "./action";
-import { Staging } from "./staging";
-import { explainAskFor, explainRequest, explainResolve, explainTrigger, getInitialExplainResult, PlacedRequestBid, PlacedTriggerBid } from ".";
+import { ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, TriggeredAction } from "./action";
+import { AccumulatedValidationResults, BaseValidationReturn, explainAnyBidPlacedByFlow, explainBlocked, explainExactRequestBidPlacedByFlow, explainHighestPriorityAskFor, explainNoPendingRequest, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./action-explain";
+import { ActionReactionLogger } from "./action-reaction-logger";
+import { EventInformation, PlacedRequestBid, RequestingBidsAndEventInformation } from "./bid";
+import { reactToExternalAction, reactToRejectAction, reactToRequestAction, reactToRequestedAsyncAction, reactToResolveAsyncAction, reactToTriggerAction } from "./flow-reaction";
 import { isThenable } from "./utils";
 
-
-export interface ReplaySection {
-    title: string;
-    fromTo: [number, number]
-}
+export type ReplayRequestAsyncAction<P> = (Omit<RequestedAsyncAction<P>, 'payload'> & {payload?: ((current?: P) => Promise<P>) | '__%TAKE_PAYLOAD_FROM_BID%__', resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number}})
 
 export interface Replay {
-    title: string;
-    actions: AnyAction[];
-    sections: ReplaySection[];
+    id: string;
+    parentReplayIds?: string[];
+    actions: ReplayAction<any>[];
 }
 
-export type ReplayFinishedCB = () => void;
-export interface PayloadOverride {
-    usePayload: boolean;
-    payload: unknown;
-}
-export interface AbortReplayInfo {
-    error: string;
-    action: AnyAction;
+export interface LoadedReplay extends Replay {
+    parentReplays?: Replay[]; // Loaded Replays will include all parent replays
 }
 
-export type ReplayState = 'running' | "aborted" | "completed";
+
+/** a replay action has an optional payload
+ * If the payload is not defined, than the payload will be taken from the current bid, if it is a requested action.
+ */
+export type ReplayAction<P> =
+    RequestedAction<P> |
+    TriggeredAction<P> |
+    ReplayRequestAsyncAction<P> |
+    ExternalAction<P> & {id: number} |
+    ResolvePendingRequestAction<P> & {id: number} |
+    RejectPendingRequestAction & {id: number}
 
 
-export function getReplay(initialActionsOrReplay?: AnyAction[] | Replay): SelectedReplay | undefined {
-    if(initialActionsOrReplay === undefined)  {
-        return undefined;
-    }
-    else if(Array.isArray(initialActionsOrReplay) ) {
-        if(initialActionsOrReplay.length > 0) {
-            return new SelectedReplay(initialActionsOrReplay);
+/**
+ * a replay is a list of actions that can be replayed.
+ * recorded actions can be event-sourced to restore the state of the application.
+ */
+export class ActiveReplay {
+    private _actions = new Map<number, ReplayAction<any>>();
+    private _state: 'running' | 'paused' | 'aborted' | 'completed' | 'idle';
+    private _lastActionId = 0; // the action id of the last action in the replay
+    private _actionReactionLogger: ActionReactionLogger;
+    public readonly replay?: LoadedReplay;
+
+    constructor(actionReactionLogger: ActionReactionLogger, loadedReplay?: LoadedReplay) {
+        this.replay = loadedReplay;
+        this._actionReactionLogger = actionReactionLogger;
+        if(this.replay === undefined || loadedReplay?.actions.length === 0) {
+            this._state = 'idle';
+            return;
         }
-        return undefined;
-    }
-    return new SelectedReplay(initialActionsOrReplay);
-}
-
-export class SelectedReplay {
-    public title = "";
-    private _state: ReplayState = 'running';
-    public get state(): ReplayState { return this._state }
-    private _abortInfo?: AbortReplayInfo;
-    public get abortInfo(): AbortReplayInfo | undefined { return this._abortInfo }
-    private _actions: Map<number, AnyAction> = new Map();
-    private _sections: ReplaySection[] = [];
-    private _lastActionId = 0;
-
-    constructor(actionData: AnyAction[] | Replay) {
-        if(Array.isArray(actionData)) {
-            actionData.forEach(action => {
-                this._actions.set(action.id!, action);
-                this._lastActionId = action.id;
-            });
-        }
-        else {
-            this.title = actionData.title;
-            this._sections = actionData.sections;
-            actionData.actions.forEach(action => {
-                this._actions.set(action.id!, action);
-                this._lastActionId = action.id;
-            });
-        }
+        const actions = getAllReplayActions(this.replay);
+        actions.forEach(action => {
+            this._actions.set(action.id, action);
+            this._lastActionId = action.id;
+        });
+        this._state = 'running';
     }
 
-    public abortReplay(action: AnyAction, error: string): void {
-        this._abortInfo = {
-            action: action,
-            error: error
-        };
+    private _abortReplay(): false {
         this._state = 'aborted';
+        return false;
     }
 
-    public getNextReplayAction(staging: Staging, nextActionId: number): AnyAction | undefined {
-        if(this._state !== 'running') return undefined;
-        if(nextActionId > this._lastActionId) {
+    private _isInvalidAction(invalidActionExplanation?: InvalidActionExplanation): boolean {
+        if(invalidActionExplanation) {
+            this._actionReactionLogger.logInvalidAction(invalidActionExplanation);
+            this._abortReplay();
+            return true;
+        }
+        return false;
+    }
+
+    private _isInvalidPayload(results?: AccumulatedValidationResults<any>): boolean {
+        if(results !== undefined) {
+            this._actionReactionLogger.logPayloadValidations(results);
+        }
+        if(results?.isValidAccumulated === false) {
+            this._abortReplay();
+        }
+        return results?.isValidAccumulated !== true;
+    }
+
+    public getNextReplayAction<P, V>(info: RequestingBidsAndEventInformation, nextActionId: number): boolean {
+        if(this._state !== 'running') {
+            return false
+        }
+        if (nextActionId > this._lastActionId) {
             this._state = 'completed';
-            return undefined;
+            return false;
         }
-        const replayAction = this._actions.get(nextActionId);
-        if(replayAction === undefined) return undefined;
-
-        const flow = staging.getFlow(replayAction.flowId)
-        if(flow === undefined) {
-            this.abortReplay(replayAction, `flow for this action is not enabled`);
-            return undefined;
+        const nextAction = this._actions.get(nextActionId) as ReplayAction<P> | undefined;
+        if (nextAction === undefined) {
+            return false
         }
-
-        const event = staging.getEvent(replayAction.eventId);
-        if(event === undefined) {
-            this.abortReplay(replayAction, `event not found: ${replayAction.eventId}`);
-            return undefined;
+        const maybeEventInfo = info.eventInformation.get(nextAction.eventId) as EventInformation<P, V> | undefined;
+        if(this._isInvalidAction(explainAnyBidPlacedByFlow(nextAction.eventId, maybeEventInfo))) return false;
+        const eventInfo = maybeEventInfo as EventInformation<P, V>; // guaranteed to be defined because of the previous isValid check
+        if(nextAction.type === 'external') {
+            if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
+            if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
+            if(this._isInvalidAction(explainHighestPriorityAskFor(eventInfo, nextAction))) return false;
+            const askForBid = eventInfo.askFor[0]; // is guaranteed to be defined because of the previous validation
+            if(this._isInvalidAction(explainPendingExtend(eventInfo, askForBid))) return false;
+            if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [askForBid]))) return false;
+            reactToExternalAction(eventInfo, {...nextAction, id: nextActionId}, askForBid);
+            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
+            return true;
         }
-
-        if(replayAction.type === 'requestedAsyncAction') {
-            const bid = flow.getBid(replayAction.bidId);
-            if(bid === undefined) {
-                this.abortReplay(replayAction, `flow has not placed a bid for this action`);
-                return undefined;
-            }
-            // check if the event is valid
-            const result = getInitialExplainResult(event);
-            if(!result.isValid) {
-                this.abortReplay(replayAction, `event is not valid`);
-                return undefined;
-            }
-            // do not make the async call again - use the resolved value if there is one.
-            if(replayAction.resolveActionId) {
-                const resolveAction = this._actions.get(replayAction.resolveActionId);
-                if(resolveAction === undefined) {
-                    this.abortReplay(replayAction, `a resolve action with id '${replayAction.resolveActionId}' is expected, but no resolve action was found.`);
-                    return undefined;
-                }
-                if(resolveAction && ("payload" in replayAction)) {
-                    this.abortReplay(replayAction, `a payload for the requestedAsyncAction was provided, as well as a resolve-Action payload`);
-                    return undefined;
-                }
-                if('payload' in (this._actions.get(replayAction.resolveActionId) || {})) {
-                    return {...replayAction, payload: new Promise(() => null)};
-                }
-                return replayAction;
-
-            }
-            // use a different api-call
-            else if("payload" in replayAction) {
-                if(replayAction.payload instanceof Function) {
-                    return {...replayAction, payload: replayAction.payload() }
+        // replay a requested action
+        if(nextAction.type === 'requested') {
+            const requestBid = eventInfo.request[0];
+            if(this._isInvalidAction(explainExactRequestBidPlacedByFlow(requestBid, {event: eventInfo.event, type: 'request', flowId: nextAction.flowId, id: nextAction.bidId}))) return false;
+            if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
+            if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
+            if(this._isInvalidAction(explainPendingExtend(eventInfo, requestBid))) return false;
+            if(nextAction.payload === '__%TAKE_PAYLOAD_FROM_BID%__') {
+                let payloadFromBid: P;
+                if(requestBid.payload instanceof Function) {
+                    const payloadFunctionResult = requestBid.payload(eventInfo.event.value);
+                    if(isThenable(payloadFunctionResult)) {
+                        this._isInvalidAction({
+                            eventId: requestBid.event.id,
+                            message: `the payload of the request bid should not be a function that returns a promise (it was at the time of creation of this replay)`
+                        });
+                        return false;
+                    }
+                    payloadFromBid = payloadFunctionResult;
                 } else {
-                    this.abortReplay(replayAction, `the payload for an requestedAsyncAction needs to be a function that returns a promise`);
-                    return undefined;
+                    payloadFromBid = requestBid.payload;
+                }
+                nextAction.payload = payloadFromBid;
+            }
+            if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [requestBid]))) return false;
+            reactToRequestAction(eventInfo, nextAction, requestBid);
+            this._actionReactionLogger.onActionProcessed(nextAction);
+            return true;
+        }
+        // replay a triggered action
+        if(nextAction.type === 'triggered') {
+            const triggerBid = eventInfo.trigger[0];
+            if(this._isInvalidAction(explainExactRequestBidPlacedByFlow(triggerBid, {event: eventInfo.event, type: 'trigger', flowId: nextAction.flowId, id: nextAction.bidId}))) return false;
+            if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
+            if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
+            if(this._isInvalidAction(explainPendingExtend(eventInfo, triggerBid))) return false;
+            if(nextAction.payload === '__%TAKE_PAYLOAD_FROM_BID%__') {
+                const payload = triggerBid.payload instanceof Function ? triggerBid.payload(eventInfo.event.value) : triggerBid.payload;
+                nextAction.payload = payload;
+            }
+            if(this._isInvalidAction(explainHighestPriorityAskFor(eventInfo))) return false;
+            const highestPriorityAskForBid = eventInfo.askFor[0]; // guaranteed because of the previous check.
+            if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [triggerBid, highestPriorityAskForBid]))) return false;
+            reactToTriggerAction(eventInfo, nextAction, triggerBid, highestPriorityAskForBid);
+            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
+            return true;
+        }
+        // replay a requested async action
+        if(nextAction.type === 'requestedAsync') {
+            const requestBid = eventInfo.request[0];
+            if(this._isInvalidAction(explainExactRequestBidPlacedByFlow(requestBid, {event: eventInfo.event, type: 'request', flowId: nextAction.flowId, id: nextAction.bidId}))) return false;
+            if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
+            if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
+            if(this._isInvalidAction(explainPendingExtend(eventInfo, requestBid))) return false;
+            // use the resolved
+            if(nextAction.resolveRejectAction) {
+                const resolveActionId = nextAction.resolveRejectAction.resolveActionId;
+                if(resolveActionId !== undefined) {
+                    const resolveAction = this._actions.get(resolveActionId);
+                    if(resolveAction === undefined || !('payload' in resolveAction)) {
+                        this._isInvalidAction({
+                            eventId: requestBid.event.id,
+                            message: `a resolve action with id '${resolveActionId}' is expected, but no resolve action or payload was found.`
+                        });
+                        return false;
+                    }
+                    const requestAsyncAction = {...nextAction, payload: new Promise<P>(() => null)}
+                    reactToRequestedAsyncAction(eventInfo, requestAsyncAction, requestBid);
+                    this._actionReactionLogger.onActionProcessed(requestAsyncAction);
+                    return true;
+                }
+                const rejectActionId = nextAction.resolveRejectAction.rejectActionId;
+                if(rejectActionId !== undefined) {
+                    const rejectAction = this._actions.get(rejectActionId);
+                    if(rejectAction === undefined || !('payload' in rejectAction)) {
+                        this._isInvalidAction({
+                            eventId: requestBid.event.id,
+                            message: `a reject action with id '${rejectActionId}' is expected, but no reject action or payload was found.`
+                        });
+                        return false;
+                    }
+                    const rejectAsyncAction = {...nextAction, payload: new Promise<P>(() => null)}
+                    reactToRequestedAsyncAction(eventInfo, rejectAsyncAction, requestBid);
+                    this._actionReactionLogger.onActionProcessed(rejectAsyncAction);
+                    return true;
                 }
             }
-            // make async-call again.
-            const payloadFn = (bid as PlacedRequestBid<any, any>).payload;
-            if(!(payloadFn instanceof Function)) {
-                this.abortReplay(replayAction, `the payload of the requestig flow needs to be a function that returns a promise`);
-                return undefined;
+            // use an alternative payload
+            if(nextAction.payload instanceof Function) {
+                const payload = nextAction.payload(eventInfo.event.value);
+                if(!isThenable(payload)) {
+                    this._isInvalidAction({
+                        eventId: requestBid.event.id,
+                        message: `the alternative payload for a requestAsync action should be a function that returns a promise.`
+                    });
+                    return false;
+                }
+                // remove a resolve action if it exists
+                if(nextAction.resolveRejectAction?.resolveActionId !== undefined) {
+                    this._actions.delete(nextAction.resolveRejectAction?.resolveActionId);
+                }
+                // remove a reject action if it exists
+                if(nextAction.resolveRejectAction?.rejectActionId !== undefined) {
+                    this._actions.delete(nextAction.resolveRejectAction?.rejectActionId);
+                }
+                const requestAsyncAction = {...nextAction, payload};
+                reactToRequestedAsyncAction(eventInfo, requestAsyncAction, requestBid);
+                this._actionReactionLogger.onActionProcessed(requestAsyncAction);
+                return true;
             }
-            const promise = payloadFn();
-            if(!isThenable(promise)) {
-                this.abortReplay(replayAction, `the payload of the requestig flow needs to be a function that returns a promise`);
-                return undefined;
+            // use the payload from the request bid
+            if(nextAction.payload === '__%TAKE_PAYLOAD_FROM_BID%__') {
+                const maybeFunction = eventInfo.request[0].payload;
+                if(!(maybeFunction instanceof Function)) {
+                    this._isInvalidAction({
+                        eventId: requestBid.event.id,
+                        message: `the payload of this request bid was expected to contain a function that returns a promise`
+                    });
+                    return false;
+                }
+                const payload = maybeFunction(eventInfo.event.value);
+                if(!isThenable(payload)) {
+                    this._isInvalidAction({
+                        eventId: requestBid.event.id,
+                        message: `the payload of this request bid was expected to contain a function that returns a promise`
+                    });
+                    return false;
+                }
+                const requestAsyncAction = {...nextAction, payload}
+                reactToRequestedAsyncAction(eventInfo, requestAsyncAction, requestBid);
+                this._actionReactionLogger.onActionProcessed(requestAsyncAction);
+                return true;
             }
-            return {...replayAction, payload: promise};
         }
-
-        if(replayAction.type === 'requestedAction') {
-            let bid = flow.getBid(replayAction.bidId) as PlacedRequestBid<any, any> | undefined;
-            if(bid === undefined) {
-                this.abortReplay(replayAction, `flow has not placed a bid for this action`);
-                return undefined;
-            }
-            if("payload" in replayAction) {
-                bid = {...bid, payload: replayAction.payload}
-            } else {
-                replayAction.payload = bid.payload;
-            }
-            const explain = explainRequest(event, bid as PlacedRequestBid<any, any> );
-            if(!explain.isValid) {
-                this.abortReplay(replayAction, explain.invalidReason);
-                return undefined;
-            }
-            return replayAction;
+        if(nextAction.type === 'resolvePendingRequest') {
+            if(this._isInvalidAction(explainNoPendingRequest(eventInfo, nextAction))) return false;
+            const pendingRequest = eventInfo.pendingRequest as PlacedRequestBid<P,V>; // is a pending request because of the explainHasPendingRequest validation check
+            if(!this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [pendingRequest]))) return false
+            reactToResolveAsyncAction(eventInfo, {...nextAction, id: nextActionId}, pendingRequest);
+            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
+            return true;
         }
-
-        if(replayAction.type === 'triggeredAction') {
-            let bid = flow.getBid(replayAction.bidId) as PlacedTriggerBid<any, any> | undefined;
-            if(bid === undefined) {
-                this.abortReplay(replayAction, `flow has not placed a bid for this action`);
-                return undefined;
-            }
-            if("payload" in replayAction) {
-                bid = {...bid, payload: replayAction.payload}
-            } else {
-                replayAction.payload = bid.payload;
-            }
-            const explain = explainTrigger(event, bid as PlacedTriggerBid<any, any> );
-            if(!explain.isValid) {
-                this.abortReplay(replayAction, explain.invalidReason);
-                return undefined;
-            }
-            return replayAction;
+        if(nextAction.type === 'rejectPendingRequest') {
+            if(this._isInvalidAction(explainNoPendingRequest(eventInfo, nextAction))) return false;
+            const pendingRequest = eventInfo.pendingRequest as PlacedRequestBid<P,V>; // is a pending request because of the explainHasPendingRequest validation check
+            reactToRejectAction(pendingRequest.flow, eventInfo.event);
+            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
+            return true;
         }
-
-        if(replayAction.type === 'uiAction') {
-            const payloadOverride = "payload" in replayAction ? {value: replayAction.payload} : undefined;
-            const explain = explainAskFor(event, payloadOverride ? payloadOverride.value : replayAction.payload);
-            if(!explain.isValid) {
-                this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
-                return undefined;
-            }
-            return replayAction;
-        }
-
-        if(replayAction.type === 'rejectAction') {
-            return replayAction;
-        }
-
-        if(replayAction.type === 'resolvedExtendAction') {
-            const explain = getInitialExplainResult(event, 'extend');
-            if(!explain.isValid) {
-                this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
-                return undefined;
-            }
-            return replayAction;
-        }
-
-        if(replayAction.type === 'resolveAction') {
-            const explain = explainResolve(event, replayAction.payload);
-            if(!explain.isValid) {
-                this.abortReplay(replayAction, `invalidReason: ${explain?.invalidReason}`);
-                return undefined;
-            }
-            return replayAction;
-        }
-
-
-
+        return false;
     }
+}
+
+
+
+/**
+ * @internal
+ * Returns all actions from a replay and all parent replays.
+ * @param replay the replay to get the actions from
+ * @returns an array of all actions from the replay and all parent replays
+ **/
+function getAllReplayActions(replay: LoadedReplay): ReplayAction<any>[] {
+    const actions = [...replay.actions];
+    // if there are parent replays, prepent the actions from those replays to the actions array
+    if(replay.parentReplays) {
+        for(const parentReplay of replay.parentReplays) {
+            actions.unshift(...getAllReplayActions(parentReplay));
+        }
+    }
+    return actions;
 }
