@@ -1,23 +1,73 @@
-## @flowcards/core
-Scenario based programming for JavaScript/TypeScript
+## flowcards
+flow based state-management for JavaScript/TypeScript.
 
-The flowcards core package has one main `scenarios` function.<br/>
-It will create an update-loop and make the initial setup call.<br/>
-When there is a new update, the update callback function gets called with an a new scenarios-context and dispatcher.<br/>
+flowcards enables state-management code to be modularized by use-case.
+This enables the code to be directly related to the requirements and tests.
 
- ```ts
-scenarios(StagingFunction, UpdateCallback)
- ```
- 
-<img src="/docs/img/update-loop-chart.svg" width="730">
+For example this Requirement (Scenario)
 
- 
- ### The architecture is based on these principles
- - The behavioral programming infrastructure causes b-threads to synchronize with each other (e.g., waiting for each other) before generating events. This gives b-threads the opportunity to forbid or override each other's events. The synchronization is automatic and occurs at the point "setup and delete BThreads".
- - When a b-thread generates an event it recognizes this as merely putting forward a request for consideration in the execution, and it is prepared to handle situations where the event will in fact not be triggered, or will be postponed, briefly or indefinitely. A b-thread may wish to wait indefinitely until the event is triggered, and the system, in turn, is not negatively affected by a large number of such waiting b-threads. Alternatively, a b-thread may monitor certain events that occur as it waits for the triggering of its requested event, and then withdraw its own request before the requested events are actually triggered.
- - Only events that are requested and not blocked can be triggered ( not blocked bids are calculated at the "get bids" step )
- - A b-thread can progress past a synchronization point when an event that it requested or waited for is triggered ( this is done at the step "advance BThreads")
- - When a selected event is requested by two or more b-threads, all b-threads requesting it are notified (in addition to those who are only listening-out for it). Each requesting b-thread will advance in the same manner as it would have had it been the only requester. If the event is associated with some execution external to the b-threads, such as logging or execution of an associated method, this processing/effect will occur only once. (also done by the "advance BThreads step)
- - B-threads can use standard interfaces to their environment (e.g., access services, other js-libs, ...) in order to translate external occurrences into behavioral events and vice versa.
+Scenario: user is able to search for products
+Given: the user has selected a category
+When: the user entered a search-string that is longer than 3 characters
+And: the user starts a search
+Then: the products are fetched from the server
+
+A scenario can be directly translated into a flow:
+
+```js
+function* userCanSearchForProducts(selectedCategoryId: number) {
+ const searchString = yield* getEventValue(askFor(startSearchEvent, (input) => input.length > 3));
+ yield request(searchProductsEvent, () => getProducts(selectedCategoryId, searchString))
+}
+```
+
+##Why?
+By writing flows, you are able to organize code on a requirements level.
+This means, that your code will always be organized by "what the software is supposed to do".
+The question "why is this code here" is always easy to answer, because the context (requirement/scenario) is not lost.
+
+##How?
+A flow is a thread of execution, and can also handle side-effects and async requests - all in one place.
+If you have a scenario like the one above, where the UI needs to make an async call, then the call is not handled somewhere
+else in your code - all can be expressed inside of the flow.
+
+##In the real world
+Usually, a flow will not stand alone by itself. Multiple flows will need to play together and because of this,
+they all are syncronized by using the yield keyword.
+
+For example you have this Scenario:
+
+Scenario: user needs to confirm the first search once
+When the user starts a search for the first time
+Then the user needs to confirm the search
+
+```js
+function* userNeedsToConfirmFirstSearch() {
+ yield extend(startSearchEvent);
+ yield askFor(confirmEvent);
+ yield request(startSearchEvent);
+}
+```
+When a flow reaches a yield, all other flows have reached a yield as well.
+Because of this synchronization, every flow can tell what events it want to happen, or what events it wants to extend or block.
+This is called the placement of "bids".
+
+##Flow-API (bids)
+A yield will allow the flow to place one or multiple "bids".
+It is called a bid, because a flow can not force an event to happen, it can only place a bid of what it wants to happen.
+
+There are 7 types of bids:
+
+- waitFor the flow waits for an event to happen, and proceeds if the event is executed
+- askFor  the flow asks the user to dispatch an event ( like a button click )
+- request the flows requests an event ( for example an async fetch )
+- validate the flow extends the validation of the event
+- extend the flows will extend the logic of an event
+- trigger the flow will dispatch an event ( that is asked for by another flow )
+- block the flow will block an event
+
+Because of this API, flows can indirectly sync with each other, so that Scenarios do not need to stand for themselfes and to enable
+complex behaviour that can always be reasoned about, because they are readable as they would be tests.
+
 
  All [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html) are provided by the BP-Team around [Prof. David Harel](http://www.wisdom.weizmann.ac.il/~harel/) - the mind behind Statecharts.
