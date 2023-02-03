@@ -1,4 +1,5 @@
 import { AccumulatedValidationResults } from "./action-explain";
+import { Event, EventByKey } from "./event";
 
 /**
  * @internal
@@ -56,4 +57,36 @@ export function isThenable(p?: unknown): p is Promise<unknown> {
  */
   export function invalidDetails<V>(results: AccumulatedValidationResults<V>): V[] {
     return results.results.flatMap((r) => !r.isValid ? r.details : []);
+}
+
+/**
+ * An object that can contain Events or EventByKey objects, that can be nested
+ */
+export type EventRecord = {[ key: string ]: Event<any, any> | EventByKey<any,any> | EventRecord};
+
+/**
+ * for a nested object of Events or EventsByKey, return all Events
+ * @param obj the object to search
+ * @returns an array of all Events
+ */
+export function getAllEvents(obj: EventRecord): Event<any, any>[] {
+    const events: Event<any, any>[] = [];
+    for(const key in obj) {
+        const value = obj[key];
+        // value is an Event
+        if(value instanceof Event) {
+            events.push(value);
+        }
+        // value is an EventByKey
+        else if(value instanceof EventByKey) {
+            const events = value.allEvents;
+            events.forEach((e) => events.push(e));
+        }
+        // value is an object (get next values recursively)
+        else if(typeof value === 'object') {
+            const nestedEvents = getAllEvents(value);
+            nestedEvents.forEach((e) => events.push(e));
+        }
+    }
+    return events;
 }

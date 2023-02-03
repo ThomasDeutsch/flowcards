@@ -28,4 +28,4 @@ export {SchedulerCompletedCallback, SchedulerProps, Scheduler } from './schedule
 export {TupleId, toTupleId, toTupleIdString, isSameTupleId} from './tuple-map';
 
 /* utils */
-export {invalidDetails} from './utils';
+export {invalidDetails, EventRecord, getAllEvents} from './utils';

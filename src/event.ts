@@ -288,6 +288,11 @@ export class EventByKey<P = void, V = void> {
         this.name = name;
     }
 
+    /**
+     * get the event for the given key.
+     * @param key the key to get the event for.
+     * @returns the event for the given key.
+     */
     public key(key: string): Event<P,V> {
         let event = this._children.get(key);
         if(event === undefined) {
@@ -298,11 +303,28 @@ export class EventByKey<P = void, V = void> {
         return event;
     }
 
+    /**
+     * for the given keys, return the corresponding events.
+     * @param keys the keys to get the events for.
+     * @returns the events for the given keys.
+     */
     public keys(...keys: string[]): Event<P,V>[] {
         return keys.map(key => this.key(key));
     }
 
+    /**
+     * get all keys
+     * @returns all keys that are contained in this keyed event.
+     */
     public allKeyNames(): string[] {
         return [...this._children].map(([k]) => k);
+    }
+
+    /**
+     * get all events
+     * @returns all events that are contained in this keyed event.
+     */
+    public get allEvents(): Event<P,V>[] {
+        return [...this._children].map(([_, e]) => e);
     }
 }
