@@ -72,6 +72,7 @@ export class ActiveReplay {
     private _isInvalidAction(invalidActionExplanation?: InvalidActionExplanation): boolean {
         if(invalidActionExplanation) {
             this._actionReactionLogger.logInvalidAction(invalidActionExplanation);
+            console.error('replay aborted, because of an invalid action', invalidActionExplanation)
             this._abortReplay();
             return true;
         }
@@ -83,6 +84,7 @@ export class ActiveReplay {
             this._actionReactionLogger.logPayloadValidations(results);
         }
         if(results?.isValidAccumulated === false) {
+            console.error('replay aborted, because of an invalid action payload', results);
             this._abortReplay();
         }
         return results?.isValidAccumulated !== true;
