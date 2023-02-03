@@ -1,5 +1,5 @@
 import { ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, TriggeredAction } from "./action";
-import { AccumulatedValidationResults, BaseValidationReturn, explainAnyBidPlacedByFlow, explainBlocked, explainExactRequestBidPlacedByFlow, explainHighestPriorityAskFor, explainNoPendingRequest, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./action-explain";
+import { AccumulatedValidationResults, explainAnyBidPlacedByFlow, explainBlocked, explainExactRequestBidPlacedByFlow, explainHighestPriorityAskFor, explainNoPendingRequest, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./action-explain";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { EventInformation, PlacedRequestBid, RequestingBidsAndEventInformation } from "./bid";
 import { reactToExternalAction, reactToRejectAction, reactToRequestAction, reactToRequestedAsyncAction, reactToResolveAsyncAction, reactToTriggerAction } from "./flow-reaction";
@@ -7,13 +7,13 @@ import { isThenable } from "./utils";
 
 export type ReplayRequestAsyncAction<P> = (Omit<RequestedAsyncAction<P>, 'payload'> & {payload?: ((current?: P) => Promise<P>) | '__%TAKE_PAYLOAD_FROM_BID%__', resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number}})
 
-export interface Replay {
+export interface SavedReplay {
     id: string;
     parentReplayIds?: string[];
     actions: ReplayAction<any>[];
 }
 
-export interface LoadedReplay extends Replay {
+export interface Replay extends SavedReplay {
     parentReplays?: Replay[]; // Loaded Replays will include all parent replays
 }
 
@@ -29,6 +29,14 @@ export type ReplayAction<P> =
     ResolvePendingRequestAction<P> & {id: number} |
     RejectPendingRequestAction & {id: number}
 
+export type ActiveReplayState = 'running' | 'paused' | 'aborted' | 'completed' | undefined;
+
+export type ActiveReplayInfo = {
+    state: ActiveReplayState
+    //TODO: add test for action
+    //TODO: pause replay
+}
+
 
 /**
  * a replay is a list of actions that can be replayed.
@@ -36,19 +44,19 @@ export type ReplayAction<P> =
  */
 export class ActiveReplay {
     private _actions = new Map<number, ReplayAction<any>>();
-    private _state: 'running' | 'paused' | 'aborted' | 'completed' | 'idle';
+    private _state: ActiveReplayState;
     private _lastActionId = 0; // the action id of the last action in the replay
     private _actionReactionLogger: ActionReactionLogger;
-    public readonly replay?: LoadedReplay;
+    private readonly _replay?: Replay;
 
-    constructor(actionReactionLogger: ActionReactionLogger, loadedReplay?: LoadedReplay) {
-        this.replay = loadedReplay;
+    constructor(actionReactionLogger: ActionReactionLogger, replay?: Replay) {
+        this._replay = replay;
         this._actionReactionLogger = actionReactionLogger;
-        if(this.replay === undefined || loadedReplay?.actions.length === 0) {
-            this._state = 'idle';
+        if(this._replay === undefined || replay?.actions.length === 0) {
+            this._state = undefined;
             return;
         }
-        const actions = getAllReplayActions(this.replay);
+        const actions = getAllReplayActions(this._replay);
         actions.forEach(action => {
             this._actions.set(action.id, action);
             this._lastActionId = action.id;
@@ -257,6 +265,15 @@ export class ActiveReplay {
         }
         return false;
     }
+
+    /**
+     * @internal
+     * get the current replay state
+     * @returns the current replay state
+     */
+    get state(): ActiveReplayState {
+        return this._state;
+    }
 }
 
 
@@ -267,7 +284,7 @@ export class ActiveReplay {
  * @param replay the replay to get the actions from
  * @returns an array of all actions from the replay and all parent replays
  **/
-function getAllReplayActions(replay: LoadedReplay): ReplayAction<any>[] {
+function getAllReplayActions(replay: Replay): ReplayAction<any>[] {
     const actions = [...replay.actions];
     // if there are parent replays, prepent the actions from those replays to the actions array
     if(replay.parentReplays) {

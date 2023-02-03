@@ -1,5 +1,5 @@
-import { Action, ExtendableAction, ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, TriggeredAction } from "./action";
-import { BaseValidationReturn, isValidReturn, validateBid } from "./action-explain";
+import { Action, ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, TriggeredAction } from "./action";
+import { isValidReturn, validateBid } from "./action-explain";
 import { EventInformation, PlacedBid, PlacedRequestBid, PlacedTriggerBid, PlacedWaitingBid } from "./bid";
 import { Event } from "./event";
 import { Flow, PendingExtend } from "./flow";

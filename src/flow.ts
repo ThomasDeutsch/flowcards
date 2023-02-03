@@ -1,7 +1,6 @@
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { Bid, toBids, PlacedBid, filterRemainingBids, PlacedRequestBid } from "./bid";
 import { Event } from  "./event";
-import { BaseValidationReturn } from "./action-explain";
 import { toTupleIdString, TupleId, TupleMap } from "./tuple-map";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { areDepsEqual, isThenable } from "./utils";
@@ -310,12 +309,16 @@ export class Flow {
     /**
      * @internal
      * end the flow execution
+     * @param removeExtends if true, all pending extends will be removed ( used by replay )
      */
-    public __end(): void {
+    public __end(removeExtends?: boolean): void {
         this._reset(true);
+        if(removeExtends) {
+            this._pendingExtends.clear();
+        }
         this._logger.logFlowReaction(this.id, 'flow ended');
         this._children.forEach((child) => {
-            child.__end();
+            child.__end(removeExtends);
         });
         this._children.clear();
     }

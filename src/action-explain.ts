@@ -1,5 +1,5 @@
 import { ExternalAction } from "./action";
-import { EventInformation, isSameBid, PlacedBid, PlacedRequestBid, PlacedTriggerBid, PlacedWaitingBid } from "./bid";
+import { EventInformation, isSameBid, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from "./bid";
 import { Event } from "./event";
 import { isSameTupleId, toTupleIdString, TupleId } from "./tuple-map";
 import { isDefined } from "./utils";

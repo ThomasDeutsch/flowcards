@@ -1,12 +1,12 @@
-import { Action, ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, TriggeredAction } from "./action";
+import { Action, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, TriggeredAction } from "./action";
 import { EventInformation, updateEventInformation, PlacedRequestBid, PlacedTriggerBid, RequestingBidsAndEventInformation } from "./bid";
 import { Event } from "./event";
-import { BaseValidationReturn, explainAnyBidPlacedByFlow, explainBlocked, explainNoPendingRequest, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation, AccumulatedValidationResults } from "./action-explain";
+import { explainAnyBidPlacedByFlow, explainBlocked, explainNoPendingRequest, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation, AccumulatedValidationResults } from "./action-explain";
 import { Flow, FlowGeneratorFunction } from "./flow";
 import { TupleId } from "./tuple-map";
 import { isThenable } from "./utils";
 import { reactToExternalAction, reactToRejectAction, reactToRequestAction, reactToRequestedAsyncAction, reactToResolveAsyncAction, reactToTriggerAction } from "./flow-reaction";
-import { ActiveReplay, Replay } from "./replay";
+import { ActiveReplay, ActiveReplayInfo, Replay } from "./replay";
 import { ActionProcessedInformation, ActionReactionLogger } from "./action-reaction-logger";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import { ActionProcessedInformation, ActionReactionLogger } from "./action-react
 /**
  * a callback function that is called if the current scheduler run is finished (all actions processed, and no more requests that can be processed)
  */
- export type SchedulerCompletedCallback = (info: ActionProcessedInformation[], bidsAndEventInfo: RequestingBidsAndEventInformation) => void;
+ export type SchedulerCompletedCallback = (info: ActionProcessedInformation[], bidsAndEventInfo: RequestingBidsAndEventInformation, activeReplayInfo: ActiveReplayInfo) => void;
 
 /**
  * properties of the Scheduler
@@ -40,7 +40,7 @@ export class Scheduler {
     private _bidsAndEventInfo: RequestingBidsAndEventInformation;
     private _actionReactionLogger = new ActionReactionLogger();
     private _schedulerCompletedCallback?: SchedulerCompletedCallback;
-    public activeReplay: ActiveReplay;
+    private _activeReplay: ActiveReplay;
     private _currentActionId = -1;
 
     constructor(props : SchedulerProps) {
@@ -53,22 +53,20 @@ export class Scheduler {
         this._rootFlow = new Flow({
             id: [flowName, undefined],
             generatorFunction: props.rootFlow,
-            executeAction: this._executeAction.bind(this),
+            executeAction: this._run.bind(this),
             logger: this._actionReactionLogger
         });
-        this.activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay);
+        this._activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay);
         this._bidsAndEventInfo = updateEventInformation(this._connectEvent.bind(this), this._rootFlow.__getBidsAndPendingInformation());
         this._run();
     }
-
-
 
     /**
      * function to connect an event to the scheduler
      * @param event the event that will be to the scheduler
      */
     private _connectEvent(event: Event<any, any>): void {
-        event.__connectToScheduler((eventId: TupleId) => this._bidsAndEventInfo.eventInformation.get(eventId), this._executeAction.bind(this), this._actionReactionLogger);
+        event.__connectToScheduler((eventId: TupleId) => this._bidsAndEventInfo.eventInformation.get(eventId), this._run.bind(this), this._actionReactionLogger);
     }
 
     /**
@@ -212,14 +210,6 @@ export class Scheduler {
     }
 
     /**
-     * a function process an action
-     * @param action the action to be added to the queue
-     */
-    private _executeAction(action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
-        this._run(action);
-    }
-
-    /**
      * This function is the main-function for the flowcards library.
      * A function to process the next action from 3 possible sources ( ordered by priority ):
      * 1. a replay action
@@ -231,7 +221,7 @@ export class Scheduler {
     private _run(action?: Action<any>): void {
         const nextActionId = this._currentActionId + 1;
         const wasActionProcessed =
-            this.activeReplay.getNextReplayAction(this._bidsAndEventInfo, nextActionId) ||
+            this._activeReplay.getNextReplayAction(this._bidsAndEventInfo, nextActionId) ||
             this._processAction(this._bidsAndEventInfo, nextActionId, action) ||
             this._processActionFromBid(this._bidsAndEventInfo, nextActionId);
         if(wasActionProcessed) {
@@ -242,7 +232,7 @@ export class Scheduler {
         else {
             const {changedEvents, logs} = this._actionReactionLogger.flushLog();
             changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
-            this._schedulerCompletedCallback?.(logs, Object.freeze(this._bidsAndEventInfo));
+            this._schedulerCompletedCallback?.(logs, Object.freeze(this._bidsAndEventInfo), {state: this._activeReplay.state});
         }
     }
 }

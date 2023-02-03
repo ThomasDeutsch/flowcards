@@ -1,6 +1,5 @@
 import { Action } from "./action";
 import { AccumulatedValidationResults, InvalidActionExplanation } from "./action-explain";
-import { PlacedWaitingBid, RequestingBidsAndEventInformation } from "./bid";
 import { Event } from "./event";
 import { ReplayAction } from "./replay";
 import { TupleId, TupleMap } from "./tuple-map";
