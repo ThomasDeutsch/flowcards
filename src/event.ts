@@ -45,6 +45,20 @@ export class Event<P = undefined, V = void> {
 
     /**
      * @internal
+     * reset the event to its initial state
+     */
+    public __reset(): void {
+        this._value = undefined;
+        this._executeAction = undefined;
+        this._getEventInformation = undefined;
+        this._onUpdateCallback = undefined;
+        this._logger = undefined;
+        this._latestUpdateOnActionId = undefined;
+        this._relatedValidationEvents.clear();
+    }
+
+    /**
+     * @internal
      * connect this event to the scheduler by receiving two functions from the scheduler
      * @param getEventInformation a function that returns the event information of this event
      * @param addActionToQueue the function to add an action to the queue

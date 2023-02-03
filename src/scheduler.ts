@@ -235,4 +235,12 @@ export class Scheduler {
             this._schedulerCompletedCallback?.(logs, Object.freeze(this._bidsAndEventInfo), {state: this._activeReplay.state});
         }
     }
+
+    /**
+     * getter for the root flow
+     * @returns the root flow
+     */
+    get rootFlow(): Flow {
+        return this._rootFlow;
+    }
 }

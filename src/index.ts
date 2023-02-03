@@ -19,7 +19,7 @@ export {NestedEventObject, getEvents, Event, EventByKey} from './event';
 export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow} from './flow';
 
 /* replay */
-export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay} from './replay';
+export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay, SavedReplay} from './replay';
 
 /* scheduler */
 export {SchedulerCompletedCallback, SchedulerProps, Scheduler } from './scheduler';
