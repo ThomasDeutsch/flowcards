@@ -56,7 +56,7 @@ export class Scheduler {
             executeAction: this._run.bind(this),
             logger: this._actionReactionLogger
         });
-        this._activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay);
+        this._activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay, () => this._bidsAndEventInfo);
         this._bidsAndEventInfo = updateEventInformation(this._connectEvent.bind(this), this._rootFlow.__getBidsAndPendingInformation());
         this._run();
     }

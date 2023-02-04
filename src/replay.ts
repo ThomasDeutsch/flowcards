@@ -48,9 +48,12 @@ export class ActiveReplay {
     private _lastActionId = 0; // the action id of the last action in the replay
     private _actionReactionLogger: ActionReactionLogger;
     private readonly _replay?: Replay;
+    private _getBids?: () => RequestingBidsAndEventInformation;
+    private _currentAction?: ReplayAction<any>;
 
-    constructor(actionReactionLogger: ActionReactionLogger, replay?: Replay) {
+    constructor(actionReactionLogger: ActionReactionLogger, replay?: Replay, getBids?: () => RequestingBidsAndEventInformation) {
         this._replay = replay;
+        this._getBids = getBids;
         this._actionReactionLogger = actionReactionLogger;
         if(this._replay === undefined || replay?.actions.length === 0) {
             this._state = undefined;
@@ -72,7 +75,9 @@ export class ActiveReplay {
     private _isInvalidAction(invalidActionExplanation?: InvalidActionExplanation): boolean {
         if(invalidActionExplanation) {
             this._actionReactionLogger.logInvalidAction(invalidActionExplanation);
-            console.error('replay aborted, because of an invalid action', invalidActionExplanation)
+            console.error('replay aborted, because of an invalid action', invalidActionExplanation);
+            console.log('failed action: ', this._currentAction);
+            console.log('current bids: ', this._getBids?.());
             this._abortReplay();
             return true;
         }
@@ -102,6 +107,7 @@ export class ActiveReplay {
         if (nextAction === undefined) {
             return false
         }
+        this._currentAction = nextAction; // for logging purposes
         const maybeEventInfo = info.eventInformation.get(nextAction.eventId) as EventInformation<P, V> | undefined;
         if(this._isInvalidAction(explainAnyBidPlacedByFlow(nextAction.eventId, maybeEventInfo))) return false;
         const eventInfo = maybeEventInfo as EventInformation<P, V>; // guaranteed to be defined because of the previous isValid check
