@@ -253,7 +253,7 @@ export class ActiveReplay {
         if(nextAction.type === 'resolvePendingRequest') {
             if(this._isInvalidAction(explainNoPendingRequest(eventInfo, nextAction))) return false;
             const pendingRequest = eventInfo.pendingRequest as PlacedRequestBid<P,V>; // is a pending request because of the explainHasPendingRequest validation check
-            if(!this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [pendingRequest]))) return false
+            if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [pendingRequest]))) return false
             reactToResolveAsyncAction(eventInfo, {...nextAction, id: nextActionId}, pendingRequest);
             this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
             return true;
