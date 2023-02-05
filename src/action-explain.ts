@@ -1,7 +1,6 @@
 import { ExternalAction } from "./action";
 import { EventInformation, isSameBid, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from "./bid";
 import { Event } from "./event";
-import { isSameTupleId, toTupleIdString, TupleId } from "./tuple-map";
 import { isDefined } from "./utils";
 
 
@@ -17,7 +16,7 @@ export type BaseValidationReturn<V> = {isValid: boolean, details?: V[]} | boolea
  * the reason why an action can not be used
  */
 export interface InvalidActionExplanation {
-    eventId: TupleId;
+    eventId: string;
     message: string;
 }
 
@@ -39,7 +38,7 @@ export interface InvalidActionExplanation {
  * @param eventInfo all information about the event and all placed bids
  * @returns an explanation or undefined if event information exists.
  */
-export function explainAnyBidPlacedByFlow<P, V>(eventId: TupleId, eventInfo?: EventInformation<P, V>): InvalidActionExplanation | undefined {
+export function explainAnyBidPlacedByFlow<P, V>(eventId: string, eventInfo?: EventInformation<P, V>): InvalidActionExplanation | undefined {
     if(eventInfo === undefined) {
         return { eventId, message: 'no bid placed for this event'}
     }
@@ -53,11 +52,11 @@ export function explainAnyBidPlacedByFlow<P, V>(eventId: TupleId, eventInfo?: Ev
  * @param eventInfo all information about the event and all placed bids
  * @returns an explanation or undefined if bid exists
  */
- export function explainExactRequestBidPlacedByFlow<P, V>(requestedBid: PlacedRequestBid<P, V> | PlacedTriggerBid<P, V> | undefined, bid: {event: Event<P,V>, type: 'request' | 'trigger', flowId: TupleId, id: number}): InvalidActionExplanation | undefined {
+ export function explainExactRequestBidPlacedByFlow<P, V>(requestedBid: PlacedRequestBid<P, V> | PlacedTriggerBid<P, V> | undefined, bid: {event: Event<P,V>, type: 'request' | 'trigger', flowId: string, id: number}): InvalidActionExplanation | undefined {
     if(requestedBid === undefined) {
         return { eventId: bid.event.id, message: `no ${bid.type} bid was placed for this event` }
     }
-    if(!isSameTupleId(requestedBid.flow.id, bid.flowId) || requestedBid.id !== bid.id) {
+    if((requestedBid.flow.id !== bid.flowId) || (requestedBid.id !== bid.id)) {
         return { eventId: bid.event.id, message: `the expected ${bid.type} bid is not the highest priority bid placed by the flows` }
     }
     return undefined;
@@ -70,9 +69,9 @@ export function explainAnyBidPlacedByFlow<P, V>(eventId: TupleId, eventInfo?: Ev
  * @param actionInfo the flow&bid of the resolve/reject action
  * @returns an explanation if the bid can resolve/reject a pending request
  */
- export function explainNoPendingRequest<P, V>(eventInfo: EventInformation<P, V>, actionInfo: {flowId: TupleId, bidId: number} ): InvalidActionExplanation | undefined {
+ export function explainNoPendingRequest<P, V>(eventInfo: EventInformation<P, V>, actionInfo: {flowId: string, bidId: number} ): InvalidActionExplanation | undefined {
     // resolve a pending request
-    if(eventInfo.pendingRequest && isSameTupleId(eventInfo.pendingRequest.flow.id, actionInfo.flowId) && eventInfo.pendingRequest.id === actionInfo.bidId) {
+    if(eventInfo.pendingRequest && (eventInfo.pendingRequest.flow.id === actionInfo.flowId) && eventInfo.pendingRequest.id === actionInfo.bidId) {
         return undefined
     }
     return { eventId: eventInfo.event.id, message: 'no pending request found for this action' }
@@ -92,7 +91,7 @@ export function explainAnyBidPlacedByFlow<P, V>(eventId: TupleId, eventInfo?: Ev
     let message = '';
     const isBlocked = eventInfo.block.some(block => {
         if(block.validate == undefined || (block.validate && isValidReturn(block.validate()))) {
-            message = `event is blocked by flow ${toTupleIdString(block.flow.id)}`;
+            message = `event is blocked by flow ${block.flow.id}`;
             return true;
         }
         return false;
@@ -108,11 +107,11 @@ export function explainAnyBidPlacedByFlow<P, V>(eventId: TupleId, eventInfo?: Ev
  * @param event event to explain
  * @returns an explanation of what flows are blocking the event
  */
-export function explainPendingRequest<P, V>(eventInfo: EventInformation<P, V>, flowId?: TupleId): InvalidActionExplanation | undefined {
-    if(eventInfo.pendingRequest === undefined || (flowId && isSameTupleId(eventInfo.pendingRequest.flow.id, flowId))) {
+export function explainPendingRequest<P, V>(eventInfo: EventInformation<P, V>, flowId?: string): InvalidActionExplanation | undefined {
+    if(eventInfo.pendingRequest === undefined || (flowId && eventInfo.pendingRequest.flow.id === flowId)) {
         return undefined;
     }
-    return { eventId: eventInfo.event.id, message: `event has a pending request from flow ${toTupleIdString(eventInfo.pendingRequest.flow.id)}` };
+    return { eventId: eventInfo.event.id, message: `event has a pending request from flow ${eventInfo.pendingRequest.flow.id}` };
 }
 
 /**
@@ -126,9 +125,9 @@ export function explainPendingRequest<P, V>(eventInfo: EventInformation<P, V>, f
     if(eventInfo.pendingExtend === undefined) {
         return undefined;
     }
-    const isResolveExtendBid = Boolean(resolveExtendBid && isSameTupleId(resolveExtendBid.flow.id, eventInfo.pendingExtend.extendingFlow.id));
+    const isResolveExtendBid = Boolean(resolveExtendBid && (resolveExtendBid.flow.id === eventInfo.pendingExtend.extendingFlow.id));
     if(isResolveExtendBid) return undefined;
-    return { eventId: eventInfo.event.id, message: `event has a pending extend. Flow ${toTupleIdString(eventInfo.pendingExtend.extendingFlow.id)} is extending the event.` };
+    return { eventId: eventInfo.event.id, message: `event has a pending extend. Flow ${eventInfo.pendingExtend.extendingFlow.id} is extending the event.` };
 }
 
 /**

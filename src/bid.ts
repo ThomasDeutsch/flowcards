@@ -1,7 +1,6 @@
 import { Event, EventByKey, getEvents, NestedEventObject } from "./event";
 import { BaseValidationReturn } from "./action-explain";
 import { Flow, FlowBidsAndPendingInformation, FlowGenerator, FlowProgressInfo, PendingExtend, TNext } from "./flow";
-import { isSameTupleId, TupleId, TupleMap } from "./tuple-map";
 
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
@@ -104,8 +103,8 @@ export interface EventInformation<P, V> {
  * 3. for every event, a list of all active contexts (see PlacedContextBid)
  */
  export interface RequestingBidsAndEventInformation {
-    requested: TupleMap<PlacedRequestBid<any, any>| PlacedTriggerBid<any, any>>;
-    eventInformation: TupleMap<EventInformation<any, any>>;
+    requested: Map<string, PlacedRequestBid<any, any>| PlacedTriggerBid<any, any>>;
+    eventInformation: Map<string, EventInformation<any, any>>;
 }
 
 // CORE FUNCTIONS -----------------------------------------------------------------------------------------------
@@ -119,8 +118,8 @@ export interface EventInformation<P, V> {
  */
 export function updateEventInformation(connectEvent: (event: Event<any, any>) => void, fb: FlowBidsAndPendingInformation): RequestingBidsAndEventInformation {
     const result: RequestingBidsAndEventInformation = {
-        requested: new TupleMap(),
-        eventInformation: new TupleMap(),
+        requested: new Map(),
+        eventInformation: new Map(),
     };
     // 1. add all placed bids to the result
     fb.placedBids.forEach(bid => {
@@ -308,7 +307,7 @@ export function* getEventValues<P extends WaitingBid<any, any>[]>(...bids: P): G
 export function* extendAll(nestedEvents: NestedEventObject[], exclude?: NestedEventObject[]): Generator<TNext, FlowProgressInfo, FlowProgressInfo> {
     const events = nestedEvents.map(nestedEventObject => getEvents(nestedEventObject)).flat();
     const excludeEvents = exclude?.map(nestedEventObject => getEvents(nestedEventObject)).flat();
-    const progress = yield events.filter(event => !excludeEvents?.some(e => isSameTupleId(e.id, event.id))).map(event => extend(event));
+    const progress = yield events.filter(event => !excludeEvents?.some(e => (e.id === event.id))).map(event => extend(event));
     return progress;
 }
 
@@ -353,8 +352,8 @@ function getInitialEventInformation<P,V>(event: Event<P, V>): EventInformation<P
  * @param bidId bid id of the second bid
  * @returns true if the bids are the same
  */
-export function isSameBid(bid1: PlacedBid<any, any>, flowId: TupleId, bidId: number): boolean {
-    return bid1.id === bidId && isSameTupleId(bid1.flow.id, flowId);
+export function isSameBid(bid1: PlacedBid<any, any>, flowId: string, bidId: number): boolean {
+    return (bid1.id === bidId) && (bid1.flow.id === flowId);
 }
 
 /**

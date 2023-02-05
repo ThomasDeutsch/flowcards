@@ -2,8 +2,7 @@ import { Action } from "./action";
 import { AccumulatedValidationResults, InvalidActionExplanation } from "./action-explain";
 import { Event } from "./event";
 import { ReplayAction } from "./replay";
-import { TupleId, TupleMap } from "./tuple-map";
-import { appendTo } from "./utils";
+import { appendTo, mapValues } from "./utils";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
@@ -27,7 +26,7 @@ export type FlowReactionType =
     invalidActionExplanations?: InvalidActionExplanation[];
     validationResults?: AccumulatedValidationResults<any>;
     processedAction?: ReplayAction<any>;
-    flowReactions?: TupleMap<FlowReactionType[]>;
+    flowReactions?: Map<string, FlowReactionType[]>;
 }
 
 /**
@@ -43,7 +42,7 @@ export type FlowReactionType =
 export class ActionReactionLogger {
     private _logs: ActionProcessedInformation[] = []; // the log of all scheduler runs
     private _currentRun: ActionProcessedInformation = {}; // the current scheduler run
-    private _changedEvents: TupleMap<Event<any,any>> = new TupleMap(); // the events that have changed during the latest scheduler runs
+    private _changedEvents: Map<string, Event<any,any>> = new Map(); // the events that have changed during the latest scheduler runs
     private _accessedValuesFrom?: Event<any, any>; // the events that have been accessed during the between the events "start value access logging" and "stop value access logging
 
     constructor() {}
@@ -78,11 +77,13 @@ export class ActionReactionLogger {
      * @param flowId  the id of the flow
      * @param reactionType  the type of the reaction
      */
-    public logFlowReaction(flowId: TupleId, reactionType: FlowReactionType) {
+    public logFlowReaction(flowId: string, reactionType: FlowReactionType) {
         if(this._currentRun.flowReactions === undefined) {
-            this._currentRun.flowReactions = new TupleMap<FlowReactionType[]>();
+            this._currentRun.flowReactions = new Map<string, FlowReactionType[]>();
         }
-        this._currentRun.flowReactions.update(flowId, (reactions) => [...(reactions ?? []), reactionType]);
+        //this._currentRun.flowReactions.update(flowId, (reactions) => [...(reactions ?? []), reactionType]);
+        this._currentRun.flowReactions.set(flowId, appendTo(this._currentRun.flowReactions.get(flowId), reactionType));
+
     }
 
     /**
@@ -119,8 +120,8 @@ export class ActionReactionLogger {
     public flushLog(): {logs: ActionProcessedInformation[], changedEvents: Event<any,any>[]} {
         const logs = [...this._logs];
         this._logs = [];
-        const changedEvents = this._changedEvents.values();
-        this._changedEvents = new TupleMap();
+        const changedEvents = mapValues(this._changedEvents);
+        this._changedEvents = new Map();
         return {changedEvents, logs};
     }
 

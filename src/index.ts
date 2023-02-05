@@ -24,8 +24,5 @@ export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, R
 /* scheduler */
 export {SchedulerCompletedCallback, SchedulerProps, Scheduler } from './scheduler';
 
-/* tuple id */
-export {TupleId, toTupleId, toTupleIdString, isSameTupleId} from './tuple-map';
-
 /* utils */
-export {invalidDetails, EventRecord, getAllEvents} from './utils';
+export {invalidDetails, EventRecord, getAllEvents, getKeyFromId, mapValues} from './utils';

@@ -63,7 +63,7 @@ describe("the replay behavior", () => {
             yield undefined;
         }
         const actions: ReplayAction<any>[] = [];
-        const logAction: SchedulerCompletedCallback = (actionInfo, _ , replay) => {
+        const logAction: SchedulerCompletedCallback = (actionInfo, _ , replay2) => {
             actionInfo.forEach(info => {
                 if(info.processedAction) {
                     actions.push(info.processedAction);
@@ -91,7 +91,7 @@ describe("the replay behavior", () => {
 
             if(requestProgressed === 2) {
                 //expect(actionInfo[0]?.processedAction?.eventId[0]).toBe(eventA.id[0]);
-                expect(replay.state).toBe('completed');
+                expect(replay2.state).toBe('completed');
                 expect(eventA.value).toBe(10);
                 expect(asyncCalled).toBe(2);
                 done();

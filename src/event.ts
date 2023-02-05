@@ -1,8 +1,8 @@
 import { AccumulatedValidationResults, explainAnyBidPlacedByFlow, explainBlocked, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./action-explain";
-import { toTupleIdString, TupleId, TupleMap } from "./tuple-map";
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { EventInformation } from "./bid";
 import { ActionReactionLogger } from "./action-reaction-logger";
+import { getKeyFromId } from "./utils";
 
 /**
  * usually, events are stored in a nested record, where the key is the event name.
@@ -28,19 +28,19 @@ export function getEvents(neo: NestedEventObject): Event<any, any>[] {
  * the event object holds the information about the event, and with the dispatch function, a possibility to interact with the flows.
  */
 export class Event<P = undefined, V = void> {
-    public readonly id: TupleId;
+    public readonly id: string;
     private _value?: P;
     private _executeAction?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
-    private _getEventInformation?: (eventId: TupleId) => EventInformation<P, V> | undefined;
+    private _getEventInformation?: (eventId: string) => EventInformation<P, V> | undefined;
     private _onUpdateCallback?: (() => void); // only a single subscriber is supported
     private _logger?: ActionReactionLogger;
     public description?: string;
     private _latestUpdateOnActionId?: number;
-    private _relatedValidationEvents = new TupleMap<Event<any, any>>();
+    private _relatedValidationEvents = new Map<string, Event<any, any>>();
 
-    constructor(id: string | TupleId, onUpdateCallback?: () => void) {
+    constructor(id: string | string, onUpdateCallback?: () => void) {
         this._onUpdateCallback = onUpdateCallback;
-        this.id = typeof id === 'string' ? [id, undefined] : id;
+        this.id = id;
     }
 
     /**
@@ -63,7 +63,7 @@ export class Event<P = undefined, V = void> {
      * @param getEventInformation a function that returns the event information of this event
      * @param addActionToQueue the function to add an action to the queue
      */
-    public __connectToScheduler(getEventInformation: (eventId: TupleId) => EventInformation<P, V> | undefined, executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void, logger: ActionReactionLogger): void {
+    public __connectToScheduler(getEventInformation: (eventId: string) => EventInformation<P, V> | undefined, executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void, logger: ActionReactionLogger): void {
         this._getEventInformation = getEventInformation;
         this._executeAction = executeAction;
         this._logger = logger;
@@ -177,7 +177,7 @@ export class Event<P = undefined, V = void> {
      */
     public set(value: P) {
         if(!this.isValid(value)) {
-            console.group('unable to set new value for event %s', toTupleIdString(this.id));
+            console.group('unable to set new value for event %s', this.id);
             console.error('value: %O', value);
             const setterValidation = this.explainSetter;
             if(setterValidation !== 'enabled') {
@@ -215,7 +215,7 @@ export class Event<P = undefined, V = void> {
         this._latestUpdateOnActionId = actionId;
         this._onUpdateCallback?.();
         this._relatedValidationEvents.forEach((event) => event.__triggerUpdateCallback(actionId));
-        this._relatedValidationEvents = new TupleMap();
+        this._relatedValidationEvents = new Map();
     }
 
     /**
@@ -293,10 +293,10 @@ export class EventByKey<P = void, V = void> {
      * @param key the key to get the event for.
      * @returns the event for the given key.
      */
-    public key(key: string): Event<P,V> {
+    public get(key: string): Event<P,V> {
         let event = this._children.get(key);
         if(event === undefined) {
-            const id: TupleId = [this.name, key];
+            const id: string = `${this.name}🔑${key}`;
             event = new Event<P, V>(id);
             this._children.set(key, event);
         }
@@ -309,15 +309,15 @@ export class EventByKey<P = void, V = void> {
      * @returns the events for the given keys.
      */
     public keys(...keys: string[]): Event<P,V>[] {
-        return keys.map(key => this.key(key));
+        return keys.map(key => this.get(key));
     }
 
     /**
      * get all keys
      * @returns all keys that are contained in this keyed event.
      */
-    public allKeyNames(): string[] {
-        return [...this._children].map(([k]) => k);
+    public allKeys(): string[] {
+        return [...this._children].map(([k]) => getKeyFromId(k));
     }
 
     /**

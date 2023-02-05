@@ -1,5 +1,3 @@
-import { TupleId } from "./tuple-map";
-
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 /**
@@ -18,8 +16,8 @@ export type ActionType = "external" | "requested" | "triggered" | "requestedAsyn
 interface BaseAction {
     type: ActionType;
     id: number | null;
-    eventId: TupleId;
-    flowId: TupleId;
+    eventId: string;
+    flowId: string;
     bidId: number;
 }
 

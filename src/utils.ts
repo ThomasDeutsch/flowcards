@@ -90,3 +90,35 @@ export function getAllEvents(obj: EventRecord): Event<any, any>[] {
     }
     return events;
 }
+
+/**
+ * get all values from a Map
+ * @param map the map to get values from
+ * @returns an array of all values
+ */
+export function mapValues<K, V>(map: Map<K, V>): V[] {
+    const values: V[] = [];
+    map.forEach((v) => values.push(v));
+    return values;
+}
+
+/**
+ * get the key from an id-string
+ * @param id the id-string
+ * @returns the key
+ */
+export function getKeyFromId(id: string): string {
+    return id.split('🔑')[1];
+}
+
+/**
+ * merge two maps, overwriting values in the first map with values in the second map
+ * @param map1 the first map
+ * @param map2 the second map
+ * @returns a new map with the values from both maps
+ */
+export function mergeMaps<K, V>(map1: Map<K, V>, map2?: Map<K, V>): Map<K, V> {
+    const merged = new Map(map1);
+    map2?.forEach((v, k) => merged.set(k, v));
+    return merged;
+}

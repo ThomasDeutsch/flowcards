@@ -3,8 +3,7 @@ import { EventInformation, updateEventInformation, PlacedRequestBid, PlacedTrigg
 import { Event } from "./event";
 import { explainAnyBidPlacedByFlow, explainBlocked, explainNoPendingRequest, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation, AccumulatedValidationResults } from "./action-explain";
 import { Flow, FlowGeneratorFunction } from "./flow";
-import { TupleId } from "./tuple-map";
-import { isThenable } from "./utils";
+import { isThenable, mapValues } from "./utils";
 import { reactToExternalAction, reactToRejectAction, reactToRequestAction, reactToRequestedAsyncAction, reactToResolveAsyncAction, reactToTriggerAction } from "./flow-reaction";
 import { ActiveReplay, ActiveReplayInfo, Replay } from "./replay";
 import { ActionProcessedInformation, ActionReactionLogger } from "./action-reaction-logger";
@@ -51,7 +50,7 @@ export class Scheduler {
             flowName = 'root'
         }
         this._rootFlow = new Flow({
-            id: [flowName, undefined],
+            id: flowName,
             generatorFunction: props.rootFlow,
             executeAction: this._run.bind(this),
             logger: this._actionReactionLogger
@@ -66,7 +65,7 @@ export class Scheduler {
      * @param event the event that will be to the scheduler
      */
     private _connectEvent(event: Event<any, any>): void {
-        event.__connectToScheduler((eventId: TupleId) => this._bidsAndEventInfo.eventInformation.get(eventId), this._run.bind(this), this._actionReactionLogger);
+        event.__connectToScheduler((eventId: string) => this._bidsAndEventInfo.eventInformation.get(eventId), this._run.bind(this), this._actionReactionLogger);
     }
 
     /**
@@ -151,7 +150,7 @@ export class Scheduler {
      * @returns true if an action was processed
      */
     private _processActionFromBid(info: RequestingBidsAndEventInformation, nextActionId: number): boolean {
-        return info.requested.values().some(<P>(bid: PlacedRequestBid<P, unknown> | PlacedTriggerBid<P, unknown>) => {
+        return mapValues(info.requested).some(<P>(bid: PlacedRequestBid<P, unknown> | PlacedTriggerBid<P, unknown>) => {
             const maybeEventInfo = info.eventInformation.get(bid.event.id);
             if(this._isInvalidAction(explainAnyBidPlacedByFlow(bid.event.id, maybeEventInfo))) return false;
             const eventInfo = maybeEventInfo as EventInformation<P, any>; // guaranteed to be defined because of the previous isValid check

@@ -1,9 +1,8 @@
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { Bid, toBids, PlacedBid, filterRemainingBids, PlacedRequestBid } from "./bid";
 import { Event } from  "./event";
-import { toTupleIdString, TupleId, TupleMap } from "./tuple-map";
 import { ActionReactionLogger } from "./action-reaction-logger";
-import { areDepsEqual, isThenable } from "./utils";
+import { areDepsEqual, isThenable, mergeMaps } from "./utils";
 
 /**
  * type used for the iterator result of a flow generator
@@ -34,7 +33,7 @@ type FlowIteratorResult = IteratorResult<TNext | undefined, void>;
  * all parameters needed to create a flow
  */
 export interface FlowParameters {
-    id: TupleId;
+    id: string;
     generatorFunction: FlowGeneratorFunction;
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     logger: ActionReactionLogger;
@@ -46,8 +45,8 @@ export interface FlowParameters {
  */
 export interface FlowBidsAndPendingInformation {
     placedBids: PlacedBid<unknown, unknown>[];
-    pendingRequests?: TupleMap<PlacedRequestBid<any, any>>;
-    pendingExtends?: TupleMap<PendingExtend<any, any>>;
+    pendingRequests?: Map<string, PlacedRequestBid<any, any>>;
+    pendingExtends?: Map<string, PendingExtend<any, any>>;
 }
 
 /**
@@ -66,15 +65,15 @@ export interface FlowBidsAndPendingInformation {
  * a flow is able to place bids and react to actions.
  */
 export class Flow {
-    public readonly id: TupleId;
+    public readonly id: string;
     private readonly _generatorFunction: FlowGeneratorFunction;
     private _generator: FlowGenerator;
-    private _children: TupleMap<Flow> = new TupleMap();
+    private _children: Map<string, Flow> = new Map();
     private _hasEnded: boolean;
     private _currentBidId: number;
     private _placedBids: PlacedBid<unknown, unknown>[] | undefined;
-    private _pendingRequests: TupleMap<PlacedRequestBid<any, any>> = new TupleMap();
-    private _pendingExtends: TupleMap<PendingExtend<any, any>> = new TupleMap();
+    private _pendingRequests: Map<string, PlacedRequestBid<any, any>> = new Map();
+    private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
     private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
     private _nrAddedChildren = 0;
@@ -95,7 +94,7 @@ export class Flow {
         try {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
-            console.error('error in flow ', toTupleIdString(this.id), ': ', error);
+            console.error('error in flow ', this.id, ': ', error);
         }
     }
 
@@ -195,8 +194,8 @@ export class Flow {
         this._children.forEach((child) => {
             const childBidsAndPendingInformation = child.__getBidsAndPendingInformation();
             result.placedBids = [...childBidsAndPendingInformation.placedBids, ...result.placedBids];
-            result.pendingRequests = result.pendingRequests.merge(childBidsAndPendingInformation.pendingRequests);
-            result.pendingExtends = result.pendingExtends.merge(childBidsAndPendingInformation.pendingExtends);
+            result.pendingRequests = mergeMaps(result.pendingRequests, childBidsAndPendingInformation.pendingRequests);
+            result.pendingExtends = mergeMaps(result.pendingExtends, childBidsAndPendingInformation.pendingExtends);
         });
         return result;
     }
@@ -215,7 +214,7 @@ export class Flow {
             next = this._generator.throw(new Error('async request rejected'));
         }
         catch(error) {
-            console.error('error in flow ', toTupleIdString(this.id), ': ', error);
+            console.error('error in flow ', this.id, ': ', error);
             this._logger.logFlowReaction(this.id, 'error hot handled -> flow restarted');
             this.__restart();
             return;
@@ -333,11 +332,14 @@ export class Flow {
      * @internalRemarks mutates: ._children
      */
     public flow<T extends FlowGeneratorFunction>(generatorFunction: T, parameters?: Parameters<T>, key?: string): Flow {
-        let flowName = generatorFunction.name;
-        if(flowName === "anonymous" || flowName === "") { //fat arrow functions have a name of "anonymous"
-            flowName = this._nrAddedChildren.toString();
+        let childFlowId = generatorFunction.name;
+        if(childFlowId === "anonymous" || childFlowId === "") { //fat arrow functions have a name of "anonymous"
+            childFlowId = this._nrAddedChildren.toString();
         }
-        const currentChild = this._children.get([flowName, key]);
+        if(key) {
+            childFlowId = `${childFlowId}🔑${key}`;
+        }
+        const currentChild = this._children.get(childFlowId);
         if(currentChild) {
             if(!areDepsEqual(currentChild.parameters || [], parameters || [])) {
                 this._logger.logFlowReaction(currentChild.id, 'parameters changed -> flow restarted');
@@ -345,15 +347,15 @@ export class Flow {
             }
             return currentChild;
         }
-        const childName = `${toTupleIdString(this.id)}>${flowName}`;
+        const fullChildId = `${(this.id)}>${childFlowId}`;
         const newChild = new Flow({
-            id: [childName, key],
+            id: fullChildId,
             generatorFunction: generatorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
             parameters,
         });
-        this._children.set([flowName, key], newChild);
+        this._children.set(childFlowId, newChild);
         this._nrAddedChildren++;
         return newChild;
     }
@@ -395,7 +397,7 @@ export class Flow {
      * getter that returns the second part of the flow id - its key
      * @returns the key of the flow (or undefined if the flow has no key)
      */
-    public get key(): string | number | undefined {
+    public get key(): string | null {
         return this.id[1];
     }
 
@@ -412,7 +414,7 @@ export class Flow {
      * getter that returns all pending extends by this flow
      * @returns a map of all pending requests information by this flow (see PendingRequest)
      */
-    public get pendingExtends(): TupleMap<PendingExtend<any, any>> {
+    public get pendingExtends(): Map<string, PendingExtend<any, any>> {
         return this._pendingExtends;
     }
 
@@ -420,7 +422,7 @@ export class Flow {
      * getter that returns all pending extends by this flow
      * @returns a map of all pending requests information by this flow (see PendingRequest)
      */
-    public get pendingRequests(): TupleMap<PlacedRequestBid<any, any>> {
+    public get pendingRequests(): Map<string, PlacedRequestBid<any, any>> {
         return this._pendingRequests;
     }
 
