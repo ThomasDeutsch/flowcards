@@ -277,6 +277,9 @@ export class Flow {
             };
             this._executeAction(resolveAction);
         }).catch((error: unknown) => {
+            if(this._pendingRequests.get(bid.event.id) != bid) {
+                return; // the request was cancelled
+            }
             const rejectAction: RejectPendingRequestAction = {
                 id: null,
                 eventId: bid.event.id,
