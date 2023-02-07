@@ -1,6 +1,6 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
-import { askFor, block, request, waitFor } from "../src/bid";
+import { askFor, block, getEventValue, request, waitFor } from "../src/bid";
 import { delay, failedDelay } from "./test-utils";
 import { testSchedulerFactory } from "./utils";
 
@@ -231,6 +231,27 @@ describe('a flow can request an async event', () => {
             expect(hasCatchedError).toBe(true);
             expect(requestingFlowBlocked.hasEnded).toBe(true);
             expect(requestingFlow.hasEnded).toBe(true);
+            done();
+            yield undefined;
+        });
+    });
+
+    test('will be canceled, if the flow resets', (done) => {
+        const eventA = new Event<number>('eventA');
+        const eventB = new Event<number>('eventB');
+        let loops = 1;
+
+        testSchedulerFactory(function*(this: Flow) {
+            while(loops < 3) {
+                this.flow(function* test(eventBValue: number) {
+                    const currentLoops = loops;
+                    yield request(eventA, () => delay(currentLoops * 1000, currentLoops));
+                }, [loops])
+                yield request(eventB, () => delay(100, 1))
+                loops = loops + 1;
+            }
+            const test = yield* getEventValue(waitFor(eventA));
+            expect(test).toBe(2);
             done();
             yield undefined;
         });

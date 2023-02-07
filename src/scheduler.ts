@@ -124,7 +124,8 @@ export class Scheduler {
                     eventId: nextAction.eventId,
                     flowId: nextAction.flowId,
                     bidId: nextAction.bidId,
-                    requestActionId: nextAction.requestActionId
+                    requestActionId: nextAction.requestActionId,
+                    error: 'invalid payload'
                 };
                 reactToRejectAction(pendingRequest.flow, eventInfo.event);
                 this._actionReactionLogger.onActionProcessed({...rejectAction, id: nextActionId});

@@ -147,24 +147,19 @@ export class Flow {
     }
 
     /**
-     * used by restart and end.
-     * will reset all mutated values of a flow;
-     * @param ended true if the flow ended, false if it was restarted
-     */
-    private _reset(ended: boolean): void {
-        this._placeBids(undefined);
-        this._hasEnded = ended;
-        this._currentBidId = 0;
-        this._nrAddedChildren = 0;
-    };
-
-    /**
      * @internal
      * restarts the flow
      * @param nextParameters the parameters that will be checked against the current parameters. If changed, the flow will be restarted with the new parameters.
      */
     public __restart(nextParameters?: any[]): void {
-        this._reset(false);
+        this._placeBids(undefined);
+        this._hasEnded = false;
+        this._currentBidId = 0;
+        this._children.forEach((child) => {
+            child.__end(true);
+        });
+        this._nrAddedChildren = 0;
+        this._latestActionIdThisFlowProgressedOn = undefined;
         this._pendingExtends.clear();
         if(nextParameters !== undefined) {
             this._currentParameters = [...nextParameters];
@@ -263,11 +258,14 @@ export class Flow {
      * @internal
      * @param action the action that holds the promise payload
      */
-    public __onRequestedAsync<P, V>(bid: PlacedRequestBid<P,V>, payload: Promise<P>, requestActionId: number): void {
+    public __onRequestedAsync<P, V>(bid: PlacedRequestBid<P,V>, promise: Promise<P>, requestActionId: number): void {
         this._pendingRequests.set(bid.event.id, bid);
         this._logger.logFlowReaction(this.id, 'pending request added');
         this._logger.logChangedEvent(bid.event);
-        payload.then((value: P) => {
+        promise.then((value: P) => {
+            if(this._pendingRequests.get(bid.event.id) != bid) {
+                return; // the request was cancelled
+            }
             const resolveAction: ResolvePendingRequestAction<P> = {
                 id: null,
                 eventId: bid.event.id,
@@ -275,7 +273,7 @@ export class Flow {
                 flowId: this.id,
                 bidId: bid.id,
                 payload: value,
-                requestActionId: requestActionId
+                requestActionId
             };
             this._executeAction(resolveAction);
         }).catch((error: unknown) => {
@@ -285,7 +283,8 @@ export class Flow {
                 type: 'rejectPendingRequest',
                 flowId: this.id,
                 bidId: bid.id,
-                requestActionId: requestActionId
+                requestActionId,
+                error
             };
             this._executeAction(rejectAction);
         });
@@ -311,7 +310,10 @@ export class Flow {
      * @param removeExtends if true, all pending extends will be removed ( used by replay )
      */
     public __end(removeExtends?: boolean): void {
-        this._reset(true);
+        this._placeBids(undefined);
+        this._hasEnded = true;
+        this._currentBidId = 0;
+        this._latestActionIdThisFlowProgressedOn = undefined;
         if(removeExtends) {
             this._pendingExtends.clear();
         }
@@ -319,6 +321,7 @@ export class Flow {
         this._children.forEach((child) => {
             child.__end(removeExtends);
         });
+        this._nrAddedChildren = 0;
         this._children.clear();
     }
 

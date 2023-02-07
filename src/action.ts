@@ -75,6 +75,7 @@ export interface ResolvePendingRequestAction<P> extends BaseAction {
 export interface RejectPendingRequestAction extends BaseAction {
     type: "rejectPendingRequest";
     requestActionId: number;
+    error: any;
 }
 
 /** actions that will be created by a bid, placed by a flow */
