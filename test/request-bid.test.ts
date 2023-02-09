@@ -1,7 +1,7 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
 import { askFor, block, getEventValue, request, waitFor } from "../src/bid";
-import { delay, failedDelay } from "./test-utils";
+import { delay, failedDelay, throwingDelay } from "./test-utils";
 import { testSchedulerFactory } from "./utils";
 
 describe('a flow can request an event', () => {
@@ -211,6 +211,35 @@ describe('a flow can request an async event', () => {
         });
     });
 
+
+    test('if a reject is catched, the flow will not reset', (done) => {
+        const eventA = new Event<number>('eventA');
+        const eventB = new Event<number>('eventB');
+        let errorCatched: boolean = false;
+        let startCount = 0;
+
+        testSchedulerFactory(function*(this: Flow) {
+            const requestingFlow = this.flow(function* () {
+                startCount++;
+                if(startCount < 10) {
+                    try {
+                        yield request(eventA, () => throwingDelay(100, 1));
+                    }
+                    catch(error) {
+                        errorCatched = true;
+                    }
+                }
+            }, [] );
+
+            yield request(eventB, () => delay(200, 2));
+            expect(errorCatched).toBe(true);
+            expect(startCount).toBe(1);
+            expect(requestingFlow.hasEnded).toBe(true);
+            done();
+            yield undefined;
+        });
+    });
+
     test('an invalid validate for the async request will throw an error', (done) => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
@@ -257,21 +286,21 @@ describe('a flow can request an async event', () => {
         });
     });
 
-    // test('an error inside the request-function will reset the flow', (done) => {
-    //     const eventA = new Event<number>('eventA');
-    //     let requestingFlow: Flow | undefined;
+    test('an error inside the request-function will reset the flow', (done) => {
+        const eventA = new Event<number>('eventA');
+        let requestingFlow: Flow | undefined;
 
-    //     testSchedulerFactory(function*(this: Flow) {
-    //         requestingFlow = this.flow(function* () {
-    //             yield askFor(eventA);
-    //             yield request(eventA, () => {
-    //                 throw new Error('test');
-    //             });
-    //         });
-    //         yield undefined;
-    //     });
-    //     eventA.set(1);
-    //     expect(requestingFlow?.hasEnded).toBe(false);
-    //     done();
-    // });
+        testSchedulerFactory(function*(this: Flow) {
+            requestingFlow = this.flow(function* () {
+                yield askFor(eventA);
+                yield request(eventA, () => {
+                    throw new Error('test');
+                });
+            });
+            yield undefined;
+        });
+        eventA.set(1);
+        expect(requestingFlow?.hasEnded).toBe(false);
+        done();
+    });
 })

@@ -161,14 +161,14 @@ export function updateEventInformation(connectEvent: (event: Event<any, any>) =>
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a request bid
  */
-export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>): RequestBid<P, V> {
+export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     return {
         type: "request",
         event,
         payload: args[1] as P,
         validate: args[2]
-    };
+    } as const;
 }
 
 /**
@@ -181,11 +181,11 @@ export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a trigger bid
  */
-export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>): TriggerBid<P, V> {
+export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const payload = args[1] as P;
     const validate = args[2];
-    return { type: 'trigger', event, payload, validate };
+    return { type: 'trigger', event, payload, validate } as const;
 }
 
 /**
@@ -197,10 +197,10 @@ export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns an extend bid
  */
-export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>): WaitingBid<P, V> {
+export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const validate = args[1];
-    return { type: 'extend', event, validate };
+    return { type: 'extend', event, validate } as const;
 }
 
 /**
@@ -212,10 +212,10 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a waitFor bid
  */
- export function waitFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => BaseValidationReturn<V>) => Bid<P, V>>): WaitingBid<P, V> {
+ export function waitFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const validate = args[1];
-    return { type: 'waitFor', event, validate };
+    return { type: 'waitFor', event, validate } as const;
 }
 
 /**
@@ -227,10 +227,10 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns an askFor bid
  */
- export function askFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>): WaitingBid<P, V> {
+ export function askFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const validate = args[1];
-    return { type: 'askFor', event, validate };
+    return { type: 'askFor', event, validate } as const;
 }
 
 /**
@@ -243,8 +243,8 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a block bid
  */
- export function block<P, V>(event: Event<P, V>, blockIf?: () => BaseValidationReturn<V>): BlockBid<P, V> {
-    return { type: 'block', event, validate: blockIf };
+ export function block<P, V>(event: Event<P, V>, blockIf?: () => BaseValidationReturn<V>) {
+    return { type: 'block', event, validate: blockIf } as const;
 }
 
 /**
@@ -256,8 +256,8 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a validate bid
  */
- export function validate<P, V>(...args: Parameters<(event: Event<P, V>, validate: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>): ValidateBid<P, V> {
-    return { type: 'validate', event: args[0] as Event<P,V>, validate: args[1] as (nextValue: P) => BaseValidationReturn<V> };
+ export function validate<P, V>(...args: Parameters<(event: Event<P, V>, validate: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+    return { type: 'validate', event: args[0] as Event<P,V>, validate: args[1] as (nextValue: P) => BaseValidationReturn<V> } as const;
 }
 
 // BID UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
