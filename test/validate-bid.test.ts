@@ -11,7 +11,7 @@ describe("behavior of a validate bid", () => {
         testSchedulerFactory(function* rootFlow(this: Flow) {
             this.flow(function*(this: Flow) {
                 yield [request(eventA, 100), validate(eventA, () => false)];
-            });
+            }, []);
             yield waitFor(eventA);
         });
         expect(eventA.value).toBe(undefined);
@@ -23,7 +23,7 @@ describe("behavior of a validate bid", () => {
         testSchedulerFactory(function* rootFlow(this: Flow) {
             this.flow(function*(this: Flow) {
                 yield [request(eventA, 100), validate(eventA, () => true)];
-            });
+            }, []);
             yield waitFor(eventA);
         });
         expect(eventA.value).toBe(100);
@@ -38,7 +38,7 @@ describe("behavior of a validate bid", () => {
                     request(eventA, 100),
                     validate(eventA, () => ({isValid: true, details: ["mystring"]}))
                 ];
-            });
+            }, []);
             yield waitFor(eventA);
         });
         expect(eventA.value).toBe(100);
@@ -50,13 +50,13 @@ describe("behavior of a validate bid", () => {
         testSchedulerFactory(function* rootFlow(this: Flow) {
             this.flow(function*(this: Flow) {
                 yield request(eventA, 100);
-            });
+            }, []);
             const failedWait = this.flow(function*(this: Flow) {
                 yield waitFor(eventA, (x) => x > 100);
-            });
+            }, []);
             const passedWait = this.flow(function*(this: Flow) {
                 yield waitFor(eventA, (x) => x === 100);
-            });
+            }, []);
             yield waitFor(eventA);
             expect(failedWait.hasEnded).toBe(false);
             expect(passedWait.hasEnded).toBe(true);
@@ -70,16 +70,16 @@ describe("behavior of a validate bid", () => {
         testSchedulerFactory(function* rootFlow(this: Flow) {
                 this.flow(function*(this: Flow) {
                     yield request(eventA, 100);
-                });
+                }, []);
                 const failedWait = this.flow(function*(this: Flow) {
                     yield waitFor(eventA, (x) => x > 100);
-                });
+                }, []);
                 const passedWait = this.flow(function*(this: Flow) {
                     yield waitFor(eventA, (x) => x === 100);
-                });
+                }, []);
                 this.flow(function*(this: Flow) {
                     yield [request(eventB, 10), validate(eventA, (x) => x < 100)];
-                });
+                }, []);
                 yield waitFor(eventB);
                 expect(failedWait.hasEnded).toBe(false);
                 expect(passedWait.hasEnded).toBe(false);

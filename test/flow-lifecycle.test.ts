@@ -16,7 +16,7 @@ describe("a flow execution", () => {
                 if(nrBids === 3) {
                     
                 }
-            });
+            }, []);
             yield waitFor(eventA);
             yield waitFor(eventA);
             yield waitFor(eventA);

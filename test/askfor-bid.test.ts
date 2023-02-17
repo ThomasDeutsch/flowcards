@@ -12,7 +12,7 @@ describe("the askFor bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA);
-            })
+            }, [])
             yield undefined;
 
         });
@@ -71,13 +71,13 @@ describe("the askFor bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA, (x) => x > 123);
-            })
+            }, [])
             waitForFlow = this.flow(function* () {
                 yield waitFor(eventA);
-            })
+            }, [])
             triggerFlow = this.flow(function* () {
                 yield trigger(eventA, 123);
-            });
+            }, []);
             yield undefined;
 
         });
@@ -92,7 +92,7 @@ describe("the askFor bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA);
-            });
+            }, []);
             yield undefined;
         });
         eventA.set(10);
@@ -106,10 +106,10 @@ describe("the askFor bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA);
-            });
+            }, []);
             this.flow(function*() {
                 yield extend(eventA);
-            })
+            }, [])
             yield undefined;
         });
         eventA.set(10)
@@ -124,7 +124,7 @@ describe("the askFor bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA, (x) => x > 10);
-            });
+            }, []);
             yield undefined;
         });
         expect(eventA.isValid(1)).toBe(false);
@@ -138,7 +138,7 @@ describe("the askFor bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA, (x) => ({isValid: true, details: ['abc']}));
-            });
+            }, []);
             yield undefined;
         });
         expect(eventA.isValid(11)).toBe(true);
@@ -152,7 +152,7 @@ describe("the askFor bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA, (x) => x < 10);
-            });
+            }, []);
             yield undefined;
         });
         expect(eventA.isValid(10)).toBe(false);

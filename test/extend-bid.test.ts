@@ -12,11 +12,11 @@ describe("the extend bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             requestingFlow = this.flow(function* () {
                 yield request(eventA, 101);
-            })
+            }, [])
             this.flow(function* () {
                 yield extend(eventA);
                  // an ended flow will keep the extend pending.
-            });
+            }, []);
             yield undefined;
         });
         expect(requestingFlow!.hasEnded).toBe(false);
@@ -31,14 +31,14 @@ describe("the extend bid behavior", () => {
             requestingFlow = this.flow(function* () {
                 yield request(eventA, 101);
                 expect(eventA.isPending).toBe(false);
-            })
+            }, [])
             extendingFlow = this.flow(function* () {
                 yield extend(eventA);
                 expect(eventA.isPending).toBe(true);
                 expect(eventA.value).toBe(undefined);
                 yield request(eventA, 102);
                 expect(eventA.isPending).toBe(false);
-            });
+            }, []);
             yield undefined;
         });
         expect(requestingFlow!.hasEnded).toBe(true);
@@ -54,13 +54,13 @@ describe("the extend bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA);
-            })
+            }, [])
             extendingFlow = this.flow(function* () {
                 yield extend(eventA);
                 expect(eventA.value).toBe(undefined);
                 expect(eventA.extendedValue).toBe(20);
                 yield trigger(eventA, 10);
-            });
+            }, []);
             yield trigger(eventA, 20);
             yield undefined;
         });
@@ -77,13 +77,13 @@ describe("the extend bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             askForFlow = this.flow(function* () {
                 yield askFor(eventA);
-            })
+            }, [])
             extendingFlow = this.flow(function* () {
                 yield extend(eventA);
                 expect(eventA.value).toBe(undefined);
                 expect(eventA.extendedValue).toBe(30);
                 yield request(eventA, 1000);
-            });
+            }, []);
             yield waitFor(eventA);
             expect(askForFlow!.hasEnded).toBe(true);
             expect(extendingFlow!.hasEnded).toBe(true);
@@ -101,17 +101,17 @@ describe("the extend bid behavior", () => {
             requestingFlow = this.flow(function* () {
                 yield request(eventA, 1);
                 progressionOrder.push('requestingFlow');
-            })
+            }, [])
             extendFlow1 = this.flow(function* () {
                 yield extend(eventA);
                 progressionOrder.push('extendFlow1');
                 yield request(eventA, 3);
-            });
+            }, []);
             extendFlow2 = this.flow(function* () {
                 yield extend(eventA);
                 progressionOrder.push('extendFlow2');
                 yield request(eventA, 2);
-            });
+            }, []);
             yield waitFor(eventA); // this waitFor is processed, after all extends have been resolved.
             expect(progressionOrder).toEqual(['extendFlow2', 'extendFlow1', 'requestingFlow']);
             expect(requestingFlow!.hasEnded).toBe(true);
@@ -129,13 +129,13 @@ describe("the extend bid behavior", () => {
             const requestFlow = this.flow(function* requestFlow() {
                 yield request(eventA, () => delay(100, 1));
                 expect(eventA.value).toBe(1000);
-            })
+            }, [])
             this.flow(function* extendFlow() {
                 yield extend(eventA);
                 expect(eventA.extendedValue).toBe(1);
                 yield request(eventA, 1000);
                 yield undefined;
-            });
+            }, []);
             yield waitFor(eventA);
             expect(eventA.value).toBe(1000);
             expect(requestFlow.hasEnded).toBe(true);
@@ -150,7 +150,7 @@ describe("the extend bid behavior", () => {
             this.flow(function* requestFlow() {
                 yield request(eventA, () => delay(100, 1));
                 expect(1).toBe(5); // the event got canceled, and not resolved by the extending flow.
-            })
+            }, [])
             this.flow(function* extendFlow() {
                 yield [extend(eventA), request(cancelEvent, 1), block(cancelEvent, () => !eventA.isPending)];
                 //expect(eventA.extendedValue).toBe(undefined);
@@ -158,7 +158,7 @@ describe("the extend bid behavior", () => {
                 expect(eventA.isPending).toBe(true);
                 done();
                 yield undefined;
-            });
+            }, []);
             yield undefined;
         });
     })
@@ -169,10 +169,10 @@ describe("the extend bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             requestingFlow = this.flow(function* () {
                 yield request(eventA, 101);
-            })
+            }, [])
             this.flow(function* () {
                 yield extend(eventA, () => false);
-            });
+            }, []);
             yield undefined;
 
         });
@@ -186,11 +186,11 @@ describe("the extend bid behavior", () => {
         testSchedulerFactory(function*(this: Flow) {
             requestingFlow = this.flow(function* () {
                 yield request(eventA, 101);
-            })
+            }, [])
             extendingFlow = this.flow(function* (this: Flow) {
                 yield extend(eventA);
                 this.resolveExtend(eventA);
-            });
+            }, []);
             yield undefined;
 
         });
@@ -226,8 +226,8 @@ describe("the extend bid behavior", () => {
             }
         }
         testSchedulerFactory(function*(this: Flow) {
-            this.flow(flow1);
-            this.flow(extendFlow);
+            this.flow(flow1, []);
+            this.flow(extendFlow, []);
             yield undefined;
         });
 

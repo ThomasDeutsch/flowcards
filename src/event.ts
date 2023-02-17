@@ -34,7 +34,7 @@ export class Event<P = undefined, V = void> {
     private _getEventInformation?: (eventId: string) => EventInformation<P, V> | undefined;
     private _onUpdateCallback?: (() => void); // only a single subscriber is supported
     private _logger?: ActionReactionLogger;
-    public description?: string;
+    private _description?: string;
     private _latestUpdateOnActionId?: number;
     private _relatedValidationEvents = new Map<string, Event<any, any>>();
 
@@ -272,6 +272,23 @@ export class Event<P = undefined, V = void> {
     public get extendedValue(): P | undefined {
         this._logger?.logEventAccess(this);
         return this._getEventInformation?.(this.id)?.pendingExtend?.value;
+    }
+
+    /**
+     * set the description for the event and return the event.
+     * @param description the description for the event.
+     */
+    public setDescription(description: string): this {
+        this._description = description;
+        return this;
+    }
+
+    /**
+     * get the description for the event.
+     * @returns the description for the event.
+     */
+    public get description(): string | undefined {
+        return this._description;
     }
 }
 

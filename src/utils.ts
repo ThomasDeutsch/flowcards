@@ -24,31 +24,45 @@ export function isThenable(p?: unknown): p is Promise<unknown> {
     return (value !== null && value !== undefined);
   }
 
-  /**
-   * @internal
-   * append an item to the end of a possible undefined array
-   * @param coll an array of a Generic Type or undefined
-   * @param item the item to add to the array, or create a new array with the item
-   * @returns array with the item added
-   */
-  export function appendTo<T>(coll: T[] | undefined, item: T): T[] {
+/**
+ * @internal
+ * append an item to the end of a possible undefined array
+ * @param coll an array of a Generic Type or undefined
+ * @param item the item to add to the array, or create a new array with the item
+ * @returns array with the item added
+ */
+export function appendTo<T>(coll: T[] | undefined, item: T): T[] {
     if(coll === undefined) return [item];
     coll.push(item);
     return coll;
-  }
+}
 
-  /**
-   * @internal
-   * compares two dependency arrays for equality
-   * uses Object.is to compare values
-   * @param a the first array of Records, strings, numbers, booleans, etc.
-   * @param b the second array
-   * @returns true if the arrays are equal (same length and same values)
-   */
-  export function areDepsEqual(a: ReadonlyArray<unknown>, b: ReadonlyArray<unknown>): boolean {
+/**
+ * @internal
+ * compares two dependency arrays for equality
+ * uses Object.is to compare values
+ * @param a the first array of Records, strings, numbers, booleans, etc.
+ * @param b the second array
+ * @returns true if the arrays are equal (same length and same values)
+ */
+export function areDepsEqual(a: ReadonlyArray<unknown>, b: ReadonlyArray<unknown>): boolean {
     if(a.length !== b.length) return false;
     return a.every((v, i) => Object.is(v, b[i]));
-  }
+}
+
+
+/**
+ * @internal
+ * merge two maps, overwriting values in the first map with values in the second map
+ * @param map1 the first map
+ * @param map2 the second map
+ * @returns a new map with the values from both maps
+ */
+export function mergeMaps<K, V>(map1: Map<K, V>, map2?: Map<K, V>): Map<K, V> {
+    const merged = new Map(map1);
+    map2?.forEach((v, k) => merged.set(k, v));
+    return merged;
+}
 
 /**
  * get the flattened details of all failed validations.
@@ -109,16 +123,4 @@ export function mapValues<K, V>(map: Map<K, V>): V[] {
  */
 export function getKeyFromId(id: string): string {
     return id.split('🔑')[1];
-}
-
-/**
- * merge two maps, overwriting values in the first map with values in the second map
- * @param map1 the first map
- * @param map2 the second map
- * @returns a new map with the values from both maps
- */
-export function mergeMaps<K, V>(map1: Map<K, V>, map2?: Map<K, V>): Map<K, V> {
-    const merged = new Map(map1);
-    map2?.forEach((v, k) => merged.set(k, v));
-    return merged;
 }

@@ -1,6 +1,6 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
-import { request, waitFor } from "../src/bid";
+import { askFor, request, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
 
 
@@ -14,8 +14,7 @@ describe("a sub-flow can be started", () => {
             const requestingFlow = this.flow(function* (this: Flow) {
                 yield waitFor(eventA);
                 expect(this).toBe(requestingFlow);
-                
-            })
+            }, [])
             yield request(eventA, 1);
             expect(requestingFlow.hasEnded).toBe(false); // the request is progressed before the waitFor is progressed
             expect(requestingFlow).not.toBe(rootFlow);
@@ -32,11 +31,10 @@ describe("a sub-flow can be started", () => {
                 this.flow(function* child2(this: Flow) {
                     expect(this.name).toBe(`${rootFlow.name}>${child1.name}>${child2.name}`)
                     yield undefined;
-                    
-                });
+                }, []);
                 expect(this.name).toBe(`${rootFlow.name}>${child1.name}`)
                 yield undefined;
-            })
+            }, [])
             yield undefined;
         });
     });
@@ -49,7 +47,7 @@ describe("a sub-flow can be started", () => {
             const requestingFlow = this.flow(function* (this: Flow) {
                 expect(this.id[0]).toBe('root>0');
                 yield undefined;
-            })
+            }, []);
             expect(requestingFlow.hasEnded).toBe(false); // the request is progressed before the waitFor is progressed
             expect(requestingFlow).not.toBe(rootFlow);
             yield undefined;
@@ -66,12 +64,10 @@ describe("a sub-flow can be started", () => {
                 this.flow(function* (this: Flow) {
                     yield waitFor(eventA);
                     progressionOrder.push('child2')
-                    
-                });
+                }, []);
                 yield waitFor(eventA);
                 progressionOrder.push('child1')
-                
-            })
+            }, [])
             yield request(eventA, 1);
             // after this request, the children have not yet progressed
             yield request(eventA, 2);
@@ -89,7 +85,22 @@ describe("a sub-flow can be started", () => {
                 expect(test).toBe(1);
                 expect(test2).toBe('test');
                 yield waitFor(eventA);
-                
+            }, [1, 'test']);
+            yield request(eventA, 1);
+            done();
+            yield undefined;
+        });
+    });
+
+
+    test('a flow can be restarted, even if the parameters are not provided', (done) => {
+        const eventA = new Event<number>('eventA');
+        testSchedulerFactory(function*(this: Flow) {
+
+            this.flow(function* (this: Flow, test: number, test2: string) {
+                expect(test).toBe(1);
+                expect(test2).toBe('test');
+                yield waitFor(eventA);
             }, [1, 'test']);
             yield request(eventA, 1);
             done();
@@ -108,7 +119,6 @@ describe("a sub-flow can be started", () => {
                     started++;
                     expect(test).toBe(count);
                     yield waitFor(eventA);
-                    
                 }, [count]);
                 if(count < 2) {
                     yield request(eventA, 1);
@@ -128,7 +138,6 @@ describe("a sub-flow can be started", () => {
             started++;
             expect(test).toBe(count);
             yield waitFor(eventA);
-            
         }
         const eventA = new Event<number>('eventA');
         let started = 0;
@@ -146,5 +155,24 @@ describe("a sub-flow can be started", () => {
                 }
             }
         });
+    });
+
+    test('a subflow can be started after an askFor', (done) => {
+        const eventA = new Event<number>('eventA');
+        let subFlowStarted = false;
+        let created = 0;
+        testSchedulerFactory(function*(this: Flow) {
+            while(true) {
+                yield askFor(eventA);
+                this.flow(function* (this: Flow) {
+                    subFlowStarted = true;
+                    yield request(eventA, 1);
+                }, []);
+            }
+        });
+        eventA.set(100);
+        expect(subFlowStarted).toBe(true);
+        expect(eventA.value).toBe(1);
+        done();
     });
 });

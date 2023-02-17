@@ -13,7 +13,7 @@ describe("events will be updated", () => {
             eventUpdateCount++;
         }
         const eventA = new Event<number>('eventA', loggerFn);
-        eventA.description = "event to test the event update feature";
+        eventA.setDescription("event to test the event update feature");
 
         const myFirstFlow = function*(this: Flow) {
             yield askFor(eventA);
@@ -29,7 +29,7 @@ describe("events will be updated", () => {
             eventUpdateCount++;
         }
         const eventA = new Event<number>('eventA', loggerFn);
-        eventA.description = "event to test the event update feature";
+        eventA.setDescription("event to test the event update feature");
 
         const mainFlow = function*(this: Flow) {
             yield request(eventA, 1);
@@ -44,12 +44,12 @@ describe("events will be updated", () => {
             eventUpdateCount++;
         }
         const eventA = new Event<number>('eventA', loggerFn);
-        eventA.description = "event to test the event update feature";
+        eventA.setDescription("event to test the event update feature");
 
         const mainFlow = function*(this: Flow) {
             this.flow(function*() {
                 yield block(eventA);
-            });
+            }, []);
         }
         testSchedulerFactory(mainFlow);
         expect(eventUpdateCount).toBe(1);

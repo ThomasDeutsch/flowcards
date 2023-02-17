@@ -54,11 +54,11 @@ describe('a flow can request an event', () => {
             const requestingFlow = this.flow(function* () {
                 yield request(eventA, 101);
                 expect(eventA.value).toBe(101);
-            })
+            }, [])
             const waitingFlow = this.flow(function* () {
                 yield waitFor(eventA);
                 expect(eventA.value).toBe(101);
-            });
+            }, []);
             yield waitFor(eventA);
             expect(requestingFlow.hasEnded).toBe(true);
             expect(waitingFlow.hasEnded).toBe(true);
@@ -72,7 +72,7 @@ describe('a flow can request an event', () => {
             const requestingFlow = this.flow(function* () {
                 yield [request(eventA, 101), waitFor(eventA)];
                 yield waitFor(eventA);
-            });
+            }, []);
             yield waitFor(eventA);
             expect(requestingFlow.hasEnded).toBe(false);
             yield undefined;
@@ -84,10 +84,10 @@ describe('a flow can request an event', () => {
         testSchedulerFactory(function*(this: Flow) {
             const requestingFlowLower = this.flow(function* () {
                 yield request(eventA, 101);
-            })
+            }, [])
             const requestingFlowHigher = this.flow(function* () {
                 yield request(eventA, 202);
-            });
+            }, []);
             yield waitFor(eventA);
             expect(eventA.value).toBe(202);
             yield waitFor(eventA);
@@ -104,10 +104,10 @@ describe('a flow can request an event', () => {
         testSchedulerFactory(function*(this: Flow) {
             const requestingFlowBlocked = this.flow(function* () {
                 yield request(eventA, 1, () => false);
-            });
+            }, []);
             const requestingFlow = this.flow(function* () {
                 yield request(eventA, 2, () => true);
-            });
+            }, []);
             yield waitFor(eventA);
             expect(requestingFlowBlocked.hasEnded).toBe(false);
             expect(requestingFlow.hasEnded).toBe(true);
@@ -171,14 +171,14 @@ describe('a flow can request an async event', () => {
             let hasCatchedError = false;
             const requestingFlow = this.flow(function* () {
                 yield request(eventA, () => delay(100, 1), () => true);
-            });
+            }, []);
             const requestingFlowBlocked = this.flow(function* () {
                 try {
                     yield request(eventB, () => failedDelay(20, 2), () => false);
                 } catch(e) {
                     hasCatchedError = true;
                 }
-            });
+            }, []);
             yield waitFor(eventA);
             expect(hasCatchedError).toBe(true);
             expect(requestingFlowBlocked.hasEnded).toBe(true);
@@ -196,12 +196,12 @@ describe('a flow can request an async event', () => {
             let startCount = 0;
             const requestingFlow = this.flow(function* () {
                 yield request(eventA, () => delay(100, 1));
-            });
+            }, []);
             const requestingFlowBlocked = this.flow(function* () {
                 startCount++;
                 yield [request(eventB, () => failedDelay(20, 2)), block(eventB, () => startCount !== 1)];
                 yield undefined;
-            });
+            }, []);
             yield waitFor(eventA);
             expect(startCount).toBe(2);
             expect(requestingFlowBlocked.hasEnded).toBe(false);
@@ -248,14 +248,14 @@ describe('a flow can request an async event', () => {
             let hasCatchedError = false;
             const requestingFlow = this.flow(function* () {
                 yield request(eventA, () => delay(100, 1));
-            });
+            }, []);
             const requestingFlowBlocked = this.flow(function* () {
                 try {
                     yield request(eventB, () => delay(20, 2), () => false);
                 } catch(e) {
                     hasCatchedError = true;
                 }
-            });
+            }, []);
             yield waitFor(eventA);
             expect(hasCatchedError).toBe(true);
             expect(requestingFlowBlocked.hasEnded).toBe(true);
@@ -296,7 +296,7 @@ describe('a flow can request an async event', () => {
                 yield request(eventA, () => {
                     throw new Error('test');
                 });
-            });
+            }, []);
             yield undefined;
         });
         eventA.set(1);

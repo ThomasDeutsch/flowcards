@@ -16,7 +16,7 @@ describe("the replay behavior", () => {
             this.flow(function* () {
                 yield request(eventA, requestProgressed);
                 requestProgressed++;
-            })
+            }, [])
             yield undefined;
         }
         const actions: ReplayAction<any>[] = [];
@@ -59,7 +59,7 @@ describe("the replay behavior", () => {
                     return delay(100, 10)
                 });
                 requestProgressed++;
-            })
+            }, [])
             yield undefined;
         }
         const actions: ReplayAction<any>[] = [];
@@ -117,7 +117,7 @@ describe("the replay behavior", () => {
                     return delay(100, 10)
                 });
                 requestProgressed++;
-            })
+            }, [])
             yield undefined;
         }
         const actions: ReplayAction<any>[] = [];

@@ -138,10 +138,10 @@ export class Flow {
      */
     private _handleNext(next: FlowIteratorResult): void {
         if(this._hasEnded) return;
-        const nextBids = toBids(next.value);
         if(next.done) {
             this.__end();
         } else {
+            const nextBids = toBids(next.value);
             this._placeBids(nextBids);
         }
     }
@@ -337,7 +337,7 @@ export class Flow {
      * @param key the key of the child instance
      * @internalRemarks mutates: ._children
      */
-    public flow<T extends FlowGeneratorFunction>(generatorFunction: T, parameters?: Parameters<T>, key?: string): Flow {
+    public flow<T extends FlowGeneratorFunction>(generatorFunction: T, parameters: Parameters<T>, key?: string): Flow {
         let childFlowId = generatorFunction.name;
         if(childFlowId === "anonymous" || childFlowId === "") { //fat arrow functions have a name of "anonymous"
             childFlowId = this._nrAddedChildren.toString();
@@ -347,7 +347,7 @@ export class Flow {
         }
         const currentChild = this._children.get(childFlowId);
         if(currentChild) {
-            if(!areDepsEqual(currentChild.parameters || [], parameters || [])) {
+            if(!areDepsEqual(currentChild.parameters || [], parameters)) {
                 this._logger.logFlowReaction(currentChild.id, 'parameters changed -> flow restarted');
                 currentChild.__restart(parameters);
             }
@@ -369,7 +369,7 @@ export class Flow {
     /**
      * restarts the flow
      */
-    public restart(nextParameters?: any[]): void {
+    public restart(nextParameters: Parameters<typeof this._generatorFunction>): void {
         this._logger.logFlowReaction(this.id, 'flow restarted manually by calling flow.restart');
         this.__restart(nextParameters);
     }

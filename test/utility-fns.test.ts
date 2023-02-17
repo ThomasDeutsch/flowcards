@@ -25,7 +25,7 @@ describe("different flow utility functions", () => {
             this.flow(function*() {
                 yield request(eventA, 1);
                 yield request(eventB, 'b');
-            })
+            }, [])
             let [a, b] = yield* getEventValues(waitFor(eventA), waitFor(eventB));
             expect(eventA.value).toBe(1);
             expect(eventB.value).toBe(undefined);

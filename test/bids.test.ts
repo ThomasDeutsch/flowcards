@@ -10,7 +10,6 @@ describe("how bids can be placed with a yield statement", () => {
         const eventA = new Event<number>('eventA');
         const myFirstFlow = function*(this: Flow) {
             yield request(eventA, 1);
-            
         }
         testSchedulerFactory(myFirstFlow);
         expect(eventA.value).toBe(1);
@@ -21,7 +20,6 @@ describe("how bids can be placed with a yield statement", () => {
         const myFirstFlow = function*(this: Flow) {
             yield undefined;
             yield request(eventA, 10);
-            
         }
         testSchedulerFactory(myFirstFlow);
         expect(eventA.value).not.toBe(10);
@@ -31,7 +29,6 @@ describe("how bids can be placed with a yield statement", () => {
         const eventA = new Event<number>('eventA');
         const myFirstFlow = function*(this: Flow) {
             yield [request(eventA, 100), request(eventA, 200), request(eventA, 300)];
-            
         }
         testSchedulerFactory(myFirstFlow);
         expect(eventA.value).toBe(100);
@@ -42,7 +39,6 @@ describe("how bids can be placed with a yield statement", () => {
         const eventB = new Event<number>('eventB');
         const myFirstFlow = function*(this: Flow) {
             yield [request(eventA, 100), block(eventA), request(eventB, 200)];
-            
         }
         testSchedulerFactory(myFirstFlow);
         expect(eventB.value).toBe(200);
@@ -62,7 +58,7 @@ describe("how bids can be placed with a yield statement", () => {
                 expect(remainingBids?.[0].type).toBe('request');
                 expect(remainingBids?.[0].validate).toBeUndefined();
                 
-            })
+            }, []);
             const [event, remainingBids] = yield waitFor(eventA);
             expect(event).toBe(eventA);
             expect(remainingBids).toBeUndefined();
