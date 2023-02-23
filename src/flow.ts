@@ -369,9 +369,9 @@ export class Flow {
     /**
      * restarts the flow
      */
-    public restart(nextParameters: Parameters<typeof this._generatorFunction>): void {
+    public restart(): void {
         this._logger.logFlowReaction(this.id, 'flow restarted manually by calling flow.restart');
-        this.__restart(nextParameters);
+        this.__restart();
     }
 
     /**

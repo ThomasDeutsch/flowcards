@@ -31,6 +31,9 @@ A flow is a thread of execution, and can also handle side-effects and async requ
 If you have a scenario like the one above, where the UI needs to make an async call, then the call is not handled somewhere
 else in your code - all can be expressed inside of the flow.
 
+## Why not a switch-case reducer?
+TODO
+
 ## In the real world
 Usually, a flow will not stand alone by itself. Multiple flows will need to play together and because of this,
 they all are syncronized by using the yield keyword.
