@@ -76,6 +76,7 @@ export class Flow {
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
     private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
+    private _latestEventThisFlowProgressedOn?: Event<any, any>;
     private _nrAddedChildren = 0;
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
@@ -160,6 +161,7 @@ export class Flow {
         });
         this._nrAddedChildren = 0;
         this._latestActionIdThisFlowProgressedOn = undefined;
+        this._latestEventThisFlowProgressedOn = undefined;
         this._pendingExtends.clear();
         if(nextParameters !== undefined) {
             this._currentParameters = [...nextParameters];
@@ -229,6 +231,7 @@ export class Flow {
         if(this._latestActionIdThisFlowProgressedOn === actionId) return; // prevent from progressing twice on the same action
         this._logger.logChangedEvent(event);
         this._latestActionIdThisFlowProgressedOn = actionId;
+        this._latestEventThisFlowProgressedOn = event;
         try {
             const next = this._generator.next([event, filterRemainingBids(bidId, this._placedBids)]);
             this._logger.logFlowReaction(this.id, 'flow progressed');
@@ -317,6 +320,7 @@ export class Flow {
         this._hasEnded = true;
         this._currentBidId = 0;
         this._latestActionIdThisFlowProgressedOn = undefined;
+        this._latestEventThisFlowProgressedOn = undefined;
         if(removeExtends) {
             this._pendingExtends.clear();
         }
@@ -446,5 +450,13 @@ export class Flow {
      */
     public get latestActionId(): number | undefined {
         return this._latestActionIdThisFlowProgressedOn;
+    }
+
+    /**
+     * get the latest event this flow has progressed on
+     * @returns the event this flow has progressed on
+     */
+    public get latestEvent(): Event<any, any> | undefined {
+        return this._latestEventThisFlowProgressedOn;
     }
 }
