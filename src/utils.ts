@@ -9,7 +9,7 @@ import { Event, EventByKey } from "./event";
  * @internalRemarks promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
  */
 export function isThenable(p?: unknown): p is Promise<unknown> {
-    return p !== undefined && typeof p === 'object' && typeof (p as PromiseLike<unknown>).then === 'function';
+    return p !== undefined && p !==  null && typeof p === 'object' && typeof (p as PromiseLike<unknown>).then === 'function';
 }
 
 /**
