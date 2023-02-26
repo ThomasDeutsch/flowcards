@@ -6,10 +6,10 @@ import { Event, EventByKey } from "./event";
  * check if a value is thenable (possibly a promise)
  * @param p a possible candidate for a promise
  * @returns true if p is thenable
- * @internalRemarks promise duck-typing:  https://www.bookstack.cn/read/AsyncPerformance/spilt.2.ch3.md
+ * @internalRemarks promise duck-typing:  https://github.com/then/is-promise/blob/master/index.js
  */
-export function isThenable(p?: unknown): p is Promise<unknown> {
-    return p !== undefined && p !==  null && typeof p === 'object' && typeof (p as PromiseLike<unknown>).then === 'function';
+function isThenable(obj) {
+    return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 }
 
 /**
