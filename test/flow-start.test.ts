@@ -82,7 +82,6 @@ describe("a sub-flow can be started", () => {
     test('a flow can be restarted, even if the parameters are not provided', (done) => {
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-
             this.flow('subflow', function* (this: Flow, test: number, test2: string) {
                 expect(test).toBe(1);
                 expect(test2).toBe('test');
@@ -180,5 +179,22 @@ describe("a sub-flow can be started", () => {
         });
     });
 
-    //TODO: if a subflow has a keepAlive of true, it will not be removed, when the parent progresses on a next bid.
+    test('a subflow is not ended, when the keepAlive flag is set.', (done) => {
+        const eventA = new Event<number>('eventA');
+        const eventB = new Event<number>('eventB');
+        let subFlowEnded = false;
+        testSchedulerFactory( function*(this: Flow) {
+            yield request(eventA, 1);
+            this.flow('subflow', function* (this: Flow) {
+                yield request(eventB, () => delay(500, 1));
+                subFlowEnded = true;
+            }, [], true);
+            yield request(eventA, 2);
+            yield request(eventA, () => delay(1000, 3));
+            expect(eventB.value).toBe(1);
+            expect(subFlowEnded).toBe(true);
+            done();
+        });
+    });
+
 });

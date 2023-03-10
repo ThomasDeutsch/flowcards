@@ -347,11 +347,14 @@ export class Flow {
     // PUBLIC --------------------------------------------------------------------------------------------
 
     /**
-     * start a new child flow
+     * enable a flow as a child flow of the current parent flow (this)
+     * a flow is enabled until the parent flow has progressed or ended.
+     * If the this.flow is continued after the yield, then the child flow will not be ended, when the parent flow progresses.
+     * If the keepAliveOnParentProgress is true, then the child flow will also not be ended, when the parent flow progresses.
      * @param nameOrId the name or id of the child flow
      * @param generatorFunction a generator function that will used to create the child flow
-     * @param key the key of the child instance
-     * @param keepAlive if true, the child flow will not be ended, when the parent flow progresses
+     * @param parameters the parameters that will be passed as a flow context
+     * @param keepAliveOnParentProgress if true, the child flow will not be ended, when the parent flow progresses
      * @internalRemarks mutates: ._children
      */
     public flow<T extends FlowGeneratorFunction>(nameOrId: string | {name: string, key: string}, generatorFunction: T, parameters: Parameters<T>, keepAliveOnParentProgress?: boolean): Flow {
