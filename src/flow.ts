@@ -37,7 +37,7 @@ export interface FlowParameters {
     generatorFunction: FlowGeneratorFunction;
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     logger: ActionReactionLogger;
-    keepAlive?: boolean;
+    keepAliveOnParentProgress?: boolean;
     parameters?: any[];
 }
 
@@ -66,7 +66,7 @@ export interface FlowBidsAndPendingInformation {
  */
 export class Flow {
     public readonly id: string;
-    public readonly keepAlive: boolean;
+    public readonly keepAliveOnParentProgress: boolean;
     private readonly _generatorFunction: FlowGeneratorFunction;
     private _generator: FlowGenerator;
     private _children: Map<string, Flow> = new Map();
@@ -85,7 +85,7 @@ export class Flow {
     constructor(parameters: FlowParameters) {
         // this initialization is only done once
         this.id = parameters.id;
-        this.keepAlive = parameters.keepAlive || false;
+        this.keepAliveOnParentProgress = parameters.keepAliveOnParentProgress || false;
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._executeAction = parameters.executeAction;
         this._logger = parameters.logger;
@@ -148,7 +148,7 @@ export class Flow {
             this._placeBids(nextBids);
             // remove children
             this._children.forEach((child, childId) => {
-                if(child.keepAlive) return;
+                if(child.keepAliveOnParentProgress) return;
                 if(this._nextChildren.has(childId)) return;
                 this._logger.logFlowReaction(childId, 'flow ended, because the parent flow progressed');
                 child.__end(true);
@@ -354,7 +354,7 @@ export class Flow {
      * @param keepAlive if true, the child flow will not be ended, when the parent flow progresses
      * @internalRemarks mutates: ._children
      */
-    public flow<T extends FlowGeneratorFunction>(nameOrId: string | {name: string, key: string}, generatorFunction: T, parameters: Parameters<T>, keepAlive?: boolean): Flow {
+    public flow<T extends FlowGeneratorFunction>(nameOrId: string | {name: string, key: string}, generatorFunction: T, parameters: Parameters<T>, keepAliveOnParentProgress?: boolean): Flow {
         const childFlowId = (typeof nameOrId === 'object') ? `${nameOrId.name}__key:${nameOrId.key}` : nameOrId;
         const currentChild = this._children.get(childFlowId);
         if(currentChild) {
@@ -370,7 +370,7 @@ export class Flow {
             generatorFunction: generatorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
-            keepAlive,
+            keepAliveOnParentProgress,
             parameters,
         });
         this._nextChildren.set(childFlowId, newChild);

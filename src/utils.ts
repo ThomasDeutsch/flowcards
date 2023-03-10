@@ -8,7 +8,7 @@ import { Event, EventByKey } from "./event";
  * @returns true if p is thenable
  * @internalRemarks promise duck-typing:  https://github.com/then/is-promise/blob/master/index.js
  */
-export function isThenable(obj: any) {
+export function isThenable(obj: any): obj is PromiseLike<any> {
     return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 }
 
