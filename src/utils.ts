@@ -8,7 +8,7 @@ import { Event, EventByKey } from "./event";
  * @returns true if p is thenable
  * @internalRemarks promise duck-typing:  https://github.com/then/is-promise/blob/master/index.js
  */
-function isThenable(obj) {
+export function isThenable(obj: any) {
     return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 }
 
@@ -122,5 +122,5 @@ export function mapValues<K, V>(map: Map<K, V>): V[] {
  * @returns the key
  */
 export function getKeyFromId(id: string): string {
-    return id.split('🔑')[1];
+    return id.split('__key:')[1];
 }

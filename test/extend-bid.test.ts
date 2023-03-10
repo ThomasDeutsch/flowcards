@@ -9,11 +9,11 @@ describe("the extend bid behavior", () => {
     test('when an event gets extended, it will be marked as pending', () => {
         let requestingFlow: Flow;
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, 101);
             }, [])
-            this.flow(function* () {
+            this.flow('subflow2', function* () {
                 yield extend(eventA);
                  // an ended flow will keep the extend pending.
             }, []);
@@ -27,12 +27,12 @@ describe("the extend bid behavior", () => {
         let requestingFlow: Flow;
         let extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, 101);
                 expect(eventA.isPending).toBe(false);
             }, [])
-            extendingFlow = this.flow(function* () {
+            extendingFlow = this.flow('subflow2', function* () {
                 yield extend(eventA);
                 expect(eventA.isPending).toBe(true);
                 expect(eventA.value).toBe(undefined);
@@ -51,11 +51,11 @@ describe("the extend bid behavior", () => {
         let askForFlow: Flow;
         let extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            askForFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA);
             }, [])
-            extendingFlow = this.flow(function* () {
+            extendingFlow = this.flow('subflow2', function* () {
                 yield extend(eventA);
                 expect(eventA.value).toBe(undefined);
                 expect(eventA.extendedValue).toBe(20);
@@ -74,11 +74,11 @@ describe("the extend bid behavior", () => {
         let askForFlow: Flow;
         let extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            askForFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA);
             }, [])
-            extendingFlow = this.flow(function* () {
+            extendingFlow = this.flow('subflow2', function* () {
                 yield extend(eventA);
                 expect(eventA.value).toBe(undefined);
                 expect(eventA.extendedValue).toBe(30);
@@ -97,17 +97,17 @@ describe("the extend bid behavior", () => {
         let requestingFlow, extendFlow1, extendFlow2: Flow;
         const progressionOrder: string[] = [];
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, 1);
                 progressionOrder.push('requestingFlow');
             }, [])
-            extendFlow1 = this.flow(function* () {
+            extendFlow1 = this.flow('subflow2', function* () {
                 yield extend(eventA);
                 progressionOrder.push('extendFlow1');
                 yield request(eventA, 3);
             }, []);
-            extendFlow2 = this.flow(function* () {
+            extendFlow2 = this.flow('subflow3', function* () {
                 yield extend(eventA);
                 progressionOrder.push('extendFlow2');
                 yield request(eventA, 2);
@@ -125,12 +125,12 @@ describe("the extend bid behavior", () => {
 
     test('if a pending request gets extended, the extend will continue on resolve', (done) => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            const requestFlow = this.flow(function* requestFlow() {
+        testSchedulerFactory( function*(this: Flow) {
+            const requestFlow = this.flow('subflow', function* requestFlow() {
                 yield request(eventA, () => delay(100, 1));
                 expect(eventA.value).toBe(1000);
             }, [])
-            this.flow(function* extendFlow() {
+            this.flow('subflow2', function* extendFlow() {
                 yield extend(eventA);
                 expect(eventA.extendedValue).toBe(1);
                 yield request(eventA, 1000);
@@ -146,12 +146,12 @@ describe("the extend bid behavior", () => {
     test('if a pending request gets extended, the extending flow can cancel the request', (done) => {
         const eventA = new Event<number>('eventA');
         const cancelEvent = new Event<number>('cancelEvent');
-        testSchedulerFactory(function*(this: Flow) {
-            this.flow(function* requestFlow() {
+        testSchedulerFactory( function*(this: Flow) {
+            this.flow('subflow', function* requestFlow() {
                 yield request(eventA, () => delay(100, 1));
                 expect(1).toBe(5); // the event got canceled, and not resolved by the extending flow.
             }, [])
-            this.flow(function* extendFlow() {
+            this.flow('subflow2', function* extendFlow() {
                 yield [extend(eventA), request(cancelEvent, 1), block(cancelEvent, () => !eventA.isPending)];
                 //expect(eventA.extendedValue).toBe(undefined);
                 yield request(cancelEvent, () => delay(500, 1));
@@ -166,11 +166,11 @@ describe("the extend bid behavior", () => {
     test('an extend bid can have a validate function and will only extend when valid', () => {
         let requestingFlow: Flow;
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, 101);
             }, [])
-            this.flow(function* () {
+            this.flow('subflow2', function* () {
                 yield extend(eventA, () => false);
             }, []);
             yield undefined;
@@ -183,11 +183,11 @@ describe("the extend bid behavior", () => {
     test('a pending extend can be aborted', () => {
         let requestingFlow: Flow, extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, 101);
             }, [])
-            extendingFlow = this.flow(function* (this: Flow) {
+            extendingFlow = this.flow('subflow2', function* (this: Flow) {
                 yield extend(eventA);
                 this.resolveExtend(eventA);
             }, []);
@@ -212,7 +212,7 @@ describe("the extend bid behavior", () => {
         }
         let eventExtended = 0;
         let eventNotExtended = 0;
-        const flow1 =  function* () {
+        const flow1 = function* () {
             while(true) {
                 yield [askFor(events.A), askFor(events.notExtend.A)];
             }
@@ -226,8 +226,8 @@ describe("the extend bid behavior", () => {
             }
         }
         testSchedulerFactory(function*(this: Flow) {
-            this.flow(flow1, []);
-            this.flow(extendFlow, []);
+            this.flow('subflow1', flow1, []);
+            this.flow('subflow2', extendFlow, []);
             yield undefined;
         });
 

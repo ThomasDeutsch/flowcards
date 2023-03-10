@@ -17,6 +17,7 @@ export type FlowReactionType =
     'flow ended' |
     'parameters changed -> flow restarted' |
     'flow restarted manually by calling flow.restart' |
+    'flow ended, because the parent flow progressed' |
     'pending extend resolved';
 
 /**

@@ -47,8 +47,8 @@ describe("how bids can be placed with a yield statement", () => {
     test('a bid will return a progress information', () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<undefined>('eventB');
-        testSchedulerFactory(function*(this: Flow) {
-            const requestingFlow = this.flow(function* (this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
+            const requestingFlow = this.flow('subflow', function* (this: Flow) {
                 const [event, remainingBids] = yield [request(eventA, 101), request(eventB, undefined)];
                 expect(event).toBe(eventA);
                 expect(remainingBids?.length).toEqual(1);
@@ -57,7 +57,6 @@ describe("how bids can be placed with a yield statement", () => {
                 expect(remainingBids?.[0].flow).toBe(requestingFlow);
                 expect(remainingBids?.[0].type).toBe('request');
                 expect(remainingBids?.[0].validate).toBeUndefined();
-                
             }, []);
             const [event, remainingBids] = yield waitFor(eventA);
             expect(event).toBe(eventA);

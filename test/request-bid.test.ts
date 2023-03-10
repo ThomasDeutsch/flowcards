@@ -50,12 +50,12 @@ describe('a flow can request an event', () => {
 
     test('a waitFor will progress if the event was requested', () => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            const requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            const requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, 101);
                 expect(eventA.value).toBe(101);
             }, [])
-            const waitingFlow = this.flow(function* () {
+            const waitingFlow = this.flow('subflow', function* () {
                 yield waitFor(eventA);
                 expect(eventA.value).toBe(101);
             }, []);
@@ -68,8 +68,8 @@ describe('a flow can request an event', () => {
 
     test('if the flow is requesting and waiting for an event at the same time, the flow is only progressed once', () => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            const requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            const requestingFlow = this.flow('subflow', function* () {
                 yield [request(eventA, 101), waitFor(eventA)];
                 yield waitFor(eventA);
             }, []);
@@ -81,13 +81,13 @@ describe('a flow can request an event', () => {
 
     test('if two flows are requesting the same event at the same time, they will be processed separately', (done) => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            const requestingFlowLower = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            const requestingFlowLower = this.flow('subflow', function* () {
                 yield request(eventA, 101);
-            }, [])
-            const requestingFlowHigher = this.flow(function* () {
+            }, [], true)
+            const requestingFlowHigher = this.flow('subflow2', function* () {
                 yield request(eventA, 202);
-            }, []);
+            }, [], true);
             yield waitFor(eventA);
             expect(eventA.value).toBe(202);
             yield waitFor(eventA);
@@ -101,11 +101,11 @@ describe('a flow can request an event', () => {
 
     test('a request bid can have a validate function', (done) => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            const requestingFlowBlocked = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            const requestingFlowBlocked = this.flow('subflow', function* () {
                 yield request(eventA, 1, () => false);
             }, []);
-            const requestingFlow = this.flow(function* () {
+            const requestingFlow = this.flow('subflow2', function* () {
                 yield request(eventA, 2, () => true);
             }, []);
             yield waitFor(eventA);
@@ -167,12 +167,12 @@ describe('a flow can request an async event', () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
 
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             let hasCatchedError = false;
-            const requestingFlow = this.flow(function* () {
+            const requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, () => delay(100, 1), () => true);
             }, []);
-            const requestingFlowBlocked = this.flow(function* () {
+            const requestingFlowBlocked = this.flow('subflow2', function* () {
                 try {
                     yield request(eventB, () => failedDelay(20, 2), () => false);
                 } catch(e) {
@@ -192,12 +192,12 @@ describe('a flow can request an async event', () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
 
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             let startCount = 0;
-            const requestingFlow = this.flow(function* () {
+            const requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, () => delay(100, 1));
             }, []);
-            const requestingFlowBlocked = this.flow(function* () {
+            const requestingFlowBlocked = this.flow('subflow2', function* () {
                 startCount++;
                 yield [request(eventB, () => failedDelay(20, 2)), block(eventB, () => startCount !== 1)];
                 yield undefined;
@@ -218,8 +218,8 @@ describe('a flow can request an async event', () => {
         let errorCatched: boolean = false;
         let startCount = 0;
 
-        testSchedulerFactory(function*(this: Flow) {
-            const requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            const requestingFlow = this.flow('subflow', function* () {
                 startCount++;
                 if(startCount < 10) {
                     try {
@@ -244,12 +244,12 @@ describe('a flow can request an async event', () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
 
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             let hasCatchedError = false;
-            const requestingFlow = this.flow(function* () {
+            const requestingFlow = this.flow('subflow', function* () {
                 yield request(eventA, () => delay(100, 1));
             }, []);
-            const requestingFlowBlocked = this.flow(function* () {
+            const requestingFlowBlocked = this.flow('subflow2', function* () {
                 try {
                     yield request(eventB, () => delay(20, 2), () => false);
                 } catch(e) {
@@ -270,9 +270,9 @@ describe('a flow can request an async event', () => {
         const eventB = new Event<number>('eventB');
         let loops = 1;
 
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             while(loops < 3) {
-                this.flow(function* test(eventBValue: number) {
+                this.flow('subflow', function* test(eventBValue: number) {
                     const currentLoops = loops;
                     yield request(eventA, () => delay(currentLoops * 1000, currentLoops));
                 }, [loops])
@@ -290,8 +290,8 @@ describe('a flow can request an async event', () => {
         const eventA = new Event<number>('eventA');
         let requestingFlow: Flow | undefined;
 
-        testSchedulerFactory(function*(this: Flow) {
-            requestingFlow = this.flow(function* () {
+        testSchedulerFactory( function*(this: Flow) {
+            requestingFlow = this.flow('subflow', function* () {
                 yield askFor(eventA);
                 yield request(eventA, () => {
                     throw new Error('test');

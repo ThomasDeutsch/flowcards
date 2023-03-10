@@ -313,7 +313,7 @@ export class EventByKey<P = void, V = void> {
     public get(key: string): Event<P,V> {
         let event = this._children.get(key);
         if(event === undefined) {
-            const id: string = `${this.name}🔑${key}`;
+            const id: string = `${this.name}__key:${key}`;
             event = new Event<P, V>(id);
             this._children.set(key, event);
         }

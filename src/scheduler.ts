@@ -45,12 +45,8 @@ export class Scheduler {
     constructor(props : SchedulerProps) {
         this._actionReactionLogger = new ActionReactionLogger();
         this._schedulerCompletedCallback = props.completedCB;
-        let flowName = props.rootFlow.name;
-        if(flowName === "anonymous" || flowName === "") {
-            flowName = 'root'
-        }
         this._rootFlow = new Flow({
-            id: flowName,
+            id: 'rootFlow',
             generatorFunction: props.rootFlow,
             executeAction: this._run.bind(this),
             logger: this._actionReactionLogger

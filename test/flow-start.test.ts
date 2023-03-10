@@ -2,16 +2,17 @@ import { Flow } from "../src/flow";
 import { Event } from "../src/event";
 import { askFor, request, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
+import { delay } from "./test-utils";
 
 
 describe("a sub-flow can be started", () => {
 
     test('if a sub-flow is started, "this" will be the child flow', () => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             // eslint-disable-next-line @typescript-eslint/no-this-alias
             const rootFlow = this;
-            const requestingFlow = this.flow(function* (this: Flow) {
+            const requestingFlow = this.flow('subflow', function* (this: Flow) {
                 yield waitFor(eventA);
                 expect(this).toBe(requestingFlow);
             }, [])
@@ -24,32 +25,17 @@ describe("a sub-flow can be started", () => {
 
     test('a child flow name will inherit its parent name suffixed by >', () => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             // eslint-disable-next-line @typescript-eslint/no-this-alias
             const rootFlow = this;
-            this.flow(function* child1(this: Flow) {
-                this.flow(function* child2(this: Flow) {
-                    expect(this.name).toBe(`${rootFlow.name}>${child1.name}>${child2.name}`)
+            this.flow('subflow', function* child1(this: Flow) {
+                this.flow('subflow2', function* child2(this: Flow) {
+                    expect(this.name).toBe(`${rootFlow.name}>subflow>subflow2`)
                     yield undefined;
                 }, []);
-                expect(this.name).toBe(`${rootFlow.name}>${child1.name}`)
+                expect(this.name).toBe(`${rootFlow.name}>subflow`)
                 yield undefined;
             }, [])
-            yield undefined;
-        });
-    });
-
-    test('if a sub-flow has no function name, it will be given a number', () => {
-        const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
-            const rootFlow = this;
-            const requestingFlow = this.flow(function* (this: Flow) {
-                expect(this.id[0]).toBe('root>0');
-                yield undefined;
-            }, []);
-            expect(requestingFlow.hasEnded).toBe(false); // the request is progressed before the waitFor is progressed
-            expect(requestingFlow).not.toBe(rootFlow);
             yield undefined;
         });
     });
@@ -57,11 +43,11 @@ describe("a sub-flow can be started", () => {
     test('a subflow will progress before its parents (if both are waiting for an event)', (done) => {
         const eventA = new Event<number>('eventA');
         const progressionOrder: string[] = [];
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             // first child
-            this.flow(function* (this: Flow) {
+            this.flow('subflow', function* (this: Flow) {
                 // second child
-                this.flow(function* (this: Flow) {
+                this.flow('subflow2', function* (this: Flow) {
                     yield waitFor(eventA);
                     progressionOrder.push('child2')
                 }, []);
@@ -80,8 +66,8 @@ describe("a sub-flow can be started", () => {
 
     test('flow parameters can be assigned by an additional array', (done) => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
-            this.flow(function* (this: Flow, test: number, test2: string) {
+        testSchedulerFactory( function*(this: Flow) {
+            this.flow('subflow', function* (this: Flow, test: number, test2: string) {
                 expect(test).toBe(1);
                 expect(test2).toBe('test');
                 yield waitFor(eventA);
@@ -95,9 +81,9 @@ describe("a sub-flow can be started", () => {
 
     test('a flow can be restarted, even if the parameters are not provided', (done) => {
         const eventA = new Event<number>('eventA');
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
 
-            this.flow(function* (this: Flow, test: number, test2: string) {
+            this.flow('subflow', function* (this: Flow, test: number, test2: string) {
                 expect(test).toBe(1);
                 expect(test2).toBe('test');
                 yield waitFor(eventA);
@@ -112,10 +98,10 @@ describe("a sub-flow can be started", () => {
         const eventA = new Event<number>('eventA');
         let count = 0;
         let started = 0;
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             while(true) {
                 count++;
-                this.flow(function* (this: Flow, test: number) {
+                this.flow('subflow', function* (this: Flow, test: number) {
                     started++;
                     expect(test).toBe(count);
                     yield waitFor(eventA);
@@ -141,10 +127,10 @@ describe("a sub-flow can be started", () => {
         }
         const eventA = new Event<number>('eventA');
         let started = 0;
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             while(true) {
                 count++;
-                this.flow(generatorTest, [count]);
+                this.flow('subflow', generatorTest, [count]);
                 if(count < 2) {
                     yield request(eventA, 1);
                 } else {
@@ -161,10 +147,10 @@ describe("a sub-flow can be started", () => {
         const eventA = new Event<number>('eventA');
         let subFlowStarted = false;
         let created = 0;
-        testSchedulerFactory(function*(this: Flow) {
+        testSchedulerFactory( function*(this: Flow) {
             while(true) {
                 yield askFor(eventA);
-                this.flow(function* (this: Flow) {
+                this.flow('subflow', function* (this: Flow) {
                     subFlowStarted = true;
                     yield request(eventA, 1);
                 }, []);
@@ -175,4 +161,24 @@ describe("a sub-flow can be started", () => {
         expect(eventA.value).toBe(1);
         done();
     });
+
+    test('a subflow is ended, when the parent progresses on a next bid, and the flow is not activated again.', (done) => {
+        const eventA = new Event<number>('eventA');
+        const eventB = new Event<number>('eventB');
+        let subFlowEnded = false;
+        testSchedulerFactory( function*(this: Flow) {
+            yield request(eventA, 1);
+            this.flow('subflow', function* (this: Flow) {
+                yield request(eventB, () => delay(500, 1));
+                subFlowEnded = true;
+            }, []);
+            yield request(eventA, 2);
+            yield request(eventA, () => delay(1000, 3));
+            expect(eventB.value).toBe(undefined);
+            expect(subFlowEnded).toBe(false);
+            done();
+        });
+    });
+
+    //TODO: if a subflow has a keepAlive of true, it will not be removed, when the parent progresses on a next bid.
 });

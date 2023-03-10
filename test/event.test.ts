@@ -47,7 +47,7 @@ describe("events will be updated", () => {
         eventA.setDescription("event to test the event update feature");
 
         const mainFlow = function*(this: Flow) {
-            this.flow(function*() {
+            this.flow('subflow', function*() {
                 yield block(eventA);
             }, []);
         }
@@ -120,10 +120,10 @@ describe('events can be dependent on other events, if they are accessed in a val
         const eventB = new Event<number>('eventB');
 
         const myFirstFlow = function*(this: Flow) {
-            this.flow(function*(this: Flow) {
+            this.flow('subflow', function*(this: Flow) {
                 yield askFor(eventA, () => Boolean(eventB.value && eventB.value > 10));
             }, [])
-            requestFlow = this.flow(function* () {
+            requestFlow = this.flow('subflow2', function* () {
                 yield request(eventB, () => delay(100, 100));
             }, []);
             yield undefined;
@@ -152,10 +152,10 @@ describe('events can be dependent on other events, if they are accessed in a val
         const eventB = new Event<number>('eventB');
 
         const myFirstFlow = function*(this: Flow) {
-            this.flow(function*(this: Flow) {
+            this.flow('subflow', function*(this: Flow) {
                 yield askFor(eventA, () => Boolean(eventB.value && eventB.value > 10));
             }, [])
-            requestFlow = this.flow(function* () {
+            requestFlow = this.flow('subflow2', function* () {
                 yield request(eventB, () => delay(100, 100));
             }, []);
             yield undefined;
@@ -183,10 +183,10 @@ describe('events can be dependent on other events, if they are accessed in a val
         const eventB = new Event<number>('eventB');
 
         const myFirstFlow = function*(this: Flow) {
-            this.flow(function*(this: Flow) {
+            this.flow('subflow', function*(this: Flow) {
                 yield askFor(eventA, () => !eventB.isPending);
             }, [])
-            requestFlow = this.flow(function* () {
+            requestFlow = this.flow('subflow2', function* () {
                 yield request(eventB, () => delay(100, 100));
             }, []);
             yield undefined;
