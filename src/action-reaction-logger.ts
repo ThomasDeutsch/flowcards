@@ -6,7 +6,7 @@ import { appendTo, mapValues } from "./utils";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
-export type FlowReactionType = 
+export type FlowReactionType =
     'error hot handled -> flow restarted' |
     'error handled -> flow progressed' |
     'flow progressed' |
@@ -18,6 +18,7 @@ export type FlowReactionType =
     'parameters changed -> flow restarted' |
     'flow restarted manually by calling flow.restart' |
     'flow ended, because the parent flow progressed' |
+    'error hot handled -> flow ended to prevent infinite loop because request was placed at the beginning of the flow' |
     'pending extend resolved';
 
 /**

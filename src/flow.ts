@@ -97,7 +97,8 @@ export class Flow {
         try {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
-            console.error('error in flow ', this.id, ': ', error);
+            console.error('first .next call in constructor exited with an error: ', this.id, ': ', error, '.flow will be ended');
+            this.__end();
         }
     }
 
@@ -183,7 +184,8 @@ export class Flow {
         try {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
-            console.error('error in flow ', this.id, ': ', error);
+            console.error('error in flow ', this.id, ': ', error, 'flow ended');
+            this.__end();
         }
     }
 
@@ -217,6 +219,7 @@ export class Flow {
      * @internalRemarks mutates: ._generator (next)
      */
     public __onRejectAsyncAction(event: Event<any, any>): void {
+        const pendingRequestBidId = this._pendingRequests.get(event.id)?.id;
         this._pendingRequests.delete(event.id);
         this._logger.logChangedEvent(event);
         let next: FlowIteratorResult;
@@ -225,6 +228,11 @@ export class Flow {
         }
         catch(error) {
             console.error('error in flow ', this.id, ': ', error);
+            if(pendingRequestBidId === 0) {
+                this._logger.logFlowReaction(this.id, 'error hot handled -> flow ended to prevent infinite loop because request was placed at the beginning of the flow');
+                this.__end();
+                return;
+            }
             this._logger.logFlowReaction(this.id, 'error hot handled -> flow restarted');
             this.__restart();
             return;
@@ -238,6 +246,7 @@ export class Flow {
      * @internal
      * @param event the event that occurred
      * @param bidId the id of the bid that was placed and corresponds to the event
+     * @param actionId the id of the action to check if the flow already progressed on this action
      * @internalRemarks mutates: ._generator (next)
      */
     public __onEvent(event: Event<any, any>, bidId: number, actionId: number): void {
@@ -250,7 +259,8 @@ export class Flow {
             this._logger.logFlowReaction(this.id, 'flow progressed');
             this._handleNext(next);
         } catch(error) {
-            console.error('error in flow ', this.id, ': ', error);
+            console.error('error in flow ', this.id, ': ', error, 'flow ended');
+            this.__end();
         }
     }
 
@@ -260,6 +270,7 @@ export class Flow {
      * @param event the event that occurred
      * @param bidId the id of the bid that was placed and corresponds to the event
      * @param extend the pending extend information
+     * @param actionId the id of the action to check if the flow already progressed on this action
      */
     public __onExtend<P, V>(event: Event<P, V>, bidId: number, extend: PendingExtend<P,V>, actionId: number): void {
         this._pendingExtends.set(event.id, extend);
@@ -313,7 +324,7 @@ export class Flow {
      * remove a pending request
      * this function will not progress the flow, because the resolved pending event could be extended again by another flow
      * @internal
-     * @param eventId the id of the event that was extended by this flow
+     * @param event the event that was extended by this flow
      */
      public __resolvePendingRequest(event: Event<any,any>): void {
         const wasRemoved = this._pendingRequests.delete(event.id);
@@ -391,7 +402,7 @@ export class Flow {
     /**
      * remove a pending extend
      * this function will not progress the flow, because the resolved extend could be extended again by another flow
-     * @param eventId the id of the event that was extended by this flow
+     * @param event the event that was extended by this flow
      */
     public resolveExtend(event: Event<any,any>): boolean {
         const wasRemoved = this._pendingExtends.delete(event.id);
