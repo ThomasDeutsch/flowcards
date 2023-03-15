@@ -105,7 +105,7 @@ export class ActiveReplay {
         }
         const nextAction = this._actions.get(nextActionId) as ReplayAction<P> | undefined;
         if (nextAction === undefined) {
-            return false
+            return false;
         }
         this._currentAction = nextAction; // for logging purposes
         const maybeEventInfo = info.eventInformation.get(nextAction.eventId) as EventInformation<P, V> | undefined;

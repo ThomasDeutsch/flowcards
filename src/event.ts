@@ -51,7 +51,6 @@ export class Event<P = undefined, V = void> {
         this._value = undefined;
         this._executeAction = undefined;
         this._getEventInformation = undefined;
-        this._onUpdateCallback = undefined;
         this._logger = undefined;
         this._latestUpdateOnActionId = undefined;
         this._relatedValidationEvents.clear();
