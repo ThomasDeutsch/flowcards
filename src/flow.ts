@@ -376,6 +376,7 @@ export class Flow {
                 this._logger.logFlowReaction(currentChild.id, 'parameters changed -> flow restarted');
                 currentChild.__restart(parameters);
             }
+            this._nextChildren.set(childFlowId, currentChild);
             return currentChild;
         }
         const fullChildIdPath = `${(this.id)}>${childFlowId}`;
