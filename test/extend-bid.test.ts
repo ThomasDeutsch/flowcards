@@ -10,10 +10,10 @@ describe("the extend bid behavior", () => {
         let requestingFlow: Flow;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            requestingFlow = this.flow('subflow', function* () {
+            requestingFlow = this.startFlow('subflow', function* () {
                 yield request(eventA, 101);
             }, [])
-            this.flow('subflow2', function* () {
+            this.startFlow('subflow2', function* () {
                 yield extend(eventA);
                  // an ended flow will keep the extend pending.
             }, []);
@@ -28,11 +28,11 @@ describe("the extend bid behavior", () => {
         let extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            requestingFlow = this.flow('subflow', function* () {
+            requestingFlow = this.startFlow('subflow', function* () {
                 yield request(eventA, 101);
                 expect(eventA.isPending).toBe(false);
             }, [])
-            extendingFlow = this.flow('subflow2', function* () {
+            extendingFlow = this.startFlow('subflow2', function* () {
                 yield extend(eventA);
                 expect(eventA.isPending).toBe(true);
                 expect(eventA.value).toBe(undefined);
@@ -52,10 +52,10 @@ describe("the extend bid behavior", () => {
         let extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.flow('subflow', function* () {
+            askForFlow = this.startFlow('subflow', function* () {
                 yield askFor(eventA);
             }, [])
-            extendingFlow = this.flow('subflow2', function* () {
+            extendingFlow = this.startFlow('subflow2', function* () {
                 yield extend(eventA);
                 expect(eventA.value).toBe(undefined);
                 expect(eventA.extendedValue).toBe(20);
@@ -75,10 +75,10 @@ describe("the extend bid behavior", () => {
         let extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.flow('subflow', function* () {
+            askForFlow = this.startFlow('subflow', function* () {
                 yield askFor(eventA);
             }, [])
-            extendingFlow = this.flow('subflow2', function* () {
+            extendingFlow = this.startFlow('subflow2', function* () {
                 yield extend(eventA);
                 expect(eventA.value).toBe(undefined);
                 expect(eventA.extendedValue).toBe(30);
@@ -98,16 +98,16 @@ describe("the extend bid behavior", () => {
         const progressionOrder: string[] = [];
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            requestingFlow = this.flow('subflow', function* () {
+            requestingFlow = this.startFlow('subflow', function* () {
                 yield request(eventA, 1);
                 progressionOrder.push('requestingFlow');
             }, [])
-            extendFlow1 = this.flow('subflow2', function* () {
+            extendFlow1 = this.startFlow('subflow2', function* () {
                 yield extend(eventA);
                 progressionOrder.push('extendFlow1');
                 yield request(eventA, 3);
             }, []);
-            extendFlow2 = this.flow('subflow3', function* () {
+            extendFlow2 = this.startFlow('subflow3', function* () {
                 yield extend(eventA);
                 progressionOrder.push('extendFlow2');
                 yield request(eventA, 2);
@@ -126,11 +126,11 @@ describe("the extend bid behavior", () => {
     test('if a pending request gets extended, the extend will continue on resolve', (done) => {
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            const requestFlow = this.flow('subflow', function* requestFlow() {
+            const requestFlow = this.startFlow('subflow', function* requestFlow() {
                 yield request(eventA, () => delay(100, 1));
                 expect(eventA.value).toBe(1000);
             }, [])
-            this.flow('subflow2', function* extendFlow() {
+            this.startFlow('subflow2', function* extendFlow() {
                 yield extend(eventA);
                 expect(eventA.extendedValue).toBe(1);
                 yield request(eventA, 1000);
@@ -147,11 +147,11 @@ describe("the extend bid behavior", () => {
         const eventA = new Event<number>('eventA');
         const cancelEvent = new Event<number>('cancelEvent');
         testSchedulerFactory( function*(this: Flow) {
-            this.flow('subflow', function* requestFlow() {
+            this.startFlow('subflow', function* requestFlow() {
                 yield request(eventA, () => delay(100, 1));
                 expect(1).toBe(5); // the event got canceled, and not resolved by the extending flow.
             }, [])
-            this.flow('subflow2', function* extendFlow() {
+            this.startFlow('subflow2', function* extendFlow() {
                 yield [extend(eventA), request(cancelEvent, 1), block(cancelEvent, () => !eventA.isPending)];
                 //expect(eventA.extendedValue).toBe(undefined);
                 yield request(cancelEvent, () => delay(500, 1));
@@ -167,10 +167,10 @@ describe("the extend bid behavior", () => {
         let requestingFlow: Flow;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            requestingFlow = this.flow('subflow', function* () {
+            requestingFlow = this.startFlow('subflow', function* () {
                 yield request(eventA, 101);
             }, [])
-            this.flow('subflow2', function* () {
+            this.startFlow('subflow2', function* () {
                 yield extend(eventA, () => false);
             }, []);
             yield undefined;
@@ -184,10 +184,10 @@ describe("the extend bid behavior", () => {
         let requestingFlow: Flow, extendingFlow: Flow;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            requestingFlow = this.flow('subflow', function* () {
+            requestingFlow = this.startFlow('subflow', function* () {
                 yield request(eventA, 101);
             }, [])
-            extendingFlow = this.flow('subflow2', function* (this: Flow) {
+            extendingFlow = this.startFlow('subflow2', function* (this: Flow) {
                 yield extend(eventA);
                 this.resolveExtend(eventA);
             }, []);
@@ -226,8 +226,8 @@ describe("the extend bid behavior", () => {
             }
         }
         testSchedulerFactory(function*(this: Flow) {
-            this.flow('subflow1', flow1, []);
-            this.flow('subflow2', extendFlow, []);
+            this.startFlow('subflow1', flow1, []);
+            this.startFlow('subflow2', extendFlow, []);
             yield undefined;
         });
 

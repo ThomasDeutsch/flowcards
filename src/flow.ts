@@ -4,6 +4,21 @@ import { Event } from  "./event";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { areDepsEqual, isThenable, mergeMaps } from "./utils";
 
+export interface FlowInfo<T extends FlowGeneratorFunction> {
+    id: string;
+    flowGeneratorFunction: T;
+}
+
+/**
+ * create a flow info object. after this, the flow can be started with the start method.
+ * @param id id of the flow
+ * @param flowGeneratorFunction the generator function of the flow
+ * @returns a flow info object
+ */
+export function flow<T extends FlowGeneratorFunction>(id: string, flowGeneratorFunction: T): FlowInfo<T> {
+    return {id, flowGeneratorFunction};
+}
+
 /**
  * type used for the iterator result of a flow generator
  * a flow generators next value can return a bid or an array of bids.
@@ -37,7 +52,6 @@ export interface FlowParameters {
     generatorFunction: FlowGeneratorFunction;
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     logger: ActionReactionLogger;
-    keepAliveOnParentProgress?: boolean;
     parameters?: any[];
 }
 
@@ -66,11 +80,9 @@ export interface FlowBidsAndPendingInformation {
  */
 export class Flow {
     public readonly id: string;
-    public readonly keepAliveOnParentProgress: boolean;
     private readonly _generatorFunction: FlowGeneratorFunction;
     private _generator: FlowGenerator;
     private _children: Map<string, Flow> = new Map();
-    private _nextChildren: Map<string, Flow> = new Map();
     private _hasEnded: boolean;
     private _currentBidId: number;
     private _placedBids: PlacedBid<unknown, unknown>[] | undefined;
@@ -85,7 +97,6 @@ export class Flow {
     constructor(parameters: FlowParameters) {
         // this initialization is only done once
         this.id = parameters.id;
-        this.keepAliveOnParentProgress = parameters.keepAliveOnParentProgress || false;
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._executeAction = parameters.executeAction;
         this._logger = parameters.logger;
@@ -147,18 +158,6 @@ export class Flow {
         } else {
             const nextBids = toBids(next.value);
             this._placeBids(nextBids);
-            // remove children
-            this._children.forEach((child, childId) => {
-                if(child.keepAliveOnParentProgress) return;
-                if(this._nextChildren.has(childId)) return;
-                this._logger.logFlowReaction(childId, 'flow ended, because the parent flow progressed');
-                child.__end(true);
-            });
-            // add next children
-            this._nextChildren.forEach((child, childId) => {
-                this._children.set(childId, child);
-            });
-            this._nextChildren = new Map();
         }
     }
 
@@ -358,38 +357,61 @@ export class Flow {
     // PUBLIC --------------------------------------------------------------------------------------------
 
     /**
-     * enable a flow as a child flow of the current parent flow (this)
-     * a flow is enabled until the parent flow has progressed or ended.
-     * If the this.flow is continued after the yield, then the child flow will not be ended, when the parent flow progresses.
-     * If the keepAliveOnParentProgress is true, then the child flow will also not be ended, when the parent flow progresses.
-     * @param nameOrId the name or id of the child flow
-     * @param generatorFunction a generator function that will used to create the child flow
+     * start a flow as a child flow of the current parent flow (this)
+     * @param flowInfo id and generator function of the child flow
      * @param parameters the parameters that will be passed as a flow context
-     * @param keepAliveOnParentProgress if true, the child flow will not be ended, when the parent flow progresses
+     * @param key a key that can be used to instantiate multiple flows with the same id
      * @internalRemarks mutates: ._children
      */
-    public flow<T extends FlowGeneratorFunction>(nameOrId: string | {name: string, key: string}, generatorFunction: T, parameters: Parameters<T>, keepAliveOnParentProgress?: boolean): Flow {
-        const childFlowId = (typeof nameOrId === 'object') ? `${nameOrId.name}__key:${nameOrId.key}` : nameOrId;
+    public start<T extends FlowGeneratorFunction>(flowInfo: FlowInfo<T>, parameters: Parameters<T>, key?: string): Flow {
+        const childFlowId = (key !== undefined) ? `${flowInfo.id}__key:${key}` : flowInfo.id;
         const currentChild = this._children.get(childFlowId);
         if(currentChild) {
             if(!areDepsEqual(currentChild.parameters || [], parameters)) {
                 this._logger.logFlowReaction(currentChild.id, 'parameters changed -> flow restarted');
                 currentChild.__restart(parameters);
             }
-            this._nextChildren.set(childFlowId, currentChild);
             return currentChild;
         }
         const fullChildIdPath = `${(this.id)}>${childFlowId}`;
         const newChild = new Flow({
             id: fullChildIdPath,
-            generatorFunction: generatorFunction,
+            generatorFunction: flowInfo.flowGeneratorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
-            keepAliveOnParentProgress,
             parameters,
         });
-        this._nextChildren.set(childFlowId, newChild);
+        this._children.set(childFlowId, newChild);
         return newChild;
+    }
+
+    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters: Parameters<T>, key?: string): Flow {
+        return this.start(flow(id, generatorFunction), parameters, key);
+    }
+
+    /**
+     * end all child flows with the given id or flowInfo
+     * @param idOrflowInfos the id or flowInfo of the child flows to end. if not given, all child flows will be ended
+     */
+    public endFlows(ids?: (string | FlowInfo<any>)[] | Record<string, FlowInfo<any>>): void {
+        if(!ids) {
+            this._children.forEach((child) => {
+                child.__end();
+            });
+            this._children.clear();
+            return;
+        }
+        if(!Array.isArray(ids)) {
+            ids = Object.keys(ids)
+        }
+        ids.forEach((idOrFlowInfo) => {
+            const id = (typeof idOrFlowInfo === 'string') ? idOrFlowInfo : idOrFlowInfo.id;
+            const child = this._children.get(id);
+            if(child) {
+                child.__end();
+                this._children.delete(id);
+            }
+        });
     }
 
     /**

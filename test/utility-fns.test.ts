@@ -22,10 +22,10 @@ describe("different flow utility functions", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<string>('eventB');
         testSchedulerFactory( function*(this: Flow) {
-            this.flow('subflow', function*() {
+            this.startFlow('subflow', function*() {
                 yield request(eventA, 1);
                 yield request(eventB, 'b');
-            }, [], true);
+            }, []);
             let [a, b] = yield* getEventValues(waitFor(eventA), waitFor(eventB));
             expect(eventA.value).toBe(1);
             expect(eventB.value).toBe(undefined);

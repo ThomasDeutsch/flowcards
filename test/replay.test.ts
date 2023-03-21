@@ -13,7 +13,7 @@ describe("the replay behavior", () => {
         let requestProgressed = 0;
 
         const rootFlow = function*(this: Flow) {
-            this.flow('subflow', function* () {
+            this.startFlow('subflow', function* () {
                 yield request(eventA, requestProgressed);
                 requestProgressed++;
             }, [])
@@ -53,7 +53,7 @@ describe("the replay behavior", () => {
         let asyncCalled = 0;
 
         const rootFlow = function*(this: Flow) {
-            this.flow('subflow', function* () {
+            this.startFlow('subflow', function* () {
                 yield request(eventA, () => {
                     asyncCalled++;
                     return delay(100, 10)
@@ -111,7 +111,7 @@ describe("the replay behavior", () => {
         let asyncCalled = 0;
 
         const rootFlow = function*(this: Flow) {
-            this.flow('subflow', function* () {
+            this.startFlow('subflow', function* () {
                 yield request(eventA, () => {
                     asyncCalled++;
                     return delay(100, 10)

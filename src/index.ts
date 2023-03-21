@@ -16,7 +16,7 @@ export {getAllValues, getEventValue, getEventValues, isSameBid, extendAll} from 
 export {NestedEventObject, getEvents, Event, EventByKey} from './event';
 
 /* flow */
-export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow} from './flow';
+export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow, flow, FlowInfo} from './flow';
 
 /* replay */
 export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay, SavedReplay} from './replay';

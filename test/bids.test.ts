@@ -48,7 +48,7 @@ describe("how bids can be placed with a yield statement", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<undefined>('eventB');
         testSchedulerFactory( function*(this: Flow) {
-            const requestingFlow = this.flow('subflow', function* (this: Flow) {
+            const requestingFlow = this.startFlow('subflow', function* (this: Flow) {
                 const [event, remainingBids] = yield [request(eventA, 101), request(eventB, undefined)];
                 expect(event).toBe(eventA);
                 expect(remainingBids?.length).toEqual(1);

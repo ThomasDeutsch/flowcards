@@ -2,24 +2,39 @@ import { Flow } from "../src/flow";
 import { Event } from "../src/event";
 import { request, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
+import { delay } from "./test-utils";
 
 
 describe("a flow execution", () => {
 
-    test('will automatically restart if this.end() is missing', () => {
+    test('will not automaticall restart after a flow is ended', (done) => {
         const eventA = new Event<number>('eventA');
         let nrBids = 0;
         testSchedulerFactory( function*(this: Flow) {
-            this.flow('subflow', function* child1(this: Flow) {
+            this.startFlow('subflow', function* () {
                 nrBids++;
                 yield request(eventA, 1);
-                if(nrBids === 3) {
-                }
             }, []);
             yield waitFor(eventA);
-            yield waitFor(eventA);
-            yield waitFor(eventA);
-            expect(nrBids).toBe(3);
+            expect(eventA.value).toBe(1);
+            yield [waitFor(eventA), request(eventA, () => delay(100, 2))];
+            expect(nrBids).toBe(1);
+            expect(eventA.value).toBe(2);
+            done();
+        });
+    });
+
+    test('.endFlows() will end all child-flows', (done) => {
+        const eventA = new Event<number>('eventA');
+        let nrBids = 0;
+        testSchedulerFactory( function*(this: Flow) {
+            this.startFlow('subflow', function* () {
+                yield request(eventA, 1);
+            }, []);
+            this.endFlows();
+            yield [waitFor(eventA), request(eventA, () => delay(500, 2))];
+            expect(eventA.value).toBe(2);
+            done();
         });
     });
 });
