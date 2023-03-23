@@ -359,13 +359,18 @@ export class Flow {
     /**
      * start a flow as a child flow of the current parent flow (this)
      * @param flowInfo id and generator function of the child flow
-     * @param parameters the parameters that will be passed as a flow context
+     * @param parameters the parameters that will be passed as a flow context, if undefined, the flow will be ended
      * @param key a key that can be used to instantiate multiple flows with the same id
+     * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public start<T extends FlowGeneratorFunction>(flowInfo: FlowInfo<T>, parameters: Parameters<T>, key?: string): Flow {
+    public start<T extends FlowGeneratorFunction>(flowInfo: FlowInfo<T>, parameters?: Parameters<T>, key?: string): Flow | undefined {
         const childFlowId = (key !== undefined) ? `${flowInfo.id}__key:${key}` : flowInfo.id;
         const currentChild = this._children.get(childFlowId);
+        if(parameters === undefined) {
+            this.endFlows([childFlowId]);
+            return undefined;
+        }
         if(currentChild) {
             if(!areDepsEqual(currentChild.parameters || [], parameters)) {
                 this._logger.logFlowReaction(currentChild.id, 'parameters changed -> flow restarted');
@@ -385,7 +390,7 @@ export class Flow {
         return newChild;
     }
 
-    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters: Parameters<T>, key?: string): Flow {
+    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters?: Parameters<T>, key?: string): Flow | undefined {
         return this.start(flow(id, generatorFunction), parameters, key);
     }
 
@@ -415,9 +420,24 @@ export class Flow {
     }
 
     /**
-     * restarts the flow
+     * end a child flow with the given id or flowInfo
+     * @param idOrflowInfo the id or flowInfo of the child flow to end
      */
-    public restart(): void {
+    public endFlow(idOrFlowInfo: string | FlowInfo<any>): void {
+        this.endFlows([idOrFlowInfo]);
+    }
+
+    /**
+     * restarts the flow
+     * @param restartIf if true, the flow will be restarted. if a function is given, the function will be called and the flow will be restarted if the function returns true
+     */
+    public restart(restartIf?: boolean | (() => boolean)): void {
+        if(typeof restartIf === 'boolean' && !restartIf) {
+            return;
+        }
+        if(typeof restartIf === 'function' && !restartIf()) {
+            return;
+        }
         this._logger.logFlowReaction(this.id, 'flow restarted manually by calling flow.restart');
         this.__restart();
     }

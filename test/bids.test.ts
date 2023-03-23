@@ -61,7 +61,7 @@ describe("how bids can be placed with a yield statement", () => {
             const [event, remainingBids] = yield waitFor(eventA);
             expect(event).toBe(eventA);
             expect(remainingBids).toBeUndefined();
-            expect(requestingFlow.hasEnded).toBe(true);
+            expect(requestingFlow?.hasEnded).toBe(true);
             yield undefined;
         });
     });
