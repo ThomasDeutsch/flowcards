@@ -8,14 +8,6 @@ import { areDepsEqual, isThenable, mergeMaps } from "./utils";
 // INTERFACES -------------------------------------------------------------------------------------------------------------
 
 /**
- * represents a flow that can be referenced to an id
- */
-export interface FlowInfo<T extends FlowGeneratorFunction> {
-    id: string;
-    flowGeneratorFunction: T;
-}
-
-/**
  * type used for the iterator result of a flow generator
  * a flow generators next value can return a bid or an array of bids.
  * if a flow places the same bid again, it is a PlacedBid.
@@ -354,17 +346,16 @@ export class Flow {
 
     /**
      * start a flow as a child flow of the current parent flow (this)
-     * @param flowInfo id and generator function of the child flow
+     * @param id the id of the child flow
+     * @param generatorFunction the generator function of the child flow
      * @param parameters the parameters that will be passed as a flow context, if undefined, the flow will be ended
-     * @param key a key that can be used to instantiate multiple flows with the same id
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public start<T extends FlowGeneratorFunction>(flowInfo: FlowInfo<T>, parameters?: Parameters<T>, key?: string): Flow | undefined {
-        const childFlowId = (key !== undefined) ? `${flowInfo.id}__key:${key}` : flowInfo.id;
-        const currentChild = this._children.get(childFlowId);
+    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters?: Parameters<T>): Flow | undefined {
+        const currentChild = this._children.get(id);
         if(parameters === undefined) {
-            this.endFlows([childFlowId]);
+            this.endFlows([id]);
             return undefined;
         }
         if(currentChild) {
@@ -374,27 +365,23 @@ export class Flow {
             }
             return currentChild;
         }
-        const fullChildIdPath = `${(this.id)}>${childFlowId}`;
+        const fullChildIdPath = `${(this.id)}>${id}`;
         const newChild = new Flow({
             id: fullChildIdPath,
-            generatorFunction: flowInfo.flowGeneratorFunction,
+            generatorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
             parameters,
         });
-        this._children.set(childFlowId, newChild);
+        this._children.set(id, newChild);
         return newChild;
     }
 
-    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters?: Parameters<T>, key?: string): Flow | undefined {
-        return this.start(flow(id, generatorFunction), parameters, key);
-    }
-
     /**
-     * end all child flows with the given id or flowInfo
-     * @param idOrflowInfos the id or flowInfo of the child flows to end. if not given, all child flows will be ended
+     * end all child flows with the given id
+     * @param ids the ids of the child flows to end. if not given, all child flows will be ended
      */
-    public endFlows(ids?: (string | FlowInfo<any>)[] | Record<string, FlowInfo<any>>): void {
+    public endFlows(ids?: string[]): void {
         if(!ids) {
             this._children.forEach((child) => {
                 child.__end();
@@ -402,11 +389,7 @@ export class Flow {
             this._children.clear();
             return;
         }
-        if(!Array.isArray(ids)) {
-            ids = Object.keys(ids)
-        }
-        ids.forEach((idOrFlowInfo) => {
-            const id = (typeof idOrFlowInfo === 'string') ? idOrFlowInfo : idOrFlowInfo.id;
+        ids.forEach((id) => {
             const child = this._children.get(id);
             if(child) {
                 child.__end();
@@ -416,11 +399,11 @@ export class Flow {
     }
 
     /**
-     * end a child flow with the given id or flowInfo
-     * @param idOrflowInfo the id or flowInfo of the child flow to end
+     * end a child flow with the given id
+     * @param id the id of the child flow to end
      */
-    public endFlow(idOrFlowInfo: string | FlowInfo<any>): void {
-        this.endFlows([idOrFlowInfo]);
+    public endFlow(id: string): void {
+        this.endFlows([id]);
     }
 
     /**
@@ -524,17 +507,8 @@ export class Flow {
 
 // FLOW UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
 
-/**
- * create a flow info object. after this, the flow can be started with the start method.
- * @param id id of the flow
- * @param flowGeneratorFunction the generator function of the flow
- * @returns a flow info object
- */
-export function flow<T extends FlowGeneratorFunction>(id: string, flowGeneratorFunction: T): FlowInfo<T> {
-    return {id, flowGeneratorFunction};
-}
-
 type AllDefinedReturnType<T extends readonly any[]> = undefined extends T[any] ? undefined : T;
+
 /**
  * will return undefined if some value is undefined, otherwise the array of parameters
  * @param parameters the parameters to check

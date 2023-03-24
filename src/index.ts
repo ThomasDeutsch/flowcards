@@ -16,7 +16,7 @@ export {getAllValues, getEventValue, getEventValues, isSameBid, extendAll} from 
 export {NestedEventObject, getEvents, Event, EventByKey} from './event';
 
 /* flow */
-export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow, flow, FlowInfo} from './flow';
+export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow, allDefined} from './flow';
 
 /* replay */
 export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay, SavedReplay} from './replay';
@@ -25,4 +25,4 @@ export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, R
 export {SchedulerCompletedCallback, SchedulerProps, Scheduler } from './scheduler';
 
 /* utils */
-export {invalidDetails, EventRecord, getAllEvents, getKeyFromId, mapValues} from './utils';
+export {invalidDetails, EventRecord, getAllEvents, mapValues, getKeyFromId} from './utils';

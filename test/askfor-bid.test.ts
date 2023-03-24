@@ -1,4 +1,4 @@
-import { flow, Flow } from "../src/flow";
+import { Flow } from "../src/flow";
 import { Event } from "../src/event";
 import { askFor, extend, request, trigger, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
@@ -15,7 +15,7 @@ describe("the askFor bid behavior", () => {
     });
 
     test('can be triggered', () => {
-        let askForFlow: Flow;
+        let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
         testSchedulerFactory( function*(this: Flow) {
@@ -39,7 +39,7 @@ describe("the askFor bid behavior", () => {
     });
 
     test('can be triggered - event type is undefined', () => {
-        let askForFlow: Flow;
+        let askForFlow: Flow | undefined;
         const eventA = new Event('eventA');
         testSchedulerFactory( function*(this: Flow) {
             while(true) {
@@ -59,9 +59,9 @@ describe("the askFor bid behavior", () => {
     });
 
     test('a trigger will not process unless there is a matching askFor', () => {
-        let askForFlow: Flow;
-        let waitForFlow: Flow;
-        let triggerFlow: Flow;
+        let askForFlow: Flow | undefined;
+        let waitForFlow: Flow | undefined;
+        let triggerFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow', function* () {
@@ -82,7 +82,7 @@ describe("the askFor bid behavior", () => {
     });
 
     test('can be dispatched', (done) => {
-        let askForFlow: Flow;
+        let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow', function* () {
@@ -96,7 +96,7 @@ describe("the askFor bid behavior", () => {
     });
 
     test('can be extended', (done) => {
-        let askForFlow: Flow;
+        let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow', function* () {
@@ -114,7 +114,7 @@ describe("the askFor bid behavior", () => {
     });
 
     test('can be tested for valid payload', () => {
-        let askForFlow: Flow;
+        let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow2', function* () {
@@ -128,7 +128,7 @@ describe("the askFor bid behavior", () => {
     })
 
     test('can be tested for valid payload (custom validation type)', () => {
-        let askForFlow: Flow;
+        let askForFlow: Flow | undefined;
         const eventA = new Event<number, string>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow', function* () {
@@ -142,7 +142,7 @@ describe("the askFor bid behavior", () => {
     })
 
     test('will not allow an invalid value to be set', () => {
-        let askForFlow: Flow;
+        let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow', function* () {

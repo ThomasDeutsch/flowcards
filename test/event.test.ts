@@ -112,7 +112,7 @@ describe('events can be dependent on other events, if they are accessed in a val
 
     test('when a value is accessed, the event will update if the accessed event is updated.', (done) => {
         let eventUpdateCount = 0;
-        let requestFlow: Flow;
+        let requestFlow: Flow | undefined;
         const loggerFn = () => {
             eventUpdateCount++;
         }
@@ -144,7 +144,7 @@ describe('events can be dependent on other events, if they are accessed in a val
 
     test('when the validation function is not checked, the eventB dependency is not present', (done) => {
         let eventUpdateCount = 0;
-        let requestFlow: Flow;
+        let requestFlow: Flow | undefined;
         const loggerFn = () => {
             eventUpdateCount++;
         }
@@ -175,7 +175,7 @@ describe('events can be dependent on other events, if they are accessed in a val
 
     test('when a status like isPending is accessed, the event will update if the accessed event is updated.', (done) => {
         let eventUpdateCount = 0;
-        let requestFlow: Flow;
+        let requestFlow: Flow | undefined;
         const loggerFn = () => {
             eventUpdateCount++;
         }

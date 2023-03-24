@@ -7,7 +7,7 @@ import { testSchedulerFactory } from "./utils";
 describe("the extend bid behavior", () => {
 
     test('when an event gets extended, it will be marked as pending', () => {
-        let requestingFlow: Flow;
+        let requestingFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             requestingFlow = this.startFlow('subflow', function* () {
@@ -24,8 +24,8 @@ describe("the extend bid behavior", () => {
     });
 
     test('an extend can be resolved with a request bid by the extending flow', () => {
-        let requestingFlow: Flow;
-        let extendingFlow: Flow;
+        let requestingFlow: Flow | undefined;
+        let extendingFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             requestingFlow = this.startFlow('subflow', function* () {
@@ -48,8 +48,8 @@ describe("the extend bid behavior", () => {
     });
 
     test('an extend can be resolved with an askFor bid by the extending flow', () => {
-        let askForFlow: Flow;
-        let extendingFlow: Flow;
+        let askForFlow: Flow | undefined;
+        let extendingFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow', function* () {
@@ -71,8 +71,8 @@ describe("the extend bid behavior", () => {
     });
 
     test('an extend can be resolved with an askFor bid & event.dispatch', (done) => {
-        let askForFlow: Flow;
-        let extendingFlow: Flow;
+        let askForFlow: Flow | undefined;
+        let extendingFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.startFlow('subflow', function* () {
@@ -94,7 +94,7 @@ describe("the extend bid behavior", () => {
     });
 
     test('after an extend resolves, it can be extended again.', () => {
-        let requestingFlow, extendFlow1, extendFlow2: Flow;
+        let requestingFlow, extendFlow1, extendFlow2: Flow | undefined;
         const progressionOrder: string[] = [];
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
@@ -164,7 +164,7 @@ describe("the extend bid behavior", () => {
     })
 
     test('an extend bid can have a validate function and will only extend when valid', () => {
-        let requestingFlow: Flow;
+        let requestingFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             requestingFlow = this.startFlow('subflow', function* () {
@@ -181,7 +181,7 @@ describe("the extend bid behavior", () => {
     });
 
     test('a pending extend can be aborted', () => {
-        let requestingFlow: Flow, extendingFlow: Flow;
+        let requestingFlow: Flow | undefined, extendingFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             requestingFlow = this.startFlow('subflow', function* () {
