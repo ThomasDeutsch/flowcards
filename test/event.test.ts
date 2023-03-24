@@ -130,7 +130,7 @@ describe('events can be dependent on other events, if they are accessed in a val
         }
         // even if event a is not changed, it will be updated, because its validation is dependent on eventB
         testSchedulerFactory(myFirstFlow, () => {
-            if(requestFlow.hasEnded) {
+            if(requestFlow?.hasEnded) {
                 expect(eventB.value).toBe(100);
                 expect(eventA.value).toBe(undefined);
                 expect(eventUpdateCount).toBe(2);
@@ -161,7 +161,7 @@ describe('events can be dependent on other events, if they are accessed in a val
             yield undefined;
         }
         testSchedulerFactory(myFirstFlow, () => {
-            if(requestFlow.hasEnded) {
+            if(requestFlow?.hasEnded) {
                 expect(eventB.value).toBe(100);
                 expect(eventA.value).toBe(undefined);
                 expect(eventUpdateCount).toBe(1); // only updated once (aksFor bid is placed)
@@ -193,7 +193,7 @@ describe('events can be dependent on other events, if they are accessed in a val
         }
         // even if event a is not changed, it will be updated, because its validation is dependent on eventB
         testSchedulerFactory(myFirstFlow, () => {
-            if(requestFlow.hasEnded) {
+            if(requestFlow?.hasEnded) {
                 expect(eventB.value).toBe(100);
                 expect(eventA.value).toBe(undefined);
                 expect(eventUpdateCount).toBe(2);

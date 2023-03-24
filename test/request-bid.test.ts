@@ -60,8 +60,8 @@ describe('a flow can request an event', () => {
                 expect(eventA.value).toBe(101);
             }, []);
             yield waitFor(eventA);
-            expect(requestingFlow.hasEnded).toBe(true);
-            expect(waitingFlow.hasEnded).toBe(true);
+            expect(requestingFlow?.hasEnded).toBe(true);
+            expect(waitingFlow?.hasEnded).toBe(true);
             yield undefined;
         });
     });
@@ -74,7 +74,7 @@ describe('a flow can request an event', () => {
                 yield waitFor(eventA);
             }, []);
             yield waitFor(eventA);
-            expect(requestingFlow.hasEnded).toBe(false);
+            expect(requestingFlow?.hasEnded).toBe(false);
             yield undefined;
         });
     });
@@ -92,8 +92,8 @@ describe('a flow can request an event', () => {
             expect(eventA.value).toBe(202);
             yield waitFor(eventA);
             expect(eventA.value).toBe(101);
-            expect(requestingFlowLower.hasEnded).toBe(true);
-            expect(requestingFlowHigher.hasEnded).toBe(true);
+            expect(requestingFlowLower?.hasEnded).toBe(true);
+            expect(requestingFlowHigher?.hasEnded).toBe(true);
             done();
             yield undefined;
         });
@@ -109,8 +109,8 @@ describe('a flow can request an event', () => {
                 yield request(eventA, 2, () => true);
             }, []);
             yield waitFor(eventA);
-            expect(requestingFlowBlocked.hasEnded).toBe(false);
-            expect(requestingFlow.hasEnded).toBe(true);
+            expect(requestingFlowBlocked?.hasEnded).toBe(false);
+            expect(requestingFlow?.hasEnded).toBe(true);
             done();
             yield undefined;
         });
@@ -181,8 +181,8 @@ describe('a flow can request an async event', () => {
             }, []);
             yield waitFor(eventA);
             expect(hasCatchedError).toBe(true);
-            expect(requestingFlowBlocked.hasEnded).toBe(true);
-            expect(requestingFlow.hasEnded).toBe(true);
+            expect(requestingFlowBlocked?.hasEnded).toBe(true);
+            expect(requestingFlow?.hasEnded).toBe(true);
             done();
             yield undefined;
         });
@@ -204,8 +204,8 @@ describe('a flow can request an async event', () => {
             }, []);
             yield waitFor(eventA);
             expect(startCount).toBe(2);
-            expect(requestingFlowBlocked.hasEnded).toBe(false);
-            expect(requestingFlow.hasEnded).toBe(true);
+            expect(requestingFlowBlocked?.hasEnded).toBe(false);
+            expect(requestingFlow?.hasEnded).toBe(true);
             done();
             yield undefined;
         });
@@ -234,7 +234,7 @@ describe('a flow can request an async event', () => {
             yield request(eventB, () => delay(200, 2));
             expect(errorCatched).toBe(true);
             expect(startCount).toBe(1);
-            expect(requestingFlow.hasEnded).toBe(true);
+            expect(requestingFlow?.hasEnded).toBe(true);
             done();
             yield undefined;
         });
@@ -258,8 +258,8 @@ describe('a flow can request an async event', () => {
             }, []);
             yield waitFor(eventA);
             expect(hasCatchedError).toBe(true);
-            expect(requestingFlowBlocked.hasEnded).toBe(true);
-            expect(requestingFlow.hasEnded).toBe(true);
+            expect(requestingFlowBlocked?.hasEnded).toBe(true);
+            expect(requestingFlow?.hasEnded).toBe(true);
             done();
             yield undefined;
         });

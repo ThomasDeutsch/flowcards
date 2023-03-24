@@ -58,8 +58,8 @@ describe("behavior of a validate bid", () => {
                 yield waitFor(eventA, (x) => x === 100);
             }, []);
             yield waitFor(eventA);
-            expect(failedWait.hasEnded).toBe(false);
-            expect(passedWait.hasEnded).toBe(true);
+            expect(failedWait?.hasEnded).toBe(false);
+            expect(passedWait?.hasEnded).toBe(true);
         });
         expect(eventA.value).toBe(100);
     });
@@ -81,8 +81,8 @@ describe("behavior of a validate bid", () => {
                     yield [request(eventB, 10), validate(eventA, (x) => x < 100)];
                 }, []);
                 yield waitFor(eventB);
-                expect(failedWait.hasEnded).toBe(false);
-                expect(passedWait.hasEnded).toBe(false);
+                expect(failedWait?.hasEnded).toBe(false);
+                expect(passedWait?.hasEnded).toBe(false);
                 yield waitFor(eventA);
                 expect(eventA.value).toBe(100);
         });

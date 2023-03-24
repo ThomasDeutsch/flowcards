@@ -19,7 +19,7 @@ describe("the extend bid behavior", () => {
             }, []);
             yield undefined;
         });
-        expect(requestingFlow!.hasEnded).toBe(false);
+        expect(requestingFlow!?.hasEnded).toBe(false);
         expect(eventA.isPending).toBe(true);
     });
 
@@ -41,8 +41,8 @@ describe("the extend bid behavior", () => {
             }, []);
             yield undefined;
         });
-        expect(requestingFlow!.hasEnded).toBe(true);
-        expect(extendingFlow!.hasEnded).toBe(true);
+        expect(requestingFlow!?.hasEnded).toBe(true);
+        expect(extendingFlow!?.hasEnded).toBe(true);
         expect(eventA.isPending).toBe(false);
         expect(eventA.value).toBe(102);
     });
@@ -64,8 +64,8 @@ describe("the extend bid behavior", () => {
             yield trigger(eventA, 20);
             yield undefined;
         });
-        expect(askForFlow!.hasEnded).toBe(true);
-        expect(extendingFlow!.hasEnded).toBe(true);
+        expect(askForFlow!?.hasEnded).toBe(true);
+        expect(extendingFlow!?.hasEnded).toBe(true);
         expect(eventA.isPending).toBe(false);
         expect(eventA.value).toBe(10);
     });
@@ -85,8 +85,8 @@ describe("the extend bid behavior", () => {
                 yield request(eventA, 1000);
             }, []);
             yield waitFor(eventA);
-            expect(askForFlow!.hasEnded).toBe(true);
-            expect(extendingFlow!.hasEnded).toBe(true);
+            expect(askForFlow!?.hasEnded).toBe(true);
+            expect(extendingFlow!?.hasEnded).toBe(true);
             expect(eventA.value).toBe(1000);
             done();
         });
@@ -114,9 +114,9 @@ describe("the extend bid behavior", () => {
             }, []);
             yield waitFor(eventA); // this waitFor is processed, after all extends have been resolved.
             expect(progressionOrder).toEqual(['extendFlow2', 'extendFlow1', 'requestingFlow']);
-            expect(requestingFlow!.hasEnded).toBe(true);
-            expect(extendFlow1!.hasEnded).toBe(true);
-            expect(extendFlow2!.hasEnded).toBe(true);
+            expect(requestingFlow!?.hasEnded).toBe(true);
+            expect(extendFlow1!?.hasEnded).toBe(true);
+            expect(extendFlow2!?.hasEnded).toBe(true);
             expect(eventA.isPending).toBe(false);
             expect(eventA.value).toBe(3);
         });
@@ -138,7 +138,7 @@ describe("the extend bid behavior", () => {
             }, []);
             yield waitFor(eventA);
             expect(eventA.value).toBe(1000);
-            expect(requestFlow.hasEnded).toBe(true);
+            expect(requestFlow?.hasEnded).toBe(true);
             done();
         });
     });
@@ -176,7 +176,7 @@ describe("the extend bid behavior", () => {
             yield undefined;
 
         });
-        expect(requestingFlow!.hasEnded).toBe(true);
+        expect(requestingFlow!?.hasEnded).toBe(true);
         expect(eventA.isPending).toBe(false);
     });
 
@@ -194,8 +194,8 @@ describe("the extend bid behavior", () => {
             yield undefined;
 
         });
-        expect(requestingFlow!.hasEnded).toBe(true);
-        expect(extendingFlow!.hasEnded).toBe(true);
+        expect(requestingFlow!?.hasEnded).toBe(true);
+        expect(extendingFlow!?.hasEnded).toBe(true);
         expect(eventA.isPending).toBe(false);
         expect(eventA.value).toBe(101);
     });

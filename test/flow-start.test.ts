@@ -17,7 +17,7 @@ describe("a sub-flow can be started", () => {
                 expect(this).toBe(requestingFlow);
             }, [])
             yield request(eventA, 1);
-            expect(requestingFlow.hasEnded).toBe(false); // the request is progressed before the waitFor is progressed
+            expect(requestingFlow?.hasEnded).toBe(false); // the request is progressed before the waitFor is progressed
             expect(requestingFlow).not.toBe(rootFlow);
             yield undefined;
         });

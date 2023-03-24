@@ -4,19 +4,15 @@ import { Event } from  "./event";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { areDepsEqual, isThenable, mergeMaps } from "./utils";
 
+
+// INTERFACES -------------------------------------------------------------------------------------------------------------
+
+/**
+ * represents a flow that can be referenced to an id
+ */
 export interface FlowInfo<T extends FlowGeneratorFunction> {
     id: string;
     flowGeneratorFunction: T;
-}
-
-/**
- * create a flow info object. after this, the flow can be started with the start method.
- * @param id id of the flow
- * @param flowGeneratorFunction the generator function of the flow
- * @returns a flow info object
- */
-export function flow<T extends FlowGeneratorFunction>(id: string, flowGeneratorFunction: T): FlowInfo<T> {
-    return {id, flowGeneratorFunction};
 }
 
 /**
@@ -390,7 +386,7 @@ export class Flow {
         return newChild;
     }
 
-    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters?: Parameters<T>, key?: string): Flow | undefined {
+    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters?: Parameters<T>, key?: string): Flow | undefined {
         return this.start(flow(id, generatorFunction), parameters, key);
     }
 
@@ -523,4 +519,30 @@ export class Flow {
     public get latestEvent(): Event<any, any> | undefined {
         return this._latestEventThisFlowProgressedOn;
     }
+}
+
+
+// FLOW UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
+
+/**
+ * create a flow info object. after this, the flow can be started with the start method.
+ * @param id id of the flow
+ * @param flowGeneratorFunction the generator function of the flow
+ * @returns a flow info object
+ */
+export function flow<T extends FlowGeneratorFunction>(id: string, flowGeneratorFunction: T): FlowInfo<T> {
+    return {id, flowGeneratorFunction};
+}
+
+type AllDefinedReturnType<T extends readonly any[]> = undefined extends T[any] ? undefined : T;
+/**
+ * will return undefined if some value is undefined, otherwise the array of parameters
+ * @param parameters the parameters to check
+ * @returns undefined if some value is undefined, otherwise the array of parameters
+ */
+export function allDefined<T extends readonly any[]>(...parameters: T): AllDefinedReturnType<T> {
+    if (parameters.some((p) => p === undefined)) {
+        return undefined as AllDefinedReturnType<T>;
+    }
+    return parameters as AllDefinedReturnType<T>;
 }

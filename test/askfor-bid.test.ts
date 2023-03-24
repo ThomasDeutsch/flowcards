@@ -33,7 +33,7 @@ describe("the askFor bid behavior", () => {
         eventA.set(12);
         waitFor(eventA);
         waitFor(eventA);
-        expect(askForFlow!.hasEnded).toBe(true);
+        expect(askForFlow!?.hasEnded).toBe(true);
         expect(eventA.value).toBe(123);
         expect(eventB.value).toBe(199);
     });
@@ -54,7 +54,7 @@ describe("the askFor bid behavior", () => {
         });
 
         waitFor(eventA);
-        expect(askForFlow!.hasEnded).toBe(true);
+        expect(askForFlow!?.hasEnded).toBe(true);
         expect(eventA.value).toBe(undefined);
     });
 
@@ -76,9 +76,9 @@ describe("the askFor bid behavior", () => {
             yield undefined;
 
         });
-        expect(triggerFlow!.hasEnded).toBe(false);
-        expect(askForFlow!.hasEnded).toBe(false);
-        expect(askForFlow!.hasEnded).toBe(false);
+        expect(triggerFlow!?.hasEnded).toBe(false);
+        expect(askForFlow!?.hasEnded).toBe(false);
+        expect(askForFlow!?.hasEnded).toBe(false);
     });
 
     test('can be dispatched', (done) => {
