@@ -206,7 +206,6 @@ export class Flow {
      * @internalRemarks mutates: ._generator (next)
      */
     public __onRejectAsyncAction(event: Event<any, any>): void {
-        const pendingRequestBidId = this._pendingRequests.get(event.id)?.id;
         this._pendingRequests.delete(event.id);
         this._logger.logChangedEvent(event);
         let next: FlowIteratorResult;
@@ -215,11 +214,6 @@ export class Flow {
         }
         catch(error) {
             console.error('error in flow ', this.id, ': ', error);
-            if(pendingRequestBidId === 0) {
-                this._logger.logFlowReaction(this.id, 'error hot handled -> flow ended to prevent infinite loop because request was placed at the beginning of the flow');
-                this.__end();
-                return;
-            }
             this._logger.logFlowReaction(this.id, 'error hot handled -> flow restarted');
             this.__restart();
             return;
@@ -352,9 +346,9 @@ export class Flow {
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters?: Parameters<T>): Flow | undefined {
+    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters: Parameters<T> | 'endFlow'): Flow | undefined {
         const currentChild = this._children.get(id);
-        if(parameters === undefined) {
+        if(parameters === 'endFlow') {
             this.endFlows([id]);
             return undefined;
         }
@@ -439,22 +433,6 @@ export class Flow {
     // GETTER --------------------------------------------------------------------------------------------
 
     /**
-     * getter that returns the first part of the flow id - its name
-     * @returns the name of the flow
-     */
-    public get name(): string {
-        return this.id[0];
-    }
-
-    /**
-     * getter that returns the second part of the flow id - its key
-     * @returns the key of the flow (or undefined if the flow has no key)
-     */
-    public get key(): string | null {
-        return this.id[1];
-    }
-
-    /**
      * getter that returns true if the flow has ended
      * a flow that has ended will not place any bids, or hold any pending requests or extends
      * @returns true if the flow has ended
@@ -507,16 +485,16 @@ export class Flow {
 
 // FLOW UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
 
-type AllDefinedReturnType<T extends readonly any[]> = undefined extends T[any] ? undefined : T;
+type AllDefinedReturnType<T extends readonly any[]> = 'endFlow' extends T[any] ? 'endFlow' : T;
 
 /**
- * will return undefined if some value is undefined, otherwise the array of parameters
+ * will return 'endFlow' if some value is undefined, otherwise the array of parameters
  * @param parameters the parameters to check
- * @returns undefined if some value is undefined, otherwise the array of parameters
+ * @returns 'endFlow' if some value is undefined, otherwise the array of parameters
  */
-export function allDefined<T extends readonly any[]>(...parameters: T): AllDefinedReturnType<T> {
+export function allDefinedOrEndFlow<T extends readonly any[]>(parameters: T): AllDefinedReturnType<T> {
     if (parameters.some((p) => p === undefined)) {
-        return undefined as AllDefinedReturnType<T>;
+        return 'endFlow' as AllDefinedReturnType<T>;
     }
     return parameters as AllDefinedReturnType<T>;
 }

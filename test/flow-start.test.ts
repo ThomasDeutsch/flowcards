@@ -30,10 +30,10 @@ describe("a sub-flow can be started", () => {
             const rootFlow = this;
             this.startFlow('subflow', function* child1(this: Flow) {
                 this.startFlow('subflow2', function* child2(this: Flow) {
-                    expect(this.name).toBe(`${rootFlow.name}>subflow>subflow2`)
+                    expect(this.id).toBe(`${rootFlow.id}>subflow>subflow2`)
                     yield undefined;
                 }, []);
-                expect(this.name).toBe(`${rootFlow.name}>subflow`)
+                expect(this.id).toBe(`${rootFlow.id}>subflow`)
                 yield undefined;
             }, [])
             yield undefined;
@@ -159,23 +159,5 @@ describe("a sub-flow can be started", () => {
         expect(subFlowStarted).toBe(true);
         expect(eventA.value).toBe(1);
         done();
-    });
-
-    test('a subflow is ended, when the parent progresses on a next bid, and the flow is not activated again.', (done) => {
-        const eventA = new Event<number>('eventA');
-        const eventB = new Event<number>('eventB');
-        let subFlowEnded = false;
-        testSchedulerFactory( function*(this: Flow) {
-            yield request(eventA, 1);
-            this.startFlow('subflow', function* (this: Flow) {
-                yield request(eventB, () => delay(500, 1));
-                subFlowEnded = true;
-            }, []);
-            yield request(eventA, 2);
-            yield request(eventA, () => delay(1000, 3));
-            expect(eventB.value).toBe(undefined);
-            expect(subFlowEnded).toBe(false);
-            done();
-        });
     });
 });

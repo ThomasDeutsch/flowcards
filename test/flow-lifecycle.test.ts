@@ -1,4 +1,4 @@
-import { allDefined, Flow } from "../src/flow";
+import { allDefinedOrEndFlow, Flow } from "../src/flow";
 import { Event } from "../src/event";
 import { request, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
@@ -38,26 +38,26 @@ describe("a flow execution", () => {
         });
     });
 
-    test('if undefined is passed instead of an array, the flow is ended.', (done) => {
+    test('if the string "endFlow" is passed instead of an array, the flow is ended.', (done) => {
         const eventA = new Event<number>('eventA');
         let nrBids = 0;
         testSchedulerFactory( function*(this: Flow) {
             this.startFlow('subflow', function* () {
                 yield request(eventA, 1);
-            });
+            }, 'endFlow');
             yield [waitFor(eventA), request(eventA, () => delay(500, 2))];
             expect(eventA.value).toBe(2);
             done();
         });
     });
 
-    test('if undefined is passed instead of an array, the flow is ended, using a helper function', (done) => {
+    test('if the string "endFlow" is passed instead of an array, the flow is ended, using the helper function allDefinedOrEndFlow', (done) => {
         const eventA = new Event<number>('eventA');
         let nrBids = 0;
         testSchedulerFactory( function*(this: Flow) {
             this.startFlow('subflow', function* (number1: number, number2: number, number3: number) {
                 yield request(eventA, 1);
-            }, allDefined(7, 1, undefined));
+            }, allDefinedOrEndFlow([7, 1, undefined]));
             yield [waitFor(eventA), request(eventA, () => delay(500, 2))];
             expect(eventA.value).toBe(2);
             done();
