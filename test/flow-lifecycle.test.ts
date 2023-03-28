@@ -57,7 +57,7 @@ describe("a flow execution", () => {
         testSchedulerFactory( function*(this: Flow) {
             this.startFlow('subflow', function* (number1: number, number2: number, number3: number) {
                 yield request(eventA, 1);
-            }, allDefinedOrEndFlow([7, 1, undefined]));
+            }, allDefinedOrEndFlow(7, 1, undefined));
             yield [waitFor(eventA), request(eventA, () => delay(500, 2))];
             expect(eventA.value).toBe(2);
             done();

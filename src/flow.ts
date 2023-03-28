@@ -346,7 +346,7 @@ export class Flow {
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: FlowGeneratorFunction, parameters: Parameters<T> | 'endFlow'): Flow | undefined {
+    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters: Parameters<T> | 'endFlow'): Flow | undefined {
         const currentChild = this._children.get(id);
         if(parameters === 'endFlow') {
             this.endFlows([id]);
@@ -485,14 +485,14 @@ export class Flow {
 
 // FLOW UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
 
-type AllDefinedReturnType<T extends readonly any[]> = 'endFlow' extends T[any] ? 'endFlow' : T;
+type AllDefinedReturnType<T extends readonly any[]> = undefined extends T[any] ? 'endFlow' : T;
 
 /**
  * will return 'endFlow' if some value is undefined, otherwise the array of parameters
  * @param parameters the parameters to check
  * @returns 'endFlow' if some value is undefined, otherwise the array of parameters
  */
-export function allDefinedOrEndFlow<T extends readonly any[]>(parameters: T): AllDefinedReturnType<T> {
+export function allDefinedOrEndFlow<T extends readonly any[]>(...parameters: T): AllDefinedReturnType<T> {
     if (parameters.some((p) => p === undefined)) {
         return 'endFlow' as AllDefinedReturnType<T>;
     }
