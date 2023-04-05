@@ -3,8 +3,6 @@ flow based modeling for JavaScript & TypeScript.
 
 flows allow synchronized complex behaviours that can always be reasoned about.
 
-The ultimate goal is the integration of the field of Requirements-Engineering, Testing and Coding.
-
 ## What is flow based modeling?
 In contrast to the object-oriented approach, where behaviour is described by the reactivity of different objects,
 in a flow based approach, the behaviour is described as an inter-object flow.
@@ -67,6 +65,9 @@ There are 7 types of bids:
 - extend the flows will extend the logic of an event
 - trigger the flow will dispatch an event ( that is asked for by another flow )
 - block the flow will block an event
+
+## Final Goal
+The final goal is a better interconnection between the fields of software development.
 
 
  All [behavioral programming principles](http://www.wisdom.weizmann.ac.il/~bprogram/more.html) are provided by the BP-Team around [Prof. David Harel](http://www.wisdom.weizmann.ac.il/~harel/) - the mind behind Statecharts.
