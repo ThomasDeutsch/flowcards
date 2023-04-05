@@ -1,12 +1,14 @@
 ## flowcards
-flow based state-management for JavaScript/TypeScript.
+flow based modeling for JavaScript & TypeScript.
 
-flowcards enables state-management code to be modularized by use-case.
-This enables the code to be directly related to the requirements and tests.
+What is flow based modeling?
+In contrast to the object-oriented approach, where behaviour is described by the reactivity of different objects,
+in a flow based approach, the behaviour is described as an inter-object flow.
+
 
 For example this Requirement (Scenario)
 
-Scenario: user is able to search for products
+###user is able to search for products
 Given: the user has selected a category
 When: the user entered a search-string that is longer than 3 characters
 And: the user starts a search
@@ -25,6 +27,7 @@ function* userCanSearchForProducts(selectedCategoryId: number) {
 By writing flows, you are able to organize code on a requirements level.
 This means, that your code will always be organized by "what the software is supposed to do".
 The question "why is this code here" is always easy to answer, because the context (requirement/scenario) is not lost.
+Tracability management can become obsolete.
 
 ## How?
 A flow is a thread of execution, and can also handle side-effects and async requests - all in one place.
