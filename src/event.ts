@@ -4,6 +4,13 @@ import { EventInformation } from "./bid";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { getKeyFromId } from "./utils";
 
+
+export interface EventUpdateInfo<P> {
+    value: P | undefined;
+    isPending: boolean;
+    isBlocked: boolean;
+    isAskedFor: boolean;
+}
 /**
  * usually, events are stored in a nested record, where the key is the event name.
  * This is a helper type to get the events from a nested record.
@@ -32,13 +39,13 @@ export class Event<P = undefined, V = void> {
     private _value?: P;
     private _executeAction?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _getEventInformation?: (eventId: string) => EventInformation<P, V> | undefined;
-    private _onUpdateCallback?: (() => void); // only a single subscriber is supported
+    private _onUpdateCallback?: ((info: EventUpdateInfo<P>) => void); // only a single subscriber is supported
     private _logger?: ActionReactionLogger;
     private _description?: string;
     private _latestUpdateOnActionId?: number;
     private _relatedValidationEvents = new Map<string, Event<any, any>>();
 
-    constructor(id: string | string, onUpdateCallback?: () => void) {
+    constructor(id: string | string, onUpdateCallback?: () => EventUpdateInfo<P>) {
         this._onUpdateCallback = onUpdateCallback;
         this.id = id;
     }
@@ -100,15 +107,9 @@ export class Event<P = undefined, V = void> {
      * - any event in the validation function(s) is updated
      * @param callback the callback to call when the event value changes
      */
-    public registerCallback(callback: () => void): void {
+    public registerCallback(callback: (info: EventUpdateInfo<P>) => void, sendInitial?: boolean): void {
         this._onUpdateCallback = callback;
-    }
-
-    /**
-     * remove the subscription to the event.
-     */
-    public removeCallback(): void {
-        this._onUpdateCallback = undefined;
+        if(sendInitial) callback({ value: this.value, isPending: this.isPending, isBlocked: this.isBlocked, isAskedFor: this.isAskedFor });
     }
 
     /**
@@ -212,7 +213,7 @@ export class Event<P = undefined, V = void> {
     public __triggerUpdateCallback(actionId: number): void {
         if(this._latestUpdateOnActionId === actionId) return;
         this._latestUpdateOnActionId = actionId;
-        this._onUpdateCallback?.();
+        this._onUpdateCallback?.({value: this.value, isAskedFor: this.isAskedFor, isBlocked: this.isBlocked, isPending: this.isPending});
         this._relatedValidationEvents.forEach((event) => event.__triggerUpdateCallback(actionId));
         this._relatedValidationEvents = new Map();
     }
@@ -242,7 +243,7 @@ export class Event<P = undefined, V = void> {
      */
     public get isBlocked() {
         this._logger?.logEventAccess(this);
-        return (this._getEventInformation?.(this.id)?.block.length || []) > 0;
+        return (this._getEventInformation?.(this.id)?.block.length || 0) > 0;
     }
 
     /**

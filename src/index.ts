@@ -13,7 +13,7 @@ export {request, trigger, extend, waitFor, askFor, block, validate} from './bid'
 export {getAllValues, getEventValue, getEventValues, isSameBid, extendAll} from './bid';
 
 /* event */
-export {NestedEventObject, getEvents, Event, EventByKey} from './event';
+export {NestedEventObject, getEvents, Event, EventByKey, EventUpdateInfo} from './event';
 
 /* flow */
 export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow, allDefinedOrEndFlow} from './flow';
