@@ -9,9 +9,9 @@ describe("events can have a key", () => {
     test('a key is of type string and the event needs to be created as EventByKey', () => {
         const eventAKeyed = new EventByKey<number>('eventA');
         const myFirstFlow = function*(this: Flow) {
-            yield request(eventAKeyed.get('test'), 1);
+            yield request(eventAKeyed.getEvent('test'), 1);
         }
         testSchedulerFactory(myFirstFlow);
-        expect(eventAKeyed.get('test')?.value).toBe(1);
+        expect(eventAKeyed.getEvent('test')?.value).toBe(1);
     });
 });

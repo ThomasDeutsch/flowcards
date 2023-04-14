@@ -45,7 +45,7 @@ export class Event<P = undefined, V = void> {
     private _latestUpdateOnActionId?: number;
     private _relatedValidationEvents = new Map<string, Event<any, any>>();
 
-    constructor(id: string | string, onUpdateCallback?: () => EventUpdateInfo<P>) {
+    constructor(id: string | string, onUpdateCallback?: (info: EventUpdateInfo<P>) => void) {
         this._onUpdateCallback = onUpdateCallback;
         this.id = id;
     }
@@ -310,7 +310,7 @@ export class EventByKey<P = void, V = void> {
      * @param key the key to get the event for.
      * @returns the event for the given key.
      */
-    public get(key: string): Event<P,V> {
+    public getEvent(key: string): Event<P,V> {
         let event = this._children.get(key);
         if(event === undefined) {
             const id: string = `${this.name}__key:${key}`;
@@ -325,8 +325,8 @@ export class EventByKey<P = void, V = void> {
      * @param keys the keys to get the events for.
      * @returns the events for the given keys.
      */
-    public keys(...keys: string[]): Event<P,V>[] {
-        return keys.map(key => this.get(key));
+    public getEvents(...keys: string[]): Event<P,V>[] {
+        return keys.map(key => this.getEvent(key));
     }
 
     /**
