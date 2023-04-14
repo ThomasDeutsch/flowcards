@@ -71,8 +71,8 @@ export class Flow {
     private readonly _generatorFunction: FlowGeneratorFunction;
     private _generator: FlowGenerator;
     private _children: Map<string, Flow> = new Map();
-    private _hasEnded: boolean;
-    private _currentBidId: number;
+    private _hasEnded = false;
+    private _currentBidId = 0;
     private _placedBids: PlacedBid<unknown, unknown>[] | undefined;
     private _pendingRequests: Map<string, PlacedRequestBid<any, any>> = new Map();
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
@@ -81,6 +81,7 @@ export class Flow {
     private _latestEventThisFlowProgressedOn?: Event<any, any>;
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
+    private _onCleanupCallback?: () => void;
 
     constructor(parameters: FlowParameters) {
         // this initialization is only done once
@@ -88,11 +89,9 @@ export class Flow {
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._executeAction = parameters.executeAction;
         this._logger = parameters.logger;
-        // this initialization is also done in the restart method
-        this._currentBidId = 0;
-        this._hasEnded = false;
         this._currentParameters = parameters.parameters;
-        this._generator = this._generatorFunction(...(parameters.parameters || []));
+        this._resetToInitial();
+        this._generator = this._generatorFunction(...(this._currentParameters || []));
         try {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
@@ -142,7 +141,7 @@ export class Flow {
     private _handleNext(next: FlowIteratorResult): void {
         if(this._hasEnded) return;
         if(next.done) {
-            this.__end();
+            this.__end(true);
         } else {
             const nextBids = toBids(next.value);
             this._placeBids(nextBids);
@@ -151,28 +150,53 @@ export class Flow {
 
     /**
      * @internal
+     * return flow to the initial state
+     */
+    private _resetToInitial(keepExtends?: boolean): void {
+        this._onCleanupCallback?.();
+        delete this._onCleanupCallback;
+        this._placeBids(undefined);
+        this._currentBidId = 0;
+        this._hasEnded = false;
+        delete this._latestActionIdThisFlowProgressedOn;
+        delete this._latestEventThisFlowProgressedOn;
+        if(!keepExtends) {
+            this._pendingExtends.clear();
+        }
+        this._children.forEach((child) => {
+            child.__end();
+        });
+        this._children.clear();
+    }
+
+    /**
+     * @internal
+     * end the flow execution
+     * @param keepExtends when a flow ends by progressing the last bid, the extends of this flow should be kept.
+     */
+    public __end(keepExtends?: boolean): void {
+        this._resetToInitial(keepExtends);
+        this._hasEnded = true;
+        this._logger.logFlowReaction(this.id, 'flow ended');
+    }
+
+    /**
+     * @internal
      * restarts the flow
      * @param nextParameters the parameters that will be checked against the current parameters. If changed, the flow will be restarted with the new parameters.
      */
     public __restart(nextParameters?: any[]): void {
-        this._placeBids(undefined);
-        this._hasEnded = false;
-        this._currentBidId = 0;
-        this._children.forEach((child) => {
-            child.__end(true);
-        });
-        this._latestActionIdThisFlowProgressedOn = undefined;
-        this._latestEventThisFlowProgressedOn = undefined;
-        this._pendingExtends.clear();
         if(nextParameters !== undefined) {
             this._currentParameters = [...nextParameters];
         }
+        this._resetToInitial();
         this._generator = this._generatorFunction(...(this._currentParameters || []));
         try {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
-            console.error('error in flow ', this.id, ': ', error, 'flow ended');
-            this.__end();
+            console.error('error in flow ', this.id, ': ', error);
+            this.__end(true);
+            return;
         }
     }
 
@@ -214,11 +238,11 @@ export class Flow {
         }
         catch(error) {
             console.error('error in flow ', this.id, ': ', error);
-            this._logger.logFlowReaction(this.id, 'error hot handled -> flow restarted');
+            this._logger.logFlowReaction(this.id, 'flow restarted because an error was not handled');
             this.__restart();
             return;
         }
-        this._logger.logFlowReaction(this.id, 'error handled -> flow progressed');
+        this._logger.logFlowReaction(this.id, 'flow progressed on a handled error');
         this._handleNext(next);
     }
 
@@ -237,11 +261,11 @@ export class Flow {
         this._latestEventThisFlowProgressedOn = event;
         try {
             const next = this._generator.next([event, filterRemainingBids(bidId, this._placedBids)]);
-            this._logger.logFlowReaction(this.id, 'flow progressed');
+            this._logger.logFlowReaction(this.id, 'flow progressed on a bid');
             this._handleNext(next);
         } catch(error) {
             console.error('error in flow ', this.id, ': ', error, 'flow ended');
-            this.__end();
+            this.__end(true);
         }
     }
 
@@ -315,27 +339,6 @@ export class Flow {
         }
     }
 
-    /**
-     * @internal
-     * end the flow execution
-     * @param removeExtends if true, all pending extends will be removed ( used by replay )
-     */
-    public __end(removeExtends?: boolean): void {
-        this._placeBids(undefined);
-        this._hasEnded = true;
-        this._currentBidId = 0;
-        this._latestActionIdThisFlowProgressedOn = undefined;
-        this._latestEventThisFlowProgressedOn = undefined;
-        if(removeExtends) {
-            this._pendingExtends.clear();
-        }
-        this._logger.logFlowReaction(this.id, 'flow ended');
-        this._children.forEach((child) => {
-            child.__end(removeExtends);
-        });
-        this._children.clear();
-    }
-
     // PUBLIC --------------------------------------------------------------------------------------------
 
     /**
@@ -354,7 +357,7 @@ export class Flow {
         }
         if(currentChild) {
             if(!areDepsEqual(currentChild.parameters || [], parameters)) {
-                this._logger.logFlowReaction(currentChild.id, 'parameters changed -> flow restarted');
+                this._logger.logFlowReaction(currentChild.id, 'flow restarted because parameters changed');
                 currentChild.__restart(parameters);
             }
             return currentChild;
@@ -427,6 +430,15 @@ export class Flow {
             this._logger.logChangedEvent(event);
         }
         return wasRemoved;
+    }
+
+    /**
+     * register a callback that will be called when the flow is ended / restarted.
+     * use this to clean up any resources that are used by the flow.
+     * @param callback the callback that will be called when the flow is is ended / restarted
+     */
+    public cleanup(callback: () => void): void {
+        this._onCleanupCallback = callback;
     }
 
 

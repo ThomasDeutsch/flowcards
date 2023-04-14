@@ -63,4 +63,25 @@ describe("a flow execution", () => {
             done();
         });
     });
+
+    test('a cleanup callback is called as soon as the flow resets or ends', (done) => {
+        const eventA = new Event<number>('eventA');
+        let isCalledOnReset = false;
+        testSchedulerFactory( function*(this: Flow) {
+            let i = 0;
+            while(i < 2) {
+                this.startFlow('subflow', function* (number1: number) {
+                    yield request(eventA, i);
+                    this.cleanup(() => {
+                        isCalledOnReset = true;
+                    });
+                }, [i]);
+                i++;
+                yield waitFor(eventA);
+            }
+            expect(eventA.value).toBe(1);
+            expect(isCalledOnReset).toBe(true);
+            done();
+        });
+    });
 });
