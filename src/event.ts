@@ -294,8 +294,9 @@ export class Event<P = undefined, V = void> {
 
 
 /**
- * keyed events are instances of the event.
- * a keyed event is a container for multiple events with the same name, payload and validation type.
+ * keyed events allow multiple instances on one event-type, without the need to create events with new Event() for each instance.
+ * a keyed event is a container for multiple events with the same name, payload-type and validation-type.
+ * A keyed event will provide multiple methods to access the events.
  */
 export class EventByKey<P = void, V = void> {
     public readonly name: string;
@@ -307,6 +308,7 @@ export class EventByKey<P = void, V = void> {
 
     /**
      * get the event for the given key.
+     * if the event does not exist, it will be created.
      * @param key the key to get the event for.
      * @returns the event for the given key.
      */
@@ -343,5 +345,13 @@ export class EventByKey<P = void, V = void> {
      */
     public get allEvents(): Event<P,V>[] {
         return [...this._children].map(([_, e]) => e);
+    }
+
+    /**
+     * remove the event for the given key.
+     * @returns boolean that indicates if the event was removed.
+     */
+    public removeEvent(key: string): boolean {
+        return this._children.delete(key);
     }
 }

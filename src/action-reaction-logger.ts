@@ -7,18 +7,17 @@ import { appendTo, mapValues } from "./utils";
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 export type FlowReactionType =
-    
     'flow progressed on a bid' |
     'flow progressed on a handled error' |
     'pending extend added' |
+    'pending extend resolved' |
     'pending request added' |
     'pending request resolved' |
     'pending request cancelled' |
     'flow ended' |
     'flow restarted because parameters changed' |
     'flow restarted manually by calling flow.restart' |
-    'flow restarted because an error was not handled' |
-    'pending extend resolved';
+    'flow restarted because an error was not handled';
 
 /**
  * information collection of a scheduler run.
@@ -32,7 +31,7 @@ export type FlowReactionType =
 
 /**
  * @internal
- * the action reaction log is used to collect information about all scheduler runs - until no more action is processed.
+ * the action/reaction log is used to collect information about all scheduler runs - until no more action is processed.
  * it is used to collect information about:
  *  1. if an action is ok to process -> if not, the invalid explanation will be set.
  *  2. if an action had a valid payload or not -> if not, the validation results will be set.
