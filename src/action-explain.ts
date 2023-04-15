@@ -21,7 +21,7 @@ export interface InvalidActionExplanation {
 }
 
 /**
- * explanation result that is collected during the action selection process
+ * explanation result that is collected during the action selection process.
  * isValid only exists for performance reasons - it is the accumulated value of all validations.
  */
  export interface AccumulatedValidationResults<V> {
@@ -48,7 +48,7 @@ export function explainAnyBidPlacedByFlow<P, V>(eventId: string, eventInfo?: Eve
 /**
  * @internal
  * function that returns an explanation if an exact bid has been placed by a flow.
- * this function is used by the replay, to check the exact bid has been placed by a flow.
+ * this function is used by the replay.
  * @param eventInfo all information about the event and all placed bids
  * @returns an explanation or undefined if bid exists
  */
