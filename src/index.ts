@@ -9,8 +9,10 @@ export {ActionType, ExternalAction, RequestedAction, TriggeredAction, RequestedA
 
 /* bids */
 export {BidType, Bid, WaitingBid, PlacedWaitingBid, RequestBid, PlacedRequestBid, TriggerBid, PlacedTriggerBid, ValidateBid, PlacedValidateBid, BlockBid, PlacedBlockBid, PlacedBid, EventInformation, RequestingBidsAndEventInformation} from './bid'
-export {request, trigger, extend, waitFor, askFor, block, validate} from './bid'
-export {getAllValues, getEventValue, getEventValues, isSameBid, extendAll} from './bid';
+export {request, trigger, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
+
+/* bid utility functions */
+export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions';
 
 /* event */
 export {NestedEventObject, getEvents, Event, EventByKey, EventUpdateInfo} from './event';

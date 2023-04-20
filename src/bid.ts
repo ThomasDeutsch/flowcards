@@ -116,6 +116,7 @@ export interface EventInformation<P, V> {
  * @returns collected information about all events and pending requests and extends (see RequestingBidsAndEventInformation)
  * @internal
  */
+//TODO: analyze if this function can be optimized, by updating only the changed information
 export function updateEventInformation(connectEvent: (event: Event<any, any>) => void, fb: FlowBidsAndPendingInformation): RequestingBidsAndEventInformation {
     const result: RequestingBidsAndEventInformation = {
         requested: new Map(),
@@ -258,57 +259,6 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  */
  export function validate<P, V>(...args: Parameters<(event: Event<P, V>, validate: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     return { type: 'validate', event: args[0] as Event<P,V>, validate: args[1] as (nextValue: P) => BaseValidationReturn<V> } as const;
-}
-
-// BID UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
-
-/**
- * utility function that will wait for all events to be processed, before proceeding.
- * @param bids bids that have to be progressed on, in order to advance the flow.
- * @remarks this utility function can be used to wait for all events that are passed as arguments.
- * @remarks needs to be prefixed by a yield* statement.
- */
-export function* getAllValues(...bids: Bid<any, any>[]): FlowGenerator {
-    while(bids && bids.filter(isProgressingBid).length > 0) {
-        const [progressedEvent, remainingBids] = yield bids;
-        bids = remainingBids || [];
-    }
-}
-
-/**
- * utility function that will return a corretly typed value from a bid.
- * @param bid bid that is about to be progressed on, in order to advance the flow.
- * @remarks this utility function can be used to wait for all events that are passed as arguments.
- * @remarks needs to be prefixed by a yield* statement.
- */
-export function* getEventValue<P, V>(bid: Bid<P, V>): Generator<TNext, P, FlowProgressInfo> {
-    const x = yield bid;
-    return x[0].value as P;
-}
-
-/**
- * utility function that will return a corretly typed value from a series of waitFor bids
- * @param bids bids that are about to be progressed on, in order to advance the flow.
- * @remarks this utility function can be used to wait for all events that are passed as arguments.
- * @remarks needs to be prefixed by a yield* statement.
- */
-export function* getEventValues<P extends WaitingBid<any, any>[]>(...bids: P): Generator<TNext, {[K in keyof P]: P[K]["event"]["value"]}, FlowProgressInfo> {
-    yield bids;
-    return bids.map(bid => bid.event.value) as any;
-}
-
-/**
- * extend all events that are passed as the first argument.
- * this helper function will help in scenarios where the user will be hinted with a warning, before an action will be performed. ( like leaving an edit mode )
- * @param nestedEvents all events that are about to be extended
- * @param exclude events that should not be extended
- * @returns flow progress info
- */
-export function* extendAll(nestedEvents: NestedEventObject[], exclude?: NestedEventObject[]): Generator<TNext, FlowProgressInfo, FlowProgressInfo> {
-    const events = nestedEvents.map(nestedEventObject => getEvents(nestedEventObject)).flat();
-    const excludeEvents = exclude?.map(nestedEventObject => getEvents(nestedEventObject)).flat();
-    const progress = yield events.filter(event => !excludeEvents?.some(e => (e.id === event.id))).map(event => extend(event));
-    return progress;
 }
 
 
