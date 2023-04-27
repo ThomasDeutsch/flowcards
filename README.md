@@ -1,7 +1,5 @@
 # flowcards
-flow based modeling for JavaScript & TypeScript.
-
-flows allow synchronized complex behaviours that can always be reasoned about.
+model application behaviour based on use-cases, that can be easily reasoned about.
 
 ## What is flow based modeling?
 In contrast to the object-oriented approach, where behaviour is described by the reactivity of different objects,
