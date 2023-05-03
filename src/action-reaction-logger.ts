@@ -14,7 +14,9 @@ export type FlowReactionType =
     'pending request added' |
     'pending request resolved' |
     'pending request cancelled' |
+    'flow disabled' |
     'flow ended' |
+    'flow enabled, after being disabled' |
     'flow restarted because parameters changed' |
     'flow restarted manually by calling flow.restart' |
     'flow restarted because an error was not handled';
@@ -26,7 +28,7 @@ export type FlowReactionType =
     invalidActionExplanations?: InvalidActionExplanation[];
     validationResults?: AccumulatedValidationResults<any>;
     processedAction?: ReplayAction<any>;
-    flowReactions?: Map<string, FlowReactionType[]>;
+    flowReactions?: Map<string, FlowReactionType[]>; //TODO: add additional information to the flow reactions (like the cancelled event id)
 }
 
 /**
@@ -77,7 +79,7 @@ export class ActionReactionLogger {
      * @param flowId  the id of the flow
      * @param reactionType  the type of the reaction
      */
-    public logFlowReaction(flowId: string, reactionType: FlowReactionType) {
+    public logFlowReaction(flowId: string, reactionType: FlowReactionType, additionalInfo?: any) {
         if(this._currentRun.flowReactions === undefined) {
             this._currentRun.flowReactions = new Map<string, FlowReactionType[]>();
         }

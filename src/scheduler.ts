@@ -49,7 +49,8 @@ export class Scheduler {
             id: 'rootFlow',
             generatorFunction: props.rootFlow,
             executeAction: this._run.bind(this),
-            logger: this._actionReactionLogger
+            logger: this._actionReactionLogger,
+            parameters: []
         });
         this._activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay, () => this._bidsAndEventInfo);
         this._bidsAndEventInfo = updateEventInformation(this._connectEvent.bind(this), this._rootFlow.__getBidsAndPendingInformation());

@@ -40,7 +40,7 @@ export interface FlowParameters {
     generatorFunction: FlowGeneratorFunction;
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     logger: ActionReactionLogger;
-    parameters?: any[];
+    parameters: any[];
 }
 
 /**
@@ -73,6 +73,7 @@ export class Flow {
     private _children: Map<string, Flow> = new Map();
     private _hasEnded = false;
     private _currentBidId = 0;
+    private _isDisabled = false;
     private _placedBids: PlacedBid<unknown, unknown>[] | undefined;
     private _pendingRequests: Map<string, PlacedRequestBid<any, any>> = new Map();
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
@@ -149,7 +150,6 @@ export class Flow {
     }
 
     /**
-     * @internal
      * return flow to the initial state
      */
     private _resetToInitial(keepExtends?: boolean): void {
@@ -169,15 +169,34 @@ export class Flow {
         this._children.clear();
     }
 
+
+    // INTERNAL ------------------------------------------------------------------------------------------
+
     /**
      * @internal
      * end the flow execution
      * @param keepExtends when a flow ends by progressing the last bid, the extends of this flow should be kept.
      */
     public __end(keepExtends?: boolean): void {
-        this._resetToInitial(keepExtends);
         this._hasEnded = true;
+        this._resetToInitial(keepExtends);
         this._logger.logFlowReaction(this.id, 'flow ended');
+    }
+
+    /**
+     * @internal
+     * disable the flow and all its children
+     */
+    public __disable(): void {
+        this._isDisabled = true;
+        this._pendingRequests.forEach(request => {
+            this._logger.logChangedEvent(request.event);
+            this._logger.logFlowReaction(this.id, 'pending request cancelled');
+        });
+        this._logger.logFlowReaction(this.id, 'flow disabled');
+        this._children.forEach((child) => {
+            child.__disable();
+        });
     }
 
     /**
@@ -199,9 +218,6 @@ export class Flow {
             return;
         }
     }
-
-
-    // INTERNAL ------------------------------------------------------------------------------------------
 
     /**
      * get the current bids and pending bids of this flow
@@ -349,19 +365,28 @@ export class Flow {
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters: Parameters<T> | 'endFlow'): Flow | undefined {
+    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters: Parameters<T> | 'disable'): Flow | undefined {
         const currentChild = this._children.get(id);
-        if(parameters === 'endFlow') {
-            this.endFlows([id]);
-            return undefined;
-        }
         if(currentChild) {
+            // child flow with this id already exists:
+            if(parameters === 'disable') {
+                if(!currentChild._isDisabled) {
+                    currentChild.__disable();
+                }
+                return currentChild;
+            }
+            if(currentChild._isDisabled) {
+                this._isDisabled = false;
+                this._logger.logFlowReaction(this.id, 'flow enabled, after being disabled');
+            }
             if(!areDepsEqual(currentChild.parameters || [], parameters)) {
                 this._logger.logFlowReaction(currentChild.id, 'flow restarted because parameters changed');
                 currentChild.__restart(parameters);
             }
             return currentChild;
         }
+        // no child flow with this id exists:
+        if(parameters === 'disable') return undefined;
         const fullChildIdPath = `${(this.id)}>${id}`;
         const newChild = new Flow({
             id: fullChildIdPath,
@@ -492,21 +517,29 @@ export class Flow {
     public get latestEvent(): Event<any, any> | undefined {
         return this._latestEventThisFlowProgressedOn;
     }
+
+    /**
+     * getter that returns true if the flow is disabled
+     * a disabled flow will not place any bids, but will hold 
+     */
+    public get isDisabled(): boolean {
+        return this._isDisabled;
+    }
 }
 
 
 // FLOW UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
 
-type AllDefinedReturnType<T extends readonly any[]> = undefined extends T[any] ? 'endFlow' : T;
+type AllDefinedReturnType<T extends readonly any[]> = undefined extends T[any] ? 'disable' : T;
 
 /**
- * will return 'endFlow' if some value is undefined, otherwise the array of parameters
+ * will return 'disable' if some value is undefined, otherwise the array of parameters
  * @param parameters the parameters to check
- * @returns 'endFlow' if some value is undefined, otherwise the array of parameters
+ * @returns 'disable' if some value is undefined, otherwise the array of parameters
  */
-export function allDefinedOrEndFlow<T extends readonly any[]>(...parameters: T): AllDefinedReturnType<T> {
+export function allDefinedOrDisable<T extends readonly any[]>(...parameters: T): AllDefinedReturnType<T> {
     if (parameters.some((p) => p === undefined)) {
-        return 'endFlow' as AllDefinedReturnType<T>;
+        return 'disable' as AllDefinedReturnType<T>;
     }
     return parameters as AllDefinedReturnType<T>;
 }

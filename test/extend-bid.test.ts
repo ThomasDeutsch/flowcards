@@ -1,6 +1,7 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
-import { askFor, block, extend, extendAll, request, trigger, waitFor } from "../src/bid";
+import { askFor, block, extend, request, trigger, waitFor } from "../src/bid";
+import { extendAll } from "../src/bid-utility-functions";
 import { delay } from "./test-utils";
 import { testSchedulerFactory } from "./utils";
 
