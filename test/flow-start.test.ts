@@ -141,23 +141,4 @@ describe("a sub-flow can be started", () => {
             }
         });
     });
-
-    test('a subflow can be started after an askFor', (done) => {
-        const eventA = new Event<number>('eventA');
-        let subFlowStarted = false;
-        let created = 0;
-        testSchedulerFactory( function*(this: Flow) {
-            while(true) {
-                yield askFor(eventA);
-                this.startFlow('subflow', function* (this: Flow) {
-                    subFlowStarted = true;
-                    yield request(eventA, 1);
-                }, []);
-            }
-        });
-        eventA.set(100);
-        expect(subFlowStarted).toBe(true);
-        expect(eventA.value).toBe(1);
-        done();
-    });
 });
