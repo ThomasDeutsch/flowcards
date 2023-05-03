@@ -28,7 +28,7 @@ export type FlowReactionType =
     invalidActionExplanations?: InvalidActionExplanation[];
     validationResults?: AccumulatedValidationResults<any>;
     processedAction?: ReplayAction<any>;
-    flowReactions?: Map<string, FlowReactionType[]>; //TODO: add additional information to the flow reactions (like the cancelled event id)
+    flowReactions?: Map<string, {type: FlowReactionType, details?: any}[]>;
 }
 
 /**
@@ -79,12 +79,12 @@ export class ActionReactionLogger {
      * @param flowId  the id of the flow
      * @param reactionType  the type of the reaction
      */
-    public logFlowReaction(flowId: string, reactionType: FlowReactionType, additionalInfo?: any) {
+    public logFlowReaction(flowId: string, reactionType: FlowReactionType, details?: any) {
         if(this._currentRun.flowReactions === undefined) {
-            this._currentRun.flowReactions = new Map<string, FlowReactionType[]>();
+            this._currentRun.flowReactions = new Map<string, {type: FlowReactionType, details?: any}[]>();
         }
         //this._currentRun.flowReactions.update(flowId, (reactions) => [...(reactions ?? []), reactionType]);
-        this._currentRun.flowReactions.set(flowId, appendTo(this._currentRun.flowReactions.get(flowId), reactionType));
+        this._currentRun.flowReactions.set(flowId, appendTo(this._currentRun.flowReactions.get(flowId), {type: reactionType, details}));
 
     }
 

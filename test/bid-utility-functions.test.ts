@@ -36,7 +36,7 @@ describe("different flow utility functions", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<string>('eventB');
         testSchedulerFactory( function*(this: Flow) {
-            this.startFlow('subflow', function*() {
+            this.flow('subflow', function*() {
                 yield request(eventA, 1);
                 yield request(eventB, 'b');
             }, []);

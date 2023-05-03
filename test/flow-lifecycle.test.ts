@@ -11,7 +11,7 @@ describe("a flow execution", () => {
         const eventA = new Event<number>('eventA');
         let nrBids = 0;
         testSchedulerFactory( function*(this: Flow) {
-            this.startFlow('subflow', function* () {
+            this.flow('subflow', function* () {
                 nrBids++;
                 yield request(eventA, 1);
             }, []);
@@ -28,7 +28,7 @@ describe("a flow execution", () => {
         const eventA = new Event<number>('eventA');
         let nrBids = 0;
         testSchedulerFactory( function*(this: Flow) {
-            this.startFlow('subflow', function* () {
+            this.flow('subflow', function* () {
                 yield request(eventA, 1);
             }, []);
             this.endFlows();
@@ -42,13 +42,12 @@ describe("a flow execution", () => {
         const eventA = new Event<number>('eventA');
         let nrBids = 0;
         testSchedulerFactory( function*(this: Flow) {
-            const subflow = this.startFlow('subflow', function* () {
+            const subflow = this.flow('subflow', function* () {
                 yield request(eventA, 1);
             }, 'disable');
             yield [waitFor(eventA), request(eventA, () => delay(500, 2))];
             expect(eventA.value).toBe(2);
-            expect(subflow?.hasEnded).toBe(false);
-            expect(subflow?.isDisabled).toBe(true);
+            expect(subflow).toBe(undefined);
             done();
             yield undefined;
         });
@@ -59,11 +58,11 @@ describe("a flow execution", () => {
         testSchedulerFactory(function*(this: Flow) {
             let test: number | undefined = 1;
             while(true) {
-                const subflow = this.startFlow('subflow', function* (_: number) {
+                const subflow = this.flow('subflow', function* (_: number) {
                     yield request(eventA, 1);
                     yield request(eventA, () => delay(1000, 2));
                 }, allDefinedOrDisable(test));
-                this.startFlow('subflow2', function* () {
+                this.flow('subflow2', function* () {
                     yield waitFor(eventA);
                     yield request(eventA, () => delay(1000, 2));
                 }, []);
@@ -82,18 +81,18 @@ describe("a flow execution", () => {
         //TODO
     });
 
-    test('if the string "disable" is passed instead of an array, the flow is ended, using the helper function allDefinedOrDisable', (done) => {
+    test('when "disabled" is passed as a flow start parameter the flow will not be created', (done) => {
         const eventA = new Event<number>('eventA');
-        let nrBids = 0;
+        const eventB = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            const subflow = this.startFlow('subflow', function* (number1: number, number2: number, number3: number) {
+            const subflow = this.flow('subflow', function* () {
                 yield request(eventA, 1);
-            }, allDefinedOrDisable(7, 1, undefined));
-            yield [waitFor(eventA), request(eventA, () => delay(500, 2))];
-            expect(eventA.value).toBe(2);
-            expect(subflow?.hasEnded).toBe(false);
-            expect(subflow?.isDisabled).toBe(true);
+            }, allDefinedOrDisable(undefined));
+            yield request(eventB, () => delay(500, 2));
+            expect(subflow).toBe(undefined);
+            expect(eventA.isPending).toBe(false);
             done();
+            yield undefined;
         });
     });
 
@@ -103,7 +102,7 @@ describe("a flow execution", () => {
         testSchedulerFactory( function*(this: Flow) {
             let i = 0;
             while(i < 2) {
-                this.startFlow('subflow', function* (number1: number) {
+                this.flow('subflow', function* (number1: number) {
                     yield request(eventA, i);
                     this.cleanup(() => {
                         isCalledOnReset = true;

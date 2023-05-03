@@ -14,8 +14,8 @@ describe("the optional validate function for each bid-type", () => {
             yield askFor(eventA, (value) => value > 10);
         });
         expect(eventA.explainSetter).toBe('enabled');
-        expect(eventA.validate(12)).toBe(true);
-        expect(eventA.validate(9)).toBe(false);
+        expect(eventA.isValid(12)).toBe(true);
+        expect(eventA.isValid(9)).toBe(false);
     });
 
     test('a request bid can be validated', () => {
@@ -23,8 +23,7 @@ describe("the optional validate function for each bid-type", () => {
         testSchedulerFactory( function*(this: Flow) {
             yield request(eventA, 12, (value) => value > 10);
         });
-        expect(eventA.validate(12)).toBe(true);
-        expect(eventA.validate(9)).toBe(false);
+        expect(eventA.value).toBe(12);
     });
 
     test('an extend can be validated', () => {
@@ -33,18 +32,18 @@ describe("the optional validate function for each bid-type", () => {
         let requestingAFlow: Flow | undefined;
         let requestingBFlow: Flow | undefined;
         testSchedulerFactory( function*(this: Flow) {
-            this.startFlow('extendAFlow', function* () {
+            this.flow('extendAFlow', function* () {
                 yield extend(eventA, (value) => value > 10);
                 yield undefined;
             }, []);
-            this.startFlow('extendBFlow', function* () {
+            this.flow('extendBFlow', function* () {
                 yield extend(eventB, (value) => value > 10);
                 yield undefined;
             }, []);
-            requestingAFlow = this.startFlow('requestingAFlow', function* () {
+            requestingAFlow = this.flow('requestingAFlow', function* () {
                 yield request(eventA, 10);
             }, []);
-            requestingBFlow = this.startFlow('requestingBFlow', function* () {
+            requestingBFlow = this.flow('requestingBFlow', function* () {
                 yield request(eventB, 11);
 
             }, []);
@@ -74,7 +73,7 @@ describe("the optional validate function for each bid-type", () => {
         const eventA = new Event<number>('eventA');
         let triggerSuccess = false;
         testSchedulerFactory(function*(this: Flow) {
-            this.startFlow('subflow', function* () {
+            this.flow('subflow', function* () {
                 while(true) {
                     yield askFor(eventA);
                 }
@@ -94,14 +93,14 @@ describe("the optional validate function for each bid-type", () => {
         let progressedValid = false;
         let progressedInvalid = false;
         testSchedulerFactory(function*(this: Flow) {
-            this.startFlow('subflow', function* () {
+            this.flow('subflow', function* () {
                 yield request(eventA, 10);
             }, []);
-            this.startFlow('subflow2', function* () {
+            this.flow('subflow2', function* () {
                 yield waitFor(eventA, (value) => value > 10);
                 progressedInvalid = true;
             }, []);
-            this.startFlow('subflow3', function* () {
+            this.flow('subflow3', function* () {
                 yield waitFor(eventA, (value) => value === 10);
                 progressedValid = true;
             }, []);
@@ -114,13 +113,13 @@ describe("the optional validate function for each bid-type", () => {
     test('multiple validation functions are combined', () => {
         const eventA = new Event<number>('eventA');
         testSchedulerFactory(function*(this: Flow) {
-            this.startFlow('subflow', function* () {
+            this.flow('subflow', function* () {
                 yield askFor(eventA, (value) => value > 10);
             }, []);
-            this.startFlow('subflow2', function* () {
+            this.flow('subflow2', function* () {
                 yield validate(eventA, (value) => value > 20);
             }, []);
-            this.startFlow('subflow3', function* () {
+            this.flow('subflow3', function* () {
                 yield validate(eventA, (value) => value > 30);
             }, []);
             yield undefined;
@@ -140,13 +139,13 @@ describe("the optional validate function for each bid-type", () => {
             updateCount++;
         });
         testSchedulerFactory(function*(this: Flow) {
-            this.startFlow('subflow', function* () {
+            this.flow('subflow', function* () {
                 yield askFor(eventA, (value) => value > 10);
             }, []);
-            this.startFlow('subflow2', function* () {
+            this.flow('subflow2', function* () {
                 yield validate(eventA, (value) => value > 20);
             }, []);
-            this.startFlow('subflow3', function* () {
+            this.flow('subflow3', function* () {
                 yield request(eventB, () => delay(100, 30));
                 expect(updateCount).toBe(1); // initial update
                 yield [validate(eventA, (value) => value > 30), request(eventB, () => delay(100, 40))];

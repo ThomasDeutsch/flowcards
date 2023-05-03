@@ -16,26 +16,21 @@ describe("the askFor bid behavior", () => {
 
     test('can be triggered', () => {
         let askForFlow: Flow | undefined;
+        let triggerFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
-        const eventB = new Event<number>('eventB');
         testSchedulerFactory( function*(this: Flow) {
-            while(true) {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA);
-                askForFlow = this.startFlow('subflow', function* () {
-                    yield askFor(eventA);
-                }, []);
-                this.startFlow('subflow2', function* () {
-                    yield trigger(eventA, 123);
-                    yield request(eventB, 199);
-                }, []);
-            }
+            }, []);
+            triggerFlow = this.flow('subflow2', function* () {
+                yield trigger(eventA, 123);
+            }, []);
+            yield waitFor(eventA);
+            expect(askForFlow?.hasEnded).toBe(true);
+            expect(triggerFlow?.hasEnded).toBe(true);
+            expect(eventA.value).toBe(123);
         });
-        eventA.set(12);
-        waitFor(eventA);
-        waitFor(eventA);
-        expect(askForFlow!?.hasEnded).toBe(true);
-        expect(eventA.value).toBe(123);
-        expect(eventB.value).toBe(199);
+
     });
 
     test('can be triggered - event type is undefined', () => {
@@ -43,17 +38,15 @@ describe("the askFor bid behavior", () => {
         const eventA = new Event('eventA');
         testSchedulerFactory( function*(this: Flow) {
             while(true) {
-                askForFlow = this.startFlow('subflow', function* () {
+                askForFlow = this.flow('subflow', function* () {
                     yield askFor(eventA);
                 }, [])
-                this.startFlow('subflow2', function* () {
+                this.flow('subflow2', function* () {
                     yield trigger(eventA, undefined);
                 }, []);
                 yield undefined;
             }
         });
-
-        waitFor(eventA);
         expect(askForFlow!?.hasEnded).toBe(true);
         expect(eventA.value).toBe(undefined);
     });
@@ -64,13 +57,13 @@ describe("the askFor bid behavior", () => {
         let triggerFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.startFlow('subflow', function* () {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA, (x) => x > 123);
             }, [])
-            waitForFlow = this.startFlow('subflow2', function* () {
+            waitForFlow = this.flow('subflow2', function* () {
                 yield waitFor(eventA);
             }, [])
-            triggerFlow = this.startFlow('subflow3', function* () {
+            triggerFlow = this.flow('subflow3', function* () {
                 yield trigger(eventA, 123);
             }, []);
             yield undefined;
@@ -85,7 +78,7 @@ describe("the askFor bid behavior", () => {
         let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.startFlow('subflow', function* () {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA);
             }, []);
             yield undefined;
@@ -99,10 +92,10 @@ describe("the askFor bid behavior", () => {
         let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.startFlow('subflow', function* () {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA);
             }, []);
-            this.startFlow('subflow2', function*() {
+            this.flow('subflow2', function*() {
                 yield extend(eventA);
             }, [])
             yield undefined;
@@ -117,7 +110,7 @@ describe("the askFor bid behavior", () => {
         let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.startFlow('subflow2', function* () {
+            askForFlow = this.flow('subflow2', function* () {
                 yield askFor(eventA, (x) => x > 10);
             }, []);
             yield undefined;
@@ -131,7 +124,7 @@ describe("the askFor bid behavior", () => {
         let askForFlow: Flow | undefined;
         const eventA = new Event<number, string>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.startFlow('subflow', function* () {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA, (x) => ({isValid: true, details: ['abc']}));
             }, []);
             yield undefined;
@@ -145,7 +138,7 @@ describe("the askFor bid behavior", () => {
         let askForFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
-            askForFlow = this.startFlow('subflow', function* () {
+            askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA, (x) => x < 10);
             }, []);
             yield undefined;

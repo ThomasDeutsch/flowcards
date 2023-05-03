@@ -9,7 +9,7 @@ describe("behavior of a validate bid", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
         testSchedulerFactory( function* rootFlow(this: Flow) {
-            this.startFlow('subflow', function*(this: Flow) {
+            this.flow('subflow', function*(this: Flow) {
                 yield [request(eventA, 100), validate(eventA, () => false)];
             }, []);
             yield waitFor(eventA);
@@ -21,7 +21,7 @@ describe("behavior of a validate bid", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
         testSchedulerFactory( function* rootFlow(this: Flow) {
-            this.startFlow('subflow', function*(this: Flow) {
+            this.flow('subflow', function*(this: Flow) {
                 yield [request(eventA, 100), validate(eventA, () => true)];
             }, []);
             yield waitFor(eventA);
@@ -33,7 +33,7 @@ describe("behavior of a validate bid", () => {
         const eventA = new Event<number, string>('eventA');
         const eventB = new Event<number>('eventB');
         testSchedulerFactory( function* rootFlow(this: Flow) {
-            this.startFlow('subflow', function*(this: Flow) {
+            this.flow('subflow', function*(this: Flow) {
                 yield [
                     request(eventA, 100),
                     validate(eventA, () => ({isValid: true, details: ["mystring"]}))
@@ -48,13 +48,13 @@ describe("behavior of a validate bid", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
         testSchedulerFactory( function* rootFlow(this: Flow) {
-            this.startFlow('subflow', function*(this: Flow) {
+            this.flow('subflow', function*(this: Flow) {
                 yield request(eventA, 100);
             }, []);
-            const failedWait = this.startFlow('subflow2', function*(this: Flow) {
+            const failedWait = this.flow('subflow2', function*(this: Flow) {
                 yield waitFor(eventA, (x) => x > 100);
             }, []);
-            const passedWait = this.startFlow('subflow3', function*(this: Flow) {
+            const passedWait = this.flow('subflow3', function*(this: Flow) {
                 yield waitFor(eventA, (x) => x === 100);
             }, []);
             yield waitFor(eventA);
@@ -68,16 +68,16 @@ describe("behavior of a validate bid", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
         testSchedulerFactory( function* rootFlow(this: Flow) {
-                this.startFlow('subflow', function*(this: Flow) {
+                this.flow('subflow', function*(this: Flow) {
                     yield request(eventA, 100);
                 }, []);
-                const failedWait = this.startFlow('subflow', function*(this: Flow) {
+                const failedWait = this.flow('subflow', function*(this: Flow) {
                     yield waitFor(eventA, (x) => x > 100);
                 }, []);
-                const passedWait = this.startFlow('subflow', function*(this: Flow) {
+                const passedWait = this.flow('subflow', function*(this: Flow) {
                     yield waitFor(eventA, (x) => x === 100);
                 }, []);
-                this.startFlow('subflow', function*(this: Flow) {
+                this.flow('subflow', function*(this: Flow) {
                     yield [request(eventB, 10), validate(eventA, (x) => x < 100)];
                 }, []);
                 yield waitFor(eventB);

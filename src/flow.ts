@@ -158,6 +158,7 @@ export class Flow {
         this._placeBids(undefined);
         this._currentBidId = 0;
         this._hasEnded = false;
+        this._isDisabled = false;
         delete this._latestActionIdThisFlowProgressedOn;
         delete this._latestEventThisFlowProgressedOn;
         if(!keepExtends) {
@@ -178,8 +179,8 @@ export class Flow {
      * @param keepExtends when a flow ends by progressing the last bid, the extends of this flow should be kept.
      */
     public __end(keepExtends?: boolean): void {
-        this._hasEnded = true;
         this._resetToInitial(keepExtends);
+        this._hasEnded = true;
         this._logger.logFlowReaction(this.id, 'flow ended');
     }
 
@@ -270,14 +271,14 @@ export class Flow {
      * @param actionId the id of the action to check if the flow already progressed on this action
      * @internalRemarks mutates: ._generator (next)
      */
-    public __onEvent(event: Event<any, any>, bidId: number, actionId: number): void {
+    public __onEvent(event: Event<any, any>, bid: PlacedBid<any, any>, actionId: number): void {
         if(this._latestActionIdThisFlowProgressedOn === actionId) return; // prevent from progressing twice on the same action
         this._logger.logChangedEvent(event);
         this._latestActionIdThisFlowProgressedOn = actionId;
         this._latestEventThisFlowProgressedOn = event;
         try {
-            const next = this._generator.next([event, filterRemainingBids(bidId, this._placedBids)]);
-            this._logger.logFlowReaction(this.id, 'flow progressed on a bid');
+            const next = this._generator.next([event, filterRemainingBids(bid.id, this._placedBids)]);
+            this._logger.logFlowReaction(this.id, 'flow progressed on a bid', {bidId: bid.id, bidType: bid.type, eventId: event.id, actionId: actionId});
             this._handleNext(next);
         } catch(error) {
             console.error('error in flow ', this.id, ': ', error, 'flow ended');
@@ -293,11 +294,11 @@ export class Flow {
      * @param extend the pending extend information
      * @param actionId the id of the action to check if the flow already progressed on this action
      */
-    public __onExtend<P, V>(event: Event<P, V>, bidId: number, extend: PendingExtend<P,V>, actionId: number): void {
+    public __onExtend<P, V>(event: Event<P, V>, bid: PlacedBid<any, any>, extend: PendingExtend<P,V>, actionId: number): void {
         this._pendingExtends.set(event.id, extend);
-        this._logger.logFlowReaction(this.id, 'pending extend added');
+        this._logger.logFlowReaction(this.id, 'pending extend added', event.id);
         if(isThenable(extend.value)) return;
-        this.__onEvent(event, bidId, actionId);
+        this.__onEvent(event, bid, actionId);
     }
 
     /**
@@ -308,7 +309,7 @@ export class Flow {
      */
     public __onRequestedAsync<P, V>(bid: PlacedRequestBid<P,V>, promise: Promise<P>, requestActionId: number): void {
         this._pendingRequests.set(bid.event.id, bid);
-        this._logger.logFlowReaction(this.id, 'pending request added');
+        this._logger.logFlowReaction(this.id, 'pending request added', bid.event.id);
         this._logger.logChangedEvent(bid.event);
         promise.then((value: P) => {
             if(this._pendingRequests.get(bid.event.id) != bid) {
@@ -365,7 +366,7 @@ export class Flow {
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public startFlow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters: Parameters<T> | 'disable'): Flow | undefined {
+    public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters: Parameters<T> | 'disable'): Flow | undefined {
         const currentChild = this._children.get(id);
         if(currentChild) {
             // child flow with this id already exists:

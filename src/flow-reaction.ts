@@ -20,9 +20,9 @@ import { Flow, PendingExtend } from "./flow";
     if(eventInfo.pendingExtend) {
         const extendedBid = eventInfo.pendingExtend.extendedBid;
         eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid.id, action.id);
+        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
     }
-    askForBid.flow.__onEvent(askForBid.event, askForBid.id, action.id);
+    askForBid.flow.__onEvent(askForBid.event, askForBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -40,9 +40,9 @@ import { Flow, PendingExtend } from "./flow";
     if(eventInfo.pendingExtend) {
         const extendedBid = eventInfo.pendingExtend.extendedBid;
         eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid.id, action.id);
+        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
     }
-    requestBid.flow.__onEvent(requestBid.event, requestBid.id, action.id);
+    requestBid.flow.__onEvent(requestBid.event, requestBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -59,10 +59,10 @@ import { Flow, PendingExtend } from "./flow";
     if(eventInfo.pendingExtend) {
         const extendedBid = eventInfo.pendingExtend.extendedBid;
         eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid.id, action.id);
+        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
     }
-    askForBid.flow.__onEvent(askForBid.event, askForBid.id, action.id);
-    triggerBid.flow.__onEvent(triggerBid.event, triggerBid.id, action.id);
+    askForBid.flow.__onEvent(askForBid.event, askForBid, action.id);
+    triggerBid.flow.__onEvent(triggerBid.event, triggerBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -97,10 +97,10 @@ import { Flow, PendingExtend } from "./flow";
     if(eventInfo.pendingExtend) {
         const extendedBid = eventInfo.pendingExtend.extendedBid;
         eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid.id, action.id);
+        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
     }
     eventInfo.pendingRequest = undefined;
-    pendingRequest.flow.__onEvent(eventInfo.event, action.bidId ,action.id);
+    pendingRequest.flow.__onEvent(eventInfo.event, pendingRequest ,action.id);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -145,7 +145,7 @@ import { Flow, PendingExtend } from "./flow";
     }
     // set the pending extend directly to the event info, so that the extended event will get all the information it needs as soon as the __onExtend is called and the flow progresses.
     eventInfo.pendingExtend = extend;
-    bid.flow.__onExtend(bid.event, bid.id, extend, action.id);
+    bid.flow.__onExtend(bid.event, bid, extend, action.id);
     return extend.extendingFlow;
 }
 
@@ -159,7 +159,7 @@ function progressWaitingBids<P, V>(eventInfo: EventInformation<P, V>, action:  E
     if(eventInfo.waitFor.length === 0) return undefined;
     eventInfo.waitFor.forEach((waitFor) => {
         if(isValidReturn(validateBid<P, V>(waitFor, action.payload))) {
-            waitFor.flow.__onEvent(waitFor.event, waitFor.id, action.id);
+            waitFor.flow.__onEvent(waitFor.event, waitFor, action.id);
         }
     })
 }
