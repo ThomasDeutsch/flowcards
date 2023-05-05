@@ -25,11 +25,11 @@ describe("the askFor bid behavior", () => {
             triggerFlow = this.flow('subflow2', function* () {
                 yield trigger(eventA, 123);
             }, []);
-            yield waitFor(eventA);
-            expect(askForFlow?.hasEnded).toBe(true);
-            expect(triggerFlow?.hasEnded).toBe(true);
-            expect(eventA.value).toBe(123);
+            yield undefined;
         });
+        expect(askForFlow?.hasEnded).toBe(true);
+        expect(triggerFlow?.hasEnded).toBe(true);
+        expect(eventA.value).toBe(123);
 
     });
 
