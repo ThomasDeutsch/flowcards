@@ -190,7 +190,7 @@ describe("the extend bid behavior", () => {
             }, [])
             extendingFlow = this.flow('subflow2', function* (this: Flow) {
                 yield extend(eventA);
-                this.resolveExtend(eventA);
+                this.abortExtend(eventA);
             }, []);
             yield undefined;
 

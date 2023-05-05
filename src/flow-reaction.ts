@@ -14,7 +14,7 @@ import { Flow, PendingExtend } from "./flow";
  * @param action the selected action
  */
  export function reactToExternalAction<P, V>(eventInfo: EventInformation<P, V>, action: ExternalAction<P> & {id: number}, askForBid: PlacedWaitingBid<P, V>): void {
-    eventInfo.pendingExtend?.extendingFlow.resolveExtend(eventInfo.event);
+    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, askForBid)) return;
     eventInfo.event.__setValue(action.payload);
     if(eventInfo.pendingExtend) {
@@ -34,7 +34,7 @@ import { Flow, PendingExtend } from "./flow";
  * @param action the selected request action
  */
  export function reactToRequestAction<P, V>(eventInfo: EventInformation<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: PlacedRequestBid<P, V>): void {
-    eventInfo.pendingExtend?.extendingFlow.resolveExtend(eventInfo.event);
+    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, requestBid)) return;
     eventInfo.event.__setValue(action.payload);
     if(eventInfo.pendingExtend) {
@@ -53,7 +53,7 @@ import { Flow, PendingExtend } from "./flow";
  * @param action the selected triggered action
  */
  export function reactToTriggerAction<P, V>(eventInfo: EventInformation<P, V>, action: TriggeredAction<P>, triggerBid: PlacedTriggerBid<P, V>, askForBid: PlacedWaitingBid<P, V>): void {
-    eventInfo.pendingExtend?.extendingFlow.resolveExtend(eventInfo.event);
+    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, triggerBid)) return;
     eventInfo.event.__setValue(action.payload);
     if(eventInfo.pendingExtend) {
@@ -91,7 +91,7 @@ import { Flow, PendingExtend } from "./flow";
  */
  export function reactToResolveAsyncAction<P, V>(eventInfo: EventInformation<P, V>, action: ResolvePendingRequestAction<P> & {id: number}, pendingRequest: PlacedRequestBid<P,V>): void {
     pendingRequest.flow.__resolvePendingRequest(eventInfo.event);
-    eventInfo.pendingExtend?.extendingFlow.resolveExtend(eventInfo.event);
+    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, pendingRequest)) return;
     eventInfo.event.__setValue(action.payload);
     if(eventInfo.pendingExtend) {

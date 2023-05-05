@@ -12,6 +12,7 @@ export type BidType = "waitFor" | "askFor" | "extend" | "validate" | "block" | "
 export interface Bid<P, V> {
     type: BidType;
     event: Event<P, V>;
+    isGetValueBid?: boolean;
 }
 
 /** all waiting placed bids */
@@ -325,14 +326,4 @@ export function filterRemainingBids(bidId: number, placedBids?: PlacedBid<any, a
         return undefined;
     }
     return remainingBids.every(bid => bid.type === "validate" || bid.type === "block") ? undefined : remainingBids;
-}
-
-/**
- * returns true if the bid will advance because of an event
- * @param bid the bid to check
- * @returns true if the bid is a progressing bid ( a bid that is advanced because an event happened )
- * @internal
- */
-function isProgressingBid(bid: Bid<any, any>): boolean {
-    return bid.type !== 'block' && bid.type !== 'validate';
 }

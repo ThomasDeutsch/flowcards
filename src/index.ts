@@ -18,7 +18,7 @@ export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from
 export {NestedEventObject, getEvents, Event, EventByKey, EventUpdateInfo} from './event';
 
 /* flow */
-export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow, allDefinedOrDisable} from './flow';
+export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, FlowBidsAndPendingInformation, PendingExtend, Flow} from './flow';
 
 /* replay */
 export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay, SavedReplay} from './replay';

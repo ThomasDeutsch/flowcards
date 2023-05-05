@@ -21,7 +21,7 @@ describe("different flow utility functions", () => {
         });
     });
 
-    test("the getValue utility function will progress the flow if the bid has progressed", (done) => {
+    test("the getValue utility function will return the current value of the event, at the time the flow progresses", (done) => {
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             const a = yield* getValue(request(eventA, 1));
@@ -36,13 +36,14 @@ describe("different flow utility functions", () => {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<string>('eventB');
         testSchedulerFactory( function*(this: Flow) {
-            this.flow('subflow', function*() {
+            const testFlow = this.flow('subflow', function*() {
                 yield request(eventA, 1);
                 yield request(eventB, 'b');
             }, []);
             let [a, b] = yield* getFirstValue(waitFor(eventA), waitFor(eventB));
             expect(eventA.value).toBe(1);
             expect(eventB.value).toBe(undefined);
+            this.keepEnabled('subflow');
             [a, b] = yield* getFirstValue(waitFor(eventA), waitFor(eventB));
             expect(eventA.value).toBe(1);
             expect(eventB.value).toBe('b');

@@ -1,8 +1,9 @@
-import { allDefinedOrDisable, Flow } from "../src/flow";
+import { Flow } from "../src/flow";
 import { Event } from "../src/event";
 import { request, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
 import { delay } from "./test-utils";
+import { getValue } from "../src";
 
 
 describe("a flow execution", () => {
@@ -38,19 +39,29 @@ describe("a flow execution", () => {
         });
     });
 
-    test('if the string "disable" is passed instead of an array, the flow is disabled.', (done) => {
+    test('if a child flow is not enabled after a getValue or getValues bid, then it will get disabled', () => {
         const eventA = new Event<number>('eventA');
-        let nrBids = 0;
-        testSchedulerFactory( function*(this: Flow) {
-            const subflow = this.flow('subflow', function* () {
-                yield request(eventA, 1);
-            }, 'disable');
-            yield [waitFor(eventA), request(eventA, () => delay(500, 2))];
-            expect(eventA.value).toBe(2);
-            expect(subflow).toBe(undefined);
-            done();
-            yield undefined;
+        let subflow: Flow | undefined;
+        let subflow2: Flow | undefined;
+        testSchedulerFactory(function*(this: Flow) {
+            while(true) {
+                const x = yield* getValue(request(eventA, 1));
+                subflow = this.flow('subflow', function* () {
+                    yield undefined;
+                }, []);
+                subflow2 = this.flow('subflow2', function* () {
+                    yield undefined;
+                }, []);
+                const y = yield* getValue(request(eventA, 2));
+                this.flow('subflow2', function* () {
+                    yield undefined;
+                }, []);
+                yield request(eventA, 3);
+                yield undefined;
+            }
         });
+        expect(subflow?.isDisabled).toBe(true);
+        expect(subflow2?.isDisabled).toBe(false);
     });
 
     test('if a flow that has a pending request gets disabled, the request is canceled', (done) => {
@@ -58,10 +69,10 @@ describe("a flow execution", () => {
         testSchedulerFactory(function*(this: Flow) {
             let test: number | undefined = 1;
             while(true) {
-                const subflow = this.flow('subflow', function* (_: number) {
+                const subflow = this.flow('subflow', function* () {
                     yield request(eventA, 1);
                     yield request(eventA, () => delay(1000, 2));
-                }, allDefinedOrDisable(test));
+                }, []);
                 this.flow('subflow2', function* () {
                     yield waitFor(eventA);
                     yield request(eventA, () => delay(1000, 2));
@@ -81,19 +92,8 @@ describe("a flow execution", () => {
         //TODO
     });
 
-    test('when "disabled" is passed as a flow start parameter the flow will not be created', (done) => {
-        const eventA = new Event<number>('eventA');
-        const eventB = new Event<number>('eventA');
-        testSchedulerFactory( function*(this: Flow) {
-            const subflow = this.flow('subflow', function* () {
-                yield request(eventA, 1);
-            }, allDefinedOrDisable(undefined));
-            yield request(eventB, () => delay(500, 2));
-            expect(subflow).toBe(undefined);
-            expect(eventA.isPending).toBe(false);
-            done();
-            yield undefined;
-        });
+    test('a disabled flow will not place any bids', (done) => {
+        //TODO
     });
 
     test('a cleanup callback is called as soon as the flow resets or ends', (done) => {
