@@ -104,7 +104,7 @@ export interface EventInformation<P, V> {
  * 3. for every event, a list of all active contexts (see PlacedContextBid)
  */
  export interface RequestingBidsAndEventInformation {
-    requested: Map<string, PlacedRequestBid<any, any>| PlacedTriggerBid<any, any>>;
+    requested: Map<string, (PlacedRequestBid<any, any> | PlacedTriggerBid<any, any>)[]>;
     eventInformation: Map<string, EventInformation<any, any>>;
 }
 
@@ -128,8 +128,13 @@ export function updateEventInformation(connectEvent: (event: Event<any, any>) =>
         if(!bid.event.wasUsedInAFlow) {
             connectEvent(bid.event);
         }
-        if(isRequestingBid(bid) && !result.requested.has(bid.event.id)) {
-            result.requested.set(bid.event.id, bid);
+        if(isRequestingBid(bid)) {
+            if(!result.requested.has(bid.event.id)) {
+                result.requested.set(bid.event.id, [bid]);
+            } else {
+                const bids = result.requested.get(bid.event.id)!;
+                result.requested.set(bid.event.id, [...bids , bid]);
+            }
         }
         const eventInfo = result.eventInformation.get(bid.event.id) ?? getInitialEventInformation(bid.event);
         eventInfo[bid.type].push(bid as any); // TODO: find a better type solution ( mapped types? )

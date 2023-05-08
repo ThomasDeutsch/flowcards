@@ -287,6 +287,22 @@ describe('a flow can request an async event', () => {
         });
     });
 
+    test('when a request validation is false, the next priority request is applied', () => {
+        const eventA = new Event<number>('eventA');
+        const eventB = new Event<number>('eventB');
+
+        testSchedulerFactory( function*(this: Flow) {
+            this.flow('requestingFlowLowPriority', function* test() {
+                yield request(eventA, 1);
+            }, []);
+            this.flow('requestingFlowHighPriority', function* test() {
+                yield request(eventA, 2, () => false);
+            }, []);
+            yield undefined;
+        });
+        expect(eventA.value).toBe(1);
+    });
+
     test('an error inside the request-function will reset the flow', (done) => {
         const eventA = new Event<number>('eventA');
         let requestingFlow: Flow | undefined;
