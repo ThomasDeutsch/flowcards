@@ -22,7 +22,6 @@ import { Flow, PendingExtend } from "./flow";
         eventInfo.pendingExtend = undefined;
         extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
     }
-    askForBid.flow.__onEvent(askForBid.event, askForBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -33,7 +32,7 @@ import { Flow, PendingExtend } from "./flow";
  * @param requestBid the request bid
  * @param action the selected request action
  */
- export function reactToRequestAction<P, V>(eventInfo: EventInformation<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: PlacedRequestBid<P, V>): void {
+ export function reactToRequestedAction<P, V>(eventInfo: EventInformation<P, V>, action: RequestedAction<P>  & {id: number} | TriggeredAction<P>, requestBid: PlacedTriggerBid<P, V> | PlacedRequestBid<P, V>): void {
     eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, requestBid)) return;
     eventInfo.event.__setValue(action.payload);
@@ -43,26 +42,6 @@ import { Flow, PendingExtend } from "./flow";
         extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
     }
     requestBid.flow.__onEvent(requestBid.event, requestBid, action.id);
-    progressWaitingBids(eventInfo, action);
-}
-
-/**
- * @internal
- * react to a triggered action, by progressing the trigger bid, waitFor bids and the highest priority askFor bid
- * @param eventInfo the event info of the event
- * @param action the selected triggered action
- */
- export function reactToTriggerAction<P, V>(eventInfo: EventInformation<P, V>, action: TriggeredAction<P>, triggerBid: PlacedTriggerBid<P, V>, askForBid: PlacedWaitingBid<P, V>): void {
-    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
-    if(progressExtendBid(eventInfo, action, triggerBid)) return;
-    eventInfo.event.__setValue(action.payload);
-    if(eventInfo.pendingExtend) {
-        const extendedBid = eventInfo.pendingExtend.extendedBid;
-        eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
-    }
-    askForBid.flow.__onEvent(askForBid.event, askForBid, action.id);
-    triggerBid.flow.__onEvent(triggerBid.event, triggerBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -156,10 +135,14 @@ import { Flow, PendingExtend } from "./flow";
  * @param action the selected action
  */
 function progressWaitingBids<P, V>(eventInfo: EventInformation<P, V>, action:  ExternalAction<P> & {id: number} | RequestedAction<P> | TriggeredAction<P> | ResolvePendingRequestAction<P> & {id: number}): void {
-    if(eventInfo.waitFor.length === 0) return undefined;
     eventInfo.waitFor.forEach((waitFor) => {
         if(isValidReturn(validateBid<P, V>(waitFor, action.payload))) {
             waitFor.flow.__onEvent(waitFor.event, waitFor, action.id);
         }
-    })
+    });
+    eventInfo.askFor.forEach((askFor) => {
+        if(isValidReturn(validateBid<P, V>(askFor, action.payload))) {
+            askFor.flow.__onEvent(askFor.event, askFor, action.id);
+        }
+    });
 }

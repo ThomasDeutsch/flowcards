@@ -117,9 +117,9 @@ describe("the extend bid behavior", () => {
             expect(progressionOrder).toEqual(['extendFlow2', 'extendFlow1', 'requestingFlow']);
             expect(requestingFlow!?.hasEnded).toBe(true);
             expect(extendFlow1!?.hasEnded).toBe(true);
-            expect(extendFlow2!?.hasEnded).toBe(true);
-            expect(eventA.isPending).toBe(false);
             expect(eventA.value).toBe(3);
+            expect(eventA.isPending).toBe(false);
+            expect(extendFlow2!?.hasEnded).toBe(true);
         });
 
     });

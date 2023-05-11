@@ -4,7 +4,7 @@ import { Event } from "./event";
 import { explainAnyBidPlacedByFlow, explainBlocked, explainNoPendingRequest, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation, AccumulatedValidationResults } from "./action-explain";
 import { Flow, FlowGeneratorFunction } from "./flow";
 import { isThenable, mapValues } from "./utils";
-import { reactToExternalAction, reactToRejectAction, reactToRequestAction, reactToRequestedAsyncAction, reactToResolveAsyncAction, reactToTriggerAction } from "./flow-reaction";
+import { reactToExternalAction, reactToRejectAction, reactToRequestedAction, reactToRequestedAsyncAction, reactToResolveAsyncAction } from "./flow-reaction";
 import { ActiveReplay, ActiveReplayInfo, Replay } from "./replay";
 import { ActionProcessedInformation, ActionReactionLogger } from "./action-reaction-logger";
 
@@ -180,7 +180,7 @@ export class Scheduler {
                             bidId: bid.id,
                             flowId: bid.flow.id
                         };
-                        reactToRequestAction(eventInfo, requestedAction, bid);
+                        reactToRequestedAction(eventInfo, requestedAction, bid);
                         this._actionReactionLogger.onActionProcessed(requestedAction);
                         return true;
                     }
@@ -199,7 +199,7 @@ export class Scheduler {
                         bidId: bid.id,
                         flowId: bid.flow.id
                     };
-                    reactToTriggerAction(eventInfo, triggeredAction, bid, highestPriorityAskForBid);
+                    reactToRequestedAction(eventInfo, triggeredAction, bid);
                     this._actionReactionLogger.onActionProcessed({...triggeredAction, id: nextActionId});
                     return true;
                 }

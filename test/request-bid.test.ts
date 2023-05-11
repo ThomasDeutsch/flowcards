@@ -40,13 +40,13 @@ describe('a flow can request an event', () => {
         testSchedulerFactory(myFirstFlow);
     });
 
-    test('the highest request bid for an event will override the next request bids for the same event. Even when it is invalid, the next request for the same event will not be processed', () => {
+    test('the highest request bid for an event will override the next request bids for the same event. Even when it is invalid, the next request for the same event will be processed', () => {
         const eventA = new Event<number>('eventA');
         const myFirstFlow = function*(this: Flow) {
             yield [request(eventA, 100, (x) => x > 100), request(eventA, 200)];
         }
         testSchedulerFactory(myFirstFlow);
-        expect(eventA.value).toBe(undefined);
+        expect(eventA.value).toBe(200);
     });
 
     test('a waitFor will progress if the event was requested', () => {
@@ -56,8 +56,29 @@ describe('a flow can request an event', () => {
                 yield request(eventA, 101);
                 expect(eventA.value).toBe(101);
             }, [])
-            const waitingFlow = this.flow('subflow', function* () {
+            const waitingFlow = this.flow('subflow22', function* () {
                 yield waitFor(eventA);
+                expect(eventA.value).toBe(101);
+            }, []);
+            yield waitFor(eventA);
+            expect(requestingFlow?.hasEnded).toBe(true);
+            expect(waitingFlow?.hasEnded).toBe(true);
+            yield undefined;
+        });
+    });
+
+    test('an askFor will progress if the event was requested!', () => {
+        const eventA = new Event<number>('eventA');
+        testSchedulerFactory( function*(this: Flow) {
+            const requestingFlow = this.flow('subflow', function* () {
+                yield request(eventA, 101);
+                expect(eventA.value).toBe(101);
+            }, [])
+            const waitingFlow = this.flow('subflow2', function* () {
+                console.log('test!1')
+
+                yield askFor(eventA);
+                console.log('test!2ds')
                 expect(eventA.value).toBe(101);
             }, []);
             yield waitFor(eventA);
