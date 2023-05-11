@@ -1,5 +1,5 @@
 import { ExternalAction } from "./action";
-import { EventInformation, isSameBid, PlacedBid, PlacedRequestBid, PlacedTriggerBid } from "./bid";
+import { EventInformation, isSameBid, PlacedBid, PlacedRequestBid } from "./bid";
 import { Event } from "./event";
 import { isDefined } from "./utils";
 
@@ -52,7 +52,7 @@ export function explainAnyBidPlacedByFlow<P, V>(eventId: string, eventInfo?: Eve
  * @param eventInfo all information about the event and all placed bids
  * @returns an explanation or undefined if bid exists
  */
- export function explainExactRequestBidPlacedByFlow<P, V>(requestedBid: PlacedRequestBid<P, V> | PlacedTriggerBid<P, V> | undefined, bid: {event: Event<P,V>, type: 'request' | 'trigger', flowId: string, id: number}): InvalidActionExplanation | undefined {
+ export function explainExactRequestBidPlacedByFlow<P, V>(requestedBid: PlacedRequestBid<P, V> | undefined, bid: {event: Event<P,V>, type: 'request', flowId: string, id: number}): InvalidActionExplanation | undefined {
     if(requestedBid === undefined) {
         return { eventId: bid.event.id, message: `no ${bid.type} bid was placed for this event` }
     }

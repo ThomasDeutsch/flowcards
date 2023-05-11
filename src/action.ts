@@ -4,7 +4,7 @@
  * @internal
  * all action types
  */
-export type ActionType = "external" | "requested" | "triggered" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";
+export type ActionType = "external" | "requested" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";
 
 /**
  * @internal
@@ -40,16 +40,6 @@ export interface RequestedAction<P> extends BaseAction {
 }
 
 /**
- * a triggered action is created if a flow has placed a valid askFor bid
- * and the event is triggered by a flow with a trigger-bid
- */
-export interface TriggeredAction<P> extends BaseAction {
-    type: "triggered";
-    id: number;
-    payload: P;
-}
-
-/**
  * a requested async action is created from a valid request bid that
  * has a promise callback as payload.
  * it will create a pending event for the promise and after the promise is resolved/rejected,
@@ -79,10 +69,10 @@ export interface RejectPendingRequestAction extends BaseAction {
 }
 
 /** actions that will be created by a bid, placed by a flow */
-export type ActionFromBid<P> = RequestedAction<P> | TriggeredAction<P> | RequestedAsyncAction<P>;
+export type ActionFromBid<P> = RequestedAction<P> | RequestedAsyncAction<P>;
 
 /** all possible actions */
 export type Action<P> = ExternalAction<P> | ResolvePendingRequestAction<P> | RejectPendingRequestAction | ActionFromBid<P>;
 
 /** all possible actions that can be extended */
-export type ExtendableAction<P> =  RequestedAction<P> | TriggeredAction<P> | ExternalAction<P> | ResolvePendingRequestAction<P>;
+export type ExtendableAction<P> =  RequestedAction<P> | ExternalAction<P> | ResolvePendingRequestAction<P>;

@@ -6,7 +6,7 @@ import { Flow, FlowBidsAndPendingInformation, FlowGenerator, FlowProgressInfo, P
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 /** all bid types */
-export type BidType = "waitFor" | "askFor" | "extend" | "validate" | "block" | "request" | "trigger";
+export type BidType = "waitFor" | "askFor" | "extend" | "validate" | "block" | "request";
 
 /**  a bid, that can be placed by a flow (has not been placed yet) */
 export interface Bid<P, V> {
@@ -15,7 +15,6 @@ export interface Bid<P, V> {
     isGetValueBid?: boolean;
 }
 
-/** all waiting placed bids */
 export interface WaitingBid<P, V> extends Bid<P, V> {
     type: Extract<BidType, "waitFor" | "askFor" | "extend">;
     validate?: (nextValue: P) => BaseValidationReturn<V>;
@@ -26,11 +25,11 @@ export interface PlacedWaitingBid<P, V> extends WaitingBid<P, V> {
     flow: Flow;
 }
 
-/** placed request or trigger bids */
 export interface RequestBid<P, V> extends Bid<P, V> {
     type: Extract<BidType, "request">;
     payload: P | ((current?: P) => P) | ((current?: P) => Promise<P>);
     validate?: (nextValue: P) => BaseValidationReturn<V>;
+    onlyWhenAskedFor?: true;
 }
 
 export interface PlacedRequestBid<P, V> extends RequestBid<P, V> {
@@ -38,19 +37,6 @@ export interface PlacedRequestBid<P, V> extends RequestBid<P, V> {
     flow: Flow;
 }
 
-/** placed request or trigger bids */
-export interface TriggerBid<P, V> extends Bid<P, V> {
-    type: Extract<BidType, "trigger">;
-    payload: P | ((current?: P) => P);
-    validate?: (nextValue: P) => BaseValidationReturn<V>;
-}
-
-export interface PlacedTriggerBid<P, V> extends TriggerBid<P, V> {
-    id: number;
-    flow: Flow;
-}
-
-/** all placed validate bids */
 export interface ValidateBid<P, V> extends Bid<P, V> {
     type: Extract<BidType, "validate">;
     validate: (nextValue: P) => BaseValidationReturn<V>;
@@ -61,9 +47,6 @@ export interface PlacedValidateBid<P, V> extends ValidateBid<P, V> {
     flow: Flow;
 }
 
-/** all placed blocking bids
- * @remarks When the validation function returns true, the flow is blocked.
-*/
 export interface BlockBid<P, V> extends Bid<P, V> {
     type: Extract<BidType, "block">;
     validate?: () => BaseValidationReturn<V>;
@@ -75,7 +58,7 @@ export interface PlacedBlockBid<P, V> extends BlockBid<P,V> {
 }
 
 /** bid that has been placed by a flow */
-export type PlacedBid<P,V> = PlacedWaitingBid<P,V> | PlacedRequestBid<P, V> | PlacedTriggerBid<P,V> | PlacedValidateBid<P, V> | PlacedBlockBid<P, V>;
+export type PlacedBid<P,V> = PlacedWaitingBid<P,V> | PlacedRequestBid<P, V> | PlacedValidateBid<P, V> | PlacedBlockBid<P, V>;
 
 /**
  * information about the placed bids and pending information for an event
@@ -86,7 +69,6 @@ export type PlacedBid<P,V> = PlacedWaitingBid<P,V> | PlacedRequestBid<P, V> | Pl
  */
 export interface EventInformation<P, V> {
     event: Event<P,V>;
-    trigger: PlacedTriggerBid<P, V>[];
     request: PlacedRequestBid<P, V>[];
     waitFor: PlacedWaitingBid<P, V>[];
     askFor: PlacedWaitingBid<P, V>[];
@@ -99,12 +81,12 @@ export interface EventInformation<P, V> {
 
 /**
  * collected information about an event, and all requesting bids.
- * 1. all placed request and trigger bids (for all event-ids) that are ordered (first bid has the highest priority)
+ * 1. all placed request bids (for all event-ids) that are ordered (first bid has the highest priority)
  * 2. for every event, the event information (see EventInformation)
  * 3. for every event, a list of all active contexts (see PlacedContextBid)
  */
  export interface RequestingBidsAndEventInformation {
-    requested: Map<string, (PlacedRequestBid<any, any> | PlacedTriggerBid<any, any>)[]>;
+    requested: Map<string, PlacedRequestBid<any, any>[]>;
     eventInformation: Map<string, EventInformation<any, any>>;
 }
 
@@ -128,7 +110,7 @@ export function updateEventInformation(connectEvent: (event: Event<any, any>) =>
         if(!bid.event.wasUsedInAFlow) {
             connectEvent(bid.event);
         }
-        if(isRequestingBid(bid)) {
+        if(isRequestBid(bid)) {
             if(!result.requested.has(bid.event.id)) {
                 result.requested.set(bid.event.id, [bid]);
             } else {
@@ -175,29 +157,27 @@ export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
         event,
         payload: args[1] as P,
         validate: args[2]
-    } as const;
+    } satisfies RequestBid<P, V>;
 }
 
 /**
- * Creates a trigger bid
- * A trigger is a requesting an event to happen, but it needs another flow who is asking for the event.
- * It is like a request, but it is synced to another asking flow.
- * @param event the event that is about to be triggered
+ * Creates a request bid that will only be placed if the event is asked for.
+ * @param event the event that is about to be requested
  * @param payload the next value of the event. or a function that return the next value of the event.
- * @param validate an optional validation function that can block the trigger if it tries to trigger an invalid value.
+ * @param validate an optional validation function that can block the request if it tries to set an invalid value.
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
- * @returns a trigger bid
+ * @returns a request bid
  */
-export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+export function requestIfAskedFor<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const payload = args[1] as P;
     const validate = args[2];
-    return { type: 'trigger', event, payload, validate } as const;
+    return { type: 'request', event, payload, validate, onlyWhenAskedFor: true } satisfies RequestBid<P, V>;
 }
 
 /**
  * Creates an extend bid
- * An extend will create a pending event. The extending flow will hold this event pending, as long as it will set the event value ( by request, trigger or askFor bid )
+ * An extend will create a pending event. The extending flow will hold this event pending, as long as it will set the event value ( by request or askFor bid )
  * An extend bid makes it possible for one flow to extend the behavior of another flow.
  * @param event the event that is about to be extended
  * @param validate an optional validation function that will allow the extend only for valid values.
@@ -207,13 +187,13 @@ export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
 export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const validate = args[1];
-    return { type: 'extend', event, validate } as const;
+    return { type: 'extend', event, validate } satisfies WaitingBid<P, V>;
 }
 
 /**
  * Creates a waitFor bid
  * A flow with a waitFor bid will pause its progression until the waited for event is processed.
- * A waitFor is different from an askFor bid. It is a passive wait, that will simply wait for the event to happen. On the other hand, an askFor bid will ask for an external event or trigger to happen.
+ * A waitFor is different from an askFor bid. It is a passive wait, that will simply wait for the event to happen. On the other hand, an askFor bid will ask for an external event to happen.
  * @param event the event that is about to be extended
  * @param validate an optional validation function that will allow the waitFor to be proceeded if the value is valid.
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
@@ -222,14 +202,14 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  export function waitFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const validate = args[1];
-    return { type: 'waitFor', event, validate } as const;
+    return { type: 'waitFor', event, validate } satisfies WaitingBid<P, V>;
 }
 
 /**
  * Creates an askFor bid
  * A flow with an askFor bid will pause its progression until the waited for event is processed.
- * An askFor bid will ask for an external event or trigger to happen.
- * @param event the event that is about to be extended
+ * An askFor bid will ask for an external event or request to happen.
+ * @param event the event that is enabled for the external event dispatch or request
  * @param validate an optional validation function that will allow the askFor to be proceeded if the value is valid.
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns an askFor bid
@@ -237,7 +217,7 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  export function askFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const validate = args[1];
-    return { type: 'askFor', event, validate } as const;
+    return { type: 'askFor', event, validate } satisfies WaitingBid<P, V>;
 }
 
 /**
@@ -251,7 +231,7 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @returns a block bid
  */
  export function block<P, V>(event: Event<P, V>, blockIf?: () => BaseValidationReturn<V>) {
-    return { type: 'block', event, validate: blockIf } as const;
+    return { type: 'block', event, validate: blockIf } satisfies BlockBid<P, V>;
 }
 
 /**
@@ -264,18 +244,18 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @returns a validate bid
  */
  export function validate<P, V>(...args: Parameters<(event: Event<P, V>, validate: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
-    return { type: 'validate', event: args[0] as Event<P,V>, validate: args[1] as (nextValue: P) => BaseValidationReturn<V> } as const;
+    return { type: 'validate', event: args[0] as Event<P,V>, validate: args[1] as (nextValue: P) => BaseValidationReturn<V> } satisfies ValidateBid<P, V>;
 }
 
 
 // HELPERS -------------------------------------------------------------------------------------------------------------
 
 /**
- * check if a bid is a request or trigger bid (requesting bid)
+ * check if a bid is a request bid (requesting bid)
  * @returns true if the bid is a requesting bid
  */
-function isRequestingBid(bid: Bid<unknown, unknown>): bid is PlacedRequestBid<unknown, unknown> | PlacedTriggerBid<unknown, unknown> {
-    return bid.type === "trigger" || bid.type === "request";
+function isRequestBid(bid: PlacedBid<unknown, unknown>): bid is PlacedRequestBid<unknown, unknown> {
+    return bid.type === "request";
 }
 
 /**
@@ -283,7 +263,7 @@ function isRequestingBid(bid: Bid<unknown, unknown>): bid is PlacedRequestBid<un
  * @returns initial event information
  */
 function getInitialEventInformation<P,V>(event: Event<P, V>): EventInformation<P, V> {
-    return {event, waitFor: [], askFor: [], extend: [], validate: [], block: [], request: [], trigger: []};
+    return {event, waitFor: [], askFor: [], extend: [], validate: [], block: [], request: []};
 }
 
 /**

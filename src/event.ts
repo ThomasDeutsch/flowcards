@@ -170,7 +170,7 @@ export class Event<P = undefined, V = void> {
 
     /**
      * add an external action to the queue and start a new microtask that runs the scheduler.
-     * A trigger is only possible if the value for that event is valid. You can check if the event is valid by calling the explain function or the isValid function.
+     * A set is only possible if the value for that event is valid. You can check if the event is valid by calling the explain function or the isValid function.
      * @param value the next event value
      * @returns true if the dispatch added an action to the queue, false otherwise.
      * @remarks before the action is added to the queue, the event value will be validated, by using the explain function.

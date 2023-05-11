@@ -1,6 +1,6 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
-import { askFor, extend, request, trigger, waitFor } from "../src/bid";
+import { askFor, extend, requestIfAskedFor, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
 
 
@@ -14,26 +14,26 @@ describe("the askFor bid behavior", () => {
         expect(eventA.explainSetter).toBe('enabled');
     });
 
-    test('can be triggered', () => {
+    test('can be requested, only if there is an ask for', () => {
         let askForFlow: Flow | undefined;
-        let triggerFlow: Flow | undefined;
+        let requestFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.flow('subflow', function* () {
                 yield askFor(eventA);
             }, []);
-            triggerFlow = this.flow('subflow2', function* () {
-                yield trigger(eventA, 123);
+            requestFlow = this.flow('subflow2', function* () {
+                yield requestIfAskedFor(eventA, 123);
             }, []);
             yield undefined;
         });
         expect(askForFlow?.hasEnded).toBe(true);
-        expect(triggerFlow?.hasEnded).toBe(true);
+        expect(requestFlow?.hasEnded).toBe(true);
         expect(eventA.value).toBe(123);
 
     });
 
-    test('can be triggered - event type is undefined', () => {
+    test('can be requested if asked for - event type is undefined', () => {
         let askForFlow: Flow | undefined;
         const eventA = new Event('eventA');
         testSchedulerFactory( function*(this: Flow) {
@@ -42,7 +42,7 @@ describe("the askFor bid behavior", () => {
                     yield askFor(eventA);
                 }, [])
                 this.flow('subflow2', function* () {
-                    yield trigger(eventA, undefined);
+                    yield requestIfAskedFor(eventA, undefined);
                 }, []);
                 yield undefined;
             }
@@ -51,10 +51,10 @@ describe("the askFor bid behavior", () => {
         expect(eventA.value).toBe(undefined);
     });
 
-    test('a trigger will not process unless there is a matching askFor', () => {
+    test('a requestIfAskedFor will not process unless there is a matching askFor', () => {
         let askForFlow: Flow | undefined;
         let waitForFlow: Flow | undefined;
-        let triggerFlow: Flow | undefined;
+        let requestFlow: Flow | undefined;
         const eventA = new Event<number>('eventA');
         testSchedulerFactory( function*(this: Flow) {
             askForFlow = this.flow('subflow', function* () {
@@ -63,13 +63,13 @@ describe("the askFor bid behavior", () => {
             waitForFlow = this.flow('subflow2', function* () {
                 yield waitFor(eventA);
             }, [])
-            triggerFlow = this.flow('subflow3', function* () {
-                yield trigger(eventA, 123);
+            requestFlow = this.flow('subflow3', function* () {
+                yield requestIfAskedFor(eventA, 123);
             }, []);
             yield undefined;
 
         });
-        expect(triggerFlow!?.hasEnded).toBe(false);
+        expect(requestFlow!?.hasEnded).toBe(false);
         expect(askForFlow!?.hasEnded).toBe(false);
         expect(askForFlow!?.hasEnded).toBe(false);
     });

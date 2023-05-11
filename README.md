@@ -61,7 +61,7 @@ There are 7 types of bids:
 - request the flows requests an event ( for example an async fetch )
 - validate the flow extends the validation of the event
 - extend the flows will extend the logic of an event
-- trigger the flow will dispatch an event ( that is asked for by another flow )
+- requestWhenAskedFor the flow will dispatch an event ( when asked for by another flow )
 - block the flow will block an event
 
 ## Final Goal

@@ -5,11 +5,11 @@ export {BaseValidationReturn, InvalidActionExplanation, AccumulatedValidationRes
 export {ActionProcessedInformation} from './action-reaction-logger';
 
 /* action */
-export {ActionType, ExternalAction, RequestedAction, TriggeredAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, ActionFromBid, Action, ExtendableAction} from './action';
+export {ActionType, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, ActionFromBid, Action, ExtendableAction} from './action';
 
 /* bids */
-export {BidType, Bid, WaitingBid, PlacedWaitingBid, RequestBid, PlacedRequestBid, TriggerBid, PlacedTriggerBid, ValidateBid, PlacedValidateBid, BlockBid, PlacedBlockBid, PlacedBid, EventInformation, RequestingBidsAndEventInformation} from './bid'
-export {request, trigger, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
+export {BidType, Bid, WaitingBid, PlacedWaitingBid, RequestBid, PlacedRequestBid, ValidateBid, PlacedValidateBid, BlockBid, PlacedBlockBid, PlacedBid, EventInformation, RequestingBidsAndEventInformation} from './bid'
+export {request, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
 
 /* bid utility functions */
 export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions';

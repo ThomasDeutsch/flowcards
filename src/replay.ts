@@ -1,8 +1,8 @@
-import { ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, TriggeredAction } from "./action";
+import { ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction } from "./action";
 import { AccumulatedValidationResults, explainAnyBidPlacedByFlow, explainBlocked, explainExactRequestBidPlacedByFlow, explainHighestPriorityAskFor, explainNoPendingRequest, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./action-explain";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { EventInformation, PlacedRequestBid, RequestingBidsAndEventInformation } from "./bid";
-import { reactToExternalAction, reactToRejectAction, reactToRequestAction, reactToRequestedAsyncAction, reactToResolveAsyncAction, reactToTriggerAction } from "./flow-reaction";
+import { reactToExternalAction, reactToRejectAction, reactToRequestedAction, reactToRequestedAsyncAction, reactToResolveAsyncAction } from "./flow-reaction";
 import { isThenable } from "./utils";
 
 export type ReplayRequestAsyncAction<P> = (Omit<RequestedAsyncAction<P>, 'payload'> & {payload?: ((current?: P) => Promise<P>) | '__%TAKE_PAYLOAD_FROM_BID%__', resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number}})
@@ -23,7 +23,6 @@ export interface Replay extends SavedReplay {
  */
 export type ReplayAction<P> =
     RequestedAction<P> |
-    TriggeredAction<P> |
     ReplayRequestAsyncAction<P> |
     ExternalAction<P> & {id: number} |
     ResolvePendingRequestAction<P> & {id: number} |
@@ -129,6 +128,10 @@ export class ActiveReplay {
             if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
             if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
             if(this._isInvalidAction(explainPendingExtend(eventInfo, requestBid))) return false;
+            if(requestBid.onlyWhenAskedFor) {
+                const highestPriorityAskForBid = eventInfo.askFor[0]; // guaranteed because of the previous check.
+                if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [requestBid, highestPriorityAskForBid]))) return false;
+            }
             if(nextAction.payload === '__%TAKE_PAYLOAD_FROM_BID%__') {
                 let payloadFromBid: P;
                 if(requestBid.payload instanceof Function) {
@@ -147,26 +150,8 @@ export class ActiveReplay {
                 nextAction.payload = payloadFromBid;
             }
             if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [requestBid]))) return false;
-            reactToRequestAction(eventInfo, nextAction, requestBid);
+            reactToRequestedAction(eventInfo, nextAction, requestBid);
             this._actionReactionLogger.onActionProcessed(nextAction);
-            return true;
-        }
-        // replay a triggered action
-        if(nextAction.type === 'triggered') {
-            const triggerBid = eventInfo.trigger[0];
-            if(this._isInvalidAction(explainExactRequestBidPlacedByFlow(triggerBid, {event: eventInfo.event, type: 'trigger', flowId: nextAction.flowId, id: nextAction.bidId}))) return false;
-            if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
-            if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
-            if(this._isInvalidAction(explainPendingExtend(eventInfo, triggerBid))) return false;
-            if(nextAction.payload === '__%TAKE_PAYLOAD_FROM_BID%__') {
-                const payload = triggerBid.payload instanceof Function ? triggerBid.payload(eventInfo.event.value) : triggerBid.payload;
-                nextAction.payload = payload;
-            }
-            if(this._isInvalidAction(explainHighestPriorityAskFor(eventInfo))) return false;
-            const highestPriorityAskForBid = eventInfo.askFor[0]; // guaranteed because of the previous check.
-            if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [triggerBid, highestPriorityAskForBid]))) return false;
-            reactToTriggerAction(eventInfo, nextAction, triggerBid, highestPriorityAskForBid);
-            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
             return true;
         }
         // replay a requested async action

@@ -1,5 +1,5 @@
-import { Action, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, TriggeredAction } from "./action";
-import { EventInformation, updateEventInformation, PlacedRequestBid, PlacedTriggerBid, RequestingBidsAndEventInformation } from "./bid";
+import { Action, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction } from "./action";
+import { EventInformation, updateEventInformation, PlacedRequestBid, RequestingBidsAndEventInformation } from "./bid";
 import { Event } from "./event";
 import { explainAnyBidPlacedByFlow, explainBlocked, explainNoPendingRequest, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation, AccumulatedValidationResults } from "./action-explain";
 import { Flow, FlowGeneratorFunction } from "./flow";
@@ -148,7 +148,7 @@ export class Scheduler {
      * @returns true if an action was processed
      */
     private _processActionFromBid(info: RequestingBidsAndEventInformation, nextActionId: number): boolean {
-        return mapValues(info.requested).some(<P>(bids: (PlacedRequestBid<P, unknown> | PlacedTriggerBid<P, unknown>)[]) => {
+        return mapValues(info.requested).some(<P>(bids: PlacedRequestBid<P, unknown>[]) => {
             return bids.some(bid => {
                 const maybeEventInfo = info.eventInformation.get(bid.event.id);
                 if(this._isInvalidAction(explainAnyBidPlacedByFlow(bid.event.id, maybeEventInfo))) return false;
@@ -156,54 +156,37 @@ export class Scheduler {
                 if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
                 if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
                 if(this._isInvalidAction(explainPendingExtend(eventInfo, bid))) return false;
-                if(bid.type === 'request') {
-                    const payload = bid.payload instanceof Function ? bid.payload(bid.event.value) : bid.payload;
-                    if(isThenable(payload)) {
-                        const requestedAsyncAction: RequestedAsyncAction<P> = {
-                            id: nextActionId,
-                            type: 'requestedAsync',
-                            eventId: bid.event.id,
-                            payload: payload,
-                            bidId: bid.id,
-                            flowId: bid.flow.id
-                        }
-                        reactToRequestedAsyncAction(eventInfo, requestedAsyncAction, bid);
-                        this._actionReactionLogger.onActionProcessed(requestedAsyncAction);
-                        return true;
-                    } else {
-                        if(this._isInvalidPayload(explainValidation(eventInfo, payload, [bid]))) return false;
-                        const requestedAction: RequestedAction<P> = {
-                            id: nextActionId,
-                            type: 'requested',
-                            eventId: bid.event.id,
-                            payload: payload,
-                            bidId: bid.id,
-                            flowId: bid.flow.id
-                        };
-                        reactToRequestedAction(eventInfo, requestedAction, bid);
-                        this._actionReactionLogger.onActionProcessed(requestedAction);
-                        return true;
-                    }
-                }
-                else if(bid.type === 'trigger') {
-                    const payload = bid.payload instanceof Function ? bid.payload(bid.event.value) : bid.payload;
-                    // check if the highest priority askFor bid is valid
+                if(bid.onlyWhenAskedFor) {
                     if(this._isInvalidAction(explainHighestPriorityAskFor(eventInfo))) return false;
-                    const highestPriorityAskForBid = eventInfo.askFor[0]; // guaranteed because of the previous check.
-                    if(this._isInvalidPayload(explainValidation(eventInfo, payload, [bid, highestPriorityAskForBid]))) return false;
-                    const triggeredAction: TriggeredAction<P> = {
+                }
+                const payload = bid.payload instanceof Function ? bid.payload(bid.event.value) : bid.payload;
+                if(isThenable(payload)) {
+                    const requestedAsyncAction: RequestedAsyncAction<P> = {
                         id: nextActionId,
-                        type: 'triggered',
+                        type: 'requestedAsync',
                         eventId: bid.event.id,
-                        payload: bid.payload as P,
+                        payload: payload,
+                        bidId: bid.id,
+                        flowId: bid.flow.id
+                    }
+                    reactToRequestedAsyncAction(eventInfo, requestedAsyncAction, bid);
+                    this._actionReactionLogger.onActionProcessed(requestedAsyncAction);
+                    return true;
+                } else {
+                    const highestPriorityAskForBid = eventInfo.askFor[0];
+                    if(this._isInvalidPayload(explainValidation(eventInfo, payload, [bid, bid.onlyWhenAskedFor ? highestPriorityAskForBid : undefined]))) return false;
+                    const requestedAction: RequestedAction<P> = {
+                        id: nextActionId,
+                        type: 'requested',
+                        eventId: bid.event.id,
+                        payload: payload,
                         bidId: bid.id,
                         flowId: bid.flow.id
                     };
-                    reactToRequestedAction(eventInfo, triggeredAction, bid);
-                    this._actionReactionLogger.onActionProcessed({...triggeredAction, id: nextActionId});
+                    reactToRequestedAction(eventInfo, requestedAction, bid);
+                    this._actionReactionLogger.onActionProcessed(requestedAction);
                     return true;
                 }
-                return false;
             });
         })
     }
