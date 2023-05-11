@@ -158,8 +158,8 @@ export function explainPendingRequest<P, V>(eventInfo: EventInformation<P, V>, f
 export function explainValidation<P, V>(eventInfo: EventInformation<P, V>, value: P, additionalBids: (PlacedBid<P, V> | undefined)[] = []): AccumulatedValidationResults<V> | undefined {
     let isValidAccumulated = true;
     let results: {isValid: boolean, details: V[]}[] = [];
-    const maybeExtendBid = eventInfo.pendingExtend?.extendedBid;
-    [maybeExtendBid, ...additionalBids, ...eventInfo.validate].filter(isDefined).forEach(bid => {
+    const latestExtendBid = eventInfo.pendingExtend?.extendedBids[0];
+    [latestExtendBid, ...additionalBids, ...eventInfo.validate].filter(isDefined).forEach(bid => {
         const validationResult = validateBid(bid, value);
         if(validationResult) {
             if(typeof validationResult === 'boolean') {

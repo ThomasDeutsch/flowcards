@@ -17,11 +17,7 @@ import { Flow, PendingExtend } from "./flow";
     eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, askForBid)) return;
     eventInfo.event.__setValue(action.payload);
-    if(eventInfo.pendingExtend) {
-        const extendedBid = eventInfo.pendingExtend.extendedBid;
-        eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
-    }
+    progressExtendedBids(eventInfo, action);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -36,11 +32,7 @@ import { Flow, PendingExtend } from "./flow";
     eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, requestBid)) return;
     eventInfo.event.__setValue(action.payload);
-    if(eventInfo.pendingExtend) {
-        const extendedBid = eventInfo.pendingExtend.extendedBid;
-        eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
-    }
+    progressExtendedBids(eventInfo, action);
     requestBid.flow.__onEvent(requestBid.event, requestBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
@@ -73,11 +65,7 @@ import { Flow, PendingExtend } from "./flow";
     eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, pendingRequest)) return;
     eventInfo.event.__setValue(action.payload);
-    if(eventInfo.pendingExtend) {
-        const extendedBid = eventInfo.pendingExtend.extendedBid;
-        eventInfo.pendingExtend = undefined;
-        extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
-    }
+    progressExtendedBids(eventInfo, action);
     eventInfo.pendingRequest = undefined;
     pendingRequest.flow.__onEvent(eventInfo.event, pendingRequest ,action.id);
     progressWaitingBids(eventInfo, action);
@@ -120,7 +108,7 @@ import { Flow, PendingExtend } from "./flow";
         value: action.payload,
         event: eventInfo.event,
         extendingFlow: bid.flow,
-        extendedBid: eventInfo.pendingExtend?.extendedBid || extendedBid
+        extendedBids: eventInfo.pendingExtend ? [extendedBid, ...eventInfo.pendingExtend.extendedBids] : [extendedBid],
     }
     // set the pending extend directly to the event info, so that the extended event will get all the information it needs as soon as the __onExtend is called and the flow progresses.
     eventInfo.pendingExtend = extend;
@@ -135,14 +123,30 @@ import { Flow, PendingExtend } from "./flow";
  * @param action the selected action
  */
 function progressWaitingBids<P, V>(eventInfo: EventInformation<P, V>, action:  ExternalAction<P> & {id: number} | RequestedAction<P> | ResolvePendingRequestAction<P> & {id: number}): void {
-    eventInfo.waitFor.forEach((waitFor) => {
-        if(isValidReturn(validateBid<P, V>(waitFor, action.payload))) {
-            waitFor.flow.__onEvent(waitFor.event, waitFor, action.id);
-        }
-    });
     eventInfo.askFor.forEach((askFor) => {
         if(isValidReturn(validateBid<P, V>(askFor, action.payload))) {
             askFor.flow.__onEvent(askFor.event, askFor, action.id);
         }
     });
+    eventInfo.waitFor.forEach((waitFor) => {
+        if(isValidReturn(validateBid<P, V>(waitFor, action.payload))) {
+            waitFor.flow.__onEvent(waitFor.event, waitFor, action.id);
+        }
+    });
+}
+
+/**
+ * @internal
+ * progress all extended bids
+ * @param eventInfo the event info of the the possibly extended event
+ * @param action the selected action
+ */
+function progressExtendedBids(eventInfo: EventInformation<any, any>, action: Action<any> & {id: number}): void {
+    if(eventInfo.pendingExtend) {
+        const extendedBids = eventInfo.pendingExtend.extendedBids;
+        eventInfo.pendingExtend = undefined;
+        extendedBids.forEach((extendedBid) => {
+            extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);
+        });
+    }
 }

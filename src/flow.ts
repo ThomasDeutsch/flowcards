@@ -59,7 +59,7 @@ export interface FlowBidsAndPendingInformation {
     value?: P;
     event: Event<P,V>;
     extendingFlow: Flow;
-    extendedBid: PlacedBid<P, V>;
+    extendedBids: PlacedBid<P, V>[];
 }
 
 /**

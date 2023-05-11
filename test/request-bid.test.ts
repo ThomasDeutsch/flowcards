@@ -75,8 +75,6 @@ describe('a flow can request an event', () => {
                 expect(eventA.value).toBe(101);
             }, [])
             const waitingFlow = this.flow('subflow2', function* () {
-                console.log('test!1')
-
                 yield askFor(eventA);
                 console.log('test!2ds')
                 expect(eventA.value).toBe(101);

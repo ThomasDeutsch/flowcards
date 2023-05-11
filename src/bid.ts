@@ -163,12 +163,12 @@ export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
 /**
  * Creates a request bid that will only be placed if the event is asked for.
  * @param event the event that is about to be requested
- * @param payload the next value of the event. or a function that return the next value of the event.
+ * @param payload It can be a payload of the even type, of a function that returns a payload or a promise of that payload type.
  * @param validate an optional validation function that can block the request if it tries to set an invalid value.
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a request bid
  */
-export function requestIfAskedFor<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+export function requestIfAskedFor<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const payload = args[1] as P;
     const validate = args[2];
