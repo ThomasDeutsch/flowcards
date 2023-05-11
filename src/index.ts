@@ -2,14 +2,14 @@
 export {BaseValidationReturn, InvalidActionExplanation, AccumulatedValidationResults} from './action-explain';
 
 /* action-reaction-logger */
-export {ActionProcessedInformation} from './action-reaction-logger';
+export {ActionProcessedInformation, FlowReactionType} from './action-reaction-logger';
 
 /* action */
 export {ActionType, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, ActionFromBid, Action, ExtendableAction} from './action';
 
 /* bids */
 export {BidType, Bid, WaitingBid, PlacedWaitingBid, RequestBid, PlacedRequestBid, ValidateBid, PlacedValidateBid, BlockBid, PlacedBlockBid, PlacedBid, EventInformation, RequestingBidsAndEventInformation} from './bid'
-export {request, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
+export {request, requestIfAskedFor, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
 
 /* bid utility functions */
 export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions';

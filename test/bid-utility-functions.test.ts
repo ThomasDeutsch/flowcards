@@ -1,8 +1,8 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
-import { request, waitFor } from "../src/bid";
+import { askFor, request, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
-import { getAllValues, getFirstValue, getValue } from "../src";
+import { extendAll, getAllValues, getFirstValue, getValue } from "../src";
 
 
 describe("different flow utility functions", () => {
@@ -28,6 +28,26 @@ describe("different flow utility functions", () => {
             expect(eventA.value).toBe(1);
             expect(a).toBe(1);
             done();
+            yield undefined;
+        });
+    });
+
+    test("extend all values that are asked for", (done) => {
+        const eventA = new Event<number>('eventA');
+        const eventB = new Event<number>('eventB');
+        testSchedulerFactory( function*(this: Flow) {
+            const extendingFlow = this.flow('extendingFlow', function*() {
+                const [extendedEvent] = yield* extendAll([eventA, eventB], (event) => event.isAskedFor);
+                expect(extendedEvent).toBe(eventA);
+                done();
+            }, []);
+            this.flow('requestingFlow', function*() {
+                yield request(eventB, 100);
+                yield request(eventA, 200)
+            }, []);
+            this.flow('askingFlow', function*() {
+                yield askFor(eventA);
+            }, []);
             yield undefined;
         });
     });

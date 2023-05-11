@@ -1,7 +1,7 @@
 // BID UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
 
 import { Bid, extend } from "./bid";
-import { NestedEventObject, getEvents } from "./event";
+import { Event, NestedEventObject, getEvents } from "./event";
 import { FlowProgressInfo, TNext } from "./flow";
 
 /**
@@ -67,9 +67,8 @@ export function* getFirstValue<P extends Bid<any, any>[]>(...bids: P): Generator
  *s @remarks needs to be prefixed by a yield* statement.
 
  */
-export function* extendAll(nestedEvents: NestedEventObject[], exclude?: NestedEventObject[]): Generator<TNext, FlowProgressInfo, FlowProgressInfo> {
+export function* extendAll(nestedEvents: NestedEventObject[], validateFn?: (event: Event<any, any>) => boolean): Generator<TNext, FlowProgressInfo, FlowProgressInfo> {
     const events = nestedEvents.map(nestedEventObject => getEvents(nestedEventObject)).flat();
-    const excludeEvents = exclude?.map(nestedEventObject => getEvents(nestedEventObject)).flat();
-    const progress = yield events.filter(event => !excludeEvents?.some(e => (e.id === event.id))).map(event => extend(event));
+    const progress = yield events.map(event => extend(event, () => validateFn ? validateFn(event) : true));
     return progress;
 }
