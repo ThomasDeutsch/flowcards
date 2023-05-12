@@ -1,6 +1,6 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
-import { askFor, block, extend, request, requestIfAskedFor, waitFor } from "../src/bid";
+import { askFor, block, extend, request, syncedRequest, waitFor } from "../src/bid";
 import { extendAll } from "../src/bid-utility-functions";
 import { delay } from "./test-utils";
 import { testSchedulerFactory } from "./utils";
@@ -60,9 +60,9 @@ describe("the extend bid behavior", () => {
                 yield extend(eventA);
                 expect(eventA.value).toBe(undefined);
                 expect(eventA.extendedValue).toBe(20);
-                yield requestIfAskedFor(eventA, 10);
+                yield syncedRequest(eventA, 10);
             }, []);
-            yield requestIfAskedFor(eventA, 20);
+            yield syncedRequest(eventA, 20);
             yield undefined;
         });
         expect(askForFlow!?.hasEnded).toBe(true);
@@ -220,7 +220,7 @@ describe("the extend bid behavior", () => {
         };
         const extendFlow = function* (this: Flow) {
             while(true) {
-                yield* extendAll([events], [events.notExtend]);
+                yield* extendAll([events], (event) =>  event != events.notExtend.A && event != events.notExtend.B);
                 expect(this.pendingExtends.has(events.notExtend.A.id)).toBe(false);
                 expect(this.pendingExtends.has(events.A.id)).toBe(true);
                 done();

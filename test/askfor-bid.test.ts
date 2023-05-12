@@ -1,6 +1,6 @@
 import { Flow } from "../src/flow";
 import { Event } from "../src/event";
-import { askFor, extend, requestIfAskedFor, waitFor } from "../src/bid";
+import { askFor, extend, syncedRequest, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
 
 
@@ -23,7 +23,7 @@ describe("the askFor bid behavior", () => {
                 yield askFor(eventA);
             }, []);
             requestFlow = this.flow('subflow2', function* () {
-                yield requestIfAskedFor(eventA, 123);
+                yield syncedRequest(eventA, 123);
             }, []);
             yield undefined;
         });
@@ -42,7 +42,7 @@ describe("the askFor bid behavior", () => {
                     yield askFor(eventA);
                 }, [])
                 this.flow('subflow2', function* () {
-                    yield requestIfAskedFor(eventA, undefined);
+                    yield syncedRequest(eventA, undefined);
                 }, []);
                 yield undefined;
             }
@@ -64,7 +64,7 @@ describe("the askFor bid behavior", () => {
                 yield waitFor(eventA);
             }, [])
             requestFlow = this.flow('subflow3', function* () {
-                yield requestIfAskedFor(eventA, 123);
+                yield syncedRequest(eventA, 123);
             }, []);
             yield undefined;
 
