@@ -9,7 +9,7 @@ export {ActionType, ExternalAction, RequestedAction, RequestedAsyncAction, Resol
 
 /* bids */
 export {BidType, Bid, WaitingBid, PlacedWaitingBid, RequestBid, PlacedRequestBid, ValidateBid, PlacedValidateBid, BlockBid, PlacedBlockBid, PlacedBid, EventInformation, RequestingBidsAndEventInformation} from './bid'
-export {request, syncedRequest, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
+export {request, requestWhenAskedFor, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
 
 /* bid utility functions */
 export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions';
