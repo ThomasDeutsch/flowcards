@@ -125,7 +125,7 @@ export class Flow {
             if(!isRemoved) return;
             if(this._pendingRequests.delete(placedBid.event.id)) {
                 this._logger.logChangedEvent(placedBid.event);
-                this._logger.logFlowReaction(this.id, 'pending request cancelled');
+                this._logger.logFlowReaction(this.id, 'pending request cancelled', {eventId: placedBid.event.id});
             }
             if (placedBid.type === 'askFor' || placedBid.type === 'validate' || placedBid.type === 'block') {
                 this._logger.logChangedEvent(placedBid.event);
@@ -179,7 +179,7 @@ export class Flow {
     public __end(keepExtends?: boolean): void {
         this._resetToInitial(keepExtends);
         this._hasEnded = true;
-        this._logger.logFlowReaction(this.id, 'flow ended');
+        this._logger.logFlowReaction(this.id, 'flow ended', {});
     }
 
     /**
@@ -198,10 +198,10 @@ export class Flow {
         this._isDisabled = true;
         this._pendingRequests.forEach(request => {
             this._logger.logChangedEvent(request.event);
-            this._logger.logFlowReaction(this.id, 'pending request cancelled', request.event.id);
+            this._logger.logFlowReaction(this.id, 'pending request cancelled', {eventId: request.event.id});
             this._pendingRequests.delete(request.event.id);
         });
-        this._logger.logFlowReaction(this.id, 'flow disabled');
+        this._logger.logFlowReaction(this.id, 'flow disabled', {});
         this._children.forEach((child) => {
             child.__disable();
         });
@@ -263,11 +263,11 @@ export class Flow {
         }
         catch(error) {
             console.error('error in flow ', this.id, ': ', error);
-            this._logger.logFlowReaction(this.id, 'flow restarted because an error was not handled');
+            this._logger.logFlowReaction(this.id, 'flow restarted because an error was not handled', {eventId: event.id});
             this.__restart();
             return;
         }
-        this._logger.logFlowReaction(this.id, 'flow progressed on a handled error');
+        this._logger.logFlowReaction(this.id, 'flow progressed on a handled error', {eventId: event.id});
         this._handleNext(next);
     }
 
@@ -312,7 +312,7 @@ export class Flow {
      */
     public __onExtend<P, V>(event: Event<P, V>, bid: PlacedBid<any, any>, extend: PendingExtend<P,V>, actionId: number): void {
         this._pendingExtends.set(event.id, extend);
-        this._logger.logFlowReaction(this.id, 'pending extend added', event.id);
+        this._logger.logFlowReaction(this.id, 'pending extend added', {eventId: event.id, bidId: bid.id, bidType: bid.type, actionId: actionId});
         if(isThenable(extend.value)) return;
         this.__onEvent(event, bid, actionId);
     }
@@ -325,7 +325,7 @@ export class Flow {
      */
     public __onRequestedAsync<P, V>(bid: PlacedRequestBid<P,V>, promise: Promise<P>, requestActionId: number): void {
         this._pendingRequests.set(bid.event.id, bid);
-        this._logger.logFlowReaction(this.id, 'pending request added', bid.event.id);
+        this._logger.logFlowReaction(this.id, 'pending request added', {eventId: bid.event.id, bidId: bid.id, bidType: bid.type, actionId: requestActionId});
         this._logger.logChangedEvent(bid.event);
         promise.then((value: P) => {
             if(this._pendingRequests.get(bid.event.id) != bid) {
@@ -368,7 +368,7 @@ export class Flow {
      public __resolvePendingRequest(event: Event<any,any>): void {
         const wasRemoved = this._pendingRequests.delete(event.id);
         if(wasRemoved) {
-            this._logger.logFlowReaction(this.id, 'pending request resolved');
+            this._logger.logFlowReaction(this.id, 'pending request resolved', {eventId: event.id});
             this._logger.logChangedEvent(event);
         }
     }
@@ -389,10 +389,10 @@ export class Flow {
             // child flow with this id already exists:
             if(currentChild._isDisabled) {
                 this._isDisabled = false;
-                this._logger.logFlowReaction(this.id, 'flow enabled, after being disabled');
+                this._logger.logFlowReaction(this.id, 'flow enabled, after being disabled', {childFlowId: currentChild.id});
             }
             if(!areDepsEqual(currentChild.parameters || [], parameters)) {
-                this._logger.logFlowReaction(currentChild.id, 'flow restarted because parameters changed');
+                this._logger.logFlowReaction(currentChild.id, 'flow restarted because parameters changed', {childFlowId: currentChild.id});
                 currentChild.__restart(parameters);
             }
             currentChild.__enabledOnActionId = this._latestActionIdThisFlowProgressedOn;
@@ -463,7 +463,7 @@ export class Flow {
         if(typeof restartIf === 'function' && !restartIf()) {
             return;
         }
-        this._logger.logFlowReaction(this.id, 'flow restarted manually by calling flow.restart');
+        this._logger.logFlowReaction(this.id, 'flow restarted manually by calling flow.restart', {});
         this.__restart();
     }
 
@@ -476,9 +476,9 @@ export class Flow {
         const wasRemoved = this._pendingExtends.delete(event.id);
         if(wasRemoved) {
             if(isResolved) {
-                this._logger.logFlowReaction(this.id, 'pending extend resolved', event.id);
+                this._logger.logFlowReaction(this.id, 'pending extend resolved', {eventId: event.id});
             } else {
-                this._logger.logFlowReaction(this.id, 'pending extend aborted', event.id);
+                this._logger.logFlowReaction(this.id, 'pending extend aborted', {eventId: event.id});
             }
             this._logger.logChangedEvent(event);
         }

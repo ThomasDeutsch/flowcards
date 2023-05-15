@@ -2,7 +2,7 @@
 export {BaseValidationReturn, InvalidActionExplanation, AccumulatedValidationResults} from './action-explain';
 
 /* action-reaction-logger */
-export {ActionProcessedInformation, FlowReactionType} from './action-reaction-logger';
+export {ActionProcessedInformation, FlowReactionType, FlowReactionDetails} from './action-reaction-logger';
 
 /* action */
 export {ActionType, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, ActionFromBid, Action, ExtendableAction} from './action';

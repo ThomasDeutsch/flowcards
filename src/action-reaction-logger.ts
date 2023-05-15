@@ -22,6 +22,14 @@ export type FlowReactionType =
     'flow restarted manually by calling flow.restart' |
     'flow restarted because an error was not handled';
 
+export interface FlowReactionDetails {
+    eventId?: string;
+    bidId?: number;
+    bidType?: string;
+    actionId?: number;
+    childFlowId?: string;
+}
+
 /**
  * information collection of a scheduler run.
  */
@@ -29,7 +37,7 @@ export type FlowReactionType =
     invalidActionExplanations?: InvalidActionExplanation[];
     validationResults?: AccumulatedValidationResults<any>;
     processedAction?: ReplayAction<any>;
-    flowReactions?: Map<string, {type: FlowReactionType, details?: any}[]>;
+    flowReactions?: Map<string, {type: FlowReactionType, details: FlowReactionDetails}[]>;
 }
 
 /**
@@ -80,9 +88,9 @@ export class ActionReactionLogger {
      * @param flowId  the id of the flow
      * @param reactionType  the type of the reaction
      */
-    public logFlowReaction(flowId: string, reactionType: FlowReactionType, details?: any) {
+    public logFlowReaction(flowId: string, reactionType: FlowReactionType, details: FlowReactionDetails) {
         if(this._currentRun.flowReactions === undefined) {
-            this._currentRun.flowReactions = new Map<string, {type: FlowReactionType, details?: any}[]>();
+            this._currentRun.flowReactions = new Map<string, {type: FlowReactionType, details: FlowReactionDetails}[]>();
         }
         //this._currentRun.flowReactions.update(flowId, (reactions) => [...(reactions ?? []), reactionType]);
         this._currentRun.flowReactions.set(flowId, appendTo(this._currentRun.flowReactions.get(flowId), {type: reactionType, details}));
