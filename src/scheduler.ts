@@ -100,7 +100,7 @@ export class Scheduler {
             this._run();
         }
         else {
-            const {logs} = this._actionReactionLogger.flushLog();
+            const logs = this._actionReactionLogger.flushLog();
             this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
             this._changedEvents.clear();
             this._schedulerCompletedCallback?.(logs, Object.freeze(this._bidsAndEventInfo), {state: this._activeReplay.state});

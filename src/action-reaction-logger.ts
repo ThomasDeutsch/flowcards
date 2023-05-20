@@ -96,24 +96,13 @@ export class ActionReactionLogger {
 
     /**
      * @internal
-     * logs the changed events (value changes and changes to the other states: pending, blocked, ...)
-     * @param changedEvents
-     */
-    public logChangedEvent(event: Event<any,any>): void {
-        this._changedEvents.set(event.id, event);
-    }
-
-    /**
-     * @internal
      * the log of all scheduler runs
      * @internalRemarks this is used by the scheduler to get the latest log for the latest scheduler run(s)
      */
-    public flushLog(): {logs: ActionProcessedInformation[], changedEvents: Event<any,any>[]} {
+    public flushLog(): ActionProcessedInformation[] {
         const logs = [...this._logs];
         this._logs = [];
-        const changedEvents = mapValues(this._changedEvents);
-        this._changedEvents = new Map();
-        return {changedEvents, logs};
+        return logs;
     }
 
     /**
