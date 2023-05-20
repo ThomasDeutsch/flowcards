@@ -1,12 +1,12 @@
-import { Action, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction } from "./action";
-import { EventInformation, updateEventInformation, PlacedRequestBid, RequestingBidsAndEventInformation } from "./bid";
+import { Action, ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
+import { EventInformation, updateEventInformation, RequestingBidsAndEventInformation } from "./bid";
 import { Event } from "./event";
-import { explainAnyBidPlacedByFlow, explainBlocked, explainNoPendingRequest, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation, AccumulatedValidationResults } from "./action-explain";
 import { Flow, FlowGeneratorFunction } from "./flow";
-import { isThenable, mapValues } from "./utils";
-import { reactToExternalAction, reactToRejectAction, reactToRequestedAction, reactToRequestedAsyncAction, reactToResolveAsyncAction } from "./flow-reaction";
+import { reactToExternalAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction";
 import { ActiveReplay, ActiveReplayInfo, Replay } from "./replay";
 import { ActionProcessedInformation, ActionReactionLogger } from "./action-reaction-logger";
+import { processNextValidRequestBid } from "./process-request";
+import { processAction } from "./process-action";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
@@ -27,12 +27,14 @@ export interface SchedulerProps {
     replay?: Replay;
 }
 
+//TODO: how to handle multiple stores?
+// like handling multiple root flows?
 
-// SCHEDULER CLASS ----------------------------------------------------------------------------------------------------
 
 /**
- * a scheduler that takes actions from the action queue and from the bids and processes them
- * the scheduler holds the references to the action queue and the events.
+ * the flowcards scheduler is the main class of the library.
+ * It is responsible for processing and finding the next valid action.
+ * After all actions are processed, the scheduler will call the schedulerRunsCompletedCallback.
  */
 export class Scheduler {
     private _rootFlow: Flow;
@@ -41,6 +43,7 @@ export class Scheduler {
     private _schedulerCompletedCallback?: SchedulerCompletedCallback;
     private _activeReplay: ActiveReplay;
     private _currentActionId = -1;
+    private _changedEvents: Map<string, Event<any,any>> = new Map();
 
     constructor(props : SchedulerProps) {
         this._actionReactionLogger = new ActionReactionLogger();
@@ -58,6 +61,15 @@ export class Scheduler {
     }
 
     /**
+     * @internal
+     * register changed events (value changes and changes to the other states: pending, blocked, ...) during the current scheduler run.
+     * @param event the event that has changed
+     */
+    public registerChangedEvent(event: Event<any,any>): void {
+        this._changedEvents.set(event.id, event);
+    }
+
+    /**
      * function to connect an event to the scheduler
      * @param event the event that will be to the scheduler
      */
@@ -66,163 +78,32 @@ export class Scheduler {
     }
 
     /**
-     * helper function to check if the action is valid or not. If not, the action is logged as invalid action.
-     * @param invalidActionExplanation
-     * @param externalActionProcessedCallback
-     * @returns true if the action is invalid
-     */
-    private _isInvalidAction(invalidActionExplanation?: InvalidActionExplanation) {
-        if(invalidActionExplanation) {
-            this._actionReactionLogger.logInvalidAction(invalidActionExplanation);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * helper function to log validation results and return true if the validation results are all valid
-     * @param results
-     * @param externalActionProcessedCallback
-     * @returns true if the validation results are all valid
-     */
-    private _isInvalidPayload(results?: AccumulatedValidationResults<any>) {
-        if(results !== undefined) {
-            this._actionReactionLogger.logPayloadValidations(results);
-        }
-        return results?.isValidAccumulated !== true;
-    }
-
-    /**
-     * function to return the next action - if valid
-     * @param info the information about bids and pending actions
-     * @returns true if an action was processed
-     */
-    private _processAction<P, V>(info: RequestingBidsAndEventInformation, nextActionId: number, nextAction?: Action<any>): boolean {
-        if(nextAction === undefined) return false;
-        const maybeEventInfo = info.eventInformation.get(nextAction.eventId) as EventInformation<P, V> | undefined;
-        const isInvalid = (expl?: InvalidActionExplanation) => this._isInvalidAction(expl);
-        if(isInvalid(explainAnyBidPlacedByFlow(nextAction.eventId, maybeEventInfo))) return false;
-        const eventInfo = maybeEventInfo as EventInformation<P, V>; // guaranteed to be defined because of the previous isValid check
-        if(nextAction.type === 'external') {
-            //if(isInvalid(explainHighestPriorityAskFor(eventInfo, nextAction))) return false;
-            const askForBid = eventInfo.askFor[0];
-            reactToExternalAction(eventInfo, {...nextAction, id: nextActionId}, askForBid);
-            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
-            return true;
-        }
-        if(nextAction.type === 'resolvePendingRequest') {
-            // check if the pending event info flow & bid are the same! (ignore blocked and pending extend, because the event was already executed)
-            if(isInvalid(explainNoPendingRequest(eventInfo, nextAction))) return false;
-            const pendingRequest = eventInfo.pendingRequest as PlacedRequestBid<P,V>; // is a pending request because of the explainHasPendingRequest validation check
-            if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [pendingRequest]))) {
-                const rejectAction: RejectPendingRequestAction = {
-                    id: nextActionId,
-                    type: 'rejectPendingRequest',
-                    eventId: nextAction.eventId,
-                    flowId: nextAction.flowId,
-                    bidId: nextAction.bidId,
-                    requestActionId: nextAction.requestActionId,
-                    error: 'invalid payload'
-                };
-                reactToRejectAction(pendingRequest.flow, eventInfo.event);
-                this._actionReactionLogger.onActionProcessed({...rejectAction, id: nextActionId});
-                return true;
-            }
-            reactToResolveAsyncAction(eventInfo, {...nextAction, id: nextActionId}, pendingRequest);
-            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
-            return true;
-        }
-        if(nextAction.type === 'rejectPendingRequest') {
-            if(isInvalid(explainNoPendingRequest(eventInfo, nextAction))) return false;
-            const pendingRequest = eventInfo.pendingRequest as PlacedRequestBid<P,V>; // is a pending request because of the explainHasPendingRequest validation check
-            reactToRejectAction(pendingRequest.flow, eventInfo.event);
-            this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * function to return the next valid action that is created from the first valid requesting bid
-     * @param info the information about bids and pending events
-     * @returns true if an action was processed
-     */
-    private _processActionFromBid(info: RequestingBidsAndEventInformation, nextActionId: number): boolean {
-        return mapValues(info.requested).some(<P>(bids: PlacedRequestBid<P, unknown>[]) => {
-            return bids.some(bid => {
-                const maybeEventInfo = info.eventInformation.get(bid.event.id);
-                if(this._isInvalidAction(explainAnyBidPlacedByFlow(bid.event.id, maybeEventInfo))) return false;
-                const eventInfo = maybeEventInfo as EventInformation<P, any>; // guaranteed to be defined because of the previous isValid check
-                if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
-                if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
-                if(this._isInvalidAction(explainPendingExtend(eventInfo, bid))) return false;
-                if(bid.onlyWhenAskedFor) {
-                    if(this._isInvalidAction(explainHighestPriorityAskFor(eventInfo))) return false;
-                }
-                const payload = bid.payload instanceof Function ? bid.payload(bid.event.value) : bid.payload;
-                if(isThenable(payload)) {
-                    const requestedAsyncAction: RequestedAsyncAction<P> = {
-                        id: nextActionId,
-                        type: 'requestedAsync',
-                        eventId: bid.event.id,
-                        payload: payload,
-                        bidId: bid.id,
-                        flowId: bid.flow.id
-                    }
-                    reactToRequestedAsyncAction(eventInfo, requestedAsyncAction, bid);
-                    this._actionReactionLogger.onActionProcessed(requestedAsyncAction);
-                    return true;
-                } else {
-                    const highestPriorityAskForBid = eventInfo.askFor[0];
-                    if(this._isInvalidPayload(explainValidation(eventInfo, payload, [bid, bid.onlyWhenAskedFor ? highestPriorityAskForBid : undefined]))) return false;
-                    const requestedAction: RequestedAction<P> = {
-                        id: nextActionId,
-                        type: 'requested',
-                        eventId: bid.event.id,
-                        payload: payload,
-                        bidId: bid.id,
-                        flowId: bid.flow.id
-                    };
-                    reactToRequestedAction(eventInfo, requestedAction, bid);
-                    this._actionReactionLogger.onActionProcessed(requestedAction);
-                    return true;
-                }
-            });
-        })
-    }
-
-    /**
      * This function is the main-function for the flowcards library.
-     * A function to process the next action from 3 possible sources ( ordered by priority ):
-     * 1. a replay action
-     * 2. from the currently executed action (an ExternalAction, that was triggered by the UI/External-System)
-     * 3. a requesting bid ( a PlacedRequestBid or PlacedTriggerBid )
+     * It will process the next action from 3 possible sources ( ordered by priority ):
+     * 1. a replay action (from a running replay)
+     * 2. a resolved/rejected request or from an external source.
+     * 3. a request bid (from any flow that placed a request bid)
      * If the action was processed, the next bids are collected and the run function is called again.
-     * This is done, until no more actions can be processed. This marks the end of a microtask.
+     * This is done, until no more actions can be processed.
+     * After this function call, all events that have changed are updated.
+     * @param action the external/resolve/reject action that will be processed
      */
-    private _run(action?: Action<any>): void {
+    private _run(action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
         const nextActionId = this._currentActionId + 1;
         const wasActionProcessed =
-            this._activeReplay.getNextReplayAction(this._bidsAndEventInfo, nextActionId) ||
-            this._processAction(this._bidsAndEventInfo, nextActionId, action) ||
-            this._processActionFromBid(this._bidsAndEventInfo, nextActionId);
+            this._activeReplay.processNextReplayAction(this._bidsAndEventInfo, nextActionId) ||
+            processAction(this._bidsAndEventInfo, nextActionId, this._actionReactionLogger, action) ||
+            processNextValidRequestBid(this._bidsAndEventInfo, nextActionId, this._actionReactionLogger);
         if(wasActionProcessed) {
             this._currentActionId = nextActionId;
             this._bidsAndEventInfo = updateEventInformation(this._connectEvent.bind(this), this._rootFlow.__getBidsAndPendingInformation());
             this._run();
         }
         else {
-            const {changedEvents, logs} = this._actionReactionLogger.flushLog();
-            changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
+            const {logs} = this._actionReactionLogger.flushLog();
+            this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
+            this._changedEvents.clear();
             this._schedulerCompletedCallback?.(logs, Object.freeze(this._bidsAndEventInfo), {state: this._activeReplay.state});
         }
-    }
-
-    /**
-     * getter for the root flow
-     * @returns the root flow
-     */
-    get rootFlow(): Flow {
-        return this._rootFlow;
     }
 }

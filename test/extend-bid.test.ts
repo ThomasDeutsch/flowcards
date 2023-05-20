@@ -144,6 +144,7 @@ describe("the extend bid behavior", () => {
         });
     });
 
+    // TODO: IS THIS CORRECT?
     test('if a pending request gets extended, the extending flow can cancel the request', (done) => {
         const eventA = new Event<number>('eventA');
         const cancelEvent = new Event<number>('cancelEvent');

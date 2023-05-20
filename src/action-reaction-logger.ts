@@ -1,34 +1,11 @@
 import { Action } from "./action";
-import { AccumulatedValidationResults, InvalidActionExplanation } from "./action-explain";
+import { AccumulatedValidationResults } from "./payload-validation";
 import { Event } from "./event";
 import { ReplayAction } from "./replay";
 import { appendTo, mapValues } from "./utils";
+import { Placed, RequestBid } from "./bid";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
-
-export type FlowReactionType =
-    'flow progressed on a bid' |
-    'flow progressed on a handled error' |
-    'pending extend added' |
-    'pending extend resolved' |
-    'pending extend aborted' |
-    'pending request added' |
-    'pending request resolved' |
-    'pending request cancelled' |
-    'flow disabled' |
-    'flow ended' |
-    'flow enabled, after being disabled' |
-    'flow restarted because parameters changed' |
-    'flow restarted manually by calling flow.restart' |
-    'flow restarted because an error was not handled';
-
-export interface FlowReactionDetails {
-    eventId?: string;
-    bidId?: number;
-    bidType?: string;
-    actionId?: number;
-    childFlowId?: string;
-}
 
 /**
  * information collection of a scheduler run.
@@ -53,7 +30,6 @@ export interface FlowReactionDetails {
 export class ActionReactionLogger {
     private _logs: ActionProcessedInformation[] = []; // the log of all scheduler runs
     private _currentRun: ActionProcessedInformation = {}; // the current scheduler run
-    private _changedEvents: Map<string, Event<any,any>> = new Map(); // the events that have changed during the latest scheduler runs
     private _accessedValuesFrom?: Event<any, any>; // the events that have been accessed during the between the events "start value access logging" and "stop value access logging
 
     constructor() {}
@@ -70,6 +46,10 @@ export class ActionReactionLogger {
         if(invalidActionExplanation) {
             this._currentRun.invalidActionExplanations = appendTo(this._currentRun.invalidActionExplanations, invalidActionExplanation);
         }
+    }
+
+    public logInvalidRequestBid(bid: Placed<RequestBid<any, any>>, invalidReason: InvalidRequestBidReason): void {
+        this._currentRun.invalidActionExplanations = appendTo(this._currentRun.invalidActionExplanations, {bidId, invalidReason});
     }
 
     /**

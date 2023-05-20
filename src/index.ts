@@ -1,11 +1,11 @@
 /* action-explain */
-export {BaseValidationReturn, InvalidActionExplanation, AccumulatedValidationResults} from './action-explain';
+export {BaseValidationReturn, AccumulatedValidationResults} from './payload-validation';
 
 /* action-reaction-logger */
-export {ActionProcessedInformation, FlowReactionType, FlowReactionDetails} from './action-reaction-logger';
+export {ActionProcessedInformation} from './action-reaction-logger';
 
 /* action */
-export {ActionType, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, ActionFromBid, Action, ExtendableAction} from './action';
+export {ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, Action, ExtendableAction} from './action';
 
 /* bids */
 export {BidType, Bid, WaitingBid, PlacedWaitingBid, RequestBid, PlacedRequestBid, ValidateBid, PlacedValidateBid, BlockBid, PlacedBlockBid, PlacedBid, EventInformation, RequestingBidsAndEventInformation} from './bid'

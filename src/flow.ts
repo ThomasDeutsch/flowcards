@@ -1,8 +1,9 @@
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
-import { Bid, toBids, PlacedBid, filterRemainingBids, PlacedRequestBid } from "./bid";
+import { Bid, toBids, filterRemainingBids, Placed, RequestBid } from "./bid";
 import { Event } from  "./event";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { areDepsEqual, isThenable, mergeMaps } from "./utils";
+import { isProgressingBid } from "./bid-utility-functions";
 
 
 // INTERFACES -------------------------------------------------------------------------------------------------------------
@@ -12,13 +13,13 @@ import { areDepsEqual, isThenable, mergeMaps } from "./utils";
  * a flow generators next value can return a bid or an array of bids.
  * if a flow places the same bid again, it is a PlacedBid.
  */
-export type TNext = Bid<any, any> | PlacedBid<any, any> | (Bid<any, any> | PlacedBid<any, any>)[] | undefined;
+export type TNext = Bid<any, any> | Placed<Bid<any, any>> | (Bid<any, any> | Placed<Bid<any, any>>)[] | undefined;
 
 /**
  * The progress info contains information about the latest progression of this flow.
  * The information contains the latest progressed event and the remaining bids for this flow.
 */
-export type FlowProgressInfo = [Event<unknown>, PlacedBid<unknown, unknown>[] | undefined];
+export type FlowProgressInfo = [Event<unknown>, Placed<Bid<unknown, unknown>>[] | undefined];
 
 /**
  * a generator function returns a flow-generator that is bound to the flow
@@ -47,8 +48,8 @@ export interface FlowParameters {
  * information about the flow bids and pending events
  */
 export interface FlowBidsAndPendingInformation {
-    placedBids: PlacedBid<unknown, unknown>[];
-    pendingRequests?: Map<string, PlacedRequestBid<any, any>>;
+    placedBids: Placed<Bid<any, any>>[];
+    pendingRequests?: Map<string, Placed<RequestBid<any, any>>>;
     pendingExtends?: Map<string, PendingExtend<any, any>>;
 }
 
@@ -56,10 +57,10 @@ export interface FlowBidsAndPendingInformation {
  * all needed information about a pending extend
  */
  export interface PendingExtend<P, V> {
-    value?: P;
+    value?: P | Promise<P>;
     event: Event<P,V>;
     extendingFlow: Flow;
-    extendedBids: PlacedBid<P, V>[];
+    extendedBids: Placed<Bid<P, V>>[];
 }
 
 /**
@@ -74,8 +75,8 @@ export class Flow {
     private _hasEnded = false;
     private _currentBidId = 0;
     private _isDisabled = false;
-    private _placedBids: PlacedBid<unknown, unknown>[] | undefined;
-    private _pendingRequests: Map<string, PlacedRequestBid<any, any>> = new Map();
+    private _placedBids: Placed<Bid<unknown, unknown>>[] | undefined;
+    private _pendingRequests: Map<string, Placed<RequestBid<any, any>>> = new Map();
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
     private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
@@ -107,16 +108,16 @@ export class Flow {
      * @param next the iterator result of the generator
      * @internalRemarks mutates: ._currentBidId, ._placedBids
      */
-    private _placeBids(nextBids?: (Bid<any, any> | PlacedBid<any, any>)[]): void {
+    private _placeBids(nextBids?: (Bid<any, any> | Placed<Bid<any, any>>)[]): void {
         const nextPlacedBids = nextBids?.map(bid => {
             if('id' in bid) {
-                return {...bid, flow: this, id: bid.id} as PlacedBid<any, any>;
+                return {...bid, flow: this, id: bid.id} as Placed<Bid<any, any>>;
             }
             else {
                 if(bid.type === 'askFor' || bid.type === 'validate' || bid.type === 'block') {
                     this._logger.logChangedEvent(bid.event);
                 }
-                return {...bid, flow: this, id: this._currentBidId++} as PlacedBid<any, any>;
+                return {...bid, flow: this, id: this._currentBidId++} as Placed<Bid<any, any>>;
             }
         });
         // get all bids that are no longer placed
@@ -279,14 +280,14 @@ export class Flow {
      * @param actionId the id of the action to check if the flow already progressed on this action
      * @internalRemarks mutates: ._generator (next)
      */
-    public __onEvent(event: Event<any, any>, bid: PlacedBid<any, any>, actionId: number): void {
+    public __onEvent(event: Event<any, any>, bid: Placed<Bid<any, any>>, actionId: number): void {
         if(this._latestActionIdThisFlowProgressedOn === actionId) return; // prevent from progressing twice on the same action
         this._logger.logChangedEvent(event);
         this._latestActionIdThisFlowProgressedOn = actionId;
         try {
             const next = this._generator.next([event, filterRemainingBids(bid.id, this._placedBids)]);
             this._logger.logFlowReaction(this.id, 'flow progressed on a bid', {bidId: bid.id, bidType: bid.type, eventId: event.id, actionId: actionId});
-            if(bid.isGetValueBid) {
+            if(isProgressingBid(bid) && bid.isGetValueBid) {
                 // disable all children that are not enabled during the last progress
                 this._children.forEach((child) => {
                     if(child.__enabledOnActionId !== actionId) {
@@ -310,7 +311,7 @@ export class Flow {
      * @param extend the pending extend information
      * @param actionId the id of the action to check if the flow already progressed on this action
      */
-    public __onExtend<P, V>(event: Event<P, V>, bid: PlacedBid<any, any>, extend: PendingExtend<P,V>, actionId: number): void {
+    public __onExtend<P, V>(event: Event<P, V>, bid: Placed<Bid<any, any>>, extend: PendingExtend<P,V>, actionId: number): void {
         this._pendingExtends.set(event.id, extend);
         this._logger.logFlowReaction(this.id, 'pending extend added', {eventId: event.id, bidId: bid.id, bidType: bid.type, actionId: actionId});
         if(isThenable(extend.value)) return;
@@ -323,7 +324,7 @@ export class Flow {
      * @internal
      * @param action the action that holds the promise payload
      */
-    public __onRequestedAsync<P, V>(bid: PlacedRequestBid<P,V>, promise: Promise<P>, requestActionId: number): void {
+    public __onRequestedAsync<P, V>(bid: Placed<RequestBid<P,V>>, promise: Promise<P>, requestActionId: number): void {
         this._pendingRequests.set(bid.event.id, bid);
         this._logger.logFlowReaction(this.id, 'pending request added', {eventId: bid.event.id, bidId: bid.id, bidType: bid.type, actionId: requestActionId});
         this._logger.logChangedEvent(bid.event);
@@ -468,22 +469,34 @@ export class Flow {
     }
 
     /**
-     * abort a pending extend
+     * abort a pending extend. Like the extend never happened.
      * this will set the event back to a none-pending state, and the event.extendedValue will be set to undefined
      * @param event the event that was extended by this flow
      */
-    public abortExtend(event: Event<any,any>, isResolved?: boolean): boolean {
+    public abortExtend(event: Event<any,any>): boolean {
         const wasRemoved = this._pendingExtends.delete(event.id);
         if(wasRemoved) {
-            if(isResolved) {
-                this._logger.logFlowReaction(this.id, 'pending extend resolved', {eventId: event.id});
-            } else {
-                this._logger.logFlowReaction(this.id, 'pending extend aborted', {eventId: event.id});
-            }
+            this._logger.logFlowReaction(this.id, 'pending extend aborted', {eventId: event.id});
             this._logger.logChangedEvent(event);
         }
         return wasRemoved;
     }
+
+    /**
+     * @internal
+     * resolve the pending extend
+     * this will set the event back to a none-pending state, and the event.extendedValue will be set to undefined
+     * @param event the event that was extended by this flow
+     */
+    public __resolveExtend(event: Event<any,any>): boolean {
+        const wasRemoved = this._pendingExtends.delete(event.id);
+        if(wasRemoved) {
+            this._logger.logFlowReaction(this.id, 'pending extend resolved', {eventId: event.id});
+            this._logger.logChangedEvent(event);
+        }
+        return wasRemoved;
+    }
+
 
     /**
      * register a callback that will be called when the flow is ended / restarted.
@@ -518,7 +531,7 @@ export class Flow {
      * getter that returns all pending extends by this flow
      * @returns a map of all pending requests information by this flow (see PendingRequest)
      */
-    public get pendingRequests(): Map<string, PlacedRequestBid<any, any>> {
+    public get pendingRequests(): Map<string, Placed<RequestBid<any, any>>> {
         return this._pendingRequests;
     }
 

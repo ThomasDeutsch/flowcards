@@ -66,3 +66,6 @@ describe("how bids can be placed with a yield statement", () => {
         });
     });
 });
+
+
+//TODO: if the bid gets blocked, while pending, resolve should be accepted

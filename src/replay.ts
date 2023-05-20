@@ -1,9 +1,10 @@
 import { ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction } from "./action";
-import { AccumulatedValidationResults, explainAnyBidPlacedByFlow, explainBlocked, explainExactRequestBidPlacedByFlow, explainHighestPriorityAskFor, explainNoPendingRequest, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./action-explain";
+import { AccumulatedValidationResults, explainAnyBidPlacedByFlow, explainBlocked, explainExactRequestBidPlacedByFlow, explainHighestPriorityAskFor, explainNoPendingRequest, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./payload-validation";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { EventInformation, PlacedRequestBid, RequestingBidsAndEventInformation } from "./bid";
 import { reactToExternalAction, reactToRejectAction, reactToRequestedAction, reactToRequestedAsyncAction, reactToResolveAsyncAction } from "./flow-reaction";
 import { isThenable } from "./utils";
+import { invalidReasonsForExternalAction } from "./bid-invalid-reasons";
 
 export type ReplayRequestAsyncAction<P> = (Omit<RequestedAsyncAction<P>, 'payload'> & {payload?: ((current?: P) => Promise<P>) | '__%TAKE_PAYLOAD_FROM_BID%__', resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number}})
 
@@ -38,8 +39,10 @@ export type ActiveReplayInfo = {
 
 
 /**
- * a replay is a list of actions that can be replayed.
- * recorded actions can be event-sourced to restore the state of the application.
+ * @internal
+ * an active replay is created from a replay and can be used to replay the actions to restore the state of the application.
+ * every replay action is checked if it is the expected and valid action, so a replay is not only a way to restore the state of the application,
+ * but also a way to test the application.
  */
 export class ActiveReplay {
     private _actions = new Map<number, ReplayAction<any>>();
@@ -48,7 +51,6 @@ export class ActiveReplay {
     private _actionReactionLogger: ActionReactionLogger;
     private readonly _replay?: Replay;
     private _getBids?: () => RequestingBidsAndEventInformation;
-    private _currentAction?: ReplayAction<any>;
 
     constructor(actionReactionLogger: ActionReactionLogger, replay?: Replay, getBids?: () => RequestingBidsAndEventInformation) {
         this._replay = replay;
@@ -66,21 +68,13 @@ export class ActiveReplay {
         this._state = 'running';
     }
 
-    private _abortReplay(): false {
-        this._state = 'aborted';
-        return false;
-    }
 
-    private _isInvalidAction(invalidActionExplanation?: InvalidActionExplanation): boolean {
-        if(invalidActionExplanation) {
-            this._actionReactionLogger.logInvalidAction(invalidActionExplanation);
-            console.error('replay aborted, because of an invalid action', invalidActionExplanation);
-            console.log('failed action: ', this._currentAction);
-            console.log('current bids: ', this._getBids?.());
-            this._abortReplay();
-            return true;
-        }
-        return false;
+    private _abortReplay(invalidActionExplanation?: InvalidActionExplanation): void {
+        this._actionReactionLogger.logInvalidAction(invalidActionExplanation);
+        console.error('replay aborted, because of an invalid action', invalidActionExplanation);
+        console.log('failed action: ', this._currentAction);
+        console.log('current bids: ', this._getBids?.());
+        this._state = 'aborted';
     }
 
     private _isInvalidPayload(results?: AccumulatedValidationResults<any>): boolean {
@@ -94,40 +88,57 @@ export class ActiveReplay {
         return results?.isValidAccumulated !== true;
     }
 
-    public getNextReplayAction<P, V>(info: RequestingBidsAndEventInformation, nextActionId: number): boolean {
+    public processNextReplayAction<P, V>(info: RequestingBidsAndEventInformation, nextActionId: number): boolean {
+        // only a running replay will process the next action
         if(this._state !== 'running') {
             return false
         }
+        // the replay is completed, when all actions are processed
         if (nextActionId > this._lastActionId) {
             this._state = 'completed';
             return false;
         }
+        // if the an action is missing from the replay, the replay is continued where
+        // the next action is taken from a request bid or external/resolve/reject action
         const nextAction = this._actions.get(nextActionId) as ReplayAction<P> | undefined;
         if (nextAction === undefined) {
             return false;
         }
-        this._currentAction = nextAction; // for logging purposes
-        const maybeEventInfo = info.eventInformation.get(nextAction.eventId) as EventInformation<P, V> | undefined;
-        if(this._isInvalidAction(explainAnyBidPlacedByFlow(nextAction.eventId, maybeEventInfo))) return false;
-        const eventInfo = maybeEventInfo as EventInformation<P, V>; // guaranteed to be defined because of the previous isValid check
+        const eventInfo = info.eventInformation.get(nextAction.eventId);
+        if(eventInfo === undefined) {
+            this._abortReplay(); //TODO add explanation
+            return false;
+        }
         if(nextAction.type === 'external') {
-            if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
-            if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
-            if(this._isInvalidAction(explainHighestPriorityAskFor(eventInfo, nextAction))) return false;
-            const askForBid = eventInfo.askFor[0]; // is guaranteed to be defined because of the previous validation
-            if(this._isInvalidAction(explainPendingExtend(eventInfo, askForBid))) return false;
-            if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [askForBid]))) return false;
-            reactToExternalAction(eventInfo, {...nextAction, id: nextActionId}, askForBid);
+            const matchingBid = eventInfo.askFor.find(bid => bid.flow.id === nextAction.flowId && bid.id === nextAction.bidId);
+            if(matchingBid === undefined) {
+                this._abortReplay(); //TODO add explanation
+                return false;
+            }
+            const invalidActionReasons = invalidReasonsForExternalAction(eventInfo, matchingBid);
+            if(invalidActionReasons?.length) {
+                this._abortReplay(); //TODO add explanation
+                return false;
+            }
+            const payloadValidation = explainValidation(eventInfo, nextAction.payload, [matchingBid]);
+            if(payloadValidation.isValidAccumulated === false) {
+                this._abortReplay(); //TODO add explanation
+                return false;
+            }
+            reactToExternalAction(eventInfo, {...nextAction, id: nextActionId}, matchingBid);
             this._actionReactionLogger.onActionProcessed({...nextAction, id: nextActionId});
             return true;
         }
         // replay a requested action
         if(nextAction.type === 'requested') {
+            // TODO: is it the highest priority request? i think it should be the request that would also be selected by the processNextValidRequestBid function
             const requestBid = eventInfo.request[0];
-            if(this._isInvalidAction(explainExactRequestBidPlacedByFlow(requestBid, {event: eventInfo.event, type: 'request', flowId: nextAction.flowId, id: nextAction.bidId}))) return false;
-            if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
-            if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
-            if(this._isInvalidAction(explainPendingExtend(eventInfo, requestBid))) return false;
+            const invalidReasons = invalidReasonsForRequestBid(bid, eventInfo);
+            if(invalidReasons !== undefined) {
+                logger.logInvalidRequestBid(bid, invalidReasons); //TODO
+                return false;
+            }
+            eventInfo = eventInfo as EventInformation<P, V>; // is not undefined because of the invalidReasonsForRequestBid check
             if(requestBid.onlyWhenAskedFor) {
                 const highestPriorityAskForBid = eventInfo.askFor[0]; // guaranteed because of the previous check.
                 if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [requestBid, highestPriorityAskForBid]))) return false;

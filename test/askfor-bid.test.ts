@@ -2,6 +2,7 @@ import { Flow } from "../src/flow";
 import { Event } from "../src/event";
 import { askFor, extend, requestWhenAskedFor, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
+import { delay } from "./test-utils";
 
 
 describe("the askFor bid behavior", () => {
@@ -147,5 +148,28 @@ describe("the askFor bid behavior", () => {
         expect(eventA.isValid(9)).toBe(true);
         expect(eventA.value).toBe(undefined);
         expect(eventA.set(10)).toThrow(Error);
+    })
+
+    test('requestWhenAskedFor will thrown an error if the payload is invalid, and the request is async', (done) => {
+        let askForFlow: Flow | undefined;
+        let requestFlow: Flow | undefined;
+        const eventA = new Event<number>('eventA');
+        testSchedulerFactory( function*(this: Flow) {
+            askForFlow = this.flow('subflow', function* () {
+                yield askFor(eventA, (x) => x < 10);
+            }, []);
+            requestFlow = this.flow('requestFlow', function* () {
+                try {
+                    yield requestWhenAskedFor(eventA, () => delay(100, 11));
+                } catch (e) {
+                    expect(e).toBeDefined();
+                    done();
+                    yield undefined;
+
+                }
+                yield undefined;
+            }, []);
+            yield undefined;
+        });
     })
 });

@@ -1,16 +1,10 @@
-import { AccumulatedValidationResults, explainAnyBidPlacedByFlow, explainBlocked, explainHighestPriorityAskFor, explainPendingExtend, explainPendingRequest, explainValidation, InvalidActionExplanation } from "./action-explain";
+import { AccumulatedValidationResults, explainValidation } from "./payload-validation";
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { EventInformation } from "./bid";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { getKeyFromId } from "./utils";
+import { InvalidBidReason, invalidReasonsForAskForBid } from "./bid-invalid-reasons";
 
-
-export interface EventUpdateInfo<P> {
-    value: P | undefined;
-    isPending: boolean;
-    isBlocked: boolean;
-    isAskedFor: boolean;
-}
 /**
  * usually, events are stored in a nested record, where the key is the event name.
  * This is a helper type to get the events from a nested record.
@@ -39,13 +33,13 @@ export class Event<P = undefined, V = void> {
     private _value?: P;
     private _executeAction?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _getEventInformation?: (eventId: string) => EventInformation<P, V> | undefined;
-    private _onUpdateCallback?: ((info: EventUpdateInfo<P>) => void); // only a single subscriber is supported
+    private _onUpdateCallback?: () => void; // only a single subscriber is supported
     private _logger?: ActionReactionLogger;
     private _description?: string;
     private _latestUpdateOnActionId?: number;
     private _relatedValidationEvents = new Map<string, Event<any, any>>();
 
-    constructor(id: string | string, onUpdateCallback?: (info: EventUpdateInfo<P>) => void) {
+    constructor(id: string | string, onUpdateCallback?: () => void) {
         this._onUpdateCallback = onUpdateCallback;
         this.id = id;
     }
@@ -107,41 +101,20 @@ export class Event<P = undefined, V = void> {
      * - any event in the validation function(s) is updated
      * @param callback the callback to call when the event value changes
      */
-    public registerCallback(callback: (info: EventUpdateInfo<P>) => void, sendInitial?: boolean): void {
+    public registerCallback(callback: () => void, sendInitial?: boolean): void {
         this._onUpdateCallback = callback;
-        if(sendInitial) callback({ value: this.value, isPending: this.isPending, isBlocked: this.isBlocked, isAskedFor: this.isAskedFor });
+        if(sendInitial) callback();
     }
 
     /**
-     * explain if the events value can be updated. (if the event setter is enabled)
-     * @returns an explanation why the event can not be dispatched or validated or 'valid' if the event is valid and can be dispatched.
+     * @internal
+     * Get all invalid reasons why the event has not a valid askFor bid.
+     * Payload validations are not checked in this function.
+     * To check if the payload is valid, use the validate function.
+     * @returns an explanation why the highest priority askFor bid is not valid.
      */
-    public get explainSetter(): InvalidActionExplanation[] | 'enabled' {
-        if(this._getEventInformation === undefined) {
-            return [{ eventId: this.id, message: 'No bid was placed for this event.'}]
-        }
-        const invalidReasons: InvalidActionExplanation[] = [];
-        const maybeEventInfo = this._getEventInformation(this.id);
-        let invalidReason = explainAnyBidPlacedByFlow(this.id, maybeEventInfo);
-        if(invalidReason) {
-            invalidReasons.push(invalidReason);
-            return invalidReasons;
-        }
-        const eventInfo = maybeEventInfo as EventInformation<P, V>; // is not undefined because of the explainAnyBidPlacedByFlow check
-        invalidReason = explainBlocked(eventInfo);
-        if(invalidReason) invalidReasons.push(invalidReason);
-        invalidReason = explainPendingRequest(eventInfo);
-        if(invalidReason) invalidReasons.push(invalidReason);
-        invalidReason = explainHighestPriorityAskFor(eventInfo);
-        if(invalidReason) {
-            invalidReasons.push(invalidReason);
-            return invalidReasons;
-        }
-        const askForBid = eventInfo.askFor[0];
-        invalidReason =  explainPendingExtend(eventInfo, askForBid);
-        if(invalidReason) invalidReasons.push(invalidReason);
-        if(invalidReasons.length !== 0) return invalidReasons;
-        return 'enabled';
+    private _invalidReasons() {
+        return invalidReasonsForAskForBid(this._getEventInformation?.(this.id));
     }
 
     /**
@@ -149,11 +122,12 @@ export class Event<P = undefined, V = void> {
      * @param value the value to validate
      * @returns an object with the validation result and the details of the validation
      */
-    public validate(value: P): AccumulatedValidationResults<V> {
-        if(this.explainSetter !== 'enabled') return {isValidAccumulated: false, results: []};
-        const eventInfo = this._getEventInformation?.(this.id) as EventInformation<P, V>; // guaranteed to be valid because of the explain check
-        this._logger?.startValueAccessLogging(this);
-        const validationResult = explainValidation(eventInfo, value, [eventInfo.askFor[0]]) || {isValidAccumulated: false, results: []}
+    public validate(value: P): {isValidAccumulated: boolean, invalidBidReasons?: InvalidBidReason[], payloadValidation?: AccumulatedValidationResults<V>} {
+        const invalidBidReasons = this._invalidReasons();
+        if(invalidBidReasons) return {isValidAccumulated: false, invalidBidReasons };
+        const eventInfo = this._getEventInformation?.(this.id) as EventInformation<P, V>; // guaranteed to be valid because of the invalidReasons check
+        this._logger?.startValueAccessLogging(this); // TODO: move startValueAccessLogging to the scheduler ???
+        const validationResult = explainValidation(eventInfo, value, [eventInfo.askFor?.[0]]) || {isValidAccumulated: false};
         this._logger?.stopValueAccessLogging();
         return validationResult;
     }
@@ -170,30 +144,33 @@ export class Event<P = undefined, V = void> {
 
     /**
      * add an external action to the queue and start a new microtask that runs the scheduler.
-     * A set is only possible if the value for that event is valid. You can check if the event is valid by calling the explain function or the isValid function.
+     * A dispatch is only possible if the value for that event is valid. You can check if the event is valid by calling the explain function or the isValid function.
      * @param value the next event value
      * @returns true if the dispatch added an action to the queue, false otherwise.
      * @remarks before the action is added to the queue, the event value will be validated, by using the explain function.
      */
-    public set(value: P) {
-        if(!this.isValid(value)) {
-            console.group('unable to set new value for event %s', this.id);
-            console.error('value: %O', value);
-            const setterValidation = this.explainSetter;
-            if(setterValidation !== 'enabled') {
-                console.error('event is not valid, because: %O', setterValidation.map((r) => r.message));
+    public dispatch(value: P) {
+        const validationResult = this.validate(value);
+        if(!validationResult.isValidAccumulated) {
+            console.group('INVALID DISPATCH', this.id);
+            if(validationResult.invalidBidReasons) {
+                console.log('invalid bid reasons: %O', validationResult.invalidBidReasons);
             }
             else {
-                console.log('details: %O', this.validate(value).results);
+                console.log('invalid payload');
+                if(validationResult.payloadValidation) {
+                    console.log('payload validation: %O', validationResult.payloadValidation);
+                }
             }
-            console.info('you may want to validate the value before setting it. Use event.isValid(value) to check if the value is valid.')
+            console.info('Info: before dispatching the event, validate with event.isValid(<value>)');
             console.groupEnd();
-            throw new Error('Event value is invalid. You can check if the event is valid by calling the explain function or the isValid function.');
+            throw new Error('event can not be dispatched');
         }
         // because the explain has checked if the event is valid, it is ok to use the ! in this function.
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const eventInformation = this._getEventInformation!(this.id)!;
-        const highestPriorityAskForBid = eventInformation.askFor[0];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const highestPriorityAskForBid = eventInformation.askFor?.[0]!;
         const action: ExternalAction<P> = {
             type: "external",
             payload: value,
@@ -213,7 +190,7 @@ export class Event<P = undefined, V = void> {
     public __triggerUpdateCallback(actionId: number): void {
         if(this._latestUpdateOnActionId === actionId) return;
         this._latestUpdateOnActionId = actionId;
-        this._onUpdateCallback?.({value: this.value, isAskedFor: this.isAskedFor, isBlocked: this.isBlocked, isPending: this.isPending});
+        this._onUpdateCallback?.();
         this._relatedValidationEvents.forEach((event) => event.__triggerUpdateCallback(actionId));
         this._relatedValidationEvents = new Map();
     }
@@ -243,7 +220,7 @@ export class Event<P = undefined, V = void> {
      */
     public get isBlocked() {
         this._logger?.logEventAccess(this);
-        return (this._getEventInformation?.(this.id)?.block.length || 0) > 0;
+        return (this._getEventInformation?.(this.id)?.block?.length || 0) > 0;
     }
 
     /**
@@ -253,7 +230,7 @@ export class Event<P = undefined, V = void> {
      */
     public get isAskedFor(): boolean {
         this._logger?.logEventAccess(this);
-        return this._getEventInformation?.(this.id)?.askFor[0] !== undefined;
+        return this._getEventInformation?.(this.id)?.askFor?.[0] !== undefined;
     }
 
     /**

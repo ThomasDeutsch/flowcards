@@ -1,14 +1,14 @@
-import { AccumulatedValidationResults } from "./action-explain";
+import { AccumulatedValidationResults } from "./payload-validation";
 import { Event, EventByKey } from "./event";
 
 /**
  * @internal
  * check if a value is thenable (possibly a promise)
  * @param p a possible candidate for a promise
- * @returns true if p is thenable
+ * @returns true if p is a promise
  * @internalRemarks promise duck-typing:  https://github.com/then/is-promise/blob/master/index.js
  */
-export function isThenable(obj: any): obj is PromiseLike<any> {
+export function isThenable(obj: any): obj is Promise<any> {
     return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 }
 
