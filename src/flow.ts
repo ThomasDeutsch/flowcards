@@ -40,6 +40,7 @@ export interface FlowParameters {
     id: string;
     generatorFunction: FlowGeneratorFunction;
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    registerChangedEvent: (event: Event<any, any>) => void;
     logger: ActionReactionLogger;
     parameters: any[];
 }
@@ -79,6 +80,7 @@ export class Flow {
     private _pendingRequests: Map<string, Placed<RequestBid<any, any>>> = new Map();
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
     private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    private _registerChangedEvent: (event: Event<any, any>) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
@@ -91,6 +93,7 @@ export class Flow {
         this._executeAction = parameters.executeAction;
         this._logger = parameters.logger;
         this._currentParameters = parameters.parameters;
+        this._registerChangedEvent = parameters.registerChangedEvent;
         this._resetToInitial();
         this._generator = this._generatorFunction(...(this._currentParameters || []));
         try {
@@ -115,7 +118,7 @@ export class Flow {
             }
             else {
                 if(bid.type === 'askFor' || bid.type === 'validate' || bid.type === 'block') {
-                    this._logger.logChangedEvent(bid.event);
+                    this._registerChangedEvent(bid.event);
                 }
                 return {...bid, flow: this, id: this._currentBidId++} as Placed<Bid<any, any>>;
             }
@@ -125,11 +128,11 @@ export class Flow {
             const isRemoved = !nextPlacedBids?.some(nextBid => nextBid.id === placedBid.id);
             if(!isRemoved) return;
             if(this._pendingRequests.delete(placedBid.event.id)) {
-                this._logger.logChangedEvent(placedBid.event);
+                this._registerChangedEvent(placedBid.event);
                 this._logger.logFlowReaction(this.id, 'pending request cancelled', {eventId: placedBid.event.id});
             }
             if (placedBid.type === 'askFor' || placedBid.type === 'validate' || placedBid.type === 'block') {
-                this._logger.logChangedEvent(placedBid.event);
+                this._registerChangedEvent(placedBid.event);
             }
         });
         this._placedBids = nextPlacedBids;
@@ -198,7 +201,7 @@ export class Flow {
     public __disable(): void {
         this._isDisabled = true;
         this._pendingRequests.forEach(request => {
-            this._logger.logChangedEvent(request.event);
+            this._registerChangedEvent(request.event);
             this._logger.logFlowReaction(this.id, 'pending request cancelled', {eventId: request.event.id});
             this._pendingRequests.delete(request.event.id);
         });
@@ -257,7 +260,7 @@ export class Flow {
      */
     public __onRejectAsyncAction(event: Event<any, any>): void {
         this._pendingRequests.delete(event.id);
-        this._logger.logChangedEvent(event);
+        this._registerChangedEvent(event);
         let next: FlowIteratorResult;
         try {
             next = this._generator.throw(new Error('async request rejected'));
@@ -282,7 +285,7 @@ export class Flow {
      */
     public __onEvent(event: Event<any, any>, bid: Placed<Bid<any, any>>, actionId: number): void {
         if(this._latestActionIdThisFlowProgressedOn === actionId) return; // prevent from progressing twice on the same action
-        this._logger.logChangedEvent(event);
+        this._registerChangedEvent(event);
         this._latestActionIdThisFlowProgressedOn = actionId;
         try {
             const next = this._generator.next([event, filterRemainingBids(bid.id, this._placedBids)]);
@@ -327,7 +330,7 @@ export class Flow {
     public __onRequestedAsync<P, V>(bid: Placed<RequestBid<P,V>>, promise: Promise<P>, requestActionId: number): void {
         this._pendingRequests.set(bid.event.id, bid);
         this._logger.logFlowReaction(this.id, 'pending request added', {eventId: bid.event.id, bidId: bid.id, bidType: bid.type, actionId: requestActionId});
-        this._logger.logChangedEvent(bid.event);
+        this._registerChangedEvent(bid.event);
         promise.then((value: P) => {
             if(this._pendingRequests.get(bid.event.id) != bid) {
                 return; // the request was cancelled
@@ -370,7 +373,7 @@ export class Flow {
         const wasRemoved = this._pendingRequests.delete(event.id);
         if(wasRemoved) {
             this._logger.logFlowReaction(this.id, 'pending request resolved', {eventId: event.id});
-            this._logger.logChangedEvent(event);
+            this._registerChangedEvent(event);
         }
     }
 
@@ -406,6 +409,7 @@ export class Flow {
             generatorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
+            registerChangedEvent: this._registerChangedEvent,
             parameters,
         });
         this._children.set(id, newChild);
@@ -477,7 +481,7 @@ export class Flow {
         const wasRemoved = this._pendingExtends.delete(event.id);
         if(wasRemoved) {
             this._logger.logFlowReaction(this.id, 'pending extend aborted', {eventId: event.id});
-            this._logger.logChangedEvent(event);
+            this._registerChangedEvent(event);
         }
         return wasRemoved;
     }
@@ -492,7 +496,7 @@ export class Flow {
         const wasRemoved = this._pendingExtends.delete(event.id);
         if(wasRemoved) {
             this._logger.logFlowReaction(this.id, 'pending extend resolved', {eventId: event.id});
-            this._logger.logChangedEvent(event);
+            this._registerChangedEvent(event);
         }
         return wasRemoved;
     }

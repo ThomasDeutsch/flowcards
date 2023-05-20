@@ -1,9 +1,25 @@
 import { AccumulatedValidationResults, explainValidation } from "./payload-validation";
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { EventInformation } from "./bid";
-import { ActionReactionLogger } from "./action-reaction-logger";
 import { getKeyFromId } from "./utils";
 import { InvalidBidReason, invalidReasonsForAskForBid } from "./bid-invalid-reasons";
+
+// TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
+
+/**
+ * @internal
+ * properties that are passed to the event to connect the event to the scheduler
+ * @param getEventInformation a function that returns the event information of this event
+ * @param startSchedulerRun start a new scheduler run
+ * @param registerEventAccess register that the event was accessed during a bid-validate function call
+ * @param toggleValueAccessLogging toggle the registration of this event during a bid-validate function call
+ */
+interface ConnectToSchedulerProps {
+    getEventInformation: (eventId: string) => EventInformation<any, any> | undefined;
+    startSchedulerRun: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    registerEventAccess: (event: Event<any, any>) => void;
+    toggleValueAccessLogging: (event: Event<any, any>) => void;
+}
 
 /**
  * usually, events are stored in a nested record, where the key is the event name.
@@ -31,10 +47,11 @@ export function getEvents(neo: NestedEventObject): Event<any, any>[] {
 export class Event<P = undefined, V = void> {
     public readonly id: string;
     private _value?: P;
-    private _executeAction?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    private _startSchedulerRun?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _getEventInformation?: (eventId: string) => EventInformation<P, V> | undefined;
     private _onUpdateCallback?: () => void; // only a single subscriber is supported
-    private _logger?: ActionReactionLogger;
+    private _registerEventAccess?: () => void;
+    private _toggleValueAccessLogging?: (event: Event<any, any>) => void;
     private _description?: string;
     private _latestUpdateOnActionId?: number;
     private _relatedValidationEvents = new Map<string, Event<any, any>>();
@@ -49,10 +66,13 @@ export class Event<P = undefined, V = void> {
      * reset the event to its initial state
      */
     public __reset(): void {
-        this._value = undefined;
-        this._executeAction = undefined;
+        // from the connectToScheduler function
+        this._startSchedulerRun = undefined;
         this._getEventInformation = undefined;
-        this._logger = undefined;
+        this._registerEventAccess = undefined;
+        this._toggleValueAccessLogging = undefined;
+        // from the event itself
+        this._value = undefined;
         this._latestUpdateOnActionId = undefined;
         this._relatedValidationEvents.clear();
     }
@@ -63,10 +83,11 @@ export class Event<P = undefined, V = void> {
      * @param getEventInformation a function that returns the event information of this event
      * @param addActionToQueue the function to add an action to the queue
      */
-    public __connectToScheduler(getEventInformation: (eventId: string) => EventInformation<P, V> | undefined, executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void, logger: ActionReactionLogger): void {
-        this._getEventInformation = getEventInformation;
-        this._executeAction = executeAction;
-        this._logger = logger;
+    public __connectToScheduler(props: ConnectToSchedulerProps): void {
+        this._getEventInformation = props.getEventInformation;
+        this._startSchedulerRun = props.startSchedulerRun;
+        this._registerEventAccess = () => props.registerEventAccess(this);
+        this._toggleValueAccessLogging = props.toggleValueAccessLogging;
     }
 
     /**
@@ -84,7 +105,7 @@ export class Event<P = undefined, V = void> {
      * @returns the current value of the event
      */
     public get value(): P | undefined {
-        this._logger?.logEventAccess(this);
+        this._registerEventAccess?.();
         if(this._value !== undefined && typeof this._value === 'object') {
             return Object.freeze(this._value);
         }
@@ -126,9 +147,9 @@ export class Event<P = undefined, V = void> {
         const invalidBidReasons = this._invalidReasons();
         if(invalidBidReasons) return {isValidAccumulated: false, invalidBidReasons };
         const eventInfo = this._getEventInformation?.(this.id) as EventInformation<P, V>; // guaranteed to be valid because of the invalidReasons check
-        this._logger?.startValueAccessLogging(this); // TODO: move startValueAccessLogging to the scheduler ???
+        this._toggleValueAccessLogging?.(this);
         const validationResult = explainValidation(eventInfo, value, [eventInfo.askFor?.[0]]) || {isValidAccumulated: false};
-        this._logger?.stopValueAccessLogging();
+        this._toggleValueAccessLogging?.(this);
         return validationResult;
     }
 
@@ -180,7 +201,7 @@ export class Event<P = undefined, V = void> {
             bidId: highestPriorityAskForBid.id
         };
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        this._executeAction!(action);
+        this._startSchedulerRun!(action);
     }
 
     /**
@@ -192,7 +213,7 @@ export class Event<P = undefined, V = void> {
         this._latestUpdateOnActionId = actionId;
         this._onUpdateCallback?.();
         this._relatedValidationEvents.forEach((event) => event.__triggerUpdateCallback(actionId));
-        this._relatedValidationEvents = new Map();
+        this._relatedValidationEvents.clear();
     }
 
     /**
@@ -211,6 +232,7 @@ export class Event<P = undefined, V = void> {
      * returns true if the event had a placed bid by any of the flows.
      */
     public get wasUsedInAFlow(): boolean {
+        this._registerEventAccess?.();
         return !!this._getEventInformation;
     }
 
@@ -219,7 +241,7 @@ export class Event<P = undefined, V = void> {
      * An event is blocked if there is a flow that has a placed block bid for that event.
      */
     public get isBlocked() {
-        this._logger?.logEventAccess(this);
+        this._registerEventAccess?.();
         return (this._getEventInformation?.(this.id)?.block?.length || 0) > 0;
     }
 
@@ -229,7 +251,7 @@ export class Event<P = undefined, V = void> {
      * Only asked for events can be set, to have a new value.
      */
     public get isAskedFor(): boolean {
-        this._logger?.logEventAccess(this);
+        this._registerEventAccess?.();
         return this._getEventInformation?.(this.id)?.askFor?.[0] !== undefined;
     }
 
@@ -237,7 +259,7 @@ export class Event<P = undefined, V = void> {
      * getter that returns true if the event has a pending request or a pending extend, false otherwise.
      */
     public get isPending(): boolean {
-        this._logger?.logEventAccess(this);
+        this._registerEventAccess?.();
         const pendingRequest = this._getEventInformation?.(this.id)?.pendingRequest !== undefined;
         const pendingExtend = this._getEventInformation?.(this.id)?.pendingExtend !== undefined;
         return pendingRequest || pendingExtend;
@@ -246,8 +268,8 @@ export class Event<P = undefined, V = void> {
     /**
      * returns the currently extended value for the event.
      */
-    public get extendedValue(): P | undefined {
-        this._logger?.logEventAccess(this);
+    public get extendedValue(): P | Promise<P> | undefined {
+        this._registerEventAccess?.();
         return this._getEventInformation?.(this.id)?.pendingExtend?.value;
     }
 

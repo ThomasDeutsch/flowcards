@@ -27,4 +27,4 @@ export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, R
 export {SchedulerCompletedCallback, SchedulerProps, Scheduler } from './scheduler';
 
 /* utils */
-export {invalidDetails, EventRecord, getAllEvents, mapValues, getKeyFromId} from './utils';
+export { EventRecord, getAllEvents, mapValues, getKeyFromId} from './utils';

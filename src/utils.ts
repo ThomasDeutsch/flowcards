@@ -50,7 +50,6 @@ export function areDepsEqual(a: ReadonlyArray<unknown>, b: ReadonlyArray<unknown
     return a.every((v, i) => Object.is(v, b[i]));
 }
 
-
 /**
  * @internal
  * merge two maps, overwriting values in the first map with values in the second map
@@ -62,15 +61,6 @@ export function mergeMaps<K, V>(map1: Map<K, V>, map2?: Map<K, V>): Map<K, V> {
     const merged = new Map(map1);
     map2?.forEach((v, k) => merged.set(k, v));
     return merged;
-}
-
-/**
- * get the flattened details of all failed validations.
- * @param results the validation results
- * @returns details of all failed validations.
- */
-  export function invalidDetails<V>(results: AccumulatedValidationResults<V>): V[] {
-    return results.results.flatMap((r) => !r.isValid ? r.details : []);
 }
 
 /**
