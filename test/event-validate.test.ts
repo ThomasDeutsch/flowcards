@@ -2,7 +2,7 @@
 
 import { Flow } from "../src/flow";
 import { Event, EventUpdateInfo } from "../src/event";
-import { askFor, extend, request, requestWhenAskedFor, validate, waitFor } from "../src/bid";
+import { askFor, extend, request, trigger, validate, waitFor } from "../src/bid";
 import { testSchedulerFactory } from "./utils";
 import { delay } from "./test-utils";
 
@@ -78,7 +78,7 @@ describe("the optional validate function for each bid-type", () => {
                     yield askFor(eventA);
                 }
             }, []);
-            yield requestWhenAskedFor(eventA, 12, (value) => value > 10);
+            yield trigger(eventA, 12, (value) => value > 10);
             triggerSuccess = true;
             yield undefined;
         });

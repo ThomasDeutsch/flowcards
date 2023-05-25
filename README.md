@@ -82,7 +82,7 @@ Within Flowcards, a `yield` statement allows a flow to place one or multiple "bi
 3. `request`: The flow requests a particular event (e.g., an asynchronous fetch).
 4. `validate`: The flow extends the validation of an event.
 5. `extend`: The flow extends the logic of an event.
-6. `requestWhenAskedFor`: The flow dispatches an event when asked for by another flow.
+6. `trigger`: The flow dispatches an event when asked for by another flow.
 7. `block`: The flow blocks an event from occurring.
 
 By utilizing these bid types, flows can
@@ -106,7 +106,7 @@ Translating Scenarios into Code
 
 Walk programmers through the process of translating a scenario into code using Flowcards.
 Provide examples using a simple scenario and demonstrate how to write the corresponding code using Flowcard syntax.
-Explain the different types of bids available in Flowcards, such as waitFor, askFor, request, validate, extend, requestWhenAskedFor, and block.
+Explain the different types of bids available in Flowcards, such as waitFor, askFor, request, validate, extend, trigger, and block.
 Working with Multiple Flows
 
 Illustrate scenarios where multiple flows need to interact and synchronize their execution.

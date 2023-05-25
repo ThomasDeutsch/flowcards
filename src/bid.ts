@@ -168,7 +168,7 @@ export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a request bid
  */
-export function requestWhenAskedFor<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
     const event = args[0];
     const payload = args[1] as P;
     const validate = args[2];
