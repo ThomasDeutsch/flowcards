@@ -68,3 +68,9 @@ export interface RejectPendingRequestAction extends BaseAction {
 
 /** all possible actions */
 export type Action<P> = ExternalAction<P> | ResolvePendingRequestAction<P> | RejectPendingRequestAction |  RequestedAction<P> | RequestedAsyncAction<P>;
+
+/** all possible extendable action types */
+export type ExtendableAction<P> = ExternalAction<P> | RequestedAction<P> | ResolvePendingRequestAction<P> | RequestedAsyncAction<P>;
+
+/** a selected action */
+export type SelectedAction<P> = Action<P> & {id: number};

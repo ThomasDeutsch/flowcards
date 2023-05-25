@@ -1,19 +1,22 @@
-import { Action, ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
-import { EventInformation, updateEventInformation, RequestingBidsAndEventInformation } from "./bid";
+import { Action, ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction, SelectedAction } from "./action";
 import { Event } from "./event";
 import { Flow, FlowGeneratorFunction } from "./flow";
-import { reactToExternalAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction";
-import { ActiveReplay, ActiveReplayInfo, Replay } from "./replay";
-import { ActionProcessedInformation, ActionReactionLogger } from "./action-reaction-logger";
+import { ActiveReplay, ActiveReplayInfo, Replay, ReplayAction } from "./replay";
+import { ActionAndReactions, ActionReactionLogger } from "./action-reaction-logger";
 import { processNextValidRequestBid } from "./process-request";
 import { processAction } from "./process-action";
+import { EventRecord, getAllEvents } from "./utils";
+import { InvalidBidReasons, invalidReasonsForRequestBid } from "./bid-invalid-reasons";
+import { AccumulatedValidationResults, explainValidation } from "./payload-validation";
+import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getOrderedRequestsAndCurrentBids } from "./bid";
+import { FlowReaction } from "./flow-reaction";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 /**
  * a callback function that is called if the current scheduler run is finished (all actions processed, and no more requests that can be processed)
  */
- export type SchedulerCompletedCallback = (info: ActionProcessedInformation[], bidsAndEventInfo: RequestingBidsAndEventInformation, activeReplayInfo: ActiveReplayInfo) => void;
+ //export type SchedulerCompletedCallback = (actionAndReactions: ActionAndReactions[], orderedRequestsAndCurrentBids: OrderedRequestsAndCurrentBids, activeReplayInfo: ActiveReplayInfo) => void;
 
 /**
  * properties of the Scheduler
@@ -22,14 +25,12 @@ import { processAction } from "./process-action";
  * @param replay the replay object that is used to record and replay the scheduler process
  */
 export interface SchedulerProps {
+    id: string;
     rootFlow: FlowGeneratorFunction;
-    completedCB?: SchedulerCompletedCallback;
+    events: EventRecord;
+    actionReactionGenerator?: Generator<void, void, ActionAndReactions>;
     replay?: Replay;
 }
-
-//TODO: how to handle multiple stores?
-// like handling multiple root flows?
-
 
 /**
  * the flowcards scheduler is the main class of the library.
@@ -38,27 +39,31 @@ export interface SchedulerProps {
  */
 export class Scheduler {
     private _rootFlow: Flow;
-    private _bidsAndEventInfo: RequestingBidsAndEventInformation;
+    private _orderedRequestsAndCurrentBids: OrderedRequestsAndCurrentBids
     private _actionReactionLogger = new ActionReactionLogger();
-    private _schedulerCompletedCallback?: SchedulerCompletedCallback;
+    private actionReactionGenerator?: Generator<void, void, ActionAndReactions>;
     private _activeReplay: ActiveReplay;
     private _currentActionId = -1;
     private _changedEvents: Map<string, Event<any,any>> = new Map();
     private _currentlyValidatedEvent?: Event<any, any>;
+    private _events: Event<any, any>[];
 
     constructor(props : SchedulerProps) {
         this._actionReactionLogger = new ActionReactionLogger();
-        this._schedulerCompletedCallback = props.completedCB;
+        this.actionReactionGenerator = props.actionReactionGenerator;
         this._rootFlow = new Flow({
-            id: 'rootFlow',
+            pathFromRootFlow: [props.id],
             generatorFunction: props.rootFlow,
             executeAction: this._run.bind(this),
             logger: this._actionReactionLogger,
             registerChangedEvent: this._registerChangedEvent.bind(this),
             parameters: []
         });
-        this._activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay, () => this._bidsAndEventInfo);
-        this._bidsAndEventInfo = updateEventInformation(this._connectEvent.bind(this), this._rootFlow.__getBidsAndPendingInformation());
+        this._events = getAllEvents(props.events);
+        this._events.forEach(event => this._connectEvent(event));
+        this._activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay, () => this._orderedRequestsAndCurrentBids);
+        this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
+        this.actionReactionGenerator?.next();
         this._run();
     }
 
@@ -101,7 +106,8 @@ export class Scheduler {
      */
     private _connectEvent(event: Event<any, any>): void {
         event.__connectToScheduler({
-            getEventInformation: (eventId: string) => this._bidsAndEventInfo.eventInformation.get(eventId),
+            rootFlowId: this._rootFlow.id,
+            getEventInformation: (eventId: string) => this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(eventId),
             registerEventAccess: this._registerEventAccessInValidateFunction.bind(this),
             toggleValueAccessLogging: this._toggleEventAccessRegistrationInValidateFunction.bind(this),
             startSchedulerRun: this._run.bind(this)
@@ -122,19 +128,34 @@ export class Scheduler {
     private _run(action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
         const nextActionId = this._currentActionId + 1;
         const wasActionProcessed =
-            this._activeReplay.processNextReplayAction(this._bidsAndEventInfo, nextActionId) ||
-            processAction(this._bidsAndEventInfo, nextActionId, this._actionReactionLogger, action) ||
-            processNextValidRequestBid(this._bidsAndEventInfo, nextActionId, this._actionReactionLogger);
+            this._activeReplay.processNextReplayAction(this._orderedRequestsAndCurrentBids, nextActionId) ||
+            processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, action) ||
+            processNextValidRequestBid(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger);
         if(wasActionProcessed) {
             this._currentActionId = nextActionId;
-            this._bidsAndEventInfo = updateEventInformation(this._connectEvent.bind(this), this._rootFlow.__getBidsAndPendingInformation());
+            this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
+            this.actionReactionGenerator?.next(this._actionReactionLogger.getActionsAndReactions());
             this._run();
         }
         else {
-            const logs = this._actionReactionLogger.flushLog();
             this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
             this._changedEvents.clear();
-            this._schedulerCompletedCallback?.(logs, Object.freeze(this._bidsAndEventInfo), {state: this._activeReplay.state});
+            this.actionReactionGenerator?.next(this._actionReactionLogger.getActionsAndReactions());
         }
+    }
+
+    /**
+     * for a given request bid, return the invalid reasons for the bid.
+     * @param bid the request bid that will be checked
+     * @returns the invalid reasons for the bid or the validation results if the bid is invalid
+     */
+    public explainRequestBid<P,V>(bid: Placed<RequestBid<P,V>>): InvalidBidReasons | undefined {
+        const currentBids = this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(bid.event.id);
+        const invalidBidReasons = invalidReasonsForRequestBid(bid, currentBids);
+        return invalidBidReasons
+    }
+
+    public getOrderedRequestsAndCurrentBids(): OrderedRequestsAndCurrentBids {
+        return Object.freeze(this._orderedRequestsAndCurrentBids);
     }
 }

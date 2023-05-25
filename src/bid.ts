@@ -1,6 +1,6 @@
 import { Event } from "./event";
 import { BaseValidationReturn } from "./payload-validation";
-import { Flow, FlowBidsAndPendingInformation, PendingExtend, TNext } from "./flow";
+import { AllBidsAndPendingInformation, Flow, PendingExtend, TNext } from "./flow";
 
 /**
  * with each yield or yield* statement, a flow can place bids.
@@ -32,7 +32,7 @@ export enum BidType {
 }
 
 /**  a bid, that can be placed by a flow (has not been placed yet) */
-export interface Bid<P, V> {
+interface Bid<P, V> {
     type: BidType;
     event: Event<P, V>;
 }
@@ -59,7 +59,7 @@ export interface RequestBid<P, V> extends Bid<P, V> {
     type: BidType.request;
     payload: P | ((current?: P) => P) | ((current?: P) => Promise<P>);
     validate?: (nextValue: P) => BaseValidationReturn<V>;
-    onlyWhenAskedFor?: true;
+    isTriggerAskedFor?: true;
     isGetValueBid?: boolean;
 }
 
@@ -77,19 +77,21 @@ export interface BlockBid<P, V> extends Bid<P, V> {
  * a placed bid is a bid that has been placed by a flow.
  * a placed bid are the currently active bids in the event information (known to the scheduler)
  */
-export type Placed<B extends Bid<any, any>> = B & {
+export type Placed<B extends AnyBid<any, any>> = B & {
     id: number;
     flow: Flow;
 }
 
 /**
- * information about the placed bids and pending information for an event
- * @internalRemarks the askForValidationId is a used for a check-optimization.
- * if this check-optimization string has changed, the event knows that the validation needs to be checked again.
- * the check-optimization string is also used for performance optimization of the scheduler.
- * If an external event is picked from the queue and the check-optimization string has not changed, the event does not need to be checked again.
+ * Union type for all bid types
+ * export type AnyBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | RequestBid<P,V> | ValidateBid<P,V> | BlockBid<P,V>;
  */
-export interface EventInformation<P, V> {
+export type AnyBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | RequestBid<P,V> | ValidateBid<P,V> | BlockBid<P,V>;
+
+/**
+ * all placed bids and pending information for an event
+ */
+export interface CurrentBidsForEvent<P, V> {
     event: Event<P,V>;
     [BidType.request]?: Placed<RequestBid<P, V>>[];
     [BidType.waitFor]?: Placed<WaitForBid<P, V>>[];
@@ -100,61 +102,62 @@ export interface EventInformation<P, V> {
     pendingRequest?: Placed<RequestBid<P,V>>;
     pendingExtend?: PendingExtend<P,V>;
 }
+/**
+ * Union type for all progressing bid types
+ * A progressing bid is a bid that will advance the flow, because an event happened.
+ * A block or validate bid will not advance the flow therefore it is not a progressing bid.
+ */
+export type ProgressingBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | RequestBid<P,V>
 
 /**
  * collected information about an event, and all requesting bids.
  * 1. all placed request bids (for all event-ids) that are ordered (first bid has the highest priority)
- * 2. for every event, the event information (see EventInformation)
+ * 2. for every event, the event information (see )
  * 3. for every event, a list of all active contexts (see PlacedContextBid)
  */
- export interface RequestingBidsAndEventInformation {
-    requested: Map<string, Placed<RequestBid<any, any>>[]>;
-    eventInformation: Map<string, EventInformation<any, any>>;
+ export interface OrderedRequestsAndCurrentBids {
+    orderedRequests: Map<string, Placed<RequestBid<any, any>>[]>;
+    currentBidsByEventId: Map<string, CurrentBidsForEvent<any, any>>;
 }
 
 // CORE FUNCTIONS -----------------------------------------------------------------------------------------------
 
 /**
- * converts information about the placed bids and pending information for an event to a RequestingBidsAndEventInformation object
- * this object is used by the scheduler to validate and select actions.
- * @param connectEvent function to connect an event to the scheduler
- * @param fb the flow bids and pending information
- * @returns collected information about all events and pending requests and extends (see RequestingBidsAndEventInformation)
+ * organizes all bids and pending information into a new data structure that is more performant to use for the scheduler.
+ * @param fb the information about all placed bids and pending information
+ * @returns collected information about all events and pending requests and extends
  * @internal
  */
-//TODO: analyze if this function can be optimized, by updating only the changed information
-export function updateEventInformation(connectEvent: (event: Event<any, any>) => void, fb: FlowBidsAndPendingInformation): RequestingBidsAndEventInformation {
-    const result: RequestingBidsAndEventInformation = {
-        requested: new Map(),
-        eventInformation: new Map(),
+export function getOrderedRequestsAndCurrentBids(fb: AllBidsAndPendingInformation ): OrderedRequestsAndCurrentBids {
+    const result: OrderedRequestsAndCurrentBids = {
+        orderedRequests: new Map(),
+        currentBidsByEventId: new Map(),
     };
     // 1. add all placed bids to the result
     fb.placedBids.forEach(bid => {
-        if(!bid.event.wasUsedInAFlow) {
-            connectEvent(bid.event);
-        }
+        if(bid.event.rootFlowId !== bid.flow.pathFromRootFlow[0]) return; // only add bids that are placed by the root flow (the flow that placed the event)
         if(isRequestBid(bid)) {
-            const currentRequestBids = result.requested.get(bid.event.id) || [];
-            result.requested.set(bid.event.id, [...currentRequestBids , bid]);
+            const currentRequestBids = result.orderedRequests.get(bid.event.id) || [];
+            result.orderedRequests.set(bid.event.id, [...currentRequestBids , bid]);
         }
-        const eventInfo = result.eventInformation.get(bid.event.id) || getInitialEventInformation(bid.event);
-        if(eventInfo[bid.type] === undefined) eventInfo[bid.type] = [bid as any];
+        const currentBids = result.currentBidsByEventId.get(bid.event.id) || {event: bid.event} satisfies CurrentBidsForEvent<any, any>;
+        if(currentBids[bid.type] === undefined) currentBids[bid.type] = [bid as any];
         else {
-            eventInfo[bid.type]?.push(bid as any); // TODO: find a better type solution ( mapped types? )
+            currentBids[bid.type]?.push(bid as any); // TODO: find a better type solution ( mapped types? )
         }
-        result.eventInformation.set(bid.event.id, eventInfo);
+        result.currentBidsByEventId.set(bid.event.id, currentBids);
     });
     // 2. add pending request information to the result
     fb.pendingRequests?.forEach((pendingRequest, eventId) => {
-        const eventInfo = result.eventInformation.get(eventId) ?? getInitialEventInformation(pendingRequest.event);
-        eventInfo.pendingRequest = pendingRequest;
-        result.eventInformation.set(eventId, eventInfo);
+        const currentBids = result.currentBidsByEventId.get(eventId) ?? {event: pendingRequest.event} satisfies CurrentBidsForEvent<any, any>;
+        currentBids.pendingRequest = pendingRequest;
+        result.currentBidsByEventId.set(eventId, currentBids);
     });
     // 3. add pending extend information to the result
     fb.pendingExtends?.forEach((pendingExtend, eventId) => {
-        const eventInfo = result.eventInformation.get(eventId) ?? getInitialEventInformation(pendingExtend.event);
-        eventInfo.pendingExtend = pendingExtend;
-        result.eventInformation.set(eventId, eventInfo);
+        const currentBids = result.currentBidsByEventId.get(eventId) ?? {event: pendingExtend.event} satisfies CurrentBidsForEvent<any, any>;
+        currentBids.pendingExtend = pendingExtend;
+        result.currentBidsByEventId.set(eventId, currentBids);
     });
     return result;
 }
@@ -171,7 +174,7 @@ export function updateEventInformation(connectEvent: (event: Event<any, any>) =>
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a request bid
  */
-export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => RequestBid<P, V>>) {
     const event = args[0];
     return {
         type: BidType.request,
@@ -182,18 +185,18 @@ export function request<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
 }
 
 /**
- * Creates a request bid that will only be placed if the event is asked for, by a flow that placed an askFor bid.
+ * Creates a request bid that can only progress if the event is asked for.
  * @param event the event that is about to be requested
  * @param payload the payload is a value, a function that returns a value or a function that returns a promise.
  * @param validate an optional validation function that can block the request if it tries to set an invalid value.
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a request bid
  */
-export function requestWhenAskedFor<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: P| ((current?: P) => P) | ((current?: P) => Promise<P>), validate?: (nextValue: P) => BaseValidationReturn<V>) => RequestBid<P, V>>) {
     const event = args[0];
     const payload = args[1] as P;
     const validate = args[2];
-    return { type: BidType.request, event, payload, validate, onlyWhenAskedFor: true } satisfies RequestBid<P, V>;
+    return { type: BidType.request, event, payload, validate, isTriggerAskedFor: true } satisfies RequestBid<P, V>;
 }
 
 /**
@@ -205,7 +208,7 @@ export function requestWhenAskedFor<P, V>(...args: Parameters<(event: Event<P, V
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns an extend bid
  */
-export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => ExtendBid<P, V>>) {
     const event = args[0];
     const validate = args[1];
     return { type: BidType.extend, event, validate } satisfies ExtendBid<P, V>;
@@ -220,7 +223,7 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a waitFor bid
  */
- export function waitFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+ export function waitFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => BaseValidationReturn<V>) => WaitForBid<P, V>>) {
     const event = args[0];
     const validate = args[1];
     return { type: BidType.waitFor, event, validate } satisfies WaitForBid<P, V>;
@@ -235,7 +238,7 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns an askFor bid
  */
- export function askFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+ export function askFor<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>) => AskForBid<P, V>>) {
     const event = args[0];
     const validate = args[1];
     return { type: BidType.askFor, event, validate } satisfies AskForBid<P, V>;
@@ -251,7 +254,7 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a block bid
  */
- export function block<P, V>(event: Event<P, V>, blockIf?: () => BaseValidationReturn<V>) {
+ export function block<P, V>(event: Event<P, V>, blockIf?: () => BaseValidationReturn<V>): BlockBid<P,V> {
     return { type: BidType.block, event, validate: blockIf } satisfies BlockBid<P, V>;
 }
 
@@ -264,7 +267,7 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
  * @returns a validate bid
  */
- export function validate<P, V>(...args: Parameters<(event: Event<P, V>, validate: (nextValue: P) => BaseValidationReturn<V>) => Bid<P, V>>) {
+ export function validate<P, V>(...args: Parameters<(event: Event<P, V>, validate: (nextValue: P) => BaseValidationReturn<V>) => ValidateBid<P, V>>) {
     return { type: BidType.validate, event: args[0] as Event<P,V>, validate: args[1] as (nextValue: P) => BaseValidationReturn<V> } satisfies ValidateBid<P, V>;
 }
 
@@ -275,25 +278,17 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * check if a bid is a request bid (requesting bid)
  * @returns true if the bid is a requesting bid
  */
-function isRequestBid(bid: Placed<Bid<unknown, unknown>>): bid is Placed<RequestBid<unknown, unknown>> {
+function isRequestBid(bid: Placed<AnyBid<unknown, unknown>>): bid is Placed<RequestBid<unknown, unknown>> {
     return bid.type === "request";
 }
 
-/**
- * get initial event information
- * @returns initial event information
- */
-function getInitialEventInformation<P,V>(event: Event<P, V>): EventInformation<P, V> {
-    return { event } as EventInformation<P, V>;
-}
 
 /**
  * helper function to guarantee a Bid[] return type if the input is not undefined
  * @param next a next value of a flow generator
  * @returns an array of bids/placed bids or undefined
- * @internal
  */
- export function toBids(next?: TNext | void): (Bid<unknown, unknown>)[] | undefined {
+ export function toBids(next?: TNext | void): (AnyBid<unknown, unknown>)[] | undefined {
     if(next === undefined) return undefined;
     if (Array.isArray(next)) {
         return next;
@@ -309,7 +304,7 @@ function getInitialEventInformation<P,V>(event: Event<P, V>): EventInformation<P
  * @param bidId bid id of the second bid
  * @returns true if the bids are the same
  */
-export function isSameBid(bid1: Placed<Bid<any, any>>, flowId: string, bidId: number): boolean {
+export function isSameBid(bid1: Placed<AnyBid<any, any>>, flowId: string, bidId: number): boolean {
     return (bid1.id === bidId) && (bid1.flow.id === flowId);
 }
 
@@ -325,7 +320,7 @@ export function isSameBid(bid1: Placed<Bid<any, any>>, flowId: string, bidId: nu
  * @internalRemarks
  * - validate and block bids will be removed from the remainingBids, if they are the last remaining bids
  */
-export function filterRemainingBids(bidId: number, placedBids?: Placed<Bid<any, any>>[]): Placed<Bid<any, any>>[] | undefined {
+export function filterRemainingBids(bidId: number, placedBids?: Placed<AnyBid<any, any>>[]): Placed<AnyBid<any, any>>[] | undefined {
     if(placedBids === undefined) return undefined;
     const remainingBids = placedBids.filter(bid => bid.id !== bidId);
     if(remainingBids.length === 0) {

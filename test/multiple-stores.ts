@@ -1,0 +1,1 @@
+// TODO: an event from another store can only be triggerWhenAskedFor, all other bid-types are not allowed and will be ignored.

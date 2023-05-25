@@ -1,7 +1,7 @@
 import { RequestedAction, RequestedAsyncAction } from "./action";
-import { explainValidation, isValidReturn } from "./payload-validation";
+import { explainValidation } from "./payload-validation";
 import { ActionReactionLogger } from "./action-reaction-logger";
-import { EventInformation, PlacedRequestBid, RequestingBidsAndEventInformation } from "./bid";
+import { Placed, RequestBid, OrderedRequestsAndCurrentBids, CurrentBidsForEvent } from "./bid";
 import { reactToRequestedAction, reactToRequestedAsyncAction } from "./flow-reaction";
 import { isThenable, mapValues } from "./utils";
 import { invalidReasonsForRequestBid } from "./bid-invalid-reasons";
@@ -15,18 +15,17 @@ import { invalidReasonsForRequestBid } from "./bid-invalid-reasons";
  * @param logger the logger that is used to log invalid bids, invalid payloads and processed actions
  * @returns true if there was a valid bid that was processed, false if no valid bid was found
  */
-export function processNextValidRequestBid(info: RequestingBidsAndEventInformation, nextActionId: number, logger: ActionReactionLogger): boolean {
+export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, nextActionId: number, logger: ActionReactionLogger): boolean {
     // from all the request bids that are placed
-    return mapValues(info.requested).some(<P,V>(bids: PlacedRequestBid<P, V>[]) => {
+    return mapValues(info.orderedRequests).some(<P,V>(bids: Placed<RequestBid<P, V>>[]) => {
         // check if there is a valid bid that will be processed
         return bids.some(bid => {
-            let eventInfo = info.eventInformation.get(bid.event.id);
-            const invalidReasons = invalidReasonsForRequestBid(bid, eventInfo);
+            let currentBids = info.currentBidsByEventId.get(bid.event.id);
+            const invalidReasons = invalidReasonsForRequestBid(bid, currentBids);
             if(invalidReasons !== undefined) {
-                logger.logInvalidRequestBid(bid, invalidReasons); //TODO
                 return false;
             }
-            eventInfo = eventInfo as EventInformation<P, V>; // is not undefined because of the invalidReasonsForRequestBid check
+            currentBids = currentBids as CurrentBidsForEvent<P, V>; // is not undefined because of the invalidReasonsForRequestBid check
             // all checks passed, the bid payload can now be validated.
             // First, check if the payload is a function, if so, call it with the current event value
             const payload = bid.payload instanceof Function ? bid.payload(bid.event.value) : bid.payload;
@@ -41,16 +40,15 @@ export function processNextValidRequestBid(info: RequestingBidsAndEventInformati
                     bidId: bid.id,
                     flowId: bid.flow.id
                 }
-                reactToRequestedAsyncAction(eventInfo, requestedAsyncAction, bid);
+                reactToRequestedAsyncAction(currentBids, requestedAsyncAction, bid);
                 logger.onActionProcessed(requestedAsyncAction);
                 return true;
             } else {
                 // if the payload is not a promise, the payload can be checked immediately
                 // if the bid is only valid when asked for, the highest priority askFor bid is also used to validate the payload
-                const highestPriorityAskForBid = eventInfo.askFor[0];
-                const payloadValidation = explainValidation(eventInfo, payload, [bid, bid.onlyWhenAskedFor ? highestPriorityAskForBid : undefined]);
+                const highestPriorityAskForBid = currentBids.askFor?.[0];
+                const payloadValidation = explainValidation(currentBids, payload, [bid, bid.isTriggerAskedFor ? highestPriorityAskForBid : undefined]);
                 if(!payloadValidation.isValidAccumulated) {
-                    logger.logInvalidPayload(bid, payloadValidation);
                     return false;
                 }
                 // all checks passed, the bid is valid and will be processed
@@ -62,7 +60,7 @@ export function processNextValidRequestBid(info: RequestingBidsAndEventInformati
                     bidId: bid.id,
                     flowId: bid.flow.id
                 };
-                reactToRequestedAction(eventInfo, requestedAction, bid);
+                reactToRequestedAction(currentBids, requestedAction, bid);
                 logger.onActionProcessed(requestedAction);
                 return true;
             }

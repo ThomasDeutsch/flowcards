@@ -1,8 +1,8 @@
 import { AccumulatedValidationResults, explainValidation } from "./payload-validation";
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
-import { EventInformation } from "./bid";
 import { getKeyFromId } from "./utils";
-import { InvalidBidReason, invalidReasonsForAskForBid } from "./bid-invalid-reasons";
+import { invalidReasonsForAskForBid, InvalidBidReasons } from "./bid-invalid-reasons";
+import { CurrentBidsForEvent } from "./bid";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
@@ -15,7 +15,8 @@ import { InvalidBidReason, invalidReasonsForAskForBid } from "./bid-invalid-reas
  * @param toggleValueAccessLogging toggle the registration of this event during a bid-validate function call
  */
 interface ConnectToSchedulerProps {
-    getEventInformation: (eventId: string) => EventInformation<any, any> | undefined;
+    rootFlowId: string;
+    getEventInformation: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     startSchedulerRun: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerEventAccess: (event: Event<any, any>) => void;
     toggleValueAccessLogging: (event: Event<any, any>) => void;
@@ -37,6 +38,7 @@ export function getEvents(neo: NestedEventObject): Event<any, any>[] {
     return Object.values(neo).map(getEvents).flat();
 }
 
+
 // CORE FUNCTIONS -----------------------------------------------------------------------------------------------
 
 /**
@@ -47,8 +49,9 @@ export function getEvents(neo: NestedEventObject): Event<any, any>[] {
 export class Event<P = undefined, V = void> {
     public readonly id: string;
     private _value?: P;
+    private _rootFlowId?: string;
     private _startSchedulerRun?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
-    private _getEventInformation?: (eventId: string) => EventInformation<P, V> | undefined;
+    private _getEventInformation?: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     private _onUpdateCallback?: () => void; // only a single subscriber is supported
     private _registerEventAccess?: () => void;
     private _toggleValueAccessLogging?: (event: Event<any, any>) => void;
@@ -67,6 +70,7 @@ export class Event<P = undefined, V = void> {
      */
     public __reset(): void {
         // from the connectToScheduler function
+        this._rootFlowId = undefined;
         this._startSchedulerRun = undefined;
         this._getEventInformation = undefined;
         this._registerEventAccess = undefined;
@@ -84,6 +88,7 @@ export class Event<P = undefined, V = void> {
      * @param addActionToQueue the function to add an action to the queue
      */
     public __connectToScheduler(props: ConnectToSchedulerProps): void {
+        this._rootFlowId = props.rootFlowId;
         this._getEventInformation = props.getEventInformation;
         this._startSchedulerRun = props.startSchedulerRun;
         this._registerEventAccess = () => props.registerEventAccess(this);
@@ -128,14 +133,13 @@ export class Event<P = undefined, V = void> {
     }
 
     /**
-     * @internal
      * Get all invalid reasons why the event has not a valid askFor bid.
      * Payload validations are not checked in this function.
      * To check if the payload is valid, use the validate function.
      * @returns an explanation why the highest priority askFor bid is not valid.
      */
     private _invalidReasons() {
-        return invalidReasonsForAskForBid(this._getEventInformation?.(this.id));
+        return invalidReasonsForAskForBid(this.id, this._getEventInformation?.(this.id));
     }
 
     /**
@@ -143,10 +147,10 @@ export class Event<P = undefined, V = void> {
      * @param value the value to validate
      * @returns an object with the validation result and the details of the validation
      */
-    public validate(value: P): {isValidAccumulated: boolean, invalidBidReasons?: InvalidBidReason[], payloadValidation?: AccumulatedValidationResults<V>} {
+    public validate(value: P): {isValidAccumulated: boolean, invalidBidReasons?: InvalidBidReasons, payloadValidation?: AccumulatedValidationResults<V>} {
         const invalidBidReasons = this._invalidReasons();
-        if(invalidBidReasons) return {isValidAccumulated: false, invalidBidReasons };
-        const eventInfo = this._getEventInformation?.(this.id) as EventInformation<P, V>; // guaranteed to be valid because of the invalidReasons check
+        if(invalidBidReasons) return {isValidAccumulated: false, invalidBidReasons};
+        const eventInfo = this._getEventInformation?.(this.id) as CurrentBidsForEvent<P, V>; // guaranteed to be valid because of the invalidReasons check
         this._toggleValueAccessLogging?.(this);
         const validationResult = explainValidation(eventInfo, value, [eventInfo.askFor?.[0]]) || {isValidAccumulated: false};
         this._toggleValueAccessLogging?.(this);
@@ -155,7 +159,7 @@ export class Event<P = undefined, V = void> {
 
     /**
      * returns true if the event is valid, false otherwise
-     * this is a shortcut for calling the explain function and checking if the result is valid
+     * this is a shortcut for calling the validate function and checking if the result is valid
      * @param value the value to check
      * @returns true if the event is valid, false otherwise
      */
@@ -164,14 +168,13 @@ export class Event<P = undefined, V = void> {
     }
 
     /**
-     * add an external action to the queue and start a new microtask that runs the scheduler.
-     * A dispatch is only possible if the value for that event is valid. You can check if the event is valid by calling the explain function or the isValid function.
+     * run the scheduler with an external action (if valid bid & payload)
+     * You can check if the trigger is valid by calling the isValid function or the validate function.
      * @param value the next event value
      * @returns true if the dispatch added an action to the queue, false otherwise.
-     * @remarks before the action is added to the queue, the event value will be validated, by using the explain function.
      */
-    public dispatch(value: P) {
-        const validationResult = this.validate(value);
+    public trigger(value: P): void {
+        const validationResult = this.validate(value as P);
         if(!validationResult.isValidAccumulated) {
             console.group('INVALID DISPATCH', this.id);
             if(validationResult.invalidBidReasons) {
@@ -185,7 +188,7 @@ export class Event<P = undefined, V = void> {
             }
             console.info('Info: before dispatching the event, validate with event.isValid(<value>)');
             console.groupEnd();
-            throw new Error('event can not be dispatched');
+            throw new Error('event can not be triggered because it is not valid');
         }
         // because the explain has checked if the event is valid, it is ok to use the ! in this function.
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -194,7 +197,7 @@ export class Event<P = undefined, V = void> {
         const highestPriorityAskForBid = eventInformation.askFor?.[0]!;
         const action: ExternalAction<P> = {
             type: "external",
-            payload: value,
+            payload: value as P,
             id: null,
             eventId: this.id,
             flowId: highestPriorityAskForBid.flow.id,
@@ -226,14 +229,6 @@ export class Event<P = undefined, V = void> {
     public __addRelatedValidationEvent(event: Event<P, V>): void {
         if(event == this) return;
         this._relatedValidationEvents.set(event.id, event);
-    }
-
-    /**
-     * returns true if the event had a placed bid by any of the flows.
-     */
-    public get wasUsedInAFlow(): boolean {
-        this._registerEventAccess?.();
-        return !!this._getEventInformation;
     }
 
     /**
@@ -288,6 +283,13 @@ export class Event<P = undefined, V = void> {
      */
     public get description(): string | undefined {
         return this._description;
+    }
+
+    /**
+     * get the event root flow id
+     */
+    public get rootFlowId(): string | undefined {
+        return this._rootFlowId;
     }
 }
 

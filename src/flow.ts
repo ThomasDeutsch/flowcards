@@ -1,5 +1,5 @@
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
-import { Bid, toBids, filterRemainingBids, Placed, RequestBid } from "./bid";
+import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid } from "./bid";
 import { Event } from  "./event";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { areDepsEqual, isThenable, mergeMaps } from "./utils";
@@ -13,13 +13,13 @@ import { isProgressingBid } from "./bid-utility-functions";
  * a flow generators next value can return a bid or an array of bids.
  * if a flow places the same bid again, it is a PlacedBid.
  */
-export type TNext = Bid<any, any> | Placed<Bid<any, any>> | (Bid<any, any> | Placed<Bid<any, any>>)[] | undefined;
+export type TNext = AnyBid<any, any> | Placed<AnyBid<any, any>> | (AnyBid<any, any> | Placed<AnyBid<any, any>>)[] | undefined;
 
 /**
  * The progress info contains information about the latest progression of this flow.
  * The information contains the latest progressed event and the remaining bids for this flow.
 */
-export type FlowProgressInfo = [Event<unknown>, Placed<Bid<unknown, unknown>>[] | undefined];
+export type FlowProgressInfo = [Event<unknown>, Placed<AnyBid<unknown, unknown>>[] | undefined];
 
 /**
  * a generator function returns a flow-generator that is bound to the flow
@@ -37,7 +37,7 @@ type FlowIteratorResult = IteratorResult<TNext | undefined, void>;
  * all parameters needed to create a flow
  */
 export interface FlowParameters {
-    id: string;
+    pathFromRootFlow: string[];
     generatorFunction: FlowGeneratorFunction;
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerChangedEvent: (event: Event<any, any>) => void;
@@ -48,8 +48,8 @@ export interface FlowParameters {
 /**
  * information about the flow bids and pending events
  */
-export interface FlowBidsAndPendingInformation {
-    placedBids: Placed<Bid<any, any>>[];
+export interface AllBidsAndPendingInformation {
+    placedBids: Placed<AnyBid<any, any>>[];
     pendingRequests?: Map<string, Placed<RequestBid<any, any>>>;
     pendingExtends?: Map<string, PendingExtend<any, any>>;
 }
@@ -61,7 +61,7 @@ export interface FlowBidsAndPendingInformation {
     value?: P | Promise<P>;
     event: Event<P,V>;
     extendingFlow: Flow;
-    extendedBids: Placed<Bid<P, V>>[];
+    extendedBids: Placed<AnyBid<P, V>>[];
 }
 
 /**
@@ -69,14 +69,13 @@ export interface FlowBidsAndPendingInformation {
  * a flow is able to place bids and react to actions.
  */
 export class Flow {
-    public readonly id: string;
     private readonly _generatorFunction: FlowGeneratorFunction;
     private _generator: FlowGenerator;
     private _children: Map<string, Flow> = new Map();
     private _hasEnded = false;
     private _currentBidId = 0;
     private _isDisabled = false;
-    private _placedBids: Placed<Bid<unknown, unknown>>[] | undefined;
+    private _placedBids: Placed<AnyBid<unknown, unknown>>[] | undefined;
     private _pendingRequests: Map<string, Placed<RequestBid<any, any>>> = new Map();
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
     private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
@@ -85,10 +84,11 @@ export class Flow {
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
     private _onCleanupCallback?: () => void;
+    public readonly pathFromRootFlow: string[];
 
     constructor(parameters: FlowParameters) {
         // this initialization is only done once
-        this.id = parameters.id;
+        this.pathFromRootFlow = parameters.pathFromRootFlow;
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._executeAction = parameters.executeAction;
         this._logger = parameters.logger;
@@ -98,6 +98,7 @@ export class Flow {
         this._generator = this._generatorFunction(...(this._currentParameters || []));
         try {
             this._handleNext.bind(this)(this._generator.next());
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled', {});
         } catch(error) {
             console.error('first .next call in constructor exited with an error: ', this.id, ': ', error, '.flow will be ended');
             this.__end();
@@ -111,16 +112,16 @@ export class Flow {
      * @param next the iterator result of the generator
      * @internalRemarks mutates: ._currentBidId, ._placedBids
      */
-    private _placeBids(nextBids?: (Bid<any, any> | Placed<Bid<any, any>>)[]): void {
+    private _placeBids(nextBids?: (AnyBid<any, any> | Placed<AnyBid<any, any>>)[]): void {
         const nextPlacedBids = nextBids?.map(bid => {
             if('id' in bid) {
-                return {...bid, flow: this, id: bid.id} as Placed<Bid<any, any>>;
+                return {...bid, flow: this, id: bid.id} as Placed<AnyBid<any, any>>;
             }
             else {
                 if(bid.type === 'askFor' || bid.type === 'validate' || bid.type === 'block') {
                     this._registerChangedEvent(bid.event);
                 }
-                return {...bid, flow: this, id: this._currentBidId++} as Placed<Bid<any, any>>;
+                return {...bid, flow: this, id: this._currentBidId++} as Placed<AnyBid<any, any>>;
             }
         });
         // get all bids that are no longer placed
@@ -129,7 +130,7 @@ export class Flow {
             if(!isRemoved) return;
             if(this._pendingRequests.delete(placedBid.event.id)) {
                 this._registerChangedEvent(placedBid.event);
-                this._logger.logFlowReaction(this.id, 'pending request cancelled', {eventId: placedBid.event.id});
+                this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending request cancelled', {eventId: placedBid.event.id});
             }
             if (placedBid.type === 'askFor' || placedBid.type === 'validate' || placedBid.type === 'block') {
                 this._registerChangedEvent(placedBid.event);
@@ -183,7 +184,7 @@ export class Flow {
     public __end(keepExtends?: boolean): void {
         this._resetToInitial(keepExtends);
         this._hasEnded = true;
-        this._logger.logFlowReaction(this.id, 'flow ended', {});
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow ended', {});
     }
 
     /**
@@ -202,10 +203,10 @@ export class Flow {
         this._isDisabled = true;
         this._pendingRequests.forEach(request => {
             this._registerChangedEvent(request.event);
-            this._logger.logFlowReaction(this.id, 'pending request cancelled', {eventId: request.event.id});
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending request cancelled', {eventId: request.event.id});
             this._pendingRequests.delete(request.event.id);
         });
-        this._logger.logFlowReaction(this.id, 'flow disabled', {});
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow disabled', {});
         this._children.forEach((child) => {
             child.__disable();
         });
@@ -236,7 +237,7 @@ export class Flow {
      * @internal
      * @returns all bids and pending information (see FlowBidsAndPendingInformation)
      */
-    public __getBidsAndPendingInformation(): FlowBidsAndPendingInformation {
+    public __getBidsAndPendingInformation(): AllBidsAndPendingInformation {
         const placedBids = this.isDisabled ? [] : this._placedBids || [];
         const result = {
             placedBids,
@@ -249,7 +250,7 @@ export class Flow {
             result.pendingRequests = mergeMaps(result.pendingRequests, childBidsAndPendingInformation.pendingRequests);
             result.pendingExtends = mergeMaps(result.pendingExtends, childBidsAndPendingInformation.pendingExtends);
         });
-        return result;
+        return result
     }
 
     /**
@@ -267,11 +268,11 @@ export class Flow {
         }
         catch(error) {
             console.error('error in flow ', this.id, ': ', error);
-            this._logger.logFlowReaction(this.id, 'flow restarted because an error was not handled', {eventId: event.id});
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow restarted because an error was not handled', {eventId: event.id});
             this.__restart();
             return;
         }
-        this._logger.logFlowReaction(this.id, 'flow progressed on a handled error', {eventId: event.id});
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow progressed on a handled error', {eventId: event.id});
         this._handleNext(next);
     }
 
@@ -283,13 +284,13 @@ export class Flow {
      * @param actionId the id of the action to check if the flow already progressed on this action
      * @internalRemarks mutates: ._generator (next)
      */
-    public __onEvent(event: Event<any, any>, bid: Placed<Bid<any, any>>, actionId: number): void {
+    public __onEvent(event: Event<any, any>, bid: Placed<AnyBid<any, any>>, actionId: number): void {
         if(this._latestActionIdThisFlowProgressedOn === actionId) return; // prevent from progressing twice on the same action
         this._registerChangedEvent(event);
         this._latestActionIdThisFlowProgressedOn = actionId;
         try {
             const next = this._generator.next([event, filterRemainingBids(bid.id, this._placedBids)]);
-            this._logger.logFlowReaction(this.id, 'flow progressed on a bid', {bidId: bid.id, bidType: bid.type, eventId: event.id, actionId: actionId});
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow progressed on a bid', {bidId: bid.id, bidType: bid.type, eventId: event.id, actionId: actionId});
             if(isProgressingBid(bid) && bid.isGetValueBid) {
                 // disable all children that are not enabled during the last progress
                 this._children.forEach((child) => {
@@ -314,9 +315,9 @@ export class Flow {
      * @param extend the pending extend information
      * @param actionId the id of the action to check if the flow already progressed on this action
      */
-    public __onExtend<P, V>(event: Event<P, V>, bid: Placed<Bid<any, any>>, extend: PendingExtend<P,V>, actionId: number): void {
+    public __onExtend<P, V>(event: Event<P, V>, bid: Placed<AnyBid<any, any>>, extend: PendingExtend<P,V>, actionId: number): void {
         this._pendingExtends.set(event.id, extend);
-        this._logger.logFlowReaction(this.id, 'pending extend added', {eventId: event.id, bidId: bid.id, bidType: bid.type, actionId: actionId});
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend added', {eventId: event.id, bidId: bid.id, bidType: bid.type, actionId: actionId});
         if(isThenable(extend.value)) return;
         this.__onEvent(event, bid, actionId);
     }
@@ -329,7 +330,7 @@ export class Flow {
      */
     public __onRequestedAsync<P, V>(bid: Placed<RequestBid<P,V>>, promise: Promise<P>, requestActionId: number): void {
         this._pendingRequests.set(bid.event.id, bid);
-        this._logger.logFlowReaction(this.id, 'pending request added', {eventId: bid.event.id, bidId: bid.id, bidType: bid.type, actionId: requestActionId});
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending request added', {eventId: bid.event.id, bidId: bid.id, bidType: bid.type, actionId: requestActionId});
         this._registerChangedEvent(bid.event);
         promise.then((value: P) => {
             if(this._pendingRequests.get(bid.event.id) != bid) {
@@ -372,12 +373,19 @@ export class Flow {
      public __resolvePendingRequest(event: Event<any,any>): void {
         const wasRemoved = this._pendingRequests.delete(event.id);
         if(wasRemoved) {
-            this._logger.logFlowReaction(this.id, 'pending request resolved', {eventId: event.id});
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending request resolved', {eventId: event.id});
             this._registerChangedEvent(event);
         }
     }
 
     // PUBLIC --------------------------------------------------------------------------------------------
+
+    /**
+     * get the id of this flow
+     */
+    public get id(): string {
+        return this.pathFromRootFlow[this.pathFromRootFlow.length - 1];
+    }
 
     /**
      * start a flow as a child flow of the current parent flow (this)
@@ -393,19 +401,18 @@ export class Flow {
             // child flow with this id already exists:
             if(currentChild._isDisabled) {
                 this._isDisabled = false;
-                this._logger.logFlowReaction(this.id, 'flow enabled, after being disabled', {childFlowId: currentChild.id});
+                this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled, after being disabled', {childFlowId: currentChild.id});
             }
             if(!areDepsEqual(currentChild.parameters || [], parameters)) {
-                this._logger.logFlowReaction(currentChild.id, 'flow restarted because parameters changed', {childFlowId: currentChild.id});
+                this._logger.__logFlowReaction([...this.pathFromRootFlow, currentChild.id], 'flow restarted because parameters changed', {childFlowId: currentChild.id});
                 currentChild.__restart(parameters);
             }
             currentChild.__enabledOnActionId = this._latestActionIdThisFlowProgressedOn;
             return currentChild;
         }
         // no child flow with this id exists:
-        const fullChildIdPath = `${(this.id)}>${id}`;
         const newChild = new Flow({
-            id: fullChildIdPath,
+            pathFromRootFlow: [...this.pathFromRootFlow, id],
             generatorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
@@ -468,7 +475,7 @@ export class Flow {
         if(typeof restartIf === 'function' && !restartIf()) {
             return;
         }
-        this._logger.logFlowReaction(this.id, 'flow restarted manually by calling flow.restart', {});
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow restarted manually by calling flow.restart', {});
         this.__restart();
     }
 
@@ -480,7 +487,7 @@ export class Flow {
     public abortExtend(event: Event<any,any>): boolean {
         const wasRemoved = this._pendingExtends.delete(event.id);
         if(wasRemoved) {
-            this._logger.logFlowReaction(this.id, 'pending extend aborted', {eventId: event.id});
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend aborted', {eventId: event.id});
             this._registerChangedEvent(event);
         }
         return wasRemoved;
@@ -495,7 +502,7 @@ export class Flow {
     public __resolveExtend(event: Event<any,any>): boolean {
         const wasRemoved = this._pendingExtends.delete(event.id);
         if(wasRemoved) {
-            this._logger.logFlowReaction(this.id, 'pending extend resolved', {eventId: event.id});
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend resolved', {eventId: event.id});
             this._registerChangedEvent(event);
         }
         return wasRemoved;
