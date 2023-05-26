@@ -1,6 +1,6 @@
 {
   "name": "@flowcards/core",
-  "version": "12.5.0",
+  "version": "12.8.0",
   "sideEffects": false,
   "description": "use case based flows for state management",
   "keywords": [
