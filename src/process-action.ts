@@ -1,9 +1,9 @@
-import { Action, RejectPendingRequestAction } from "./action";
-import { explainValidation } from "./payload-validation";
-import { ActionReactionLogger } from "./action-reaction-logger";
-import { reactToExternalAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction";
-import { invalidReasonsForPendingRequestBid } from "./bid-invalid-reasons";
-import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getHighestPriorityAskForBid } from "./bid";
+import { Action, RejectPendingRequestAction } from "./action.ts";
+import { explainValidation } from "./payload-validation.ts";
+import { ActionReactionLogger } from "./action-reaction-logger.ts";
+import { reactToExternalAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction.ts";
+import { invalidReasonsForPendingRequestBid } from "./bid-invalid-reasons.ts";
+import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getHighestPriorityAskForBid } from "./bid.ts";
 
 /**
  * @internal

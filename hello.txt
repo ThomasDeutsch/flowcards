@@ -1,0 +1,11 @@
+{
+  "reactions": [
+    {
+      "flowPath": [
+        "test"
+      ],
+      "type": "flow enabled",
+      "details": {}
+    }
+  ]
+}

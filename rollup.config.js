@@ -1,8 +1,4 @@
-import resolve from "@rollup/plugin-node-resolve";
-import typescript from "@rollup/plugin-typescript";
-import pkg from "./package.json";
-import { terser } from "rollup-plugin-terser";
-import dts from "rollup-plugin-dts";
+import {createRequire} from "https://deno.land/std@0.110.0/node/module.ts";
 
 export default [
   // UMD build

@@ -1,5 +1,5 @@
-import { AccumulatedValidationResults } from "./payload-validation";
-import { Event, EventByKey } from "./event";
+import { AccumulatedValidationResults } from "./payload-validation.ts";
+import { Event, EventByKey } from "./event.ts";
 
 /**
  * @internal

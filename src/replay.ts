@@ -1,10 +1,9 @@
-import { Action, ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction } from "./action";
-import { ActionReactionLogger } from "./action-reaction-logger";
-import { reactToExternalAction, reactToRejectAction, reactToRequestedAction, reactToRequestedAsyncAction, reactToResolveAsyncAction } from "./flow-reaction";
-import { isThenable } from "./utils";
-import { invalidReasonsForAskForBid, invalidReasonsForPendingRequestBid, invalidReasonsForRequestBid } from "./bid-invalid-reasons";
-import { OrderedRequestsAndCurrentBids } from "./bid";
-import { explainValidation, isValid } from "./payload-validation";
+import { ExternalAction, RejectPendingRequestAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction } from "./action.ts";
+import { ActionReactionLogger } from "./action-reaction-logger.ts";
+import { reactToExternalAction } from "./flow-reaction.ts";
+import { invalidReasonsForAskForBid, invalidReasonsForRequestBid } from "./bid-invalid-reasons.ts";
+import { OrderedRequestsAndCurrentBids } from "./bid.ts";
+import { explainValidation } from "./payload-validation.ts";
 
 export type ReplayRequestAsyncAction<P> = (Omit<RequestedAsyncAction<P>, 'payload'> & {payload?: ((current?: P) => Promise<P>) | '__%TAKE_PAYLOAD_FROM_BID%__', resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number}})
 

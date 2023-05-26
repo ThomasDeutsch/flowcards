@@ -1,7 +1,6 @@
-import { SelectedAction } from "./action";
-import { ReplayAction } from "./replay";
-import { appendTo } from "./utils";
-import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction";
+import { SelectedAction } from "./action.ts";
+import { ReplayAction } from "./replay.ts";
+import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
 
 /**
  * information collection of a scheduler run.

@@ -1,30 +1,30 @@
 /* action-explain */
-export {BaseValidationReturn, AccumulatedValidationResults} from './payload-validation';
+export type {BaseValidationReturn, AccumulatedValidationResults} from './payload-validation.ts';
 
 /* action-reaction-logger */
-export {ActionAndReactions} from './action-reaction-logger';
+export type {ActionAndReactions} from './action-reaction-logger.ts';
 
 /* action */
-export {ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, Action} from './action';
+export type {ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, Action} from './action.ts';
 
 /* bids */
-export {BidType, RequestBid, BlockBid, ValidateBid, WaitForBid, AskForBid, CurrentBidsForEvent} from './bid'
-export {request, extend, waitFor, askFor, block, validate, trigger, isSameBid} from './bid';
+export type {BidType, RequestBid, BlockBid, ValidateBid, WaitForBid, AskForBid, CurrentBidsForEvent} from './bid.ts'
+export {request, extend, waitFor, askFor, block, validate, trigger, isSameBid} from './bid.ts';
 
 /* bid utility functions */
-export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions';
+export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions.ts';
 
 /* event */
-export {Event, EventByKey} from './event';
+export {Event, EventByKey} from './event.ts';
 
 /* flow */
-export {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, AllBidsAndPendingInformation, PendingExtend, Flow} from './flow';
+export type {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, AllBidsAndPendingInformation, PendingExtend, Flow} from './flow.ts';
 
 /* replay */
-export {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay, SavedReplay} from './replay';
+export type {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay, SavedReplay} from './replay.ts';
 
 /* scheduler */
-export {SchedulerProps, Scheduler } from './scheduler';
+export type {SchedulerProps, Scheduler } from './scheduler.ts';
 
 /* utils */
-export { EventRecord, getAllEvents, mapValues, getKeyFromId} from './utils';
+export type { EventRecord, getAllEvents, mapValues, getKeyFromId} from './utils.ts';

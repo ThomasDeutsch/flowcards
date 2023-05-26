@@ -1,9 +1,9 @@
 // BID UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
 
-import { AnyBid, AskForBid, ExtendBid, RequestBid, WaitForBid, extend } from "./bid";
-import { Event } from "./event";
-import { FlowProgressInfo, TNext } from "./flow";
-import { EventRecord, getAllEvents } from "./utils";
+import { AnyBid, AskForBid, ExtendBid, RequestBid, WaitForBid, extend } from "./bid.ts";
+import { Event } from "./event.ts";
+import { FlowProgressInfo, TNext } from "./flow.ts";
+import { EventRecord, getAllEvents } from "./utils.ts";
 
 /**
  * returns true if the bid will advance because of an event

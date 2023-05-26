@@ -1,8 +1,8 @@
-import { Action, ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction } from "./action";
-import { isValidReturn, validateBid } from "./payload-validation";
-import { AskForBid, BidType, CurrentBidsForEvent, Placed, ProgressingBid, RequestBid } from "./bid";
-import { Event } from "./event";
-import { Flow, PendingExtend } from "./flow";
+import { Action, ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction } from "./action.ts";
+import { isValidReturn, validateBid } from "./payload-validation.ts";
+import { AskForBid, BidType, CurrentBidsForEvent, Placed, ProgressingBid, RequestBid } from "./bid.ts";
+import { Event } from "./event.ts";
+import { Flow, PendingExtend } from "./flow.ts";
 
 export type FlowReaction = {flowPath: string[], type: FlowReactionType, details: FlowReactionDetails};
 

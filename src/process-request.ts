@@ -1,10 +1,10 @@
-import { RequestedAction, RequestedAsyncAction } from "./action";
-import { explainValidation } from "./payload-validation";
-import { ActionReactionLogger } from "./action-reaction-logger";
-import { Placed, RequestBid, OrderedRequestsAndCurrentBids, CurrentBidsForEvent, getHighestPriorityAskForBid } from "./bid";
-import { reactToRequestedAction, reactToRequestedAsyncAction } from "./flow-reaction";
-import { isThenable, mapValues } from "./utils";
-import { invalidReasonsForRequestBid } from "./bid-invalid-reasons";
+import { RequestedAction, RequestedAsyncAction } from "./action.ts";
+import { explainValidation } from "./payload-validation.ts";
+import { ActionReactionLogger } from "./action-reaction-logger.ts";
+import { Placed, RequestBid, OrderedRequestsAndCurrentBids, CurrentBidsForEvent, getHighestPriorityAskForBid } from "./bid.ts";
+import { reactToRequestedAction, reactToRequestedAsyncAction } from "./flow-reaction.ts";
+import { isThenable, mapValues } from "./utils.ts";
+import { invalidReasonsForRequestBid } from "./bid-invalid-reasons.ts";
 
 
 /**

@@ -31,7 +31,7 @@ describe("askFor and trigger", () => {
             },
             reactions: [
                 {
-                    flowPath: [ 'test66' ],
+                    flowPath: [ 'test' ],
                     type: 'flow progressed on a bid',
                     details: { bidId: 0, bidType: 'askFor', eventId: 'eventA', actionId: 0 }
                 },

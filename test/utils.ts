@@ -1,8 +1,8 @@
-import { ActionAndReactions, EventRecord } from "../src";
-import { SelectedAction } from "../src/action";
-import { FlowGeneratorFunction } from "../src/flow";
-import { FlowReaction } from "../src/flow-reaction";
-import { Scheduler } from "../src/scheduler";
+import { ActionAndReactions, EventRecord } from "../src/index.ts";
+import { SelectedAction } from "../src/action.ts";
+import { FlowGeneratorFunction } from "../src/flow.ts";
+import { FlowReaction } from "../src/flow-reaction.ts";
+import { Scheduler } from "../src/scheduler.ts";
 
 function isSameAction(a?: Omit<SelectedAction<any>, 'payload'>, b?: Omit<SelectedAction<any>, 'payload'>): boolean {
     if(a === undefined && b === undefined) return true;
@@ -44,7 +44,7 @@ export function* actionReactionTest(tests: ActionAndReactions[]): Generator<void
     for(const {action, reactions, effect, test} of tests) {
         const actionAndReactions = yield;
         actionAndReactions.reactions?.forEach((v, k) => console.log(k, v));
-
+        Deno.writeTextFile("./hello.txt", JSON.stringify(actionAndReactions, null, 2));
         if(!isSameAction(actionAndReactions.action, action)) {
             throw new Error(`expected action ${JSON.stringify(action)} but got ${JSON.stringify(actionAndReactions.action)}`);
         }

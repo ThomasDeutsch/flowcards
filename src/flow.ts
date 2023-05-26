@@ -1,9 +1,9 @@
-import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
-import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid } from "./bid";
-import { Event } from  "./event";
-import { ActionReactionLogger } from "./action-reaction-logger";
-import { areDepsEqual, isThenable, mergeMaps } from "./utils";
-import { isProgressingBid } from "./bid-utility-functions";
+import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
+import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid } from "./bid.ts";
+import { Event } from  "./event.ts";
+import { ActionReactionLogger } from "./action-reaction-logger.ts";
+import { areDepsEqual, isThenable, mergeMaps } from "./utils.ts";
+import { isProgressingBid } from "./bid-utility-functions.ts";
 
 
 // INTERFACES -------------------------------------------------------------------------------------------------------------

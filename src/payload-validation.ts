@@ -1,5 +1,5 @@
-import { AnyBid, CurrentBidsForEvent, Placed } from "./bid";
-import { isDefined } from "./utils";
+import { AnyBid, CurrentBidsForEvent, Placed } from "./bid.ts";
+import { isDefined } from "./utils.ts";
 
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------

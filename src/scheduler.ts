@@ -1,13 +1,13 @@
-import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
-import { Event } from "./event";
-import { Flow, FlowGeneratorFunction } from "./flow";
-import { ActiveReplay, Replay } from "./replay";
-import { ActionAndReactions, ActionReactionLogger } from "./action-reaction-logger";
-import { processNextValidRequestBid } from "./process-request";
-import { processAction } from "./process-action";
-import { EventRecord, getAllEvents } from "./utils";
-import { InvalidBidReasons, invalidReasonsForRequestBid } from "./bid-invalid-reasons";
-import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getOrderedRequestsAndCurrentBids } from "./bid";
+import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
+import { Event } from "./event.ts";
+import { Flow, FlowGeneratorFunction } from "./flow.ts";
+import { ActiveReplay, Replay } from "./replay.ts";
+import { ActionAndReactions, ActionReactionLogger } from "./action-reaction-logger.ts";
+import { processNextValidRequestBid } from "./process-request.ts";
+import { processAction } from "./process-action.ts";
+import { EventRecord, getAllEvents } from "./utils.ts";
+import { InvalidBidReasons, invalidReasonsForRequestBid } from "./bid-invalid-reasons.ts";
+import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getOrderedRequestsAndCurrentBids } from "./bid.ts";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 

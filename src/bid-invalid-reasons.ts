@@ -1,6 +1,6 @@
-import { RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
-import { isValidReturn } from "./payload-validation";
-import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid, isSameBid } from "./bid";
+import { RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
+import { isValidReturn } from "./payload-validation.ts";
+import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid, isSameBid } from "./bid.ts";
 
 
 export type InvalidBidReasons = {

@@ -1,6 +1,6 @@
-import { Event } from "./event";
-import { BaseValidationReturn } from "./payload-validation";
-import { AllBidsAndPendingInformation, Flow, PendingExtend, TNext } from "./flow";
+import { Event } from "./event.ts";
+import { BaseValidationReturn } from "./payload-validation.ts";
+import { AllBidsAndPendingInformation, Flow, PendingExtend, TNext } from "./flow.ts";
 
 /**
  * with each yield or yield* statement, a flow can place bids.
