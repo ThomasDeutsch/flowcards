@@ -154,7 +154,7 @@ export class ActiveReplay {
         //         nextAction.payload = payloadFromBid;
         //     }
         //     if(requestBidFromAction.isTriggerAskedFor) {
-        //         const highestPriorityAskForBid = currentBids.askFor?.[0]!; // guaranteed because of the invalidReasonsForRequestBid check.
+        //         const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids)!; // guaranteed because of the invalidReasonsForRequestBid check.
         //         if(isValid(explainValidation(currentBids, nextAction.payload, [requestBidFromAction, highestPriorityAskForBid]))) {
         //             return false;
         //         }

@@ -1,15 +1,13 @@
-import { Action, ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction, SelectedAction } from "./action";
+import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { Event } from "./event";
 import { Flow, FlowGeneratorFunction } from "./flow";
-import { ActiveReplay, ActiveReplayInfo, Replay, ReplayAction } from "./replay";
+import { ActiveReplay, Replay } from "./replay";
 import { ActionAndReactions, ActionReactionLogger } from "./action-reaction-logger";
 import { processNextValidRequestBid } from "./process-request";
 import { processAction } from "./process-action";
 import { EventRecord, getAllEvents } from "./utils";
 import { InvalidBidReasons, invalidReasonsForRequestBid } from "./bid-invalid-reasons";
-import { AccumulatedValidationResults, explainValidation } from "./payload-validation";
 import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getOrderedRequestsAndCurrentBids } from "./bid";
-import { FlowReaction } from "./flow-reaction";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
@@ -107,7 +105,7 @@ export class Scheduler {
     private _connectEvent(event: Event<any, any>): void {
         event.__connectToScheduler({
             rootFlowId: this._rootFlow.id,
-            getEventInformation: (eventId: string) => this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(eventId),
+            getCurrentBids: (eventId: string) => this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(eventId),
             registerEventAccess: this._registerEventAccessInValidateFunction.bind(this),
             toggleValueAccessLogging: this._toggleEventAccessRegistrationInValidateFunction.bind(this),
             startSchedulerRun: this._run.bind(this)

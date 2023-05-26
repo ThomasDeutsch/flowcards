@@ -2,7 +2,7 @@ import { AccumulatedValidationResults, explainValidation } from "./payload-valid
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { getKeyFromId } from "./utils";
 import { invalidReasonsForAskForBid, InvalidBidReasons } from "./bid-invalid-reasons";
-import { CurrentBidsForEvent } from "./bid";
+import { CurrentBidsForEvent, getHighestPriorityAskForBid } from "./bid";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ import { CurrentBidsForEvent } from "./bid";
  */
 interface ConnectToSchedulerProps {
     rootFlowId: string;
-    getEventInformation: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
+    getCurrentBids: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     startSchedulerRun: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerEventAccess: (event: Event<any, any>) => void;
     toggleValueAccessLogging: (event: Event<any, any>) => void;
@@ -51,7 +51,7 @@ export class Event<P = undefined, V = void> {
     private _value?: P;
     private _rootFlowId?: string;
     private _startSchedulerRun?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
-    private _getEventInformation?: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
+    private _getCurrentBids?: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     private _onUpdateCallback?: () => void; // only a single subscriber is supported
     private _registerEventAccess?: () => void;
     private _toggleValueAccessLogging?: (event: Event<any, any>) => void;
@@ -72,7 +72,7 @@ export class Event<P = undefined, V = void> {
         // from the connectToScheduler function
         this._rootFlowId = undefined;
         this._startSchedulerRun = undefined;
-        this._getEventInformation = undefined;
+        this._getCurrentBids = undefined;
         this._registerEventAccess = undefined;
         this._toggleValueAccessLogging = undefined;
         // from the event itself
@@ -89,7 +89,7 @@ export class Event<P = undefined, V = void> {
      */
     public __connectToScheduler(props: ConnectToSchedulerProps): void {
         this._rootFlowId = props.rootFlowId;
-        this._getEventInformation = props.getEventInformation;
+        this._getCurrentBids = props.getCurrentBids;
         this._startSchedulerRun = props.startSchedulerRun;
         this._registerEventAccess = () => props.registerEventAccess(this);
         this._toggleValueAccessLogging = props.toggleValueAccessLogging;
@@ -139,7 +139,7 @@ export class Event<P = undefined, V = void> {
      * @returns an explanation why the highest priority askFor bid is not valid.
      */
     private _invalidReasons() {
-        return invalidReasonsForAskForBid(this.id, this._getEventInformation?.(this.id));
+        return invalidReasonsForAskForBid(this.id, this._getCurrentBids?.(this.id));
     }
 
     /**
@@ -150,7 +150,7 @@ export class Event<P = undefined, V = void> {
     public validate(value: P): {isValidAccumulated: boolean, invalidBidReasons?: InvalidBidReasons, payloadValidation?: AccumulatedValidationResults<V>} {
         const invalidBidReasons = this._invalidReasons();
         if(invalidBidReasons) return {isValidAccumulated: false, invalidBidReasons};
-        const eventInfo = this._getEventInformation?.(this.id) as CurrentBidsForEvent<P, V>; // guaranteed to be valid because of the invalidReasons check
+        const eventInfo = this._getCurrentBids?.(this.id) as CurrentBidsForEvent<P, V>; // guaranteed to be valid because of the invalidReasons check
         this._toggleValueAccessLogging?.(this);
         const validationResult = explainValidation(eventInfo, value, [eventInfo.askFor?.[0]]) || {isValidAccumulated: false};
         this._toggleValueAccessLogging?.(this);
@@ -192,9 +192,9 @@ export class Event<P = undefined, V = void> {
         }
         // because the explain has checked if the event is valid, it is ok to use the ! in this function.
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const eventInformation = this._getEventInformation!(this.id)!;
+        const currentBids = this._getCurrentBids!(this.id)!;
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const highestPriorityAskForBid = eventInformation.askFor?.[0]!;
+        const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids)!;
         const action: ExternalAction<P> = {
             type: "external",
             payload: value as P,
@@ -237,7 +237,7 @@ export class Event<P = undefined, V = void> {
      */
     public get isBlocked() {
         this._registerEventAccess?.();
-        return (this._getEventInformation?.(this.id)?.block?.length || 0) > 0;
+        return (this._getCurrentBids?.(this.id)?.block?.length || 0) > 0;
     }
 
     /**
@@ -247,7 +247,7 @@ export class Event<P = undefined, V = void> {
      */
     public get isAskedFor(): boolean {
         this._registerEventAccess?.();
-        return this._getEventInformation?.(this.id)?.askFor?.[0] !== undefined;
+        return this._getCurrentBids?.(this.id)?.askFor?.[0] !== undefined;
     }
 
     /**
@@ -255,8 +255,8 @@ export class Event<P = undefined, V = void> {
      */
     public get isPending(): boolean {
         this._registerEventAccess?.();
-        const pendingRequest = this._getEventInformation?.(this.id)?.pendingRequest !== undefined;
-        const pendingExtend = this._getEventInformation?.(this.id)?.pendingExtend !== undefined;
+        const pendingRequest = this._getCurrentBids?.(this.id)?.pendingRequest !== undefined;
+        const pendingExtend = this._getCurrentBids?.(this.id)?.pendingExtend !== undefined;
         return pendingRequest || pendingExtend;
     }
 
@@ -265,7 +265,7 @@ export class Event<P = undefined, V = void> {
      */
     public get extendedValue(): P | Promise<P> | undefined {
         this._registerEventAccess?.();
-        return this._getEventInformation?.(this.id)?.pendingExtend?.value;
+        return this._getCurrentBids?.(this.id)?.pendingExtend?.value;
     }
 
     /**

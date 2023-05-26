@@ -242,4 +242,6 @@ describe("the extend bid behavior", () => {
             events.notExtend.A.set(undefined);
         }
     });
+
+    //TODO: if the event is extended, the highest prriority askFor bid is the askFor bid from the extending flow!
 });

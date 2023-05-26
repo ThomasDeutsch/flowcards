@@ -3,7 +3,7 @@ import { explainValidation } from "./payload-validation";
 import { ActionReactionLogger } from "./action-reaction-logger";
 import { reactToExternalAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction";
 import { invalidReasonsForPendingRequestBid } from "./bid-invalid-reasons";
-import { OrderedRequestsAndCurrentBids, Placed, RequestBid } from "./bid";
+import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getHighestPriorityAskForBid } from "./bid";
 
 /**
  * @internal
@@ -26,7 +26,7 @@ export function processAction<P, V>(orderedRequestsAndCurrentBids: OrderedReques
     // A. external action
     if(nextAction.type === 'external') {
         // no checks needed for an external action, because all checks are done inside the event dispatch function.
-        const highestPriorityAskForBid = currentBids.askFor![0];
+        const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids)!;
         reactToExternalAction(currentBids, {...nextAction, id: nextActionId}, highestPriorityAskForBid);
         logger.onActionProcessed({...nextAction, id: nextActionId});
         return true;

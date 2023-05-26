@@ -137,16 +137,11 @@ export interface FlowReactionDetails {
 
 /**
  * @internal
- * progress all waitFor and all askFor bids placed by the flows
+ * progress all waitFor bids placed by the flows
  * @param eventInfo the event info of the event that could be extended
  * @param action the valid action selected by the scheduler
  */
 function progressWaitingBids<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action:  ExternalAction<P> & {id: number} | RequestedAction<P> | ResolvePendingRequestAction<P> & {id: number}): void {
-    eventInfo[BidType.askFor]?.forEach((askFor) => {
-        if(isValidReturn(validateBid<P, V>(askFor, action.payload))) {
-            askFor.flow.__onEvent(askFor.event, askFor, action.id);
-        }
-    });
     eventInfo[BidType.waitFor]?.forEach((waitFor) => {
         if(isValidReturn(validateBid<P, V>(waitFor, action.payload))) {
             waitFor.flow.__onEvent(waitFor.event, waitFor, action.id);

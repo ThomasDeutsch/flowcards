@@ -17,6 +17,9 @@ function isSameAction(a?: Omit<SelectedAction<any>, 'payload'>, b?: Omit<Selecte
 
 function isSameReaction(a: FlowReaction, b: FlowReaction): boolean {
     if(a.type !== b.type) return false;
+    a.flowPath.forEach((v, i) => {
+        if(v !== b.flowPath[i]) return false;
+    });
     const aDetails = a.details;
     const bDetails = b.details;
     if(aDetails.actionId !== bDetails.actionId) return false;
@@ -40,7 +43,6 @@ function areSameReactions(expected?: FlowReaction[], actual?: FlowReaction[]): b
 export function* actionReactionTest(tests: ActionAndReactions[]): Generator<void, void, ActionAndReactions> {
     for(const {action, reactions, effect, test} of tests) {
         const actionAndReactions = yield;
-        console.log('action: ',  actionAndReactions.action);
         actionAndReactions.reactions?.forEach((v, k) => console.log(k, v));
 
         if(!isSameAction(actionAndReactions.action, action)) {
@@ -54,7 +56,6 @@ export function* actionReactionTest(tests: ActionAndReactions[]): Generator<void
         if(actionAndReactions.action?.type !== 'rejectPendingRequest') {
             test?.(actionAndReactions.action?.payload);
         }
-        console.log('effect');
         queueMicrotask(() => {
             effect?.();
         });

@@ -1,6 +1,6 @@
 import { RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { isValidReturn } from "./payload-validation";
-import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, isSameBid } from "./bid";
+import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid, isSameBid } from "./bid";
 
 
 export type InvalidBidReasons = {
@@ -42,7 +42,7 @@ export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: C
         invalidReasons.reasons.push({type: 'event is pending'});
     }
     // 4. check if the there is an askFor bid
-    const highestPriorityAskForBid = currentBids.askFor?.[0];
+    const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids);
     if(highestPriorityAskForBid === undefined) {
        invalidReasons.reasons.push({type: 'no askFor bid'});
        return invalidReasons;
@@ -62,7 +62,7 @@ export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: C
     }
     // 7. check if the bid has a pending extend, if so, check if the bid will resolve the extend
     if(currentBids.pendingExtend) {
-        const isResolveExtendBid = currentBids.pendingExtend.extendingFlow.id === askForBid.flow.id;
+        const isResolveExtendBid = highestPriorityAskForBid.flow.id === currentBids.pendingExtend.extendingFlow.id;
         if(!isResolveExtendBid) {
             invalidReasons.reasons.push({type: 'event is extended by another flow'});
         }
@@ -146,3 +146,4 @@ export function invalidReasonsForPendingRequestBid(action: ResolvePendingRequest
     }
     return invalidReasons.reasons.length === 0 ? undefined : invalidReasons;
 }
+

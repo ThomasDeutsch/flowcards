@@ -1,7 +1,7 @@
 import { RequestedAction, RequestedAsyncAction } from "./action";
 import { explainValidation } from "./payload-validation";
 import { ActionReactionLogger } from "./action-reaction-logger";
-import { Placed, RequestBid, OrderedRequestsAndCurrentBids, CurrentBidsForEvent } from "./bid";
+import { Placed, RequestBid, OrderedRequestsAndCurrentBids, CurrentBidsForEvent, getHighestPriorityAskForBid } from "./bid";
 import { reactToRequestedAction, reactToRequestedAsyncAction } from "./flow-reaction";
 import { isThenable, mapValues } from "./utils";
 import { invalidReasonsForRequestBid } from "./bid-invalid-reasons";
@@ -46,7 +46,7 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
             } else {
                 // if the payload is not a promise, the payload can be checked immediately
                 // if the bid is only valid when asked for, the highest priority askFor bid is also used to validate the payload
-                const highestPriorityAskForBid = currentBids.askFor?.[0];
+                const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids);
                 const payloadValidation = explainValidation(currentBids, payload, [bid, bid.isTriggerAskedFor ? highestPriorityAskForBid : undefined]);
                 if(!payloadValidation.isValidAccumulated) {
                     return false;

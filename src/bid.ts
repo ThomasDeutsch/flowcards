@@ -328,3 +328,24 @@ export function filterRemainingBids(bidId: number, placedBids?: Placed<AnyBid<an
     }
     return remainingBids.every(bid => bid.type === "validate" || bid.type === "block") ? undefined : remainingBids;
 }
+
+/**
+ * @internal
+ * from the current bids, get the highest priority askFor bid.
+ * The highest priority askFor bid is the first askFor bid or the askFor bid placed by the extending flow.
+ * @param currentBids current bids
+ * @returns the highest priority askFor bid
+ */
+export function getHighestPriorityAskForBid(currentBids: CurrentBidsForEvent<any, any>): Placed<AskForBid<any, any>> | undefined {
+    let highestPriorityAskForBid: Placed<AskForBid<any, any>> | undefined;
+    // if the bid gets extended, the highest priority askFor bid is the askFor bid placed by the extending flow or the first askFor bid
+    if(currentBids.askFor === undefined || currentBids.askFor.length === 0) return undefined
+    const pendingExtend = currentBids.pendingExtend;
+    if(pendingExtend !== undefined) {
+        highestPriorityAskForBid = currentBids.askFor.find(askForBid => askForBid.flow.id === pendingExtend.extendingFlow.id);
+    }
+    if(highestPriorityAskForBid === undefined) {
+        highestPriorityAskForBid = currentBids.askFor[0];
+    }
+    return highestPriorityAskForBid;
+}
