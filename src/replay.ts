@@ -163,7 +163,7 @@ export class ActiveReplay {
         //             return false;
         //         }
         //     }
-        //     reactToRequestedAction(currentBids, nextAction, requestBidFromAction);
+        //     reactToRequestedAction(currentBids, nextAction, requestBidFromAction, highestPriorityAskForBid);
         //     this._actionReactionLogger.onActionProcessed(nextAction);
         //     return true;
         // }

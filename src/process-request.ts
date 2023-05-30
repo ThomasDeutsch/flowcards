@@ -60,7 +60,7 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
                     bidId: bid.id,
                     flowId: bid.flow.id
                 };
-                reactToRequestedAction(currentBids, requestedAction, bid);
+                reactToRequestedAction(currentBids, requestedAction, bid, highestPriorityAskForBid);
                 logger.onActionProcessed(requestedAction);
                 return true;
             }
