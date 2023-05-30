@@ -183,7 +183,7 @@ export class Scheduler {
                         bidId: bid.id,
                         flowId: bid.flow.id
                     };
-                    reactToRequestedAction(eventInfo, requestedAction, bid);
+                    reactToRequestedAction(eventInfo, requestedAction, bid, highestPriorityAskForBid);
                     this._actionReactionLogger.onActionProcessed(requestedAction);
                     return true;
                 }

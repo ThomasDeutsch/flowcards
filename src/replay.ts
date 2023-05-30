@@ -128,8 +128,8 @@ export class ActiveReplay {
             if(this._isInvalidAction(explainBlocked(eventInfo))) return false;
             if(this._isInvalidAction(explainPendingRequest(eventInfo))) return false;
             if(this._isInvalidAction(explainPendingExtend(eventInfo, requestBid))) return false;
+            const highestPriorityAskForBid = eventInfo.askFor[0]; // guaranteed because of the previous check.
             if(requestBid.onlyWhenAskedFor) {
-                const highestPriorityAskForBid = eventInfo.askFor[0]; // guaranteed because of the previous check.
                 if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [requestBid, highestPriorityAskForBid]))) return false;
             }
             if(nextAction.payload === '__%TAKE_PAYLOAD_FROM_BID%__') {
@@ -150,7 +150,7 @@ export class ActiveReplay {
                 nextAction.payload = payloadFromBid;
             }
             if(this._isInvalidPayload(explainValidation(eventInfo, nextAction.payload, [requestBid]))) return false;
-            reactToRequestedAction(eventInfo, nextAction, requestBid);
+            reactToRequestedAction(eventInfo, nextAction, requestBid, highestPriorityAskForBid);
             this._actionReactionLogger.onActionProcessed(nextAction);
             return true;
         }

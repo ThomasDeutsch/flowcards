@@ -17,6 +17,7 @@ import { Flow, PendingExtend } from "./flow";
     eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, askForBid)) return;
     eventInfo.event.__setValue(action.payload);
+    askForBid.flow.__onEvent(eventInfo.event, askForBid, action.id);
     progressExtendedBids(eventInfo, action);
     progressWaitingBids(eventInfo, action);
 }
@@ -28,12 +29,13 @@ import { Flow, PendingExtend } from "./flow";
  * @param requestBid the request bid
  * @param action the selected request action
  */
- export function reactToRequestedAction<P, V>(eventInfo: EventInformation<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: PlacedRequestBid<P, V>): void {
+ export function reactToRequestedAction<P, V>(eventInfo: EventInformation<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: PlacedRequestBid<P, V>, askForBid?: PlacedWaitingBid<P, V>): void {
     eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, requestBid)) return;
     eventInfo.event.__setValue(action.payload);
     progressExtendedBids(eventInfo, action);
     requestBid.flow.__onEvent(requestBid.event, requestBid, action.id);
+    askForBid?.flow.__onEvent(eventInfo.event, askForBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
@@ -123,11 +125,6 @@ import { Flow, PendingExtend } from "./flow";
  * @param action the selected action
  */
 function progressWaitingBids<P, V>(eventInfo: EventInformation<P, V>, action:  ExternalAction<P> & {id: number} | RequestedAction<P> | ResolvePendingRequestAction<P> & {id: number}): void {
-    eventInfo.askFor.forEach((askFor) => {
-        if(isValidReturn(validateBid<P, V>(askFor, action.payload))) {
-            askFor.flow.__onEvent(askFor.event, askFor, action.id);
-        }
-    });
     eventInfo.waitFor.forEach((waitFor) => {
         if(isValidReturn(validateBid<P, V>(waitFor, action.payload))) {
             waitFor.flow.__onEvent(waitFor.event, waitFor, action.id);
