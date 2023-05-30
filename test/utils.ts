@@ -3,6 +3,7 @@ import { SelectedAction } from "../src/action.ts";
 import { FlowGeneratorFunction } from "../src/flow.ts";
 import { FlowReaction } from "../src/flow-reaction.ts";
 import { Scheduler } from "../src/scheduler.ts";
+import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
 
 function isSameAction(a?: Omit<SelectedAction<any>, 'payload'>, b?: Omit<SelectedAction<any>, 'payload'>): boolean {
     if(a === undefined && b === undefined) return true;
@@ -17,9 +18,11 @@ function isSameAction(a?: Omit<SelectedAction<any>, 'payload'>, b?: Omit<Selecte
 
 function isSameReaction(a: FlowReaction, b: FlowReaction): boolean {
     if(a.type !== b.type) return false;
-    a.flowPath.forEach((v, i) => {
-        if(v !== b.flowPath[i]) return false;
-    });
+    // for the flowpath, check if all items are the same string
+    if(a.flowPath.length !== b.flowPath.length) return false;
+    for(let i = 0; i < a.flowPath.length; i++) {
+        if(a.flowPath[i] !== b.flowPath[i]) return false;
+    }
     const aDetails = a.details;
     const bDetails = b.details;
     if(aDetails.actionId !== bDetails.actionId) return false;
@@ -40,33 +43,61 @@ function areSameReactions(expected?: FlowReaction[], actual?: FlowReaction[]): b
     return true;
 }
 
-export function* actionReactionTest(tests: ActionAndReactions[]): Generator<void, void, ActionAndReactions> {
-    for(const {action, reactions, effect, test} of tests) {
-        const actionAndReactions = yield;
-        actionAndReactions.reactions?.forEach((v, k) => console.log(k, v));
-        Deno.writeTextFile("./hello.txt", JSON.stringify(actionAndReactions, null, 2));
-        if(!isSameAction(actionAndReactions.action, action)) {
-            throw new Error(`expected action ${JSON.stringify(action)} but got ${JSON.stringify(actionAndReactions.action)}`);
-        }
-        if(reactions !== undefined) {
-            if(!areSameReactions(reactions, actionAndReactions.reactions)) {
-                throw new Error(`expected reactions ${JSON.stringify(reactions)} but got ${JSON.stringify(actionAndReactions.reactions)}`);
+export function* actionReactionTest(tests: ActionAndReactions[], resolve: (value: ActionAndReactions[]) => void, reject: (s: string) => void): Generator<void, void, ActionAndReactions> {
+    const remainingTests = [...tests];
+    const recorded: ActionAndReactions[] = [];
+    let {action, reactions} = yield;
+    while(!(action === undefined && reactions === undefined)) {
+        recorded.push({action, reactions});
+        const currentTest = remainingTests.shift();
+        if(currentTest !== undefined) {
+            if(!isSameAction(currentTest.action, action)) {
+                reject(`expected action ${JSON.stringify(currentTest.action)} but got ${JSON.stringify(action)}`);
+            }
+            console.log('check reactions: ', areSameReactions(currentTest.reactions, reactions), currentTest.reactions, reactions)
+            if(!areSameReactions(currentTest.reactions, reactions)) {
+                reject(`expected reactions ${JSON.stringify(currentTest.reactions)} but got ${JSON.stringify(reactions)}`);
+            }
+            if(currentTest.action?.type !== 'rejectPendingRequest') {
+                currentTest.test?.(currentTest.action?.payload);
+            } else {
+                currentTest.test?.(undefined);
+            }
+            if(currentTest.effect !== undefined) {
+                queueMicrotask(() => {
+                    currentTest.effect?.();
+                });
             }
         }
-        if(actionAndReactions.action?.type !== 'rejectPendingRequest') {
-            test?.(actionAndReactions.action?.payload);
-        }
-        queueMicrotask(() => {
-            effect?.();
-        });
+        const next = yield;
+        action = next.action;
+        reactions = next.reactions;
     }
+    if(remainingTests.length > 0) {
+        reject(`expected ${remainingTests.length} more actions, but got none`);
+        return;
+    }
+    resolve(recorded);
+    return;
 }
 
-export function testSchedulerFactory(rootFlow: FlowGeneratorFunction, events: EventRecord, testSteps?: ActionAndReactions[]) {
-    return new Scheduler({
-        id: 'test',
-        events,
-        rootFlow,
-        actionReactionGenerator: actionReactionTest(testSteps || [])
-    })
+export async function runFlowcardsTests(testContext: Deno.TestContext, rootFlow: FlowGeneratorFunction, events: EventRecord, testSteps?: ActionAndReactions[]) {
+    let actionsReactions: ActionAndReactions[] = [];
+    try {
+        actionsReactions = await new Promise((resolve, reject) => {
+            const testGenerator = actionReactionTest(testSteps || [], resolve, reject);
+            new Scheduler({
+                id: 'rootFlow',
+                events,
+                rootFlow,
+                actionReactionGenerator: testGenerator
+            })
+        });
+
+    }
+    catch(e) {
+        console.log('error', e);
+        throw e;
+    }
+    //return await Deno.writeTextFile(`./${testContext.name}.json`, JSON.stringify(actionsReactions, null, 2));
 };

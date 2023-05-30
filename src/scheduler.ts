@@ -132,13 +132,13 @@ export class Scheduler {
         if(wasActionProcessed) {
             this._currentActionId = nextActionId;
             this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
-            this.actionReactionGenerator?.next(this._actionReactionLogger.getActionsAndReactions());
+            this.actionReactionGenerator?.next({...this._actionReactionLogger.getActionsAndReactions()});
             this._run();
         }
         else {
             this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
             this._changedEvents.clear();
-            this.actionReactionGenerator?.next(this._actionReactionLogger.getActionsAndReactions());
+            this.actionReactionGenerator?.next({...this._actionReactionLogger.getActionsAndReactions()});
         }
     }
 

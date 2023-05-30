@@ -58,7 +58,8 @@ export class ActionReactionLogger {
      * @internalRemarks this is used by the scheduler to get the latest log for the latest scheduler run(s)
      */
     public getActionsAndReactions(): ActionAndReactions {
-        const result = {...this._actionAndReactions} as ActionAndReactions;
+        const reactions = this._actionAndReactions.reactions ? [...this._actionAndReactions.reactions] : undefined;
+        const result = {...this._actionAndReactions, reactions} as ActionAndReactions;
         this._actionAndReactions = {};
         return result;
     }

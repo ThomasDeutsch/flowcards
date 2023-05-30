@@ -44,6 +44,7 @@ export interface FlowReactionDetails {
     if(progressExtendBid(eventInfo, action, askForBid)) return;
     eventInfo.event.__setValue(action.payload);
     progressExtendedBids(eventInfo, action);
+    askForBid.flow.__onEvent(eventInfo.event, askForBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
