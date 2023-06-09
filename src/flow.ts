@@ -302,8 +302,8 @@ export class Flow {
             this._handleNext(next);
         } catch(error) {
             console.error('error in flow ', this.id, ': ', error, 'flow ended');
-            throw(error);
             this.__end(true);
+            throw error;
         }
     }
 

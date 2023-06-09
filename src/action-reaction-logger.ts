@@ -1,14 +1,22 @@
-import { SelectedAction } from "./action.ts";
-import { ReplayAction } from "./replay.ts";
+import { LoggedAction } from "./action.ts";
 import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
+import { Action, ExternalAction } from "./index.ts";
 
 /**
- * information collection of a scheduler run.
+ * action and reactions that are logged by the flows
  */
  export interface ActionAndReactions {
-    action?: ReplayAction<any>,
+    action?: LoggedAction<any>,
+    reactions?: FlowReaction[]
+}
+
+/**
+ * action and reactions that are logged by the flows, used for testing.
+ * 
+ */
+export interface ActionAndReactionsTest {
+    action?: LoggedAction<any>,
     reactions?: FlowReaction[],
-    effect?: () => void,
     test?: (payload: any) => void
 }
 
@@ -41,7 +49,7 @@ export class ActionReactionLogger {
      * logs the processed action to the current scheduler run.
      * @param action the processed action
      */
-    public onActionProcessed(action: SelectedAction<any>): void {
+    public onActionProcessed(action: Action<any> & {id: number}): void {
         if(action.type === 'requestedAsync') {
             this._actionAndReactions.action = {...action, payload: '__%TAKE_PAYLOAD_FROM_BID%__'};
         }

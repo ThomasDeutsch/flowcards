@@ -1,13 +1,13 @@
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
 import { Event } from "./event.ts";
 import { Flow, FlowGeneratorFunction } from "./flow.ts";
-import { ActiveReplay, Replay } from "./replay.ts";
 import { ActionAndReactions, ActionReactionLogger } from "./action-reaction-logger.ts";
 import { processNextValidRequestBid } from "./process-request.ts";
 import { processAction } from "./process-action.ts";
-import { EventRecord, getAllEvents } from "./utils.ts";
+import { EventRecord, getEventMap, isDefined, mapValues } from "./utils.ts";
 import { InvalidBidReasons, invalidReasonsForRequestBid } from "./bid-invalid-reasons.ts";
 import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getOrderedRequestsAndCurrentBids } from "./bid.ts";
+import { AskForBid } from "./index.ts";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
@@ -26,8 +26,7 @@ export interface SchedulerProps {
     id: string;
     rootFlow: FlowGeneratorFunction;
     events: EventRecord;
-    actionReactionGenerator?: Generator<void, void, ActionAndReactions>;
-    replay?: Replay;
+    actionReactionGenerator?: Generator<ExternalAction<any> & {id: number} | undefined, void, ActionAndReactions>;
 }
 
 /**
@@ -39,12 +38,11 @@ export class Scheduler {
     private _rootFlow: Flow;
     private _orderedRequestsAndCurrentBids: OrderedRequestsAndCurrentBids
     private _actionReactionLogger = new ActionReactionLogger();
-    private actionReactionGenerator?: Generator<void, void, ActionAndReactions>;
-    private _activeReplay: ActiveReplay;
+    private actionReactionGenerator?: Generator<ExternalAction<any> & {id: number} | undefined, void, ActionAndReactions>;
     private _currentActionId = -1;
     private _changedEvents: Map<string, Event<any,any>> = new Map();
     private _currentlyValidatedEvent?: Event<any, any>;
-    private _events: Event<any, any>[];
+    private _events: Map<string, Event<any, any>>;
 
     constructor(props : SchedulerProps) {
         this._actionReactionLogger = new ActionReactionLogger();
@@ -52,17 +50,15 @@ export class Scheduler {
         this._rootFlow = new Flow({
             pathFromRootFlow: [props.id],
             generatorFunction: props.rootFlow,
-            executeAction: this._run.bind(this),
+            executeAction: this.run.bind(this),
             logger: this._actionReactionLogger,
             registerChangedEvent: this._registerChangedEvent.bind(this),
             parameters: []
         });
-        this._events = getAllEvents(props.events);
-        this._events.forEach(event => this._connectEvent(event));
-        this._activeReplay = new ActiveReplay(this._actionReactionLogger, props.replay, () => this._orderedRequestsAndCurrentBids);
+        this._events = getEventMap(props.events, this._connectEvent.bind(this));
         this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
         this.actionReactionGenerator?.next();
-        this._run();
+        return this;
     }
 
     /**
@@ -108,37 +104,42 @@ export class Scheduler {
             getCurrentBids: (eventId: string) => this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(eventId),
             registerEventAccess: this._registerEventAccessInValidateFunction.bind(this),
             toggleValueAccessLogging: this._toggleEventAccessRegistrationInValidateFunction.bind(this),
-            startSchedulerRun: this._run.bind(this)
+            startSchedulerRun: this.run.bind(this)
         });
     }
 
     /**
      * This function is the main-function for the flowcards library.
      * It will process the next action from 3 possible sources ( ordered by priority ):
-     * 1. a replay action (from a running replay)
-     * 2. a resolved/rejected request or from an external source.
+     * 1. a resolved/rejected request or from an external source.
+     * 2. an external action (trigger) from the tests
      * 3. a request bid (from any flow that placed a request bid)
      * If the action was processed, the next bids are collected and the run function is called again.
      * This is done, until no more actions can be processed.
      * After this function call, all events that have changed are updated.
      * @param action the external/resolve/reject action that will be processed
      */
-    private _run(action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
+    public run(action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
         const nextActionId = this._currentActionId + 1;
-        const wasActionProcessed =
-            this._activeReplay.processNextReplayAction(this._orderedRequestsAndCurrentBids, nextActionId) ||
-            processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, action) ||
-            processNextValidRequestBid(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger);
+        let wasActionProcessed = false;
+        const triggerActionFromTest = this.actionReactionGenerator?.next({...this._actionReactionLogger.getActionsAndReactions()})?.value;
+        if(action) {
+            wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, action)
+        }
+        else if(triggerActionFromTest) {
+            wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, triggerActionFromTest)
+        }
+        else {
+            wasActionProcessed = processNextValidRequestBid(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger);
+        }
         if(wasActionProcessed) {
             this._currentActionId = nextActionId;
             this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
-            this.actionReactionGenerator?.next({...this._actionReactionLogger.getActionsAndReactions()});
-            this._run();
+            this.run();
         }
         else {
             this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
             this._changedEvents.clear();
-            this.actionReactionGenerator?.next({...this._actionReactionLogger.getActionsAndReactions()});
         }
     }
 
@@ -153,7 +154,44 @@ export class Scheduler {
         return invalidBidReasons
     }
 
+    /**
+     * get the current ordered requests and bids
+     * @returns ordered requests and current bids (object is freezed)
+     */
     public getOrderedRequestsAndCurrentBids(): OrderedRequestsAndCurrentBids {
         return Object.freeze(this._orderedRequestsAndCurrentBids);
     }
+
+    /**
+     * get the current askFor bids for all events in a list
+     * @returns a list of askFor bids for all events
+     */
+    public getAskForBids(): Placed<AskForBid<any, any>>[] {
+        return mapValues(this._orderedRequestsAndCurrentBids.currentBidsByEventId).map(bids => bids.askFor).flatMap(bids => bids).filter(isDefined);
+    }
+
+    /**
+     * get pending requests for all events in a list
+     */
+    public getPendingRequests(): Placed<RequestBid<any, any>>[] {
+        return mapValues(this._orderedRequestsAndCurrentBids.currentBidsByEventId).map(bids => bids.pendingRequest).flatMap(bids => bids).filter(isDefined);
+    }
+
+    /**
+     * get open requests for all events in a list
+     * @returns a list of invalid requests for all events
+     */
+    public getOpenRequests(): Placed<RequestBid<any, any>>[] {
+        return this._orderedRequestsAndCurrentBids.orderedRequests;
+    }
+
+    /**
+     * get event by id
+     * @param id the id of the event
+     * @returns the event with the given id or undefined if no event with the id exists
+     */
+    public getEventById(id: string): Event<any, any> | undefined {
+        return this._events.get(id);
+    }
+
 }

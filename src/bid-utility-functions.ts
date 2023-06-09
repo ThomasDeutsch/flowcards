@@ -3,7 +3,7 @@
 import { AnyBid, AskForBid, ExtendBid, RequestBid, WaitForBid, extend } from "./bid.ts";
 import { Event } from "./event.ts";
 import { FlowProgressInfo, TNext } from "./flow.ts";
-import { EventRecord, getAllEvents } from "./utils.ts";
+import { EventRecord, getEventMap } from "./utils.ts";
 
 /**
  * returns true if the bid will advance because of an event
@@ -70,7 +70,7 @@ export function* getFirstValue<P extends AnyBid<any, any>[]>(...bids: P): Genera
  * @remarks needs to be prefixed by a yield* statement.
  */
 export function* extendAll(nestedEvents: EventRecord[], validateFn?: (event: Event<any, any>) => boolean): Generator<TNext, FlowProgressInfo, FlowProgressInfo> {
-    const events = nestedEvents.map(nestedEventObject => getAllEvents(nestedEventObject)).flat();
+    const events = nestedEvents.map(nestedEventObject => Array.from(getEventMap(nestedEventObject).values())).flat();
     const progress = yield events.map(event => extend(event, () => validateFn ? validateFn(event) : true));
     return progress;
 }

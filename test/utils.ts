@@ -1,11 +1,12 @@
-import { ActionAndReactions, EventRecord } from "../src/index.ts";
-import { SelectedAction } from "../src/action.ts";
+import { ActionAndReactions, AskForBid, EventRecord, ExternalAction, LoggedAction } from "../src/index.ts";
 import { FlowGeneratorFunction } from "../src/flow.ts";
 import { FlowReaction } from "../src/flow-reaction.ts";
 import { Scheduler } from "../src/scheduler.ts";
-import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
+import { deadline } from "https://deno.land/std@0.190.0/async/mod.ts";
+import { ActionAndReactionsTest } from "../src/action-reaction-logger.ts";
 
-function isSameAction(a?: Omit<SelectedAction<any>, 'payload'>, b?: Omit<SelectedAction<any>, 'payload'>): boolean {
+
+function isSameAction(a?: Omit<LoggedAction<any>, 'payload'>, b?: Omit<LoggedAction<any>, 'payload'>): boolean {
     if(a === undefined && b === undefined) return true;
     if(a === undefined || b === undefined) return false;
     const x = a.type === b.type && a.id === b.id && a.bidId === b.bidId && a.flowId === b.flowId && a.id === b.id;
@@ -43,11 +44,10 @@ function areSameReactions(expected?: FlowReaction[], actual?: FlowReaction[]): b
     return true;
 }
 
-export function* actionReactionTest(tests: ActionAndReactions[], resolve: (value: ActionAndReactions[]) => void, reject: (s: string) => void): Generator<void, void, ActionAndReactions> {
+export function* actionReactionTest(recorded: ActionAndReactions[], tests: ActionAndReactionsTest[], resolve: (nr: number) => void, reject: (reason: string) => void, scheduler: Scheduler): Generator<ExternalAction<any> & {id: number} | undefined, void, ActionAndReactions> {
     const remainingTests = [...tests];
-    const recorded: ActionAndReactions[] = [];
-    let {action, reactions} = yield;
-    while(!(action === undefined && reactions === undefined)) {
+    let {action, reactions} = yield remainingTests[0]?.action?.type === 'external' ? remainingTests[0]?.action : undefined;
+    while(!(action === undefined && reactions === undefined) || scheduler.getPendingRequests().length > 0) {
         recorded.push({action, reactions});
         const currentTest = remainingTests.shift();
         if(currentTest !== undefined) {
@@ -63,41 +63,46 @@ export function* actionReactionTest(tests: ActionAndReactions[], resolve: (value
             } else {
                 currentTest.test?.(undefined);
             }
-            if(currentTest.effect !== undefined) {
-                queueMicrotask(() => {
-                    currentTest.effect?.();
-                });
-            }
         }
-        const next = yield;
+        if(remainingTests.length === 0) {
+            break;
+        }
+        const next = yield remainingTests[0]?.action?.type === 'external' ? remainingTests[0]?.action : undefined;
         action = next.action;
         reactions = next.reactions;
     }
+    console.log('recorded: ', recorded, tests.length, recorded.length);
+
+    console.log('remaining tests: ', remainingTests)
     if(remainingTests.length > 0) {
         reject(`expected ${remainingTests.length} more actions, but got none`);
-        return;
     }
-    resolve(recorded);
+    else if(tests.length < recorded.length) {
+        reject(`expected ${tests.length} actions, but got ${recorded.length}`);
+    }
+    resolve(1);
     return;
 }
 
-export async function runFlowcardsTests(testContext: Deno.TestContext, rootFlow: FlowGeneratorFunction, events: EventRecord, testSteps?: ActionAndReactions[]) {
-    let actionsReactions: ActionAndReactions[] = [];
+export async function runFlowcardsTests(testContext: Deno.TestContext, rootFlow: FlowGeneratorFunction, events: EventRecord, testSteps?: ActionAndReactions[]): Promise<void> {
+    const recorded: ActionAndReactions[] = [];
+    let scheduler: Scheduler | undefined;
     try {
-        actionsReactions = await new Promise((resolve, reject) => {
-            const testGenerator = actionReactionTest(testSteps || [], resolve, reject);
-            new Scheduler({
+        const promise = new Promise<number>((resolve, reject) => {
+            scheduler = new Scheduler({
                 id: 'rootFlow',
                 events,
                 rootFlow,
-                actionReactionGenerator: testGenerator
+                actionReactionGenerator: actionReactionTest(recorded, testSteps || [], resolve, reject, scheduler!)
             })
-        });
-
+        })
+        scheduler?.run();
+        await deadline(promise, 3000);
+        await Deno.writeTextFile(`./${testContext.name}.json`, JSON.stringify(recorded, null, 2));
     }
     catch(e) {
-        console.log('error', e);
+        //const askedForActions = scheduler?.getAskForBids().map(b => ({eventId: b.event.id, type: 'external', id: (recorded[recorded.length-1].action?.id || -1) + 1, bidId: b.id, flowId: b.flow.id, payload: 'TBD' }) satisfies Action<any>);
+        await Deno.writeTextFile(`./${testContext.name}.json`, JSON.stringify(recorded, null, 2));
         throw e;
     }
-    //return await Deno.writeTextFile(`./${testContext.name}.json`, JSON.stringify(actionsReactions, null, 2));
-};
+}

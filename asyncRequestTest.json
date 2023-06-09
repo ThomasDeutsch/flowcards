@@ -1,0 +1,37 @@
+[
+  {
+    "reactions": [
+      {
+        "flowPath": [
+          "rootFlow"
+        ],
+        "type": "flow enabled",
+        "details": {}
+      }
+    ]
+  },
+  {
+    "action": {
+      "id": 0,
+      "type": "requestedAsync",
+      "eventId": "eventA",
+      "payload": "__%TAKE_PAYLOAD_FROM_BID%__",
+      "bidId": 0,
+      "flowId": "rootFlow"
+    },
+    "reactions": [
+      {
+        "flowPath": [
+          "rootFlow"
+        ],
+        "type": "pending request added",
+        "details": {
+          "eventId": "eventA",
+          "bidId": 0,
+          "bidType": "request",
+          "actionId": 0
+        }
+      }
+    ]
+  }
+]

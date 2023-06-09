@@ -73,4 +73,9 @@ export type Action<P> = ExternalAction<P> | ResolvePendingRequestAction<P> | Rej
 export type ExtendableAction<P> = ExternalAction<P> | RequestedAction<P> | ResolvePendingRequestAction<P> | RequestedAsyncAction<P>;
 
 /** a selected action */
-export type SelectedAction<P> = Action<P> & {id: number};
+export type LoggedAction<P> =
+    ExternalAction<P> & {id: number} |
+    ResolvePendingRequestAction<P> & {id: number} |
+    RejectPendingRequestAction & {id: number} |
+    RequestedAction<P> |
+    (Omit<RequestedAsyncAction<P>, 'payload'> & {payload?: ((current?: P) => Promise<P>) | '__%TAKE_PAYLOAD_FROM_BID%__', resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number}})

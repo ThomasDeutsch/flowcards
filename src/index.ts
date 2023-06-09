@@ -5,7 +5,7 @@ export type {BaseValidationReturn, AccumulatedValidationResults} from './payload
 export type {ActionAndReactions} from './action-reaction-logger.ts';
 
 /* action */
-export type {ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, Action} from './action.ts';
+export type {ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, Action, LoggedAction} from './action.ts';
 
 /* bids */
 export type {BidType, RequestBid, BlockBid, ValidateBid, WaitForBid, AskForBid, CurrentBidsForEvent} from './bid.ts'
@@ -15,16 +15,13 @@ export {request, extend, waitFor, askFor, block, validate, trigger, isSameBid} f
 export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions.ts';
 
 /* event */
-export {Event, EventByKey} from './event.ts';
+export { Event, EventByKey } from './event.ts';
 
 /* flow */
-export type {TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, AllBidsAndPendingInformation, PendingExtend, Flow} from './flow.ts';
-
-/* replay */
-export type {ReplayRequestAsyncAction, ActiveReplayInfo, ActiveReplayState, Replay, ReplayAction, ActiveReplay, SavedReplay} from './replay.ts';
+export type { TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, AllBidsAndPendingInformation, PendingExtend, Flow } from './flow.ts';
 
 /* scheduler */
-export type {SchedulerProps, Scheduler } from './scheduler.ts';
+export type { SchedulerProps, Scheduler } from './scheduler.ts';
 
 /* utils */
-export type { EventRecord, getAllEvents, mapValues, getKeyFromId} from './utils.ts';
+export type { EventRecord, getEventMap, mapValues, getKeyFromId} from './utils.ts';

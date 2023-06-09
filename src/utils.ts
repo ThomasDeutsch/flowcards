@@ -73,23 +73,27 @@ export type EventRecord = {[ key: string ]: Event<any, any> | EventByKey<any,any
  * @param obj the object to search
  * @returns an array of all Events
  */
-export function getAllEvents(obj: EventRecord): Event<any, any>[] {
-    const events: Event<any, any>[] = [];
+export function getEventMap(obj: EventRecord, connectEventFn?: (event: Event<any, any>) => void): Map<string, Event<any, any>> {
+    let events: Map<string, Event<any, any>> = new Map();
     for(const key in obj) {
         const value = obj[key];
         // value is an Event
         if(value instanceof Event) {
-            events.push(value);
+            connectEventFn?.(value);
+            events.set(value.id, value);
         }
         // value is an EventByKey
         else if(value instanceof EventByKey) {
-            const events = value.allEvents;
-            events.forEach((e) => events.push(e));
+            const keyedEvents = value.allEvents;
+            keyedEvents.forEach((e) => {
+                connectEventFn?.(e);
+                events.set(e.id, e);
+            });
         }
         // value is an object (get next values recursively)
         else if(typeof value === 'object') {
-            const nestedEvents = getAllEvents(value);
-            nestedEvents.forEach((e) => events.push(e));
+            const nestedEvents = getEventMap(value);
+            events = mergeMaps(events, nestedEvents);
         }
     }
     return events;

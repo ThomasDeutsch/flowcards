@@ -116,7 +116,7 @@ export type ProgressingBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P
  * 3. for every event, a list of all active contexts (see PlacedContextBid)
  */
  export interface OrderedRequestsAndCurrentBids {
-    orderedRequests: Map<string, Placed<RequestBid<any, any>>[]>;
+    orderedRequests: Placed<RequestBid<any, any>>[];
     currentBidsByEventId: Map<string, CurrentBidsForEvent<any, any>>;
 }
 
@@ -130,15 +130,14 @@ export type ProgressingBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P
  */
 export function getOrderedRequestsAndCurrentBids(fb: AllBidsAndPendingInformation ): OrderedRequestsAndCurrentBids {
     const result: OrderedRequestsAndCurrentBids = {
-        orderedRequests: new Map(),
+        orderedRequests: [],
         currentBidsByEventId: new Map(),
     };
     // 1. add all placed bids to the result
     fb.placedBids.forEach(bid => {
         if(bid.event.rootFlowId !== bid.flow.pathFromRootFlow[0]) return; // only add bids that are placed by the root flow (the flow that placed the event)
         if(isRequestBid(bid)) {
-            const currentRequestBids = result.orderedRequests.get(bid.event.id) || [];
-            result.orderedRequests.set(bid.event.id, [...currentRequestBids , bid]);
+            result.orderedRequests = [...result.orderedRequests , bid];
         }
         const currentBids = result.currentBidsByEventId.get(bid.event.id) || {event: bid.event} satisfies CurrentBidsForEvent<any, any>;
         if(currentBids[bid.type] === undefined) currentBids[bid.type] = [bid as any];
