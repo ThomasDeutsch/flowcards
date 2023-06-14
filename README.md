@@ -52,6 +52,30 @@ It is a [7kb package with no dependencies](https://bundlephobia.com/package/@flo
 
 See [this Sandbox](https://stackblitz.com/edit/qwik-starter-73hfzs?file=README.md,src%2Fcomponents%2Fstarter%2Fcounter%2Fcounter.tsx) where flowcards is used for the counter in this Qwik demo
 
+To write behaviours with flowcards, you need 3 Elements:
+1. an event, that will hold the value and can be dispatched if asked for.
+```js
+export const countEvent = new Event<number>('count');
+```
+3. a flow, that will define the behavior
+```js
+const rootFlow = function* () {
+  yield request(countEvent, 100); // INITIAL EVENT VALUE
+  while (true) {
+    yield askFor(countEvent, (next) => next < 106); // ASK THE USER TO SUBMIT A NEW COUNT VALUE
+    console.log('askFor count', countEvent.value);
+  }
+}
+```
+5. a scheduler, that will get a root flow
+```js
+new Scheduler({rootFlow});
+```
+6. Try to dispatch an event with .set 
+```js
+countEvent.set(101); // will increase the counter
+```
+
 
 
 
