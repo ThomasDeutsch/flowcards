@@ -47,10 +47,10 @@ By harnessing these benefits, Flowcards empower developers to build robust, main
 npm install @flowcards/core
 ```
 
- will get you all you need.
+will get you all you need.
 It is a [7kb package with no dependencies](https://bundlephobia.com/package/@flowcards/core@12.5.0)
 
-TODO: codesandbox example
+See [this Sandbox](https://stackblitz.com/edit/qwik-starter-73hfzs?file=README.md,src%2Fcomponents%2Fstarter%2Fcounter%2Fcounter.tsx) where flowcards is used for the counter in this Qwik demo
 
 
 
