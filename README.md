@@ -43,10 +43,14 @@ By harnessing these benefits, Flowcards empower developers to build robust, main
 
 
 # Getting Started
-npm install @flowcards/core will get you all you need.
+```
+npm install @flowcards/core
+```
+
+ will get you all you need.
 It is a [7kb package with no dependencies](https://bundlephobia.com/package/@flowcards/core@12.5.0)
 
-In the following codesandbox, you can find...
+TODO: codesandbox example
 
 
 
@@ -84,54 +88,4 @@ Within Flowcards, a `yield` statement allows a flow to place one or multiple "bi
 5. `extend`: The flow extends the logic of an event.
 6. `trigger`: The flow dispatches an event when asked for by another flow.
 7. `block`: The flow blocks an event from occurring.
-
-By utilizing these bid types, flows can
-
-
-
-
-TODO, create a tutorial:
-
-Installation and Setup
-
-Provide step-by-step instructions to install the necessary dependencies or tools for using Flowcards.
-Guide programmers through the setup process, ensuring they have a working environment to follow along with the tutorial.
-Basic Concepts
-
-Introduce the core concepts of Flowcards, such as scenarios, flows, and events.
-Explain how scenarios describe the steps required to achieve specific goals.
-Describe flows as individual units of execution within a scenario.
-Highlight the role of events in coordinating and synchronizing flows.
-Translating Scenarios into Code
-
-Walk programmers through the process of translating a scenario into code using Flowcards.
-Provide examples using a simple scenario and demonstrate how to write the corresponding code using Flowcard syntax.
-Explain the different types of bids available in Flowcards, such as waitFor, askFor, request, validate, extend, trigger, and block.
-Working with Multiple Flows
-
-Illustrate scenarios where multiple flows need to interact and synchronize their execution.
-Demonstrate how to handle synchronization using the yield keyword and bids in Flowcards.
-Provide code examples that showcase how different flows can extend, block, or wait for events from other flows.
-Advanced Flowcard Techniques
-
-Introduce advanced techniques or features in Flowcards that can enhance the development process.
-Examples may include error handling, flow branching, or reusable flow components.
-Explain how these techniques can improve code modularity, reusability, and maintainability.
-Debugging and Testing with Flowcards
-
-Explain how Flowcards can facilitate the debugging process.
-Demonstrate techniques for troubleshooting scenarios and identifying issues within flows.
-Highlight the ease of writing targeted tests for scenarios using Flowcards.
-Best Practices
-
-Share best practices for using Flowcards effectively in real-world projects.
-Provide guidance on structuring scenarios, organizing flows, and maintaining clean code using Flowcards.
-Offer tips for collaborating with other developers using Flowcards.
-Conclusion
-
-Recap the benefits and key concepts of Flowcards.
-Encourage programmers to explore further and apply Flowcards in their own projects.
-Provide additional resources, such as official documentation, tutorials, or relevant community forums, for programmers to continue their learning journey with Flowcards.
-By following this structure, you can provide programmers with a solid foundation in Flowcards and guide them towards effectively using this powerful tool in their development workflow.
-
 
