@@ -1,10 +1,10 @@
-Introducing FlowCards: Simplify Application Modeling Scenario by Scenario
+#Introducing FlowCards: Simplify Application Modeling Scenario by Scenario
 
 flowcards offers a powerful solution to simplify application development. By leveraging flowcards, you can streamline the process and enjoy numerous benefits that enhance your development workflow. Let's explore how flowcards can revolutionize your approach to software development.
 
 ## What is flowcards?
 
-flowcards provides a seamless way to translate application scenarios into code. These scenarios describe the necessary steps for the system to achieve specific goals, such as searching for products or handling user interactions. You can think of scenarios as user stories, use cases, or user flows. Take a look at this example scenario written in Gherkin syntax:
+flowcards provides a seamless way to translate application scenarios into code. These scenarios describe the necessary steps for the user or system to achieve specific goals, such as searching for products or handling user interactions. You can think of scenarios as user stories, use cases, or user flows. Take a look at this example scenario written in Gherkin syntax:
 
 **Scenario: User is able to search for products**
 - Given the user has selected a category
@@ -12,7 +12,7 @@ flowcards provides a seamless way to translate application scenarios into code. 
 - And the user initiates a search
 - Then the products are fetched from the server
 
-With Flowcards, you can directly translate scenarios like this into code, simplifying the development process. Here's a code snippet showcasing the translation:
+With flowcards, you can directly translate scenarios like this into code, simplifying the development process. Here's a code snippet showcasing the translation:
 
 ```js
 function* userCanSearchForProducts(selectedCategoryId: number) {
@@ -24,7 +24,7 @@ Core architecture concepts can be found [in this miro board](https://miro.com/ap
 
 ## Why Use Flowcards?
 
-Flowcards bring a range of benefits that significantly enhance the software development process. Let's explore how Flowcards can transform your development experience, or jump directly into a code-example
+flowcards can bring a range of benefits that significantly enhance the software development process. Let's explore how flowcards can transform your development experience, or jump directly into a code-example
 
 **Enhanced Collaboration:** Flowcards facilitate better communication and collaboration among development teams. By modeling scenarios, everyone gains a clear understanding of the application's functionality and can work together seamlessly.
 
