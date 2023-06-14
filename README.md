@@ -20,6 +20,7 @@ function* userCanSearchForProducts(selectedCategoryId: number) {
   yield request(searchProductsEvent, () => getProductsFromServer(selectedCategoryId, searchString));
 }
 ```
+Core architecture concepts can be found [in this miro board](https://miro.com/app/board/uXjVOmlg9vs=/?share_link_id=535748295478)
 
 ## Why Use Flowcards?
 
