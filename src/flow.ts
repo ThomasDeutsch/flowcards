@@ -84,6 +84,7 @@ export class Flow {
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
     private _onCleanupCallback?: () => void;
+    public description = "";
     public readonly pathFromRootFlow: string[];
 
     constructor(parameters: FlowParameters) {
