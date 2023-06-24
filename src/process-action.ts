@@ -47,7 +47,7 @@ export function processAction<P, V>(orderedRequestsAndCurrentBids: OrderedReques
                 id: nextActionId,
                 type: 'rejectPendingRequest',
                 eventId: nextAction.eventId,
-                flowId: nextAction.flowId,
+                flowPath: nextAction.flowPath,
                 bidId: nextAction.bidId,
                 requestActionId: nextAction.requestActionId,
                 error: validationResult

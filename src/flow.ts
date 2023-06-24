@@ -340,7 +340,7 @@ export class Flow {
                 id: null,
                 eventId: bid.event.id,
                 type: 'resolvePendingRequest',
-                flowId: this.id,
+                flowPath: this.path,
                 bidId: bid.id,
                 payload: value,
                 requestActionId
@@ -355,7 +355,7 @@ export class Flow {
                 id: null,
                 eventId: bid.event.id,
                 type: 'rejectPendingRequest',
-                flowId: this.id,
+                flowPath: this.path,
                 bidId: bid.id,
                 requestActionId,
                 error
@@ -568,5 +568,13 @@ export class Flow {
      */
     public get isDisabled(): boolean {
         return this._isDisabled;
+    }
+
+    /**
+     * get the full path for this flow
+     * the full path includes the path of all parents + the flow id
+     */
+    public get path(): string[] {
+        return [...this.pathFromRootFlow, this.id];
     }
 }

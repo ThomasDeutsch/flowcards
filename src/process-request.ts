@@ -35,7 +35,7 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
                 eventId: bid.event.id,
                 payload: payload,
                 bidId: bid.id,
-                flowId: bid.flow.id
+                flowPath: bid.flow.path
             }
             reactToRequestedAsyncAction(currentBids, requestedAsyncAction, bid);
             logger.onActionProcessed(requestedAsyncAction);
@@ -55,7 +55,7 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
                 eventId: bid.event.id,
                 payload: payload,
                 bidId: bid.id,
-                flowId: bid.flow.id
+                flowPath: bid.flow.path
             };
             reactToRequestedAction(currentBids, requestedAction, bid, highestPriorityAskForBid);
             logger.onActionProcessed(requestedAction);

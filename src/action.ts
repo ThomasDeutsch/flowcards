@@ -13,7 +13,7 @@
 interface BaseAction {
     type: "external" | "requested" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";
     eventId: string;
-    flowId: string;
+    flowPath: string[];
     bidId: number;
 }
 

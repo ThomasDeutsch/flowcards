@@ -1,12 +1,13 @@
 import { RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
 import { isValidReturn } from "./payload-validation.ts";
 import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid, isSameBid } from "./bid.ts";
+import { equalPaths } from "./utils.ts";
 
 
 export type InvalidBidReasons = {
     eventId: string;
     bidType?: BidType,
-    flowId?: string,
+    flowPath?: string[],
     bidId?: number,
     reasons: {
         type: string;
@@ -25,7 +26,7 @@ export type InvalidBidReasons = {
  * @returns all invalid reasons for the askFor bid or undefined if the askFor bid is valid
  */
 export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: CurrentBidsForEvent<P, V>, askForBid?: Placed<AskForBid<P,V>>): InvalidBidReasons | undefined {
-    const invalidReasons: InvalidBidReasons = {eventId, reasons: [], bidType: askForBid ? BidType.askFor : undefined, flowId: askForBid?.flow.id, bidId: askForBid?.id};
+    const invalidReasons: InvalidBidReasons = {eventId, reasons: [], bidType: askForBid ? BidType.askFor : undefined, flowPath: askForBid?.flow.path, bidId: askForBid?.id};
     // 1. check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
         invalidReasons.reasons.push({type: 'no current bids for this event'});
@@ -80,7 +81,7 @@ export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: C
  * @returns all invalid reasons for the request bid or undefined if the request bid is valid.
  */
 export function invalidReasonsForRequestBid(bid: Placed<RequestBid<any, any>>, currentBids?: CurrentBidsForEvent<any, any>): InvalidBidReasons | undefined {
-    const invalidReasons: InvalidBidReasons = {eventId: bid.event.id, reasons: [], bidType: BidType.request, flowId: bid.flow.id, bidId: bid.id};
+    const invalidReasons: InvalidBidReasons = {eventId: bid.event.id, reasons: [], bidType: BidType.request, flowPath: bid.flow.path, bidId: bid.id};
     // 1. check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
         invalidReasons.reasons.push({type: 'no current bids for this event'});
@@ -130,14 +131,14 @@ export function invalidReasonsForRequestBid(bid: Placed<RequestBid<any, any>>, c
  * @returns all invalid reasons for the resolvePendingRequest or rejectPendingRequest action or undefined if the action is valid
  */
 export function invalidReasonsForPendingRequestBid(action: ResolvePendingRequestAction<any> | RejectPendingRequestAction, pendingRequest?: Placed<RequestBid<any, any>>): InvalidBidReasons | undefined {
-    const invalidReasons: InvalidBidReasons = {eventId: action.eventId, reasons: [], bidType: BidType.request, flowId: action.flowId, bidId: action.bidId};
+    const invalidReasons: InvalidBidReasons = {eventId: action.eventId, reasons: [], bidType: BidType.request, flowPath: action.flowPath, bidId: action.bidId};
     // 1. check if the pending request is available for this event
     if(pendingRequest === undefined) {
         invalidReasons.reasons.push({type: 'no pending request'});
         return invalidReasons;
     }
-    // 2. check if the flow id matches
-    if(pendingRequest.flow.id !== action.flowId) {
+    // 2. check if the flow path matches
+    if(!equalPaths(pendingRequest.flow.path, action.flowPath)) {
         invalidReasons.reasons.push({type: 'flow id does not match', expectedBid: {flowId: pendingRequest.flow.id, bidId: pendingRequest.id}});
     }
     // 3. check if the bid id matches

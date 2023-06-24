@@ -118,3 +118,13 @@ export function mapValues<K, V>(map: Map<K, V>): V[] {
 export function getKeyFromId(id: string): string {
     return id.split('__key:')[1];
 }
+
+/**
+ * check if two array of strings are equal
+ * @param a an array of strings
+ * @param b an array of strings
+ */
+export function equalPaths(a: string[], b: string[]): boolean {
+    if(a.length !== b.length) return false;
+    return a.every((s, index) => s === b[index]);
+}
