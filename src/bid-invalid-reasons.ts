@@ -1,7 +1,7 @@
 import { RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
 import { isValidReturn } from "./payload-validation.ts";
 import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid, isSameBid } from "./bid.ts";
-import { equalPaths } from "./utils.ts";
+import { areEqualPaths } from "./utils.ts";
 
 
 export type InvalidBidReasons = {
@@ -138,7 +138,7 @@ export function invalidReasonsForPendingRequestBid(action: ResolvePendingRequest
         return invalidReasons;
     }
     // 2. check if the flow path matches
-    if(!equalPaths(pendingRequest.flow.path, action.flowPath)) {
+    if(!areEqualPaths(pendingRequest.flow.path, action.flowPath)) {
         invalidReasons.reasons.push({type: 'flow id does not match', expectedBid: {flowId: pendingRequest.flow.id, bidId: pendingRequest.id}});
     }
     // 3. check if the bid id matches
