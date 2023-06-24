@@ -46,6 +46,7 @@ export function* getValue<P, V>(bid: Bid<P, V>): Generator<TNext, P, FlowProgres
     const x = yield bid;
     return x[0].value as P;
 }
+export const getEventValue = getValue;
 
 /**
  * utility function that will return a correctly typed value from a series of bids

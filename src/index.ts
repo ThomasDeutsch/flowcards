@@ -12,7 +12,7 @@ export {BidType, Bid, WaitingBid, PlacedWaitingBid, RequestBid, PlacedRequestBid
 export {request, trigger, extend, waitFor, askFor, block, validate, isSameBid} from './bid';
 
 /* bid utility functions */
-export {getAllValues, getFirstValue, getValue, extendAll ,isProgressingBid} from './bid-utility-functions';
+export {getAllValues, getFirstValue, getValue, getEventValue, extendAll ,isProgressingBid} from './bid-utility-functions';
 
 /* event */
 export {NestedEventObject, getEvents, Event, EventByKey, EventUpdateInfo} from './event';
