@@ -9,36 +9,5 @@
         "details": {}
       }
     ]
-  },
-  {
-    "action": {
-      "id": 0,
-      "type": "external",
-      "eventId": "eventA",
-      "payload": 123,
-      "bidId": 0,
-      "flowId": "rootFlow"
-    },
-    "reactions": [
-      {
-        "flowPath": [
-          "rootFlow"
-        ],
-        "type": "flow progressed on a bid",
-        "details": {
-          "bidId": 0,
-          "bidType": "askFor",
-          "eventId": "eventA",
-          "actionId": 0
-        }
-      },
-      {
-        "flowPath": [
-          "rootFlow"
-        ],
-        "type": "flow ended",
-        "details": {}
-      }
-    ]
   }
 ]

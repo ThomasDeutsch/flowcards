@@ -78,4 +78,4 @@ export type LoggedAction<P> =
     ResolvePendingRequestAction<P> & {id: number} |
     RejectPendingRequestAction & {id: number} |
     RequestedAction<P> |
-    (Omit<RequestedAsyncAction<P>, 'payload'> & {payload?: ((current?: P) => Promise<P>) | '__%TAKE_PAYLOAD_FROM_BID%__', resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number}})
+    (Omit<RequestedAsyncAction<P>, 'payload'> & {payload: undefined, resolveRejectAction? : {resolveActionId? : number, rejectActionId?: number, useDataFromResolveAction?: boolean}})

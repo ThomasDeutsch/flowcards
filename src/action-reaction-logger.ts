@@ -51,7 +51,7 @@ export class ActionReactionLogger {
      */
     public onActionProcessed(action: Action<any> & {id: number}): void {
         if(action.type === 'requestedAsync') {
-            this._actionAndReactions.action = {...action, payload: '__%TAKE_PAYLOAD_FROM_BID%__'};
+            this._actionAndReactions.action = {...action, payload: undefined};
         }
         else {
             this._actionAndReactions.action = {...action};

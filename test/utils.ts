@@ -1,15 +1,17 @@
-import { ActionAndReactions, AskForBid, EventRecord, ExternalAction, LoggedAction } from "../src/index.ts";
+import { Action, ActionAndReactions, AskForBid, EventRecord, ExternalAction, LoggedAction, RequestBid } from "../src/index.ts";
 import { FlowGeneratorFunction } from "../src/flow.ts";
 import { FlowReaction } from "../src/flow-reaction.ts";
 import { Scheduler } from "../src/scheduler.ts";
 import { deadline } from "https://deno.land/std@0.190.0/async/mod.ts";
 import { ActionAndReactionsTest } from "../src/action-reaction-logger.ts";
+import { areEqualPaths } from "../src/utils.ts";
+import { Placed } from "../src/bid.ts";
 
 
 function isSameAction(a?: Omit<LoggedAction<any>, 'payload'>, b?: Omit<LoggedAction<any>, 'payload'>): boolean {
     if(a === undefined && b === undefined) return true;
     if(a === undefined || b === undefined) return false;
-    const x = a.type === b.type && a.id === b.id && a.bidId === b.bidId && a.flowId === b.flowId && a.id === b.id;
+    const x = a.type === b.type && a.id === b.id && a.bidId === b.bidId && areEqualPaths(a.flowPath, b.flowPath) && a.id === b.id;
     if(x === false) return false;
     if(a.type === 'rejectPendingRequest' || a.type === 'resolvePendingRequest') {
         return (a as any).requestActionId === (b as any).requestActionId; //TODO: better type check
@@ -19,11 +21,7 @@ function isSameAction(a?: Omit<LoggedAction<any>, 'payload'>, b?: Omit<LoggedAct
 
 function isSameReaction(a: FlowReaction, b: FlowReaction): boolean {
     if(a.type !== b.type) return false;
-    // for the flowpath, check if all items are the same string
-    if(a.flowPath.length !== b.flowPath.length) return false;
-    for(let i = 0; i < a.flowPath.length; i++) {
-        if(a.flowPath[i] !== b.flowPath[i]) return false;
-    }
+    if(!areEqualPaths(a.flowPath, b.flowPath)) return false;
     const aDetails = a.details;
     const bDetails = b.details;
     if(aDetails.actionId !== bDetails.actionId) return false;
@@ -44,19 +42,27 @@ function areSameReactions(expected?: FlowReaction[], actual?: FlowReaction[]): b
     return true;
 }
 
-export function* actionReactionTest(recorded: ActionAndReactions[], tests: ActionAndReactionsTest[], resolve: (nr: number) => void, reject: (reason: string) => void, scheduler: Scheduler): Generator<ExternalAction<any> & {id: number} | undefined, void, ActionAndReactions> {
-    const remainingTests = [...tests];
-    let {action, reactions} = yield remainingTests[0]?.action?.type === 'external' ? remainingTests[0]?.action : undefined;
-    while(!(action === undefined && reactions === undefined) || scheduler.getPendingRequests().length > 0) {
+function getMockedAsyncRequest(action: Action<any>) {
+    if(action.type === 'requestedAsync' && action.payload === undefined) {
+        action.payload = new Promise(() => null);
+    }
+}
+
+
+export function* actionReactionTest(recorded: ActionAndReactions[], remainingTests: ActionAndReactionsTest[], resolve: (nr: number) => void, reject: (reason: string) => void, getPendingRequests: () => Placed<RequestBid<any, any>>[]): Generator<ExternalAction<any> & {id: number} | undefined, void, ActionAndReactions> {
+    while(true) {
+        let {action, reactions} = yield remainingTests[0]?.action?.type === 'external' ? remainingTests[0]?.action : undefined;
+        if(action === undefined && reactions === undefined && getPendingRequests().length === 0) break;
         recorded.push({action, reactions});
         const currentTest = remainingTests.shift();
         if(currentTest !== undefined) {
             if(!isSameAction(currentTest.action, action)) {
                 reject(`expected action ${JSON.stringify(currentTest.action)} but got ${JSON.stringify(action)}`);
+                return;
             }
-            console.log('check reactions: ', areSameReactions(currentTest.reactions, reactions), currentTest.reactions, reactions)
             if(!areSameReactions(currentTest.reactions, reactions)) {
                 reject(`expected reactions ${JSON.stringify(currentTest.reactions)} but got ${JSON.stringify(reactions)}`);
+                return;
             }
             if(currentTest.action?.type !== 'rejectPendingRequest') {
                 currentTest.test?.(currentTest.action?.payload);
@@ -64,36 +70,26 @@ export function* actionReactionTest(recorded: ActionAndReactions[], tests: Actio
                 currentTest.test?.(undefined);
             }
         }
-        if(remainingTests.length === 0) {
-            break;
-        }
-        const next = yield remainingTests[0]?.action?.type === 'external' ? remainingTests[0]?.action : undefined;
-        action = next.action;
-        reactions = next.reactions;
-    }
-    console.log('recorded: ', recorded, tests.length, recorded.length);
-
-    console.log('remaining tests: ', remainingTests)
-    if(remainingTests.length > 0) {
-        reject(`expected ${remainingTests.length} more actions, but got none`);
-    }
-    else if(tests.length < recorded.length) {
-        reject(`expected ${tests.length} actions, but got ${recorded.length}`);
     }
     resolve(1);
     return;
 }
 
-export async function runFlowcardsTests(testContext: Deno.TestContext, rootFlow: FlowGeneratorFunction, events: EventRecord, testSteps?: ActionAndReactions[]): Promise<void> {
+
+export async function runFlowcardsTests(testContext: Deno.TestContext, rootFlow: FlowGeneratorFunction, events: EventRecord, tests?: ActionAndReactionsTest[]): Promise<void> {
     const recorded: ActionAndReactions[] = [];
+    const remainingTests = [...tests || []];
     let scheduler: Scheduler | undefined;
+    const getPendingRequests = ()  => {
+        return scheduler!.getPendingRequests();
+    }
     try {
         const promise = new Promise<number>((resolve, reject) => {
             scheduler = new Scheduler({
                 id: 'rootFlow',
                 events,
                 rootFlow,
-                actionReactionGenerator: actionReactionTest(recorded, testSteps || [], resolve, reject, scheduler!)
+                actionReactionGenerator: actionReactionTest(recorded, remainingTests || [], resolve, reject, getPendingRequests)
             })
         })
         scheduler?.run();
@@ -101,7 +97,15 @@ export async function runFlowcardsTests(testContext: Deno.TestContext, rootFlow:
         await Deno.writeTextFile(`./${testContext.name}.json`, JSON.stringify(recorded, null, 2));
     }
     catch(e) {
-        //const askedForActions = scheduler?.getAskForBids().map(b => ({eventId: b.event.id, type: 'external', id: (recorded[recorded.length-1].action?.id || -1) + 1, bidId: b.id, flowId: b.flow.id, payload: 'TBD' }) satisfies Action<any>);
+        if(tests === undefined || tests.length === 0) {
+            console.error(`no tests specified. ${recorded.length} tests recorded`);
+        }
+        else if(remainingTests.length > 0) {
+            console.error(`expected ${remainingTests.length} more actions, but got none`);
+        }
+        else if(tests.length < recorded.length) {
+            console.error(`expected ${tests.length} actions, but got ${recorded.length}`);
+        }
         await Deno.writeTextFile(`./${testContext.name}.json`, JSON.stringify(recorded, null, 2));
         throw e;
     }

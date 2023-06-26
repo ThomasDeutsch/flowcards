@@ -17,7 +17,10 @@
       "eventId": "eventA",
       "payload": "__%TAKE_PAYLOAD_FROM_BID%__",
       "bidId": 0,
-      "flowId": "rootFlow"
+      "flowPath": [
+        "rootFlow",
+        "rootFlow"
+      ]
     },
     "reactions": [
       {
@@ -31,6 +34,51 @@
           "bidType": "request",
           "actionId": 0
         }
+      }
+    ]
+  },
+  {},
+  {
+    "action": {
+      "id": 1,
+      "eventId": "eventA",
+      "type": "resolvePendingRequest",
+      "flowPath": [
+        "rootFlow",
+        "rootFlow"
+      ],
+      "bidId": 0,
+      "payload": 1,
+      "requestActionId": 0
+    },
+    "reactions": [
+      {
+        "flowPath": [
+          "rootFlow"
+        ],
+        "type": "pending request resolved",
+        "details": {
+          "eventId": "eventA"
+        }
+      },
+      {
+        "flowPath": [
+          "rootFlow"
+        ],
+        "type": "flow progressed on a bid",
+        "details": {
+          "bidId": 0,
+          "bidType": "request",
+          "eventId": "eventA",
+          "actionId": 1
+        }
+      },
+      {
+        "flowPath": [
+          "rootFlow"
+        ],
+        "type": "flow ended",
+        "details": {}
       }
     ]
   }
