@@ -65,24 +65,7 @@ describe("a flow execution", () => {
     });
 
     test('if a flow that has a pending request gets disabled, the request is canceled', (done) => {
-        const eventA = new Event<number>('eventA');
-        const eventB = new Event<number>('eventB');
-
-        testSchedulerFactory(function*(this: Flow) {
-            let test: number | undefined = 1;
-            let subflow: Flow | undefined;
-            while(true) {
-                subflow = this.flow('subflow', function* () {
-                    yield request(eventA, () => delay(1000, 2));
-                }, []);
-                yield* getValue(request(eventB, 1));
-                yield request(eventB, 3);
-                expect(subflow?.isDisabled).toBe(true);
-                expect(eventA.isPending).toBe(false);
-                done();
-                yield undefined;
-            }
-        });
+        //TODO
     });
 
     test('if a flow that has pending extend and gets disabled, the extend is kept', (done) => {

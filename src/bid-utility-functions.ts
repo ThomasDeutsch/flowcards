@@ -22,14 +22,12 @@ export function isProgressingBid(bid: Bid<any, any>): boolean {
  */
 export function* getAllValues<P extends Bid<any, any>[]>(...bids: P): Generator<TNext, {[K in keyof P]: P[K]["event"]["value"]}, FlowProgressInfo> {
     let bidsCopy = [...bids];
-    
     while(bidsCopy && bidsCopy.filter(isProgressingBid).length > 1) {
         const [progressedEvent, remainingBids] = yield bidsCopy;
         bidsCopy = (remainingBids || []) as any;
     }
     if(bidsCopy.filter(isProgressingBid).length === 1) {
         const lastBid = bidsCopy.filter(isProgressingBid)[0];
-        lastBid.isGetValueBid = true;
         const [progressedEvent] = yield bidsCopy;
     }
     return bids.map(bid => bid.event.value) as any;
@@ -42,7 +40,6 @@ export function* getAllValues<P extends Bid<any, any>[]>(...bids: P): Generator<
  * @remarks needs to be prefixed by a yield* statement.
  */
 export function* getValue<P, V>(bid: Bid<P, V>): Generator<TNext, P, FlowProgressInfo> {
-    bid.isGetValueBid = true;
     const x = yield bid;
     return x[0].value as P;
 }
@@ -55,7 +52,7 @@ export const getEventValue = getValue;
  * @remarks needs to be prefixed by a yield* statement.
  */
 export function* getFirstValue<P extends Bid<any, any>[]>(...bids: P): Generator<TNext, {[K in keyof P]: P[K]["event"]["value"]}, FlowProgressInfo> {
-    yield bids.map(bid => ({...bid, isGetValueBid: true} satisfies Bid<any, any>));
+    yield bids.map(bid => ({...bid} satisfies Bid<any, any>));
     return bids.map(bid => bid.event.value) as any;
 }
 

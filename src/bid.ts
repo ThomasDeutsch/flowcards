@@ -12,7 +12,6 @@ export type BidType = "waitFor" | "askFor" | "extend" | "validate" | "block" | "
 export interface Bid<P, V> {
     type: BidType;
     event: Event<P, V>;
-    isGetValueBid?: boolean;
 }
 
 export interface WaitingBid<P, V> extends Bid<P, V> {

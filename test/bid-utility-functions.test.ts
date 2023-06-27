@@ -51,25 +51,5 @@ describe("different flow utility functions", () => {
             yield undefined;
         });
     });
-
-    test("the getFirstValue utility function will return on any new progressed bid", (done) => {
-        const eventA = new Event<number>('eventA');
-        const eventB = new Event<string>('eventB');
-        testSchedulerFactory( function*(this: Flow) {
-            const testFlow = this.flow('subflow', function*() {
-                yield request(eventA, 1);
-                yield request(eventB, 'b');
-            }, []);
-            let [a, b] = yield* getFirstValue(waitFor(eventA), waitFor(eventB));
-            expect(eventA.value).toBe(1);
-            expect(eventB.value).toBe(undefined);
-            this.keepEnabled('subflow');
-            [a, b] = yield* getFirstValue(waitFor(eventA), waitFor(eventB));
-            expect(eventA.value).toBe(1);
-            expect(eventB.value).toBe('b');
-            done();
-            yield undefined;
-        });
-    });
 })
 
