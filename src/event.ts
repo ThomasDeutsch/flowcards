@@ -36,7 +36,8 @@ export type NestedEventObject = Event<any, any> | EventByKey<any, any> | { [key:
  */
 export function getEvents(neo: NestedEventObject): Event<any, any>[] {
     if(neo instanceof Event) return [neo];
-    return Object.values(neo).map(getEvents).flat();
+    if(neo instanceof EventByKey) return neo.allEvents;
+    return Object.values(neo).map(x => getEvents(x)).flat();
 }
 
 
