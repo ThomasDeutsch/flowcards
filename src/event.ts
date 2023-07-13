@@ -302,8 +302,8 @@ export class Event<P = undefined, V = void> {
  * A keyed event will provide multiple methods to access the events.
  */
 export class EventByKey<P = void, V = void> {
-    public readonly name: string;
-    protected _children = new Map<string, Event<P,V>>();
+    public readonly name: string | number;
+    protected _children = new Map<string | number, Event<P,V>>();
 
     constructor(name: string) {
         this.name = name;
@@ -315,7 +315,7 @@ export class EventByKey<P = void, V = void> {
      * @param key the key to get the event for.
      * @returns the event for the given key.
      */
-    public getEvent(key: string): Event<P,V> {
+    public getEvent(key: string | number): Event<P,V> {
         let event = this._children.get(key);
         if(event === undefined) {
             const id: string = `${this.name}__key:${key}`;
@@ -330,7 +330,7 @@ export class EventByKey<P = void, V = void> {
      * @param keys the keys to get the events for.
      * @returns the events for the given keys.
      */
-    public getEvents(...keys: string[]): Event<P,V>[] {
+    public getEvents(...keys: (string | number)[]): Event<P,V>[] {
         return keys.map(key => this.getEvent(key));
     }
 
@@ -338,8 +338,8 @@ export class EventByKey<P = void, V = void> {
      * get all keys
      * @returns all keys that are contained in this keyed event.
      */
-    public allKeys(): string[] {
-        return [...this._children].map(([k]) => getKeyFromId(k));
+    public allKeys(): (string | number)[] {
+        return [...this._children].map(([key]) => key);
     }
 
     /**
