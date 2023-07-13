@@ -2,7 +2,6 @@ import { AccumulatedValidationResults, explainAnyBidPlacedByFlow, explainBlocked
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action";
 import { EventInformation } from "./bid";
 import { ActionReactionLogger } from "./action-reaction-logger";
-import { getKeyFromId } from "./utils";
 
 
 export interface EventUpdateInfo<P> {
