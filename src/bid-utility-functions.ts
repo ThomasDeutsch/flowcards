@@ -48,6 +48,7 @@ export function* getValue<P, V>(bid: ExtendBid<P, V> | WaitForBid<P,V> | AskForB
     const x = yield bid;
     return x[0].value as P;
 }
+export const getEventValue = getValue;
 
 /**
  * utility function that will return a correctly typed value from a series of bids
