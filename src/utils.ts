@@ -120,11 +120,11 @@ export function getKeyFromId(id: string): string {
 }
 
 /**
- * check if two string-arrays are the same
+ * check if two array of strings are equal
  * @param a an array of strings
  * @param b an array of strings
  */
-export function areEqualPaths(a: string[], b: string[]): boolean {
+export function equalPaths(a: string[], b: string[]): boolean {
     if(a.length !== b.length) return false;
     return a.every((s, index) => s === b[index]);
 }
