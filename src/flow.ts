@@ -399,9 +399,8 @@ export class Flow {
     public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters: Parameters<T>): Flow | undefined {
         const currentChild = this._children.get(id);
         if(currentChild) {
-            // child flow with this id already exists:
             if(currentChild._isDisabled) {
-                this._isDisabled = false;
+                currentChild._isDisabled = false;
                 this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled, after being disabled', {childFlowId: currentChild.id});
             }
             if(!areDepsEqual(currentChild.parameters || [], parameters)) {
