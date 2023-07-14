@@ -3,6 +3,7 @@ import { isValidReturn, validateBid } from "./payload-validation.ts";
 import { AskForBid, BidType, CurrentBidsForEvent, Placed, ProgressingBid, RequestBid } from "./bid.ts";
 import { Event } from "./event.ts";
 import { Flow, PendingExtend } from "./flow.ts";
+import { WaitingBid } from "../dist/ucflows.d.ts";
 
 export type FlowReaction = {flowPath: string[], type: FlowReactionType, details: FlowReactionDetails};
 
@@ -56,8 +57,8 @@ export interface FlowReactionDetails {
  * @param action the valid requested action selected by the scheduler
  * @param requestBid the placed request bid
  */
- export function reactToRequestedAction<P, V>(eventInfo: EventInformation<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: PlacedRequestBid<P, V>, askForBid?: PlacedWaitingBid<P, V>): void {
-    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
+ export function reactToRequestedAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: Placed<RequestBid<P, V>>, askForBid?: Placed<AskForBid<P, V>>): void {
+    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event);
     if(progressExtendBid(eventInfo, action, requestBid)) return;
     eventInfo.event.__setValue(action.payload);
     progressExtendedBids(eventInfo, action);

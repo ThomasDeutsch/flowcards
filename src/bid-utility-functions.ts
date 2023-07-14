@@ -42,7 +42,7 @@ export function* getAllValues<P extends AnyBid<any, any>[]>(...bids: P): Generat
  * @remarks will set the bid to a getValueBid. If a getValueBid is progressed, all subFlows that are not enabled will be disabled.
  * @remarks needs to be prefixed by a yield* statement.
  */
-export function* getValue<P, V>(bid: Bid<P, V>): Generator<TNext, P, FlowProgressInfo> {
+export function* getValue<P, V>(bid: AnyBid<P, V>): Generator<TNext, P, FlowProgressInfo> {
     const x = yield bid;
     return x[0].value as P;
 }

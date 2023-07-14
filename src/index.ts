@@ -24,4 +24,4 @@ export type { TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, Flo
 export type { SchedulerProps, Scheduler } from './scheduler.ts';
 
 /* utils */
-export type { EventRecord, getEventMap, mapValues, getKeyFromId, areEqualPaths} from './utils.ts';
+export type { EventRecord, getEventMap, mapValues, getKeyFromId, equalPaths} from './utils.ts';

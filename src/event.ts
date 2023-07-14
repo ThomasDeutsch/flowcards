@@ -140,7 +140,7 @@ export class Event<P = undefined, V = void> {
      * To check if the payload is valid, use the validate function.
      * @returns an explanation why the highest priority askFor bid is not valid.
      */
-    private _invalidReasons() {
+    private _invalidReasons(): InvalidBidReasons | undefined {
         return invalidReasonsForAskForBid(this.id, this._getCurrentBids?.(this.id));
     }
 
@@ -202,7 +202,7 @@ export class Event<P = undefined, V = void> {
             payload: value as P,
             id: null,
             eventId: this.id,
-            flowId: highestPriorityAskForBid.flow.id,
+            flowPath: highestPriorityAskForBid.flow.path,
             bidId: highestPriorityAskForBid.id
         };
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
