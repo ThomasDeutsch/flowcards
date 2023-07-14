@@ -115,12 +115,3 @@ export function mapValues<K, V>(map: Map<K, V>): V[] {
     map.forEach((v) => values.push(v));
     return values;
 }
-
-/**
- * get the key from an id-string
- * @param id the id-string
- * @returns the key
- */
-export function getKeyFromId(id: string): string {
-    return id.split('__key:')[1];
-}
