@@ -31,7 +31,6 @@ export function* getAllValues<P extends AnyBid<any, any>[]>(...bids: P): Generat
     // the last bid is a getValueBid.
     if(bidsCopy.filter(isProgressingBid).length === 1) {
         const lastBid = bidsCopy.filter(isProgressingBid)[0];
-        lastBid.isGetValueBid = true;
         const [progressedEvent] = yield bidsCopy;
     }
     return bids.map(bid => bid.event.value) as any;
@@ -43,8 +42,7 @@ export function* getAllValues<P extends AnyBid<any, any>[]>(...bids: P): Generat
  * @remarks will set the bid to a getValueBid. If a getValueBid is progressed, all subFlows that are not enabled will be disabled.
  * @remarks needs to be prefixed by a yield* statement.
  */
-export function* getValue<P, V>(bid: ExtendBid<P, V> | WaitForBid<P,V> | AskForBid<P,V> | RequestBid<P,V>): Generator<TNext, P, FlowProgressInfo> {
-    bid.isGetValueBid = true;
+export function* getValue<P, V>(bid: Bid<P, V>): Generator<TNext, P, FlowProgressInfo> {
     const x = yield bid;
     return x[0].value as P;
 }

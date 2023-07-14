@@ -1,6 +1,10 @@
 {
   "name": "@flowcards/core",
+<<<<<<< HEAD
   "version": "12.6.0",
+=======
+  "version": "13.0.0",
+>>>>>>> db363ef... add flow.context
   "sideEffects": false,
   "description": "use case based flows for state management",
   "keywords": [

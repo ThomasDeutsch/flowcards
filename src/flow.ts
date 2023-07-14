@@ -38,6 +38,7 @@ type FlowIteratorResult = IteratorResult<TNext | undefined, void>;
  */
 export interface FlowParameters {
     pathFromRootFlow: string[];
+    group?: string;
     generatorFunction: FlowGeneratorFunction;
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerChangedEvent: (event: Event<any, any>) => void;
@@ -69,6 +70,7 @@ export interface AllBidsAndPendingInformation {
  * a flow is able to place bids and react to actions.
  */
 export class Flow {
+    public readonly group?: string;
     private readonly _generatorFunction: FlowGeneratorFunction;
     private _generator: FlowGenerator;
     private _children: Map<string, Flow> = new Map();
@@ -84,12 +86,14 @@ export class Flow {
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
     private _onCleanupCallback?: () => void;
+    private _activeGroup: string | undefined;
     public description = "";
     public readonly pathFromRootFlow: string[];
 
     constructor(parameters: FlowParameters) {
         // this initialization is only done once
         this.pathFromRootFlow = parameters.pathFromRootFlow;
+        this.group = parameters.group;
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._executeAction = parameters.executeAction;
         this._logger = parameters.logger;
@@ -290,14 +294,6 @@ export class Flow {
         try {
             const next = this._generator.next([event, filterRemainingBids(bid.id, this._placedBids)]);
             this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow progressed on a bid', {bidId: bid.id, bidType: bid.type, eventId: event.id, actionId: actionId});
-            if(isProgressingBid(bid) && bid.isGetValueBid) {
-                // disable all children that are not enabled during the last progress
-                this._children.forEach((child) => {
-                    if(child.__enabledOnActionId !== actionId) {
-                        child.__disable();
-                    }
-                });
-            }
             this._handleNext(next);
         } catch(error) {
             console.error('error in flow ', this.id, ': ', error, 'flow ended');
@@ -410,6 +406,7 @@ export class Flow {
         }
         // no child flow with this id exists:
         const newChild = new Flow({
+            group: this._activeGroup,
             pathFromRootFlow: [...this.pathFromRootFlow, id],
             generatorFunction,
             executeAction: this._executeAction,
@@ -423,14 +420,21 @@ export class Flow {
     }
 
     /**
-     * keep the flow alive, after a useValue or useValues bid was placed, and the flow is not enabled by the flow() function
+     * a context is a group of flows.
+     * if a flow inside of a context function is not enabled, it will be disabled.
+     * @param id the name of the context
+     * @param groupFunction a function that contains all flows that are grouped in this context
      */
-    public keepEnabled(idOrFlow: string | Flow): void {
-        const id = typeof idOrFlow === 'string' ? idOrFlow : idOrFlow.id;
-        const currentChild = this._children.get(id);
-        if(!currentChild) return;
-        if(currentChild.isDisabled) return;
-        currentChild.__enabledOnActionId = this._latestActionIdThisFlowProgressedOn;
+    public context(id: string, groupFunction: () => void) {
+        this._activeGroup = id;
+        groupFunction();
+        // for all child-flows with the group = activeGroup, disable all flows that are not enabled in the last progression
+        this._children.forEach((child) => {
+            if(child.group === id && child.__enabledOnActionId !== this._latestActionIdThisFlowProgressedOn) {
+                child.__disable();
+            }
+        });
+        this._activeGroup = undefined;
     }
 
     /**
