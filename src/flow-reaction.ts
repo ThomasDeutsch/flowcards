@@ -43,6 +43,7 @@ export interface FlowReactionDetails {
     eventInfo.pendingExtend?.extendingFlow.__resolveExtend(eventInfo.event);
     if(progressExtendBid(eventInfo, action, askForBid)) return;
     eventInfo.event.__setValue(action.payload);
+    askForBid.flow.__onEvent(eventInfo.event, askForBid, action.id);
     progressExtendedBids(eventInfo, action);
     askForBid.flow.__onEvent(eventInfo.event, askForBid, action.id);
     progressWaitingBids(eventInfo, action);
@@ -55,13 +56,13 @@ export interface FlowReactionDetails {
  * @param action the valid requested action selected by the scheduler
  * @param requestBid the placed request bid
  */
- export function reactToRequestedAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: Placed<RequestBid<P, V>>, askForBid?: Placed<AskForBid<P, V>>): void {
-    eventInfo.pendingExtend?.extendingFlow.__resolveExtend(eventInfo.event);
+ export function reactToRequestedAction<P, V>(eventInfo: EventInformation<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: PlacedRequestBid<P, V>, askForBid?: PlacedWaitingBid<P, V>): void {
+    eventInfo.pendingExtend?.extendingFlow.abortExtend(eventInfo.event, true);
     if(progressExtendBid(eventInfo, action, requestBid)) return;
     eventInfo.event.__setValue(action.payload);
     progressExtendedBids(eventInfo, action);
     requestBid.flow.__onEvent(requestBid.event, requestBid, action.id);
-    askForBid?.flow.__onEvent(askForBid.event, askForBid, action.id);
+    askForBid?.flow.__onEvent(eventInfo.event, askForBid, action.id);
     progressWaitingBids(eventInfo, action);
 }
 
