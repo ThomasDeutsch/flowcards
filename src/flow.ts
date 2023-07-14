@@ -208,9 +208,6 @@ export class Flow {
             this._pendingRequests.delete(request.event.id);
         });
         this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow disabled', {});
-        this._children.forEach((child) => {
-            child.__disable();
-        });
     }
 
     /**
@@ -245,6 +242,7 @@ export class Flow {
             pendingRequests: this._pendingRequests,
             pendingExtends: this._pendingExtends,
         };
+        if(this.isDisabled) return result;
         this._children.forEach((child) => {
             const childBidsAndPendingInformation = child.__getBidsAndPendingInformation();
             result.placedBids = [...childBidsAndPendingInformation.placedBids, ...result.placedBids];
@@ -568,6 +566,13 @@ export class Flow {
      */
     public get isDisabled(): boolean {
         return this._isDisabled;
+    }
+
+    /**
+     * get all child flows of this flow
+     */
+    public get children(): Flow[] {
+        return [...this._children.values()];
     }
 
     /**
