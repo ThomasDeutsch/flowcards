@@ -81,6 +81,8 @@ export class Flow {
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
     private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
+    private _latestBidThisFlowProgressedOn?: PlacedBid<any, any>;
+
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
     private _onCleanupCallback?: () => void;
@@ -163,6 +165,7 @@ export class Flow {
         this._hasEnded = false;
         this._isDisabled = false;
         delete this._latestActionIdThisFlowProgressedOn;
+        delete this._latestBidThisFlowProgressedOn;
         if(!keepExtends) {
             this._pendingExtends.clear();
         }
@@ -285,6 +288,7 @@ export class Flow {
         if(this._latestActionIdThisFlowProgressedOn === actionId) return; // prevent from progressing twice on the same action
         this._logger.logChangedEvent(event);
         this._latestActionIdThisFlowProgressedOn = actionId;
+        this._latestBidThisFlowProgressedOn = bid;
         try {
             const next = this._generator.next([event, filterRemainingBids(bid.id, this._placedBids)]);
             this._logger.logFlowReaction(this.id, 'flow progressed on a bid', {bidId: bid.id, bidType: bid.type, eventId: event.id, actionId: actionId});
@@ -552,5 +556,20 @@ export class Flow {
      */
     public get children(): Flow[] {
         return [...this._children.values()];
+    }
+
+    /**
+     * get the latest event that this flow progressed on
+     */
+    public get latestEvent(): Event<any, any> | undefined {
+        return this._latestBidThisFlowProgressedOn?.event;
+    }
+
+    /**
+     * get the latest bid that this flow progressed on
+     * @returns the latest bid that this flow progressed on
+     */
+    public get latestBid(): PlacedBid<any, any> | undefined {
+        return this._latestBidThisFlowProgressedOn;
     }
 }
