@@ -1,5 +1,4 @@
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
-import { getKeyFromId } from "./utils.ts";
 import { invalidReasonsForAskForBid, InvalidBidReasons } from "./bid-invalid-reasons.ts";
 import { CurrentBidsForEvent, getHighestPriorityAskForBid } from "./bid.ts";
 import { explainValidation } from "./payload-validation.ts";

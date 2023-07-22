@@ -1,6 +1,6 @@
 import { LoggedAction } from "./action.ts";
 import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
-import { Action, ExternalAction } from "./index.ts";
+import { Action, RequestedAsyncAction } from "./index.ts";
 
 /**
  * action and reactions that are logged by the flows
@@ -12,12 +12,11 @@ import { Action, ExternalAction } from "./index.ts";
 
 /**
  * action and reactions that are logged by the flows, used for testing.
- * 
  */
 export interface ActionAndReactionsTest {
     action?: LoggedAction<any>,
     reactions?: FlowReaction[],
-    test?: (payload: any) => void
+    test?: (payload: any) => void,
 }
 
 /**
@@ -51,7 +50,8 @@ export class ActionReactionLogger {
      */
     public onActionProcessed(action: Action<any> & {id: number}): void {
         if(action.type === 'requestedAsync') {
-            this._actionAndReactions.action = {...action, payload: undefined};
+            const {payload, ...a} = action;
+            this._actionAndReactions.action = a; // remove the payload from the action, because it is not serializable
         }
         else {
             this._actionAndReactions.action = {...action};
@@ -65,10 +65,15 @@ export class ActionReactionLogger {
      * @returns all actions and reactions until the scheduler finished processing actions
      * @internalRemarks this is used by the scheduler to get the latest log for the latest scheduler run(s)
      */
-    public getActionsAndReactions(): ActionAndReactions {
-        const reactions = this._actionAndReactions.reactions ? [...this._actionAndReactions.reactions] : undefined;
-        const result = {...this._actionAndReactions, reactions} as ActionAndReactions;
+    public getActionAndReactions(): ActionAndReactions | undefined {
+        const result = {
+            action: this._actionAndReactions.action,
+            reactions: this._actionAndReactions.reactions ? [...this._actionAndReactions.reactions] : undefined
+        }
         this._actionAndReactions = {};
+        if(!result.reactions?.length && !result.action) {
+            return undefined;
+        }
         return result;
     }
 }

@@ -43,7 +43,7 @@ export function processAction<P, V>(orderedRequestsAndCurrentBids: OrderedReques
         const validationResult = explainValidation(currentBids, nextAction.payload, [pendingRequestBid, pendingRequestBid.isTriggerAskedFor ? currentBids.askFor![0] : undefined]);
         if(!validationResult.isValidAccumulated) {
             // if the validation result is not valid, create a rejectPendingRequest action
-            const rejectAction: RejectPendingRequestAction = {
+            const rejectAction: RejectPendingRequestAction & {id: number} = {
                 id: nextActionId,
                 type: 'rejectPendingRequest',
                 eventId: nextAction.eventId,
@@ -53,6 +53,7 @@ export function processAction<P, V>(orderedRequestsAndCurrentBids: OrderedReques
                 error: validationResult
             };
             reactToRejectAction(pendingRequestBid.flow, currentBids.event);
+            logger.onActionProcessed(rejectAction);
             return true;
         }
         reactToResolveAsyncAction(currentBids, {...nextAction, id: nextActionId}, pendingRequestBid);

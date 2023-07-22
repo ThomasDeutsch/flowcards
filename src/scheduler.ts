@@ -16,6 +16,8 @@ import { AskForBid } from "./index.ts";
  */
  //export type SchedulerCompletedCallback = (actionAndReactions: ActionAndReactions[], orderedRequestsAndCurrentBids: OrderedRequestsAndCurrentBids, activeReplayInfo: ActiveReplayInfo) => void;
 
+ export type ActionReactionGenerator = Generator<(ExternalAction<any> & {id: number}) | ResolvePendingRequestAction<any> | RejectPendingRequestAction | 'mockRequest' | undefined, void, ActionAndReactions | 'runEnd' | undefined>;
+
 /**
  * properties of the Scheduler
  * @param rootFlowGeneratorFunction the root generator function
@@ -26,7 +28,7 @@ export interface SchedulerProps {
     id: string;
     rootFlow: FlowGeneratorFunction;
     events: EventRecord;
-    actionReactionGenerator?: Generator<ExternalAction<any> & {id: number} | undefined, void, ActionAndReactions>;
+    actionReactionGenerator?: ActionReactionGenerator;
 }
 
 /**
@@ -38,7 +40,7 @@ export class Scheduler {
     private _rootFlow: Flow;
     private _orderedRequestsAndCurrentBids: OrderedRequestsAndCurrentBids
     private _actionReactionLogger = new ActionReactionLogger();
-    private actionReactionGenerator?: Generator<ExternalAction<any> & {id: number} | undefined, void, ActionAndReactions>;
+    private actionReactionGenerator?: ActionReactionGenerator;
     private _currentActionId = -1;
     private _changedEvents: Map<string, Event<any,any>> = new Map();
     private _currentlyValidatedEvent?: Event<any, any>;
@@ -122,16 +124,18 @@ export class Scheduler {
     public run(action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
         const nextActionId = this._currentActionId + 1;
         let wasActionProcessed = false;
-        const triggerActionFromTest = this.actionReactionGenerator?.next({...this._actionReactionLogger.getActionsAndReactions()})?.value;
+        const fromTest = this.actionReactionGenerator?.next(this._actionReactionLogger.getActionAndReactions())?.value;
+        // process next action
         if(action) {
             wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, action)
         }
-        else if(triggerActionFromTest) {
-            wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, triggerActionFromTest)
+        else if(typeof fromTest === 'object') {
+            wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, fromTest)
         }
         else {
-            wasActionProcessed = processNextValidRequestBid(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger);
+            wasActionProcessed = processNextValidRequestBid(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, fromTest === 'mockRequest');
         }
+        // run again, or update all events
         if(wasActionProcessed) {
             this._currentActionId = nextActionId;
             this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
@@ -140,6 +144,7 @@ export class Scheduler {
         else {
             this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
             this._changedEvents.clear();
+            this.actionReactionGenerator?.next('runEnd');
         }
     }
 
@@ -175,6 +180,7 @@ export class Scheduler {
      */
     public getPendingRequests(): Placed<RequestBid<any, any>>[] {
         return mapValues(this._orderedRequestsAndCurrentBids.currentBidsByEventId).map(bids => bids.pendingRequest).flatMap(bids => bids).filter(isDefined);
+
     }
 
     /**

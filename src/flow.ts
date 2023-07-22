@@ -3,7 +3,6 @@ import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid } from "./bid.t
 import { Event } from  "./event.ts";
 import { ActionReactionLogger } from "./action-reaction-logger.ts";
 import { areDepsEqual, isThenable, mergeMaps } from "./utils.ts";
-import { isProgressingBid } from "./bid-utility-functions.ts";
 
 
 // INTERFACES -------------------------------------------------------------------------------------------------------------
@@ -83,7 +82,7 @@ export class Flow {
     private _executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _registerChangedEvent: (event: Event<any, any>) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
-    private _latestBidThisFlowProgressedOn?: PlacedBid<any, any>;
+    private _latestBidThisFlowProgressedOn?: Placed<AnyBid<any, any>>;
 
     private _logger: ActionReactionLogger;
     private _currentParameters?: any[];
@@ -588,7 +587,7 @@ export class Flow {
      * the full path includes the path of all parents + the flow id
      */
     public get path(): string[] {
-        return [...this.pathFromRootFlow, this.id];
+        return [...this.pathFromRootFlow];
     }
 
     /**
@@ -602,7 +601,7 @@ export class Flow {
      * get the latest bid that this flow progressed on
      * @returns the latest bid that this flow progressed on
      */
-    public get latestBid(): PlacedBid<any, any> | undefined {
+    public get latestBid(): Placed<AnyBid<any, any>> | undefined {
         return this._latestBidThisFlowProgressedOn;
     }
 }

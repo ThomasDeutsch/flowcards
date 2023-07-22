@@ -15,10 +15,8 @@
       "id": 0,
       "type": "requestedAsync",
       "eventId": "eventA",
-      "payload": "__%TAKE_PAYLOAD_FROM_BID%__",
       "bidId": 0,
       "flowPath": [
-        "rootFlow",
         "rootFlow"
       ]
     },
@@ -37,14 +35,12 @@
       }
     ]
   },
-  {},
   {
     "action": {
       "id": 1,
       "eventId": "eventA",
       "type": "resolvePendingRequest",
       "flowPath": [
-        "rootFlow",
         "rootFlow"
       ],
       "bidId": 0,
