@@ -1,22 +1,14 @@
 import { LoggedAction } from "./action.ts";
 import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
-import { Action, RequestedAsyncAction } from "./index.ts";
+import { Action, Scheduler } from "./index.ts";
 
 /**
  * action and reactions that are logged by the flows
  */
  export interface ActionAndReactions {
     action?: LoggedAction<any>,
-    reactions?: FlowReaction[]
-}
-
-/**
- * action and reactions that are logged by the flows, used for testing.
- */
-export interface ActionAndReactionsTest {
-    action?: LoggedAction<any>,
     reactions?: FlowReaction[],
-    test?: (payload: any) => void,
+    tests?: ((scheduler: Scheduler) => void)[]
 }
 
 /**
@@ -48,7 +40,7 @@ export class ActionReactionLogger {
      * logs the processed action to the current scheduler run.
      * @param action the processed action
      */
-    public onActionProcessed(action: Action<any> & {id: number}): void {
+    public __onActionProcessed(action: Action<any> & {id: number}): void {
         if(action.type === 'requestedAsync') {
             const {payload, ...a} = action;
             this._actionAndReactions.action = a; // remove the payload from the action, because it is not serializable

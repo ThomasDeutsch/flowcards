@@ -28,7 +28,7 @@ export interface SchedulerProps {
     id: string;
     rootFlow: FlowGeneratorFunction;
     events: EventRecord;
-    actionReactionGenerator?: ActionReactionGenerator;
+    actionReactionGeneratorFn?: (scheduler: Scheduler) => ActionReactionGenerator;
 }
 
 /**
@@ -48,7 +48,7 @@ export class Scheduler {
 
     constructor(props : SchedulerProps) {
         this._actionReactionLogger = new ActionReactionLogger();
-        this.actionReactionGenerator = props.actionReactionGenerator;
+        this.actionReactionGenerator = props.actionReactionGeneratorFn?.(this);
         this._rootFlow = new Flow({
             pathFromRootFlow: [props.id],
             generatorFunction: props.rootFlow,
@@ -111,6 +111,12 @@ export class Scheduler {
     }
 
     /**
+     * flag, to prevent recursive calls of the run function
+     * @internal
+     */
+    private _isRunning = false;
+
+    /**
      * This function is the main-function for the flowcards library.
      * It will process the next action from 3 possible sources ( ordered by priority ):
      * 1. a resolved/rejected request or from an external source.
@@ -121,31 +127,34 @@ export class Scheduler {
      * After this function call, all events that have changed are updated.
      * @param action the external/resolve/reject action that will be processed
      */
-    public run(action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
-        const nextActionId = this._currentActionId + 1;
-        let wasActionProcessed = false;
-        const fromTest = this.actionReactionGenerator?.next(this._actionReactionLogger.getActionAndReactions())?.value;
-        // process next action
-        if(action) {
-            wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, action)
+    public run(externalAction?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
+        if(this._isRunning) {
+            throw new Error('recursive-error: you may got this error from a flow that is dispatching an event with event.dispatch. Use "yield trigger(...)" instead.');
         }
-        else if(typeof fromTest === 'object') {
-            wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, fromTest)
+        this._isRunning = true;
+        while(true) {
+            let wasActionProcessed = false;
+            const fromTest = this.actionReactionGenerator?.next(this._actionReactionLogger.getActionAndReactions())?.value;
+            if(externalAction !== undefined) {
+                wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, this._currentActionId+1, this._actionReactionLogger, externalAction);
+                externalAction = undefined;
+            }
+            else if(typeof fromTest === 'object') {
+                wasActionProcessed = processAction(this._orderedRequestsAndCurrentBids, this._currentActionId+1, this._actionReactionLogger, fromTest);
+            }
+            else {
+                wasActionProcessed = processNextValidRequestBid(this._orderedRequestsAndCurrentBids, this._currentActionId+1, this._actionReactionLogger, fromTest === 'mockRequest');
+            }
+            if(wasActionProcessed) {
+                this._currentActionId++;
+                this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
+            }
+            else { break; }
         }
-        else {
-            wasActionProcessed = processNextValidRequestBid(this._orderedRequestsAndCurrentBids, nextActionId, this._actionReactionLogger, fromTest === 'mockRequest');
-        }
-        // run again, or update all events
-        if(wasActionProcessed) {
-            this._currentActionId = nextActionId;
-            this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
-            this.run();
-        }
-        else {
-            this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
-            this._changedEvents.clear();
-            this.actionReactionGenerator?.next('runEnd');
-        }
+        this._changedEvents.forEach(event => event.__triggerUpdateCallback(this._currentActionId));
+        this._changedEvents.clear();
+        this.actionReactionGenerator?.next('runEnd');
+        this._isRunning = false;
     }
 
     /**

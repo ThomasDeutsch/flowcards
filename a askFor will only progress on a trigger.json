@@ -3,6 +3,14 @@
     "reactions": [
       {
         "flowPath": [
+          "rootFlow",
+          "subflow"
+        ],
+        "type": "flow enabled",
+        "details": {}
+      },
+      {
+        "flowPath": [
           "rootFlow"
         ],
         "type": "flow enabled",
@@ -12,14 +20,14 @@
   },
   {
     "action": {
-      "type": "external",
-      "payload": 1,
       "id": 0,
+      "type": "requested",
       "eventId": "eventA",
+      "payload": 1,
+      "bidId": 0,
       "flowPath": [
         "rootFlow"
-      ],
-      "bidId": 0
+      ]
     },
     "reactions": [
       {
@@ -29,21 +37,15 @@
         "type": "flow progressed on a bid",
         "details": {
           "bidId": 0,
-          "bidType": "askFor",
+          "bidType": "request",
           "eventId": "eventA",
           "actionId": 0
         }
       },
       {
         "flowPath": [
-          "rootFlow"
-        ],
-        "type": "flow ended",
-        "details": {}
-      },
-      {
-        "flowPath": [
-          "rootFlow"
+          "rootFlow",
+          "subflow"
         ],
         "type": "flow progressed on a bid",
         "details": {
@@ -52,6 +54,14 @@
           "eventId": "eventA",
           "actionId": 0
         }
+      },
+      {
+        "flowPath": [
+          "rootFlow",
+          "subflow"
+        ],
+        "type": "flow ended",
+        "details": {}
       }
     ]
   }

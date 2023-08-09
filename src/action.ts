@@ -72,7 +72,7 @@ export type Action<P> = ExternalAction<P> | ResolvePendingRequestAction<P> | Rej
 /** all possible extendable action types */
 export type ExtendableAction<P> = ExternalAction<P> | RequestedAction<P> | ResolvePendingRequestAction<P> | RequestedAsyncAction<P>;
 
-/** a selected action */
+/** a logged action */
 export type LoggedAction<P> =
     ExternalAction<P> & {id: number} |
     ResolvePendingRequestAction<P> & {id: number} |

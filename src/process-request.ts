@@ -1,10 +1,11 @@
 import { RequestedAction, RequestedAsyncAction } from "./action.ts";
 import { explainValidation } from "./payload-validation.ts";
 import { ActionReactionLogger } from "./action-reaction-logger.ts";
-import { OrderedRequestsAndCurrentBids, CurrentBidsForEvent, getHighestPriorityAskForBid } from "./bid.ts";
+import { OrderedRequestsAndCurrentBids, CurrentBidsForEvent, getHighestPriorityAskForBid, askFor, request } from "./bid.ts";
 import { reactToRequestedAction, reactToRequestedAsyncAction } from "./flow-reaction.ts";
 import { isThenable } from "./utils.ts";
 import { invalidReasonsForRequestBid } from "./bid-invalid-reasons.ts";
+import { Event } from "./event.ts";
 
 
 /**
@@ -43,12 +44,10 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
                 flowPath: bid.flow.path
             }
             reactToRequestedAsyncAction(currentBids, requestedAsyncAction, bid);
-            logger.onActionProcessed(requestedAsyncAction);
+            logger.__onActionProcessed(requestedAsyncAction);
             return true;
         } else {
-            // if the payload is not a promise, the payload can be checked immediately
-            // if the bid is only valid when asked for, the highest priority askFor bid is also used to validate the payload
-            const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids);
+            const highestPriorityAskForBid = bid.isTriggerAskedFor ? getHighestPriorityAskForBid(currentBids) : undefined;
             const payloadValidation = explainValidation(currentBids, payload, [bid, bid.isTriggerAskedFor ? highestPriorityAskForBid : undefined]);
             if(!payloadValidation.isValidAccumulated) {
                 return false;
@@ -63,8 +62,22 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
                 flowPath: bid.flow.path
             };
             reactToRequestedAction(currentBids, requestedAction, bid, highestPriorityAskForBid);
-            logger.onActionProcessed(requestedAction);
+            logger.__onActionProcessed(requestedAction);
             return true;
         }
     });
+}
+
+
+function*() {
+    const a = yield* given(eventA);
+    while(true) {
+        const x = yield* askFor(eventB);
+        this.flow('x-close', function*() {
+            const X = yield request(eventC);
+            // can you tell when X is no longer defined ?
+            //after this request, the event is bound to the flow - as long as the flow is not disabled or finished
+        })
+    }
+    
 }

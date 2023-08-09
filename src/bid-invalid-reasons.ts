@@ -1,6 +1,6 @@
 import { RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
 import { isValidReturn } from "./payload-validation.ts";
-import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid, isSameBid } from "./bid.ts";
+import { BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid } from "./bid.ts";
 import { equalPaths } from "./utils.ts";
 
 
@@ -16,7 +16,6 @@ export type InvalidBidReasons = {
     }[]
 }
 
-
 /**
  * will return the invalid reasons for the given askFor bid. If no askFor bid is provided, the highest priority askFor bid will be used.
  * if the current bids  provided, this function will check and return all invalid reasons for the askFor bid.
@@ -25,8 +24,8 @@ export type InvalidBidReasons = {
  * @param askForBid the askFor bid that will be checked (will default to the highest priority askFor bid if not provided)
  * @returns all invalid reasons for the askFor bid or undefined if the askFor bid is valid
  */
-export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: CurrentBidsForEvent<P, V>, askForBid?: Placed<AskForBid<P,V>>): InvalidBidReasons | undefined {
-    const invalidReasons: InvalidBidReasons = {eventId, reasons: [], bidType: askForBid ? BidType.askFor : undefined, flowPath: askForBid?.flow.path, bidId: askForBid?.id};
+export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: CurrentBidsForEvent<P, V>): InvalidBidReasons | undefined {
+    const invalidReasons: InvalidBidReasons = {eventId, reasons: [], bidType: BidType.askFor};
     // 1. check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
         invalidReasons.reasons.push({type: 'no current bids for this event'});
@@ -52,16 +51,7 @@ export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: C
     if(highestPriorityAskForBid.flow.pathFromRootFlow[0] !== currentBids.event.rootFlowId) {
         invalidReasons.reasons.push({type: 'events connected to a different scheduler can not be requested'});
     }
-    // if no askFor bid was provided, set the askFor bid to the highest priority askFor bid
-    if(askForBid === undefined) {
-        // if no action was provided, set the action target to the highest priority askFor bid
-        askForBid = highestPriorityAskForBid;
-    }
-    // 6. if an askFor bid was provided, check if the askFor bid is the highest priority askFor bid (in a replay)
-    else if(!isSameBid(highestPriorityAskForBid, askForBid.flow.id, askForBid.id)) {
-        invalidReasons.reasons.push({type: 'the provided bid is not the highest priority askFor bid', expectedBid: {flowId: highestPriorityAskForBid.flow.id, bidId: highestPriorityAskForBid.id}});
-    }
-    // 7. check if the bid has a pending extend, if so, check if the bid will resolve the extend
+    // 6. check if the bid has a pending extend, if so, check if the bid will resolve the extend
     if(currentBids.pendingExtend) {
         const isResolveExtendBid = highestPriorityAskForBid.flow.id === currentBids.pendingExtend.extendingFlow.id;
         if(!isResolveExtendBid) {
@@ -139,7 +129,7 @@ export function invalidReasonsForPendingRequestBid(action: ResolvePendingRequest
     }
     // 2. check if the flow path matches
     if(!equalPaths(pendingRequest.flow.path, action.flowPath)) {
-        invalidReasons.reasons.push({type: 'flow id does not match', expectedBid: {flowId: pendingRequest.flow.id, bidId: pendingRequest.id}});
+        invalidReasons.reasons.push({type: 'flow path does not match', expectedBid: {flowId: pendingRequest.flow.id, bidId: pendingRequest.id}});
     }
     // 3. check if the bid id matches
     if(pendingRequest.id !== action.bidId) {
