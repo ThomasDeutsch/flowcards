@@ -28,7 +28,8 @@ export enum BidType {
     waitFor = "waitFor",
     extend = "extend",
     validate = "validate",
-    block = "block"
+    block = "block",
+    given = "given"
 }
 
 /**  a bid, that can be placed by a flow (has not been placed yet) */
@@ -47,6 +48,11 @@ export interface WaitForBid<P, V> extends Bid<P, V> {
     type: BidType.waitFor;
     validate?: (nextValue: P) => BaseValidationReturn<V>;
     isGetValueBid?: boolean;
+}
+
+export interface GivenBid<P, V> extends Bid<P, V> {
+    type: BidType.given;
+    validate?: (nextValue: P) => boolean;
 }
 
 export interface ExtendBid<P, V> extends Bid<P, V> {
@@ -74,6 +80,12 @@ export interface BlockBid<P, V> extends Bid<P, V> {
 }
 
 /**
+ * Union type for all bid types
+ * export type AnyBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | RequestBid<P,V> | ValidateBid<P,V> | BlockBid<P,V>;
+ */
+export type AnyBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | RequestBid<P,V> | ValidateBid<P,V> | BlockBid<P,V> | GivenBid<P,V>;
+
+/**
  * a placed bid is a bid that has been placed by a flow.
  * a placed bid are the currently active bids in the event information (known to the scheduler)
  */
@@ -83,18 +95,13 @@ export type Placed<B extends AnyBid<any, any>> = B & {
 }
 
 /**
- * Union type for all bid types
- * export type AnyBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | RequestBid<P,V> | ValidateBid<P,V> | BlockBid<P,V>;
- */
-export type AnyBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | RequestBid<P,V> | ValidateBid<P,V> | BlockBid<P,V>;
-
-/**
  * all placed bids and pending information for an event
  */
 export interface CurrentBidsForEvent<P, V> {
     event: Event<P,V>;
     [BidType.request]?: Placed<RequestBid<P, V>>[];
     [BidType.waitFor]?: Placed<WaitForBid<P, V>>[];
+    [BidType.given]?: Placed<GivenBid<P, V>>[];
     [BidType.askFor]?: Placed<AskForBid<P, V>>[];
     [BidType.extend]?: Placed<ExtendBid<P, V>>[];
     [BidType.validate]?: Placed<ValidateBid<P, V>>[];
@@ -102,6 +109,7 @@ export interface CurrentBidsForEvent<P, V> {
     pendingRequest?: Placed<RequestBid<P,V>>;
     pendingExtend?: PendingExtend<P,V>;
 }
+
 /**
  * Union type for all progressing bid types
  * A progressing bid is a bid that will advance the flow, because an event happened.
@@ -226,6 +234,20 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
     const event = args[0];
     const validate = args[1];
     return { type: BidType.waitFor, event, validate } satisfies WaitForBid<P, V>;
+}
+
+/**
+ * Creates a given bid
+ * if a flow progresses on a given bid, the flow will reset each time, the value of the validate function changes.
+ * @param event the event that is about to be extended
+ * @param validate an optional validation function. If the validation returns false, the flow will be disabled.
+ * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
+ * @returns a given bid
+ */
+export function given<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => boolean) => GivenBid<P, V>>) {
+    const event = args[0];
+    const validate = args[1];
+    return { type: BidType.given, event, validate } satisfies GivenBid<P, V>;
 }
 
 /**

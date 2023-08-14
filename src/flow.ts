@@ -1,5 +1,5 @@
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
-import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid } from "./bid.ts";
+import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid, GivenBid } from "./bid.ts";
 import { Event } from  "./event.ts";
 import { ActionReactionLogger } from "./action-reaction-logger.ts";
 import { areDepsEqual, isThenable, mergeMaps } from "./utils.ts";
@@ -42,7 +42,6 @@ export interface FlowParameters {
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerChangedEvent: (event: Event<any, any>) => void;
     logger: ActionReactionLogger;
-    parameters: any[];
 }
 
 /**
@@ -50,6 +49,7 @@ export interface FlowParameters {
  */
 export interface AllBidsAndPendingInformation {
     placedBids: Placed<AnyBid<any, any>>[];
+    activeGivenBids?: Placed<GivenBid<any, any>>[];
     pendingRequests?: Map<string, Placed<RequestBid<any, any>>>;
     pendingExtends?: Map<string, PendingExtend<any, any>>;
 }
@@ -76,6 +76,7 @@ export class Flow {
     private _hasEnded = false;
     private _currentBidId = 0;
     private _isDisabled = false;
+    private _activeGivenBids: Placed<GivenBid<any, any>>[] = [];
     private _placedBids: Placed<AnyBid<unknown, unknown>>[] | undefined;
     private _pendingRequests: Map<string, Placed<RequestBid<any, any>>> = new Map();
     private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
@@ -83,9 +84,7 @@ export class Flow {
     private _registerChangedEvent: (event: Event<any, any>) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
     private _latestBidThisFlowProgressedOn?: Placed<AnyBid<any, any>>;
-
     private _logger: ActionReactionLogger;
-    private _currentParameters?: any[];
     private _onCleanupCallback?: () => void;
     private _activeGroup: string | undefined;
     public description = "";
@@ -98,10 +97,9 @@ export class Flow {
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._executeAction = parameters.executeAction;
         this._logger = parameters.logger;
-        this._currentParameters = parameters.parameters;
         this._registerChangedEvent = parameters.registerChangedEvent;
         this._resetToInitial();
-        this._generator = this._generatorFunction(...(this._currentParameters || []));
+        this._generator = this._generatorFunction();
         try {
             this._handleNext.bind(this)(this._generator.next());
             this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled', {});
@@ -163,6 +161,7 @@ export class Flow {
      * return flow to the initial state
      */
     private _resetToInitial(keepExtends?: boolean): void {
+        this._activeGivenBids = [];
         this._onCleanupCallback?.();
         delete this._onCleanupCallback;
         this._placeBids(undefined);
@@ -221,12 +220,9 @@ export class Flow {
      * restarts the flow
      * @param nextParameters the parameters that will be checked against the current parameters. If changed, the flow will be restarted with the new parameters.
      */
-    public __restart(nextParameters?: any[]): void {
-        if(nextParameters !== undefined) {
-            this._currentParameters = [...nextParameters];
-        }
+    public __restart(): void {
         this._resetToInitial();
-        this._generator = this._generatorFunction(...(this._currentParameters || []));
+        this._generator = this._generatorFunction();
         try {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
@@ -242,13 +238,16 @@ export class Flow {
      * @returns all bids and pending information (see FlowBidsAndPendingInformation)
      */
     public __getBidsAndPendingInformation(): AllBidsAndPendingInformation {
+        if(this._isDisabled) return {placedBids: [], pendingExtends: this._pendingExtends};
         const placedBids = this.isDisabled ? [] : this._placedBids || [];
+        if(this._activeGivenBids.length > 0) {
+            placedBids.push(...this._activeGivenBids);
+        }
         const result = {
             placedBids,
             pendingRequests: this._pendingRequests,
-            pendingExtends: this._pendingExtends,
+            pendingExtends: this._pendingExtends
         };
-        if(this.isDisabled) return result;
         this._children.forEach((child) => {
             const childBidsAndPendingInformation = child.__getBidsAndPendingInformation();
             result.placedBids = [...childBidsAndPendingInformation.placedBids, ...result.placedBids];
@@ -393,16 +392,12 @@ export class Flow {
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, parameters: Parameters<T>): Flow | undefined {
+    public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T): Flow | undefined {
         const currentChild = this._children.get(id);
         if(currentChild) {
             if(currentChild._isDisabled) {
                 currentChild._isDisabled = false;
                 this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled, after being disabled', {childFlowId: currentChild.id});
-            }
-            if(!areDepsEqual(currentChild.parameters || [], parameters)) {
-                this._logger.__logFlowReaction([...this.pathFromRootFlow, currentChild.id], 'flow restarted because parameters changed', {childFlowId: currentChild.id});
-                currentChild.__restart(parameters);
             }
             currentChild.__enabledOnActionId = this._latestActionIdThisFlowProgressedOn;
             return currentChild;
@@ -414,8 +409,7 @@ export class Flow {
             generatorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
-            registerChangedEvent: this._registerChangedEvent,
-            parameters,
+            registerChangedEvent: this._registerChangedEvent
         });
         this._children.set(id, newChild);
         newChild.__enabledOnActionId = this._latestActionIdThisFlowProgressedOn;
@@ -549,14 +543,6 @@ export class Flow {
      */
     public get pendingRequests(): Map<string, Placed<RequestBid<any, any>>> {
         return this._pendingRequests;
-    }
-
-    /**
-     * getter that returns the current parameters of the flow
-     * @returns the current parameters of the flow
-     */
-    public get parameters(): any[] | undefined {
-        return this._currentParameters;
     }
 
     /**

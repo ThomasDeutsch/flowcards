@@ -5,7 +5,6 @@ import { OrderedRequestsAndCurrentBids, CurrentBidsForEvent, getHighestPriorityA
 import { reactToRequestedAction, reactToRequestedAsyncAction } from "./flow-reaction.ts";
 import { isThenable } from "./utils.ts";
 import { invalidReasonsForRequestBid } from "./bid-invalid-reasons.ts";
-import { Event } from "./event.ts";
 
 
 /**
@@ -66,18 +65,4 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
             return true;
         }
     });
-}
-
-
-function*() {
-    const a = yield* given(eventA);
-    while(true) {
-        const x = yield* askFor(eventB);
-        this.flow('x-close', function*() {
-            const X = yield request(eventC);
-            // can you tell when X is no longer defined ?
-            //after this request, the event is bound to the flow - as long as the flow is not disabled or finished
-        })
-    }
-    
 }

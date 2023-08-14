@@ -28,7 +28,7 @@ export function processAction<P, V>(orderedRequestsAndCurrentBids: OrderedReques
         // no checks needed for an external action, because all checks are done inside the event dispatch function.
         const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids)!;
         reactToExternalAction(currentBids, {...nextAction, id: nextActionId}, highestPriorityAskForBid);
-        logger.onActionProcessed({...nextAction, id: nextActionId});
+        logger.__onActionProcessed({...nextAction, id: nextActionId});
         return true;
     }
 
@@ -53,11 +53,11 @@ export function processAction<P, V>(orderedRequestsAndCurrentBids: OrderedReques
                 error: validationResult
             };
             reactToRejectAction(pendingRequestBid.flow, currentBids.event);
-            logger.onActionProcessed(rejectAction);
+            logger.__onActionProcessed(rejectAction);
             return true;
         }
         reactToResolveAsyncAction(currentBids, {...nextAction, id: nextActionId}, pendingRequestBid);
-        logger.onActionProcessed({...nextAction, id: nextActionId});
+        logger.__onActionProcessed({...nextAction, id: nextActionId});
         return true;
     }
 
@@ -70,7 +70,7 @@ export function processAction<P, V>(orderedRequestsAndCurrentBids: OrderedReques
         }
         pendingRequestBid = pendingRequestBid as Placed<RequestBid<any, any>>; // is not undefined because of the invalidReasonsForPendingRequestBid check
         reactToRejectAction(pendingRequestBid.flow, currentBids.event);
-        logger.onActionProcessed({...nextAction, id: nextActionId});
+        logger.__onActionProcessed({...nextAction, id: nextActionId});
         return true;
     }
     return false;

@@ -20,7 +20,6 @@ export type FlowReactionType =
     'flow disabled' |
     'flow ended' |
     'flow enabled, after being disabled' |
-    'flow restarted because parameters changed' |
     'flow restarted manually by calling flow.restart' |
     'flow restarted because an error was not handled';
 
