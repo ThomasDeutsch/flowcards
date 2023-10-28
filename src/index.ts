@@ -21,7 +21,7 @@ export { Event, EventByKey } from './event.ts';
 export type { TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, AllBidsAndPendingInformation, PendingExtend, Flow } from './flow.ts';
 
 /* scheduler */
-export type { SchedulerProps, Scheduler, ActionReactionGenerator } from './scheduler.ts';
+export type { EngineProps, Engine, ActionReactionGenerator } from './engine.ts';
 
 /* utils */
 export { getEventMap,mapValues } from './utils.ts';

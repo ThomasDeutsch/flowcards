@@ -12,31 +12,26 @@ import { AskForBid } from "./index.ts";
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 /**
- * a callback function that is called if the current scheduler run is finished (all actions processed, and no more requests that can be processed)
+ * a callback function that is called if the current engine run is finished (all actions processed, and no more requests that can be processed)
  */
- //export type SchedulerCompletedCallback = (actionAndReactions: ActionAndReactions[], orderedRequestsAndCurrentBids: OrderedRequestsAndCurrentBids, activeReplayInfo: ActiveReplayInfo) => void;
-
  export type ActionReactionGenerator = Generator<(ExternalAction<any> & {id: number}) | ResolvePendingRequestAction<any> | RejectPendingRequestAction | 'mockRequest' | undefined, void, ActionAndReactions | 'runEnd' | undefined>;
 
 /**
- * properties of the Scheduler
- * @param rootFlowGeneratorFunction the root generator function
- * @param schedulerRunsCompletedCallback callback function that is called if an action was processed by the scheduler
- * @param replay the replay object that is used to record and replay the scheduler process
+ * properties of the Engine
  */
-export interface SchedulerProps {
+export interface EngineProps {
     id: string;
     rootFlow: FlowGeneratorFunction;
     events: EventRecord;
-    actionReactionGeneratorFn?: (scheduler: Scheduler) => ActionReactionGenerator;
+    actionReactionGeneratorFn?: (engine: Engine) => ActionReactionGenerator;
 }
 
 /**
- * the flowcards scheduler is the main class of the library.
+ * the flowcards engine is the main class of the library.
  * It is responsible for processing and finding the next valid action.
- * After all actions are processed, the scheduler will call the schedulerRunsCompletedCallback.
+ * After all actions are processed, the engine will call the schedulerRunsCompletedCallback.
  */
-export class Scheduler {
+export class Engine {
     private _rootFlow: Flow;
     private _orderedRequestsAndCurrentBids: OrderedRequestsAndCurrentBids
     private _actionReactionLogger = new ActionReactionLogger();
@@ -46,7 +41,7 @@ export class Scheduler {
     private _currentlyValidatedEvent?: Event<any, any>;
     private _events: Map<string, Event<any, any>>;
 
-    constructor(props : SchedulerProps) {
+    constructor(props : EngineProps) {
         this._actionReactionLogger = new ActionReactionLogger();
         this.actionReactionGenerator = props.actionReactionGeneratorFn?.(this);
         this._rootFlow = new Flow({
@@ -55,7 +50,7 @@ export class Scheduler {
             executeAction: this.run.bind(this),
             logger: this._actionReactionLogger,
             registerChangedEvent: this._registerChangedEvent.bind(this),
-            parameters: []
+            startEngineRun: this.run.bind(this)
         });
         this._events = getEventMap(props.events, this._connectEvent.bind(this));
         this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this._rootFlow.__getBidsAndPendingInformation());
@@ -64,7 +59,7 @@ export class Scheduler {
     }
 
     /**
-     * register changed events (value changes and changes to the other states: pending, blocked, ...) during the current scheduler run.
+     * register changed events (value changes and changes to the other states: pending, blocked, ...) during the current engine run.
      * @param event the event that has changed
      */
     private _registerChangedEvent(event: Event<any,any>): void {
@@ -97,8 +92,8 @@ export class Scheduler {
     }
 
     /**
-     * function to connect an event to the scheduler
-     * @param event the event that will be connected to the scheduler, to be able to access the scheduler functionality.
+     * function to connect an event to the engine
+     * @param event the event that will be connected to the engine, to be able to access the engine functionality.
      */
     private _connectEvent(event: Event<any, any>): void {
         event.__connectToScheduler({
@@ -106,7 +101,7 @@ export class Scheduler {
             getCurrentBids: (eventId: string) => this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(eventId),
             registerEventAccess: this._registerEventAccessInValidateFunction.bind(this),
             toggleValueAccessLogging: this._toggleEventAccessRegistrationInValidateFunction.bind(this),
-            startSchedulerRun: this.run.bind(this)
+            startEngineRun: this.run.bind(this)
         });
     }
 
@@ -129,7 +124,7 @@ export class Scheduler {
      */
     public run(externalAction?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
         if(this._isRunning) {
-            throw new Error('recursive-error: you may got this error from a flow that is dispatching an event with event.dispatch. Use "yield trigger(...)" instead.');
+            throw new Error('recursive call: engine already running');
         }
         this._isRunning = true;
         while(true) {

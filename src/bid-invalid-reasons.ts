@@ -47,9 +47,9 @@ export function invalidReasonsForAskForBid<P,V>(eventId: string, currentBids?: C
        invalidReasons.reasons.push({type: 'no askFor bid'});
        return invalidReasons;
     }
-    // 5. check if the askFor bid is from a different scheduler than the event
+    // 5. check if the askFor bid is from a different engine than the event
     if(highestPriorityAskForBid.flow.pathFromRootFlow[0] !== currentBids.event.rootFlowId) {
-        invalidReasons.reasons.push({type: 'events connected to a different scheduler can not be requested'});
+        invalidReasons.reasons.push({type: 'events connected to a different engine can not be requested'});
     }
     // 6. check if the bid has a pending extend, if so, check if the bid will resolve the extend
     if(currentBids.pendingExtend) {
@@ -104,10 +104,10 @@ export function invalidReasonsForRequestBid(bid: Placed<RequestBid<any, any>>, c
             invalidReasons.reasons.push({type: 'event is extended by another flow'});
         }
     }
-    // 6. if the bid is from a different scheduler than the event, check if the bid is a triggerAskedFor bid
+    // 6. if the bid is from a different engine than the event, check if the bid is a triggerAskedFor bid
     else if(bid.flow.pathFromRootFlow[0] !== bid.event.rootFlowId) {
         if(!bid.isTriggerAskedFor) {
-            invalidReasons.reasons.push({type: 'events connected to a different scheduler can not be requested'});
+            invalidReasons.reasons.push({type: 'events connected to a different engine can not be requested'});
         }
     }
     return invalidReasons.reasons.length === 0 ? undefined : invalidReasons;

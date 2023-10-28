@@ -8,7 +8,7 @@
  * E: an external source (event.dispatch)
  * A valid action will be processed, causing flows to react to the action.
  * Actions are serializable and can be stored as replay data.
- * @remarks An action with the id = null is an action that was not selected as the next action by the scheduler, yet.
+ * @remarks An action with the id = null is an action that was not selected as the next action by the engine, yet.
  */
 interface BaseAction {
     type: "external" | "requested" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";

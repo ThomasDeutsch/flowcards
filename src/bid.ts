@@ -1,6 +1,7 @@
 import { Event } from "./event.ts";
 import { BaseValidationReturn } from "./payload-validation.ts";
 import { AllBidsAndPendingInformation, Flow, PendingExtend, TNext } from "./flow.ts";
+import { FlowProgressInfo } from "./index.ts";
 
 /**
  * with each yield or yield* statement, a flow can place bids.
@@ -52,7 +53,8 @@ export interface WaitForBid<P, V> extends Bid<P, V> {
 
 export interface GivenBid<P, V> extends Bid<P, V> {
     type: BidType.given;
-    validate?: (nextValue: P) => boolean;
+    isActive: boolean; // is this bid placed, or is it an active bid?
+    validate?: (nextValue: P) => BaseValidationReturn<V>;
 }
 
 export interface ExtendBid<P, V> extends Bid<P, V> {
@@ -87,7 +89,7 @@ export type AnyBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P,V> | Re
 
 /**
  * a placed bid is a bid that has been placed by a flow.
- * a placed bid are the currently active bids in the event information (known to the scheduler)
+ * a placed bid are the currently active bids in the event information (known to the engine)
  */
 export type Placed<B extends AnyBid<any, any>> = B & {
     id: number;
@@ -131,7 +133,7 @@ export type ProgressingBid<P,V> = AskForBid<P,V> | WaitForBid<P,V> | ExtendBid<P
 // CORE FUNCTIONS -----------------------------------------------------------------------------------------------
 
 /**
- * organizes all bids and pending information into a new data structure that is more performant to use for the scheduler.
+ * organizes all bids and pending information into a new data structure that is more performant to use for the engine.
  * @param fb the information about all placed bids and pending information
  * @returns collected information about all events and pending requests and extends
  * @internal
@@ -242,12 +244,14 @@ export function extend<P, V>(...args: Parameters<(event: Event<P, V>, validate?:
  * @param event the event that is about to be extended
  * @param validate an optional validation function. If the validation returns false, the flow will be disabled.
  * @remarks this function will create a bid, that can only be placed by a flow when prefixed by a yield statement.
- * @returns a given bid
+ * @returns a generator function that will return the value of the given bid
  */
-export function given<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => boolean) => GivenBid<P, V>>) {
+export function* given<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (value: P) => BaseValidationReturn<V>) => GivenBid<P, V>>) : Generator<TNext, P, FlowProgressInfo> {
     const event = args[0];
     const validate = args[1];
-    return { type: BidType.given, event, validate } satisfies GivenBid<P, V>;
+    const bid = { type: BidType.given, event, validate, isActive: false } satisfies GivenBid<P, V>;
+    const [progressedEvent] = yield bid;
+    return progressedEvent.value as P;
 }
 
 /**

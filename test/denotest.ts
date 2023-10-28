@@ -1,12 +1,27 @@
 import { Event } from "../src/event.ts";
 import { runFlowcardsTests } from "./utils.ts";
 import { Flow } from "../src/flow.ts";
-import { askFor, request } from "../src/bid.ts";
+import { askFor, request, given } from "../src/bid.ts";
 import { delay } from "./test-utils.ts";
 import { assert } from "https://deno.land/std@0.190.0/_util/asserts.ts";
-import { ExternalAction } from "../dist/ucflows.d.ts";
-import { LoggedAction } from "../src/index.ts";
 
+
+Deno.test("givenTest", async (t) => {
+  const eventA = new Event<number>('eventA');
+  const eventB = new Event<number>('eventB');
+  await runFlowcardsTests(t, function*(this: Flow) {
+      this.flow('givenFlow', function*(this: Flow) {
+          yield* given(eventA, (x) => x > 10);
+          yield* given(eventB, (x) => x > 10);
+          yield undefined
+      });
+      yield request(eventA, 20);
+      yield request(eventB, 20);
+      yield request(eventB, 10);
+      yield undefined;
+    }, {eventA, eventB}
+  );
+});
 
 Deno.test("askForTest", async (t) => {
     const eventA = new Event<number>('eventA');
@@ -27,8 +42,8 @@ Deno.test("askForTest", async (t) => {
                 /**
                  * assert that the event is asked for
                  */
-                (scheduler) => {
-                    const x = scheduler.getAskForBids().find(b => b.event == eventA)
+                (engine) => {
+                    const x = engine.getAskForBids().find(b => b.event == eventA)
                     assert(x !== undefined);
                 }
             ]

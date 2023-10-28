@@ -49,6 +49,7 @@ export function processNextValidRequestBid(info: OrderedRequestsAndCurrentBids, 
             const highestPriorityAskForBid = bid.isTriggerAskedFor ? getHighestPriorityAskForBid(currentBids) : undefined;
             const payloadValidation = explainValidation(currentBids, payload, [bid, bid.isTriggerAskedFor ? highestPriorityAskForBid : undefined]);
             if(!payloadValidation.isValidAccumulated) {
+                //TODO: if the env is in debug mode, log this failed request
                 return false;
             }
             // all checks passed, the bid is valid and will be processed

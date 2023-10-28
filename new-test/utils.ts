@@ -1,7 +1,7 @@
 import { ActionAndReactions, EventRecord, LoggedAction, RequestBid } from "../src/index.ts";
 import { FlowGeneratorFunction } from "../src/flow.ts";
 import { FlowReaction } from "../src/flow-reaction.ts";
-import { ActionReactionGenerator, Scheduler } from "../src/scheduler.ts";
+import { ActionReactionGenerator, Engine } from "../src/engine.ts";
 import { deadline } from "https://deno.land/std@0.190.0/async/mod.ts";
 import { Placed } from "../src/bid.ts";
 import { equalPaths } from "../src/utils.ts";
@@ -75,7 +75,7 @@ function getYieldValueFromTests(action: LoggedAction<any> | undefined, useMocks:
     return undefined;
 }
 
-export function* actionReactionTest(scheduler: Scheduler, useMocks: boolean, recorded: ActionAndReactions[], remainingTests: ActionAndReactions[], resolve: (nr: number) => void, reject: (reason: string) => void, getPendingRequests: () => Placed<RequestBid<any, any>>[]): ActionReactionGenerator {
+export function* actionReactionTest(engine: Engine, useMocks: boolean, recorded: ActionAndReactions[], remainingTests: ActionAndReactions[], resolve: (nr: number) => void, reject: (reason: string) => void, getPendingRequests: () => Placed<RequestBid<any, any>>[]): ActionReactionGenerator {
     const nrTests = remainingTests.length;
     while(true) {
         // get the next logged actions, reactions and tests
@@ -102,12 +102,11 @@ export function* actionReactionTest(scheduler: Scheduler, useMocks: boolean, rec
                 }
             }
             if(!areSameReactions(nextTest.reactions, nextLogged?.reactions)) {
-                console.log('TEST')
                 reject(`expected reactions ${JSON.stringify(nextTest.reactions)} but got ${JSON.stringify(nextLogged?.reactions)}`);
                 return;
             }
             if(nextTest.tests) {
-                nextTest.tests.forEach(t => t(scheduler!));
+                nextTest.tests.forEach(t => t(engine!));
             }
         }
     }
@@ -128,20 +127,20 @@ export async function runFlowcardsTests(testContext: Deno.TestContext, rootFlow:
     const recorded: ActionAndReactions[] = [];
     const useMocks = tests !== undefined;
     const remainingTests = [...tests || []];
-    let scheduler: Scheduler | undefined;
+    let engine: Engine | undefined;
     const getPendingRequests = ()  => {
-        return scheduler!.getPendingRequests();
+        return engine!.getPendingRequests();
     }
     try {
         const promise = new Promise<number>((resolve, reject) => {
-            scheduler = new Scheduler({
+            engine = new Engine({
                 id: 'rootFlow',
                 events,
                 rootFlow,
                 actionReactionGeneratorFn: (s) => actionReactionTest(s, useMocks, recorded, remainingTests || [], resolve, reject, getPendingRequests)
             })
         })
-        scheduler?.run();
+        engine?.run();
         await deadline(promise, 3000);
         await Deno.writeTextFile(`./${testContext.name}.json`, JSON.stringify(recorded, null, 2));
     }

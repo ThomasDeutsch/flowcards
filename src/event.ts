@@ -8,16 +8,16 @@ import { AccumulatedValidationResults } from "./payload-validation.ts";
 
 /**
  * @internal
- * properties that are passed to the event to connect the event to the scheduler
+ * properties that are passed to the event to connect the event to the engine
  * @param getEventInformation a function that returns the event information of this event
- * @param startSchedulerRun start a new scheduler run
+ * @param startSchedulerRun start a new engine run
  * @param registerEventAccess register that the event was accessed during a bid-validate function call
  * @param toggleValueAccessLogging toggle the registration of this event during a bid-validate function call
  */
 interface ConnectToSchedulerProps {
     rootFlowId: string;
     getCurrentBids: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
-    startSchedulerRun: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    startEngineRun: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerEventAccess: (event: Event<any, any>) => void;
     toggleValueAccessLogging: (event: Event<any, any>) => void;
 }
@@ -43,15 +43,16 @@ export function getEvents(neo: NestedEventObject): Event<any, any>[] {
 // CORE FUNCTIONS -----------------------------------------------------------------------------------------------
 
 /**
- * events are used as a way to communicate between the flows/scheduler and the user.
- * events are created by the user and are used by the scheduler/flows.
+ * events are used as a way to communicate between the flows/engine and the user.
+ * events are created by the user and are used by the engine/flows.
  * the event object holds the information about the event, and with the dispatch function, a possibility to interact with the flows.
  */
 export class Event<P = undefined, V = void> {
     public readonly id: string;
     private _value?: P;
+    private _hasValue = false;
     private _rootFlowId?: string;
-    private _startSchedulerRun?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    private _startEngineRun?: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _getCurrentBids?: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     private _onUpdateCallback?: () => void; // only a single subscriber is supported
     private _registerEventAccess?: () => void;
@@ -72,7 +73,7 @@ export class Event<P = undefined, V = void> {
     public __reset(): void {
         // from the connectToScheduler function
         this._rootFlowId = undefined;
-        this._startSchedulerRun = undefined;
+        this._startEngineRun = undefined;
         this._getCurrentBids = undefined;
         this._registerEventAccess = undefined;
         this._toggleValueAccessLogging = undefined;
@@ -84,14 +85,14 @@ export class Event<P = undefined, V = void> {
 
     /**
      * @internal
-     * connect this event to the scheduler by receiving two functions from the scheduler
+     * connect this event to the engine by receiving two functions from the engine
      * @param getEventInformation a function that returns the event information of this event
      * @param addActionToQueue the function to add an action to the queue
      */
     public __connectToScheduler(props: ConnectToSchedulerProps): void {
         this._rootFlowId = props.rootFlowId;
         this._getCurrentBids = props.getCurrentBids;
-        this._startSchedulerRun = props.startSchedulerRun;
+        this._startEngineRun = props.startEngineRun;
         this._registerEventAccess = () => props.registerEventAccess(this);
         this._toggleValueAccessLogging = props.toggleValueAccessLogging;
     }
@@ -99,11 +100,15 @@ export class Event<P = undefined, V = void> {
     /**
      * @internal
      * set the value of the event.
-     * @param value the new value of the event.
-     * @remarks this function should only be called by the scheduler.
+     * @param nextValue the new value of the event.
+     * @returns true if the value has changed, false otherwise.
+     * @remarks this function should only be called by the engine.
      */
-    public __setValue(value: P): void {
-        this._value = value;
+    public __setValue(nextValue: P): boolean {
+        const hasChanged = !Object.is(this._value, nextValue);
+        this._hasValue = true;
+        this._value = nextValue;
+        return hasChanged;
     }
 
     /**
@@ -120,7 +125,7 @@ export class Event<P = undefined, V = void> {
 
     /**
      * add a a callback, that is called every time the event is updated.
-     * An update is triggered by the scheduler, and will be triggered in the following cases:
+     * An update is triggered by the engine, and will be triggered in the following cases:
      * - the event value is updated
      * - the event pending state is updated (pending extend or pending request)
      * - the event blocked state is updated
@@ -169,12 +174,12 @@ export class Event<P = undefined, V = void> {
     }
 
     /**
-     * run the scheduler with an external action (if valid bid & payload)
-     * You can check if the trigger is valid by calling the isValid function or the validate function.
+     * run the engine with an external action
+     * You can check if the dispatch is valid by calling the isValid function.
      * @param value the next event value
-     * @returns true if the dispatch added an action to the queue, false otherwise.
+     * @throws if the dispatch is not valid
      */
-    public trigger(value: P): void {
+    public dispatch(value: P): void {
         const validationResult = this.validate(value as P);
         if(!validationResult.isValidAccumulated) {
             console.group('INVALID DISPATCH', this.id);
@@ -189,7 +194,7 @@ export class Event<P = undefined, V = void> {
             }
             console.info('Info: before dispatching the event, validate with event.isValid(<value>)');
             console.groupEnd();
-            throw new Error('event can not be triggered because it is not valid');
+            throw new Error('event can not be dispatched because it is not valid');
         }
         // because the explain has checked if the event is valid, it is ok to use the ! in this function.
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -205,12 +210,12 @@ export class Event<P = undefined, V = void> {
             bidId: highestPriorityAskForBid.id
         };
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        this._startSchedulerRun!(action);
+        this._startEngineRun!(action);
     }
 
     /**
      * @internal
-     * trigger the updateCallback. This is called by the scheduler.
+     * trigger the updateCallback. This is called by the engine.
      */
     public __triggerUpdateCallback(actionId: number): void {
         if(this._latestUpdateOnActionId === actionId) return;
@@ -291,6 +296,26 @@ export class Event<P = undefined, V = void> {
      */
     public get rootFlowId(): string | undefined {
         return this._rootFlowId;
+    }
+
+    /**
+     * reset the event value to undefined.
+     * This will also reset the hasValue property to false.
+     * @returns the event itself
+     */
+    public reset(): this {
+        this._hasValue = false;
+        this._value = undefined;
+        return this;
+    }
+
+    /**
+     * returns true if the event has a value.
+     * it has a value if the event value was set once.
+     * @returns true if the event has a value, false otherwise.
+     */
+    public get hasValue(): boolean {
+        return this._hasValue;
     }
 }
 

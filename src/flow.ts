@@ -2,7 +2,8 @@ import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction
 import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid, GivenBid } from "./bid.ts";
 import { Event } from  "./event.ts";
 import { ActionReactionLogger } from "./action-reaction-logger.ts";
-import { areDepsEqual, isThenable, mergeMaps } from "./utils.ts";
+import { isThenable, mergeMaps } from "./utils.ts";
+import { isValidReturn } from "./payload-validation.ts";
 
 
 // INTERFACES -------------------------------------------------------------------------------------------------------------
@@ -18,7 +19,7 @@ export type TNext = AnyBid<any, any> | Placed<AnyBid<any, any>> | (AnyBid<any, a
  * The progress info contains information about the latest progression of this flow.
  * The information contains the latest progressed event and the remaining bids for this flow.
 */
-export type FlowProgressInfo = [Event<unknown>, Placed<AnyBid<unknown, unknown>>[] | undefined];
+export type FlowProgressInfo = [Event<unknown, unknown>, Placed<AnyBid<unknown, unknown>>[] | undefined];
 
 /**
  * a generator function returns a flow-generator that is bound to the flow
@@ -42,6 +43,7 @@ export interface FlowParameters {
     executeAction: (action: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerChangedEvent: (event: Event<any, any>) => void;
     logger: ActionReactionLogger;
+    startEngineRun: () => void;
 }
 
 /**
@@ -76,6 +78,7 @@ export class Flow {
     private _hasEnded = false;
     private _currentBidId = 0;
     private _isDisabled = false;
+    private _startEngineRun: () => void;
     private _activeGivenBids: Placed<GivenBid<any, any>>[] = [];
     private _placedBids: Placed<AnyBid<unknown, unknown>>[] | undefined;
     private _pendingRequests: Map<string, Placed<RequestBid<any, any>>> = new Map();
@@ -86,7 +89,6 @@ export class Flow {
     private _latestBidThisFlowProgressedOn?: Placed<AnyBid<any, any>>;
     private _logger: ActionReactionLogger;
     private _onCleanupCallback?: () => void;
-    private _activeGroup: string | undefined;
     public description = "";
     public readonly pathFromRootFlow: string[];
 
@@ -96,6 +98,7 @@ export class Flow {
         this.group = parameters.group;
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._executeAction = parameters.executeAction;
+        this._startEngineRun = parameters.startEngineRun;
         this._logger = parameters.logger;
         this._registerChangedEvent = parameters.registerChangedEvent;
         this._resetToInitial();
@@ -154,6 +157,20 @@ export class Flow {
         } else {
             const nextBids = toBids(next.value);
             this._placeBids(nextBids);
+            // if one of the next bids is a given bid, then progress on the given bid if the event is active (a value was set) and the validation function returns true
+            const givenBid = this._placedBids?.find(bid => (bid.type === 'given') && bid.event.hasValue && isValidReturn(bid.validate?.(bid.event.value)));
+            if(givenBid) {
+                try {
+                    const next = this._generator.next([givenBid.event, filterRemainingBids(givenBid.id, this._placedBids)]);
+                    this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow progressed on a bid', {bidId: givenBid.id, bidType: givenBid.type, eventId: givenBid.event.id});
+                    this.__addActiveGivenBid(givenBid as Placed<GivenBid<any, any>>);
+                    this._handleNext(next);
+                } catch(error) {
+                    console.error('error in flow ', this.id, ': ', error, 'flow ended');
+                    this.__end(true);
+                    throw error;
+                }
+            }
         }
     }
 
@@ -188,6 +205,7 @@ export class Flow {
      * @param keepExtends when a flow ends by progressing the last bid, the extends of this flow should be kept.
      */
     public __end(keepExtends?: boolean): void {
+        this.endChildFlows();
         this._resetToInitial(keepExtends);
         this._hasEnded = true;
         this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow ended', {});
@@ -220,9 +238,13 @@ export class Flow {
      * restarts the flow
      * @param nextParameters the parameters that will be checked against the current parameters. If changed, the flow will be restarted with the new parameters.
      */
-    public __restart(): void {
+    public __restart(reasonWasChangedGiven?: boolean): void {
+        //TODO: if in debug mode, log dropped requests
         this._resetToInitial();
         this._generator = this._generatorFunction();
+        if(reasonWasChangedGiven) {
+            this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow restarted because the value of a given event changed', {});
+        }
         try {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
@@ -230,6 +252,14 @@ export class Flow {
             this.__end(true);
             return;
         }
+    }
+
+    /**
+     * add a given-bid as an active given bid
+     */
+    public __addActiveGivenBid(bid: Placed<GivenBid<any, any>>): void {
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'an active given was added', {eventId: bid.event.id});
+        this._activeGivenBids.push({...bid, isActive: true});
     }
 
     /**
@@ -272,6 +302,11 @@ export class Flow {
         }
         catch(error) {
             console.error('error in flow ', this.id, ': ', error);
+            if(this._latestBidThisFlowProgressedOn === undefined) {
+                this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow ended because a request as the first bid in the flow was rejected. Please add a try/catch', {eventId: event.id});
+                this.__end(false);
+                return;
+            }
             this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow restarted because an error was not handled', {eventId: event.id});
             this.__restart();
             return;
@@ -388,11 +423,11 @@ export class Flow {
      * start a flow as a child flow of the current parent flow (this)
      * @param id the id of the child flow
      * @param generatorFunction the generator function of the child flow
-     * @param parameters the parameters that will be passed as a flow context, if undefined, the flow will be ended
+     * @param runEngine if true, the engine will be run after the child flow is added.
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T): Flow | undefined {
+    public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, runEngine?: boolean): Flow | undefined {
         const currentChild = this._children.get(id);
         if(currentChild) {
             if(currentChild._isDisabled) {
@@ -404,44 +439,31 @@ export class Flow {
         }
         // no child flow with this id exists:
         const newChild = new Flow({
-            group: this._activeGroup,
             pathFromRootFlow: [...this.pathFromRootFlow, id],
             generatorFunction,
             executeAction: this._executeAction,
             logger: this._logger,
-            registerChangedEvent: this._registerChangedEvent
+            registerChangedEvent: this._registerChangedEvent,
+            startEngineRun: this._startEngineRun
         });
         this._children.set(id, newChild);
         newChild.__enabledOnActionId = this._latestActionIdThisFlowProgressedOn;
+        if(runEngine) {
+            this._startEngineRun();
+        }
         return newChild;
-    }
-
-    /**
-     * a context is a group of flows.
-     * if a flow inside of a context function is not enabled, it will be disabled.
-     * @param id the name of the context
-     * @param groupFunction a function that contains all flows that are grouped in this context
-     */
-    public context(id: string, groupFunction: () => void) {
-        this._activeGroup = id;
-        groupFunction();
-        // for all child-flows with the group = activeGroup, disable all flows that are not enabled in the last progression
-        this._children.forEach((child) => {
-            if(child.group === id && child.__enabledOnActionId !== this._latestActionIdThisFlowProgressedOn) {
-                child.__disable();
-            }
-        });
-        this._activeGroup = undefined;
     }
 
     /**
      * end all child flows with the given id
      * @param ids the ids of the child flows to end. if not given, all child flows will be ended
      */
-    public endFlows(ids?: string[]): void {
+    public endChildFlows(ids?: string[]): void {
         if(!ids) {
             this._children.forEach((child) => {
-                child.__end();
+                if(!child.hasEnded) {
+                    child.__end();
+                }
             });
             this._children.clear();
             return;
@@ -449,7 +471,9 @@ export class Flow {
         ids.forEach((id) => {
             const child = this._children.get(id);
             if(child) {
-                child.__end();
+                if(!child.hasEnded) {
+                    child.__end();
+                }
                 this._children.delete(id);
             }
         });
@@ -459,8 +483,8 @@ export class Flow {
      * end a child flow with the given id
      * @param id the id of the child flow to end
      */
-    public endFlow(id: string): void {
-        this.endFlows([id]);
+    public endChildFlow(id: string): void {
+        this.endChildFlows([id]);
     }
 
     /**

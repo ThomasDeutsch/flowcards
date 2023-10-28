@@ -20,39 +20,6 @@
         "rootFlow"
       ],
       "bidId": 0
-    },
-    "reactions": [
-      {
-        "flowPath": [
-          "rootFlow"
-        ],
-        "type": "flow progressed on a bid",
-        "details": {
-          "bidId": 0,
-          "bidType": "askFor",
-          "eventId": "eventA",
-          "actionId": 0
-        }
-      },
-      {
-        "flowPath": [
-          "rootFlow"
-        ],
-        "type": "flow ended",
-        "details": {}
-      },
-      {
-        "flowPath": [
-          "rootFlow"
-        ],
-        "type": "flow progressed on a bid",
-        "details": {
-          "bidId": 0,
-          "bidType": "askFor",
-          "eventId": "eventA",
-          "actionId": 0
-        }
-      }
-    ]
+    }
   }
 ]

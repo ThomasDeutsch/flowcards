@@ -1,6 +1,6 @@
 import { LoggedAction } from "./action.ts";
 import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
-import { Action, Scheduler } from "./index.ts";
+import { Action, Engine } from "./index.ts";
 
 /**
  * action and reactions that are logged by the flows
@@ -8,12 +8,15 @@ import { Action, Scheduler } from "./index.ts";
  export interface ActionAndReactions {
     action?: LoggedAction<any>,
     reactions?: FlowReaction[],
-    tests?: ((scheduler: Scheduler) => void)[]
+    // Debug-Mode Information
+    tests?: ((engine: Engine) => void)[],
+    overruledBids?: [] // Trigger, Extends, Requests, AskFors that were overruled by a higher priority bid
+    invalidRequests?: [] // Requests that are invalid, warning: do not save the whole bid!
 }
 
 /**
  * @internal
- * the action/reaction log is used to collect information about all scheduler runs - until no more action is processed.
+ * the action/reaction log is used to collect information about all engine runs - until no more action is processed.
  * it is used to collect information about:
  *  3. based on a valid action, reactions from the flows are collected
  *  4. the finished processed action is logged (all flows have reacted to the action)
@@ -37,7 +40,7 @@ export class ActionReactionLogger {
 
     /**
      * @internal
-     * logs the processed action to the current scheduler run.
+     * logs the processed action to the current engine run.
      * @param action the processed action
      */
     public __onActionProcessed(action: Action<any> & {id: number}): void {
@@ -53,9 +56,9 @@ export class ActionReactionLogger {
 
     /**
      * @internal
-     * the log of all scheduler runs
-     * @returns all actions and reactions until the scheduler finished processing actions
-     * @internalRemarks this is used by the scheduler to get the latest log for the latest scheduler run(s)
+     * the log of all engine runs
+     * @returns all actions and reactions until the engine finished processing actions
+     * @internalRemarks this is used by the engine to get the latest log for the latest engine run(s)
      */
     public getActionAndReactions(): ActionAndReactions | undefined {
         const result = {
