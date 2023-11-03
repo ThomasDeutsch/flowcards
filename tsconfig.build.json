@@ -1,9 +1,0 @@
-{
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-        "declaration": true,
-        "declarationDir": "dts",
-        "sourceMap": true
-    },
-    "exclude": ["test/**/*"]
-}
