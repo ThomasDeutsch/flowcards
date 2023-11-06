@@ -127,7 +127,8 @@ export class Engine {
         this._isRunning = true;
         while(true) {
             let wasActionProcessed: boolean;
-            const actionFromTest = this.actionReactionGenerator?.next(this.__actionReactionLogger.getActionAndReactions())?.value;
+            const loggedActionAndReactions = this.__actionReactionLogger.getActionAndReactions();
+            const actionFromTest = this.actionReactionGenerator?.next(loggedActionAndReactions)?.value;
             if(externalAction !== undefined) {
                 wasActionProcessed = processAction(this, externalAction);
                 externalAction = undefined;

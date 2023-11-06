@@ -38,7 +38,6 @@ type FlowIteratorResult = IteratorResult<TNext | undefined, void>;
  */
 export interface FlowParameters {
     pathFromRootFlow: string[];
-    group?: string;
     generatorFunction: FlowGeneratorFunction;
     runEngine: (action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerChangedEvent: (event: Event<any, any>) => void;
@@ -70,7 +69,6 @@ export interface AllBidsAndPendingInformation {
  * a flow is able to place bids and react to actions.
  */
 export class Flow {
-    public readonly group?: string;
     private readonly _generatorFunction: FlowGeneratorFunction;
     private _generator: FlowGenerator;
     private _children: Map<string, Flow> = new Map();
@@ -93,7 +91,6 @@ export class Flow {
     constructor(parameters: FlowParameters) {
         // this initialization is only done once
         this.pathFromRootFlow = parameters.pathFromRootFlow;
-        this.group = parameters.group;
         this._generatorFunction = parameters.generatorFunction.bind(this);
         this._runEngine = parameters.runEngine;
         this._logger = parameters.logger;
@@ -311,7 +308,7 @@ export class Flow {
         catch(error) {
             console.error('error in flow ', this.id, ': ', error);
             if(this._latestBidThisFlowProgressedOn === undefined) {
-                this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow ended because a request as the first bid in the flow was rejected. Please add a try/catch', {eventId: event.id});
+                this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow ended because an error on the first bid was not handled', {eventId: event.id});
                 this.__end(false);
                 return;
             }

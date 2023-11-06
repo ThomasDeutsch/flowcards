@@ -6,7 +6,6 @@ export type TestRecord = Record<string, () => TestCase>;
 export type TestCase = { rootFlow: FlowGeneratorFunction, replay?: ActionAndReactions[] };
 
 export async function runTests({rootFlow, replay}: TestCase) {
-    console.log('rootFlow', rootFlow);
     const useMocks = replay !== undefined;
     const promise = new Promise<{recorded: ActionAndReactions[], result: TestResult}>((resolve) => {
     const finishCallback = (result: TestResult, recorded: ActionAndReactions[]) => {

@@ -1,6 +1,6 @@
 import { Action, ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction } from "./action.ts";
 import { isValidReturn, validateBid } from "./payload-validation.ts";
-import { AskForBid, BidType, CurrentBidsForEvent, Placed, ProgressingBid, RequestBid, given } from "./bid.ts";
+import { AskForBid, BidType, CurrentBidsForEvent, Placed, ProgressingBid, RequestBid } from "./bid.ts";
 import { Event } from "./event.ts";
 import { Flow, PendingExtend } from "./flow.ts";
 
@@ -19,7 +19,7 @@ export type FlowReactionType =
     'flow disabled' |
     'flow ended' |
     'flow enabled, after being disabled' |
-    'flow ended because a request as the first bid in the flow was rejected. Please add a try/catch' |
+    'flow ended because an error on the first bid was not handled' |
     'flow restarted manually by calling flow.restart' |
     'flow restarted because an error was not handled' |
     'flow restarted because the value of a given event changed' |

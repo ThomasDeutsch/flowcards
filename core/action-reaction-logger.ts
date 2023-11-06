@@ -10,7 +10,7 @@ import { AccumulatedValidationResults, Action, Engine } from "./index.ts";
     action?: LoggedAction<any>,
     reactions?: FlowReaction[],
     // Debug-Mode Information
-    tests?: ((engine: Engine) => void)[],
+    tests?: Record<string, ((engine: Engine) => void)>,
     invalidActionInfo?: {
         invalidBidReason?: InvalidBidReason,
         accumulatedValidationResults?: AccumulatedValidationResults<any>
@@ -71,7 +71,6 @@ export class ActionReactionLogger {
             this._actionAndReactions.action = {...action};
         }
     }
-
 
     /**
      * @internal

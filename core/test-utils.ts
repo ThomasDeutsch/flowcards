@@ -5,7 +5,7 @@ import { equalPaths } from "./utils.ts";
 import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./index.ts";
 
 
-export type TestResult = 'invalid action' | 'invalid reactions' | 'completed';
+export type TestResult = 'invalid action' | 'invalid reactions' | 'completed' | 'failed test';
 
 function isSameAction(a?: LoggedAction<any>, b?: LoggedAction<any>): boolean {
     if(a === undefined && b === undefined) return true;
@@ -44,9 +44,6 @@ export function getInvalidReactions(expected?: FlowReaction[], actual?: FlowReac
 
 /**
  * get the next action that should be used for testing
- * @param remainingTests 
- * @param nextTest 
- * @returns 
  */
 function getRecordedTestAction(remainingTests: ActionAndReactions[], nextTest?: ActionAndReactions): "mockRequest" | undefined | ExternalAction<any> & {id: number}  | ResolvePendingRequestAction<any> | RejectPendingRequestAction {
     const action = nextTest?.action;
@@ -88,19 +85,29 @@ export function* actionReactionTester(engine: Engine, useMocks: boolean, recored
         recorded.push(engineRunResult);
         // if there are tests, check them.
         if(nextTest !== undefined) {
-            if(nextTest.action) {
-                if(!isSameAction(nextTest.action, engineRunResult?.action)) {
-                    finishCallback('invalid action', recorded);
-                    break;
-                }
+            // 1. check action
+            if(!isSameAction(nextTest.action, engineRunResult.action)) {
+                finishCallback('invalid action', recorded);
+                return;
             }
+            // 2. check reactions
             const invalidReactions = getInvalidReactions(nextTest.reactions, engineRunResult.reactions);
             if(invalidReactions.length > 0) {
                 finishCallback('invalid reactions', recorded);
-                break;
+                return;
             }
+            // 3. check tests
             if(nextTest.tests) {
-                nextTest.tests.forEach(t => t(engine!));
+                // tests will throw an error if they fail
+                try {
+                    Object.entries(nextTest.tests).forEach(([testId, test]) => {
+                        test(engine);
+                    });
+                }
+                catch(error) {
+                    finishCallback('failed test', recorded); //TODO: include the name of the failed test!
+                    return;
+                }
             }
         }
     }
