@@ -12,10 +12,11 @@ export type FlowReactionType =
     'flow progressed on a handled error' |
     'pending extend added' |
     'pending extend resolved' |
-    'pending extend aborted' |
+    'pending extend cancelled' |
     'pending request added' |
     'pending request resolved' |
     'pending request cancelled' |
+    'pending request rejected' |
     'flow disabled' |
     'flow ended' |
     'flow enabled, after being disabled' |

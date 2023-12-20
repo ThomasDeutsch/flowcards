@@ -3,19 +3,27 @@ import { InvalidBidReason } from "./bid-invalid-reasons.ts";
 import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
 import { AccumulatedValidationResults, Action, Engine } from "./index.ts";
 
+export type AugmentedAction<P> = LoggedAction<P> & {
+    resolvedBy?: number;
+    rejectedBy?: number;
+    cancelledBy?: number;
+    extenedBy?: string[];
+}
+
 /**
  * action and reactions that are logged by the flows
  */
  export interface ActionAndReactions {
-    action?: LoggedAction<any>,
+    action?: AugmentedAction<any>,
     reactions?: FlowReaction[],
-    // Debug-Mode Information
     tests?: Record<string, ((engine: Engine) => void)>,
+    // DEBUG:
     invalidActionInfo?: {
         invalidBidReason?: InvalidBidReason,
         accumulatedValidationResults?: AccumulatedValidationResults<any>
     }
 }
+
 
 /**
  * @internal

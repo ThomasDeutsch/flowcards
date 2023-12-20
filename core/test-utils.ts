@@ -67,7 +67,7 @@ function getRecordedTestAction(remainingTests: ActionAndReactions[], nextTest?: 
 }
 
 
-export function* actionReactionTester(engine: Engine, useMocks: boolean, recoredActionsAndReactions: ActionAndReactions[], finishCallback: (result: TestResult, recorded: ActionAndReactions[]) => void): ActionReactionGenerator {
+export function* actionReactionTester(engine: Engine, useMocks: boolean, recoredActionsAndReactions: ActionAndReactions[], finishCallback: (result: TestResult, recorded: ActionAndReactions[], engine: Engine) => void): ActionReactionGenerator {
     const remainingTests = [...recoredActionsAndReactions];
     const recorded: ActionAndReactions[] = [];
     while(true) {
@@ -87,13 +87,13 @@ export function* actionReactionTester(engine: Engine, useMocks: boolean, recored
         if(nextTest !== undefined) {
             // 1. check action
             if(!isSameAction(nextTest.action, engineRunResult.action)) {
-                finishCallback('invalid action', recorded);
+                finishCallback('invalid action', recorded, engine);
                 return;
             }
             // 2. check reactions
             const invalidReactions = getInvalidReactions(nextTest.reactions, engineRunResult.reactions);
             if(invalidReactions.length > 0) {
-                finishCallback('invalid reactions', recorded);
+                finishCallback('invalid reactions', recorded, engine);
                 return;
             }
             // 3. check tests
@@ -105,11 +105,11 @@ export function* actionReactionTester(engine: Engine, useMocks: boolean, recored
                     });
                 }
                 catch(error) {
-                    finishCallback('failed test', recorded); //TODO: include the name of the failed test!
+                    finishCallback('failed test', recorded, engine); //TODO: include the name of the failed test!
                     return;
                 }
             }
         }
     }
-    finishCallback('completed', recorded);
+    finishCallback('completed', recorded, engine);
 }

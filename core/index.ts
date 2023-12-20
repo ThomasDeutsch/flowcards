@@ -2,13 +2,13 @@
 export type {BaseValidationReturn, AccumulatedValidationResults} from './payload-validation.ts';
 
 /* action-reaction-logger */
-export type {ActionAndReactions} from './action-reaction-logger.ts';
+export type {ActionAndReactions, AugmentedAction} from './action-reaction-logger.ts';
 
 /* action */
 export type {ExtendableAction, ExternalAction, RequestedAction, RequestedAsyncAction, ResolvePendingRequestAction, RejectPendingRequestAction, Action, LoggedAction} from './action.ts';
 
 /* bids */
-export type {BidType, RequestBid, BlockBid, ValidateBid, WaitForBid, AskForBid, CurrentBidsForEvent} from './bid.ts'
+export type {BidType, RequestBid, BlockBid, ValidateBid, WaitForBid, AskForBid, CurrentBidsForEvent, Placed} from './bid.ts'
 export {request, extend, waitFor, askFor, block, validate, trigger, isSameBid} from './bid.ts';
 
 /* bid utility functions */

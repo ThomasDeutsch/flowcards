@@ -21,6 +21,7 @@ export default {
                 yield request(eventA, 20);
                 yield request(eventB, 20);
                 yield request(eventB, 10);
+                yield askFor(eventA);
                 yield undefined;
             },
             replay: [
