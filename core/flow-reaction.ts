@@ -13,6 +13,7 @@ export type FlowReactionType =
     'pending extend added' |
     'pending extend resolved' |
     'pending extend cancelled' |
+    'pending extend aborted' |
     'pending request added' |
     'pending request resolved' |
     'pending request cancelled' |

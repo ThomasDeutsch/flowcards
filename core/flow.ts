@@ -97,9 +97,9 @@ export class Flow {
         this._registerChangedEvent = parameters.registerChangedEvent;
         this._resetToInitial();
         this._generator = this._generatorFunction();
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled', {});
         try {
             this._handleNext.bind(this)(this._generator.next());
-            this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled', {});
         } catch(error) {
             console.error('first .next call in constructor exited with an error: ', this.id, ': ', error, '.flow will be ended');
             this.__end();

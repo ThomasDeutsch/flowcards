@@ -35,14 +35,6 @@ function augmentRecorded(recorded: ActionAndReactions[]): ActionAndReactions[] {
   return recorded;
 }
 
-// TODO: 
-// - show the event-color
-// - show if an event is pending, resolved or rejected
-// - show the payload of the event
-// - if result > recorded then with a click of a button, the results-diff will be copied to the clipboard
-// - show the reactions of an action
-// - with a click on an askForBid, an action is copied to the clipboard
-
 
 
 export const handler: Handlers<{recorded: ActionAndReactions[], engine?: Engine}> = {
@@ -53,8 +45,9 @@ export const handler: Handlers<{recorded: ActionAndReactions[], engine?: Engine}
               console.log('SUCCESS');
             }
             const test: {default: TestRecord} = await import(`../../tests/${fileName}.ts`);
+            console.log(test.default['a given bid will'].toString())
             const {recorded, result, engine} = await runTests(test.default["a given bid will"]());
-            // from the recoreded reactions, get all informations for the actions
+            // from the recoreded reactions, get all information for the actions
             augmentRecorded(recorded);
             return ctx.render({recorded, engine});
         }
@@ -66,36 +59,24 @@ export const handler: Handlers<{recorded: ActionAndReactions[], engine?: Engine}
     },
 };
 
-function getEventColor(action: AugmentedAction<any>) {
-  if(action.type === 'requested') return 'bg-yellow-500';
-  if(action.type === 'external') return 'bg-blue-500';
-  if(action.type === 'rejectPendingRequest') return 'bg-red-500';
-  if(action.type === 'resolvePendingRequest') return 'bg-green-500';
-  if(action.type === 'requestedAsync') return 'bg-purple-500';
-}
-
-
-function ActionCard(action: AugmentedAction<any>, ) {
+function nodeActionAndReactions(actionAndReactions: ActionAndReactions) {
+  const action = actionAndReactions.action;
+  const actionElement = action && <div>
+    {action.type}: {action.eventId} by {action.flowPath.join(' > ')}
+    {/* {action.cancelledBy}
+    {action.resolvedBy}
+    {action.rejectedBy} */}
+  </div>
+  const reactions = actionAndReactions.reactions?.map(reaction => <li>
+    {reaction.flowPath.join(' > ')}: {reaction.type}
+    </li>)
   return (
-    <li className="shadow-sm bg-zinc-100 flex items-start justify-between gap-5 pr-3 rounded-md">
-      <div className="self-stretch flex items-start justify-between gap-1.5">
-        <div className={"text-zinc-100 text-sm self-stretch whitespace-nowrap w-[30px] max-w-full pl-2 pr-2.5 py-1 rounded-md " + getEventColor(action)}>
-          {action.id}
-        </div>
-        <div className="text-black text-base self-center whitespace-nowrap my-auto">
-          {action.eventId}
-        </div>
-      </div>
-      <div className="self-center flex items-start gap-1.5 my-auto">
-        <div
-          className="bg-green flex h-2 w-full flex-col flex-1 rounded-md"
-        ></div>
-        <div className="text-neutral-500 text-xs self-stretch whitespace-nowrap">
-          {action.cancelledBy ? action.cancelledBy : ''}
-        </div>
-        {action.type === 'requestedAsync' && !action.resolvedBy && !action.rejectedBy ? 'pending' : 'check'}
-      </div>
-    </li>
+    <div>
+        {actionElement}
+      <ul>
+        {reactions}
+      </ul>
+    </div>
   );
 }
 
@@ -112,7 +93,7 @@ export default function actionsAndReactionsPage(props: PageProps<{recorded: Acti
             <ul>
                 {props.data.recorded.map((actionAndReaction) => {
                     if(actionAndReaction.action) {
-                      return ActionCard(actionAndReaction.action);
+                      return nodeActionAndReactions(actionAndReaction);
                     }
                 })}
             </ul>

@@ -1,9 +1,6 @@
 import { Event } from "../../core/event.ts";
-import { runTests } from "./utils.ts";
 import { Flow } from "../../core/flow.ts";
 import { askFor, request, given } from "../../core/bid.ts";
-import { delay } from "../../old-tests/test-utils.ts";
-import { assert } from "https://deno.land/std@0.190.0/_util/asserts.ts";
 import { ActionAndReactions, FlowGeneratorFunction } from "../../core/index.ts";
 
 
@@ -29,19 +26,19 @@ export default {
                   "reactions": [
                     {
                       "flowPath": [
-                        "rootFlow",
-                        "givenFlow"
+                        "rootFlow"
                       ],
                       "type": "flow enabled",
                       "details": {}
                     },
                     {
                       "flowPath": [
-                        "rootFlow"
+                        "rootFlow",
+                        "givenFlow"
                       ],
                       "type": "flow enabled",
                       "details": {}
-                    }
+                    },
                   ]
                 },
                 {
