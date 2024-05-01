@@ -2,7 +2,7 @@ import { ActionAndReactions, LoggedAction } from "./index.ts";
 import { FlowReaction } from "./flow-reaction.ts";
 import { ActionReactionGenerator, Engine } from "./engine.ts";
 import { equalPaths } from "./utils.ts";
-import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./index.ts";
+import { InputAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./index.ts";
 
 
 export type TestResult = 'invalid action' | 'invalid reactions' | 'completed' | 'failed test';
@@ -45,7 +45,7 @@ export function getInvalidReactions(expected?: FlowReaction[], actual?: FlowReac
 /**
  * get the next action that should be used for testing
  */
-function getRecordedTestAction(remainingTests: ActionAndReactions[], nextTest?: ActionAndReactions): "mockRequest" | undefined | ExternalAction<any> & {id: number}  | ResolvePendingRequestAction<any> | RejectPendingRequestAction {
+function getRecordedTestAction(remainingTests: ActionAndReactions[], nextTest?: ActionAndReactions): "mockRequest" | undefined | InputAction<any> & {id: number}  | ResolvePendingRequestAction<any> | RejectPendingRequestAction {
     const action = nextTest?.action;
     if(action === undefined) return undefined;
     // replay external (dispatched) action
@@ -60,7 +60,7 @@ function getRecordedTestAction(remainingTests: ActionAndReactions[], nextTest?: 
         }
         return undefined;
     }
-    if(action.type === 'resolvePendingRequest' || action.type === 'rejectPendingRequest' || action.type === 'external') {
+    if(action.type === 'resolvePendingRequest' || action.type === 'rejectPendingRequest' || action.type === 'input') {
         return action;
     }
     return undefined;

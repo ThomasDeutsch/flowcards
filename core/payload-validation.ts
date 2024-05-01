@@ -31,7 +31,7 @@ export function explainValidation<P, V>(currentBids: CurrentBidsForEvent<P, V>, 
     let isValidAccumulated = true;
     let results: {isValid: boolean, details: V[], flowId: string, bidId: number}[] = [];
     const latestExtendBid = currentBids.pendingExtend?.extendedBids[0];
-    const bids = [latestExtendBid, ...additionalBids, ...(currentBids.validate || [])].filter(isDefined);
+    const bids = [latestExtendBid, ...additionalBids].filter(isDefined);
     bids.forEach(bid => {
         const validationResult = validateBid(bid, value);
         if(validationResult) {

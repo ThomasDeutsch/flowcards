@@ -1,6 +1,5 @@
 import { RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
-import { isValidReturn } from "./payload-validation.ts";
-import { AskForBid, BidType, CurrentBidsForEvent, Placed, RequestBid, getHighestPriorityAskForBid } from "./bid.ts";
+import { WhenBid, BidType, CurrentBidsForEvent, Placed, SetBid, getHighestPriorityWhenBid } from "./bid.ts";
 import { equalPaths } from "./utils.ts";
 
 
@@ -13,23 +12,23 @@ export type InvalidBidReason = {
 }
 
 /**
- * will return the invalid reasons for the given askFor bid. If no askFor bid is provided, the highest priority askFor bid will be used.
- * if the current bids  provided, this function will check and return the first invalid reason for the askFor bid.
- * @remarks this function will not check if the askFor payload is valid or not.
+ * will return the invalid reasons for the current when-bid. If no when-bid is provided, the highest priority when-bid will be used.
+ * if the current bids  provided, this function will check and return the first invalid reason for the when-bid.
+ * @remarks this function will not check if the when-payload is valid or not.
  * @param currentBids current placed bids for this event
- * @param askForBid the askFor bid that will be checked (will default to the highest priority askFor bid if not provided)
- * @returns all invalid reasons for the askFor bid or undefined if the askFor bid is valid
+ * @param whenBid the when bid that will be checked (will default to the highest priority when bid if not provided)
+ * @returns all invalid reasons for the when bid or undefined if the when bid is valid
  */
-export function getValidAskForBid<P,V>(eventId: string, currentBids?: CurrentBidsForEvent<P, V>): {askForBid?: Placed<AskForBid<P, V>>, invalidBidReason?: InvalidBidReason} {
-    const invalidBidReason: InvalidBidReason = {eventId, bidType: BidType.askFor, type: 'no current bids for this event'};
+export function getValidAskForBid<P,V>(eventId: string, currentBids?: CurrentBidsForEvent<P, V>): {whenBid?: Placed<WhenBid<P, V>>, invalidBidReason?: InvalidBidReason} {
+    const invalidBidReason: InvalidBidReason = {eventId, bidType: BidType.when, type: 'no current bids for this event'};
     // check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
         return {invalidBidReason};
     }
-    // check if the there is an askFor bid
-    const highestPriorityAskForBid = getHighestPriorityAskForBid(currentBids);
+    // check if the there is an when bid
+    const highestPriorityAskForBid = getHighestPriorityWhenBid(currentBids);
     if(highestPriorityAskForBid === undefined) {
-        invalidBidReason.type = 'no askFor bid';
+        invalidBidReason.type = 'no when bid';
         return {invalidBidReason};
     }
     // check if the bid has a pending request
@@ -40,7 +39,7 @@ export function getValidAskForBid<P,V>(eventId: string, currentBids?: CurrentBid
         return {invalidBidReason};
     }
     // check if the bid has a pending extend, if so, check if the bid will resolve the extend
-    if(currentBids.pendingExtend) {
+    if(currentBids.pendingExtend?.extendingFlow) {
         const isResolveExtendBid = highestPriorityAskForBid.flow.id === currentBids.pendingExtend.extendingFlow.id;
         if(!isResolveExtendBid) {
             invalidBidReason.type = 'event is extended by another flow';
@@ -48,27 +47,14 @@ export function getValidAskForBid<P,V>(eventId: string, currentBids?: CurrentBid
             return {invalidBidReason};
         }
     }
-    // check if the bid is blocked
-    const someBlocked = currentBids.block?.some(block => {
-        if(block.validate === undefined || (block.validate && isValidReturn(block.validate()))) {
-            invalidBidReason.type = 'blocked';
-            invalidBidReason.flowPath = block.flow.path;
-            invalidBidReason.bidId = block.id;
-            return true;
-        }
-        return false;
-    });
-    if(someBlocked) {
-        return {invalidBidReason};
-    }
-    // check if the askFor bid is from a different engine than the event
+    // check if the when bid is from a different engine than the event
     if(highestPriorityAskForBid.flow.pathFromRootFlow[0] !== currentBids.event.rootFlowId) {
         invalidBidReason.type = 'events connected to a different engine can not be requested';
         invalidBidReason.flowPath = highestPriorityAskForBid.flow.path;
         invalidBidReason.bidId = highestPriorityAskForBid.id;
         return {invalidBidReason};
     }
-    return {askForBid: highestPriorityAskForBid};
+    return {whenBid: highestPriorityAskForBid};
 }
 
 
@@ -80,28 +66,16 @@ export function getValidAskForBid<P,V>(eventId: string, currentBids?: CurrentBid
  * @param currentBids current placed bids for this event
  * @returns an invalid reason for the request bid or undefined if the request bid is valid.
  */
-export function invalidReasonForRequestBid(bid: Placed<RequestBid<any, any>>, currentBids?: CurrentBidsForEvent<any, any>): InvalidBidReason | undefined {
-    const invalidReason: InvalidBidReason = {eventId: bid.event.id, bidType: BidType.request, flowPath: bid.flow.path, bidId: bid.id, type: 'no current bids for this event'};
+export function invalidReasonForRequestBid(bid: Placed<SetBid<any, any>>, currentBids?: CurrentBidsForEvent<any, any>): InvalidBidReason | undefined {
+    const invalidReason: InvalidBidReason = {eventId: bid.event.id, bidType: BidType.set, flowPath: bid.flow.path, bidId: bid.id, type: 'no current bids for this event'};
     // check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
         return invalidReason;
     };
-    // check if the bid is blocked
-    const someBlocked = currentBids.block?.some(block => {
-        if(block.validate === undefined || (block.validate && isValidReturn(block.validate()))) {
-            invalidReason.type = 'blocked';
-            invalidReason.flowPath = block.flow.path;
-            invalidReason.bidId = block.id;
-            return true;
-        }
-    });
-    if(someBlocked) {
-        return invalidReason;
-    }
-    // check, when the bid is only valid when asked for, if there is an askFor bid for it
+    // check, when the bid is only valid when asked for, if there is an when-bid for it
     if(bid.isTriggerAskedFor) {
-        if(getHighestPriorityAskForBid(currentBids) === undefined) {
-            invalidReason.type = 'no askFor bid';
+        if(getHighestPriorityWhenBid(currentBids) === undefined) {
+            invalidReason.type = 'no when-bid';
             return invalidReason;
         }
     }
@@ -115,7 +89,7 @@ export function invalidReasonForRequestBid(bid: Placed<RequestBid<any, any>>, cu
         return invalidReason;
     }
     // check if the bid has a pending extend
-    else if(currentBids.pendingExtend) {
+    else if(currentBids.pendingExtend?.extendingFlow) {
         const willResolveTheExtendBid = bid.flow.id === currentBids.pendingExtend.extendingFlow.id;
         if(!willResolveTheExtendBid) {
             invalidReason.type = 'event is extended by another flow';
@@ -137,8 +111,8 @@ export function invalidReasonForRequestBid(bid: Placed<RequestBid<any, any>>, cu
  * @param pendingRequest the pending request bid that will be checked
  * @returns all invalid reasons for the resolvePendingRequest or rejectPendingRequest action or undefined if the action is valid
  */
-export function invalidReasonForPendingRequestBid(action: ResolvePendingRequestAction<any> | RejectPendingRequestAction, pendingRequest?: Placed<RequestBid<any, any>>): InvalidBidReason | undefined {
-    const invalidReason: InvalidBidReason = {eventId: action.eventId, bidType: BidType.request, flowPath: action.flowPath, bidId: action.bidId, type: 'no pending request'};
+export function invalidReasonForPendingRequestBid(action: ResolvePendingRequestAction<any> | RejectPendingRequestAction, pendingRequest?: Placed<SetBid<any, any>>): InvalidBidReason | undefined {
+    const invalidReason: InvalidBidReason = {eventId: action.eventId, bidType: BidType.set, flowPath: action.flowPath, bidId: action.bidId, type: 'no pending request'};
     // check if the pending request is available for this event
     if(pendingRequest === undefined) {
         return invalidReason;

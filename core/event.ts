@@ -1,6 +1,6 @@
-import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
+import { InputAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
 import { getValidAskForBid, InvalidBidReason } from "./bid-invalid-reasons.ts";
-import { AskForBid, CurrentBidsForEvent, Placed } from "./bid.ts";
+import { WhenBid, CurrentBidsForEvent, Placed } from "./bid.ts";
 import { explainValidation } from "./payload-validation.ts";
 import { AccumulatedValidationResults } from "./payload-validation.ts";
 
@@ -17,7 +17,7 @@ import { AccumulatedValidationResults } from "./payload-validation.ts";
 interface ConnectToSchedulerProps {
     rootFlowId: string;
     getCurrentBids: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
-    runEngine: (action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    runEngine: (action?: InputAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerEventAccess: (event: Event<any, any>) => void;
     toggleValueAccessLogging: (event: Event<any, any>) => void;
 }
@@ -52,7 +52,7 @@ export class Event<P = undefined, V = void> {
     private _value?: P;
     private _hasValue = false;
     private _rootFlowId?: string;
-    private _runEngine?: (action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    private _runEngine?: (action?: InputAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _getCurrentBids?: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     private _onUpdateCallback?: () => void; // only a single subscriber is supported
     private _registerEventAccess?: () => void;
@@ -143,15 +143,15 @@ export class Event<P = undefined, V = void> {
      * @param value the value to validate
      * @returns an object with the validation result and the details of the validation
      */
-    public validate(value: P): {invalidBidReason?: InvalidBidReason, accumulatedValidationResults?: AccumulatedValidationResults<V>, askForBid?: Placed<AskForBid<P, V>>} {
+    public validate(value: P): {invalidBidReason?: InvalidBidReason, accumulatedValidationResults?: AccumulatedValidationResults<V>, whenBid?: Placed<WhenBid<P, V>>} {
         const currentBids = this._getCurrentBids?.(this.id);
-        const {askForBid, invalidBidReason} = getValidAskForBid(this.id, currentBids);
+        const {whenBid, invalidBidReason} = getValidAskForBid(this.id, currentBids);
         if(invalidBidReason) return {invalidBidReason};
-        if(currentBids === undefined || askForBid === undefined) throw new Error('unexpected error: after bid validation, the current bids or the askFor bid should not be undefined');
+        if(currentBids === undefined || whenBid === undefined) throw new Error('unexpected error: after bid validation, the current bids or the when-bid should not be undefined');
         this._toggleValueAccessLogging?.(this);
-        const accumulatedValidationResults = explainValidation(currentBids, value, [askForBid]);
+        const accumulatedValidationResults = explainValidation(currentBids, value, [whenBid]);
         this._toggleValueAccessLogging?.(this);
-        return {accumulatedValidationResults, askForBid};
+        return {accumulatedValidationResults, whenBid};
     }
 
     /**
@@ -172,8 +172,8 @@ export class Event<P = undefined, V = void> {
      * @throws if the dispatch is not valid
      */
     public dispatch(value: P): void {
-        const {invalidBidReason, accumulatedValidationResults, askForBid} = this.validate(value as P);
-        if(invalidBidReason || askForBid === undefined) {
+        const {invalidBidReason, accumulatedValidationResults, whenBid} = this.validate(value as P);
+        if(invalidBidReason || whenBid === undefined) {
             console.error('invalid bid: %O', invalidBidReason);
             throw new Error('event can not be dispatched because of an invalid bid');
         }
@@ -181,13 +181,13 @@ export class Event<P = undefined, V = void> {
             console.error('payload validation falied: %O', accumulatedValidationResults);
             throw new Error('event can not be dispatched because of an invalid payload');
         }
-        const action: ExternalAction<P> = {
-            type: "external",
+        const action: InputAction<P> = {
+            type: "input",
             payload: value as P,
             id: null,
             eventId: this.id,
-            flowPath: askForBid.flow.path,
-            bidId: askForBid.id
+            flowPath: whenBid.flow.path,
+            bidId: whenBid.id
         };
         if(this._runEngine === undefined) throw new Error('unexpected error: runEngine is undefined');
         this._runEngine(action);
@@ -218,22 +218,13 @@ export class Event<P = undefined, V = void> {
     }
 
     /**
-     * returns true if the event is blocked, false otherwise.
-     * An event is blocked if there is a flow that has a placed block bid for that event.
-     */
-    public get isBlocked() {
-        this._registerEventAccess?.();
-        return (this._getCurrentBids?.(this.id)?.block?.length || 0) > 0;
-    }
-
-    /**
      * returns true if the event is asked for, false otherwise.
      * An event is asked for if there is a flow that has a placed ask for bid for that event.
      * Only asked for events can be set, to have a new value.
      */
-    public get isAskedFor(): boolean {
+    public get hasActiveWhen(): boolean {
         this._registerEventAccess?.();
-        return this._getCurrentBids?.(this.id)?.askFor?.[0] !== undefined;
+        return this._getCurrentBids?.(this.id)?.when?.[0] !== undefined;
     }
 
     /**

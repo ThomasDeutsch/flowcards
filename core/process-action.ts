@@ -1,9 +1,9 @@
 import { Action, RejectPendingRequestAction } from "./action.ts";
 import { Engine } from "./engine.ts";
 import { explainValidation } from "./payload-validation.ts";
-import { reactToExternalAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction.ts";
+import { reactToInputAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction.ts";
 import { invalidReasonForPendingRequestBid } from "./bid-invalid-reasons.ts";
-import { Placed, RequestBid } from "./bid.ts";
+import { Placed, SetBid } from "./bid.ts";
 
 /**
  * @internal
@@ -25,9 +25,9 @@ export function processAction(engine: Engine, nextAction: Action<any>): boolean 
     const nextActionId = engine.currentActionId + 1;
 
     // A. external action
-    if(nextAction.type === 'external') {
+    if(nextAction.type === 'input') {
         const event = currentBids.event;
-        const {invalidBidReason, accumulatedValidationResults, askForBid} = event.validate(nextAction.payload);
+        const {invalidBidReason, accumulatedValidationResults, whenBid} = event.validate(nextAction.payload);
         if(invalidBidReason !== undefined) {
             engine.__actionReactionLogger.__logInvalidBidReason(invalidBidReason);
             return false;
@@ -37,10 +37,10 @@ export function processAction(engine: Engine, nextAction: Action<any>): boolean 
             return false;
         }
         const action = {...nextAction, id: nextActionId};
-        if(askForBid === undefined) {
-            throw new Error('unexpected error: after bid validation, the askFor bid should not be undefined');
+        if(whenBid === undefined) {
+            throw new Error('unexpected error: after bid validation, the when-bid should not be undefined');
         }
-        reactToExternalAction(currentBids, action, askForBid);
+        reactToInputAction(currentBids, action, whenBid);
         engine.__actionReactionLogger.__onActionProcessed(action);
         return true;
     }
@@ -56,7 +56,7 @@ export function processAction(engine: Engine, nextAction: Action<any>): boolean 
         if(pendingRequestBid === undefined) {
             throw new Error('unexpected error: after bid validation, the pending request bid should not be undefined');
         }
-        const validationResult = explainValidation(currentBids, nextAction.payload, [pendingRequestBid, pendingRequestBid.isTriggerAskedFor ? currentBids.askFor![0] : undefined]);
+        const validationResult = explainValidation(currentBids, nextAction.payload, [pendingRequestBid, pendingRequestBid.isTriggerAskedFor ? currentBids.when![0] : undefined]);
         if(validationResult.isValidAccumulated === false) {
             // if the validation result is not valid, create a rejectPendingRequest action
             const rejectAction: RejectPendingRequestAction & {id: number} = {
@@ -85,7 +85,7 @@ export function processAction(engine: Engine, nextAction: Action<any>): boolean 
             engine.__actionReactionLogger.__logInvalidBidReason(invalidReason);
             return false;
         }
-        pendingRequestBid = pendingRequestBid as Placed<RequestBid<any, any>>; // is not undefined because of the invalidReasonsForPendingRequestBid check
+        pendingRequestBid = pendingRequestBid as Placed<SetBid<any, any>>; // is not undefined because of the invalidReasonsForPendingRequestBid check
         reactToRejectAction(pendingRequestBid.flow, currentBids.event);
         engine.__actionReactionLogger.__onActionProcessed({...nextAction, id: nextActionId});
         return true;

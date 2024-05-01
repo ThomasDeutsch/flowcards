@@ -1,6 +1,6 @@
 import { Event } from "../../core/event.ts";
 import { Flow } from "../../core/flow.ts";
-import { askFor, request, given } from "../../core/bid.ts";
+import { askFor, set, given } from "../../core/bid.ts";
 import { ActionAndReactions, FlowGeneratorFunction } from "../../core/index.ts";
 
 
@@ -15,9 +15,9 @@ export default {
                     yield* given(eventB, (x) => x > 10);
                     yield undefined
                 });
-                yield request(eventA, 20);
-                yield request(eventB, 20);
-                yield request(eventB, 10);
+                yield set(eventA, 20);
+                yield set(eventB, 20);
+                yield set(eventB, 10);
                 yield askFor(eventA);
                 yield undefined;
             },

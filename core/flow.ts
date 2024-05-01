@@ -1,9 +1,10 @@
-import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
-import { toBids, filterRemainingBids, Placed, RequestBid, AnyBid, GivenBid } from "./bid.ts";
+import { InputAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
+import { toBids, filterRemainingBids, Placed, SetBid, AnyBid, GivenBid } from "./bid.ts";
 import { Event } from  "./event.ts";
 import { ActionReactionLogger } from "./action-reaction-logger.ts";
 import { isThenable, mergeMaps } from "./utils.ts";
 import { isValidReturn } from "./payload-validation.ts";
+import { CHAR_RIGHT_ANGLE_BRACKET } from "$std/path/_constants.ts";
 
 
 // INTERFACES -------------------------------------------------------------------------------------------------------------
@@ -39,9 +40,10 @@ type FlowIteratorResult = IteratorResult<TNext | undefined, void>;
 export interface FlowParameters {
     pathFromRootFlow: string[];
     generatorFunction: FlowGeneratorFunction;
-    runEngine: (action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    runEngine: (action?: InputAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerChangedEvent: (event: Event<any, any>) => void;
     logger: ActionReactionLogger;
+    extendInformation?: ExtendInformation<any, any>;
 }
 
 /**
@@ -50,18 +52,18 @@ export interface FlowParameters {
 export interface AllBidsAndPendingInformation {
     placedBids: Placed<AnyBid<any, any>>[];
     activeGivenBids?: Placed<GivenBid<any, any>>[];
-    pendingRequests?: Map<string, Placed<RequestBid<any, any>>>;
-    pendingExtends?: Map<string, PendingExtend<any, any>>;
+    pendingRequests: Map<string, Placed<SetBid<any, any>>>;
+    pendingExtends: ExtendInformation<any, any>[];
 }
 
 /**
  * all needed information about a pending extend
  */
- export interface PendingExtend<P, V> {
+ export interface ExtendInformation<P, V> {
     value?: P | Promise<P>;
     event: Event<P,V>;
-    extendingFlow: Flow;
     extendedBids: Placed<AnyBid<P, V>>[];
+    extendingFlow?: Flow;
 }
 
 /**
@@ -77,9 +79,9 @@ export class Flow {
     private _isDisabled = false;
     private _activeGivenBids: Placed<GivenBid<any, any>>[] = [];
     private _placedBids: Placed<AnyBid<unknown, unknown>>[] | undefined;
-    private _pendingRequests: Map<string, Placed<RequestBid<any, any>>> = new Map();
-    private _pendingExtends: Map<string, PendingExtend<any, any>> = new Map();
-    private _runEngine: (action?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
+    private _pendingRequests: Map<string, Placed<SetBid<any, any>>> = new Map();
+    private _extendInformation?: ExtendInformation<any, any>
+    private _runEngine: (action?: InputAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _registerChangedEvent: (event: Event<any, any>) => void;
     private _latestActionIdThisFlowProgressedOn?: number;
     private _latestBidThisFlowProgressedOn?: Placed<AnyBid<any, any>>;
@@ -95,6 +97,7 @@ export class Flow {
         this._runEngine = parameters.runEngine;
         this._logger = parameters.logger;
         this._registerChangedEvent = parameters.registerChangedEvent;
+        this._extendInformation = parameters.extendInformation;
         this._resetToInitial();
         this._generator = this._generatorFunction();
         this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow enabled', {});
@@ -130,7 +133,7 @@ export class Flow {
                 return {...bid, flow: this, id: bid.id} as Placed<AnyBid<any, any>>;
             }
             else {
-                if(bid.type === 'askFor' || bid.type === 'validate' || bid.type === 'block') {
+                if(bid.type === 'when') {
                     this._registerChangedEvent(bid.event);
                 }
                 return {...bid, flow: this, id: this._currentBidId++} as Placed<AnyBid<any, any>>;
@@ -146,7 +149,7 @@ export class Flow {
                 this._registerChangedEvent(placedBid.event);
                 this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending request cancelled', {eventId: placedBid.event.id, actionId: placedBid.requestActionId});
             }
-            if (placedBid.type === 'askFor' || placedBid.type === 'validate' || placedBid.type === 'block') {
+            if (placedBid.type === 'when') {
                 this._registerChangedEvent(placedBid.event);
             }
         });
@@ -160,7 +163,7 @@ export class Flow {
     private _handleNext(next: FlowIteratorResult): void {
         if(this._hasEnded) return;
         if(next.done) {
-            this.__end(true);
+            this.__end();
         } else {
             const nextBids = toBids(next.value);
             this._placeBids(nextBids);
@@ -174,7 +177,7 @@ export class Flow {
                     this._handleNext(next);
                 } catch(error) {
                     console.error('error in flow ', this.id, ': ', error, 'flow ended');
-                    this.__end(true);
+                    this.__end();
                     throw error;
                 }
             }
@@ -184,7 +187,7 @@ export class Flow {
     /**
      * return flow to the initial state
      */
-    private _resetToInitial(keepExtends?: boolean): void {
+    private _resetToInitial(): void {
         this._activeGivenBids = [];
         this._onCleanupCallback?.();
         delete this._onCleanupCallback;
@@ -195,11 +198,6 @@ export class Flow {
         delete this._latestActionIdThisFlowProgressedOn;
         delete this._latestBidThisFlowProgressedOn;
         this._cancelAllPendingRequests();
-        if(!keepExtends) {
-            this._pendingExtends.forEach((pendingExtend) => {
-                this.abortExtend(pendingExtend.event);
-            });
-        }
         this._children.forEach((child) => {
             child.__end();
         });
@@ -212,11 +210,10 @@ export class Flow {
     /**
      * @internal
      * end the flow execution
-     * @param keepExtends when a flow ends by progressing the last bid, the extends of this flow should be kept.
      */
-    public __end(keepExtends?: boolean): void {
+    public __end(): void {
+        if(this._hasEnded) return;
         this.endChildFlows();
-        this._resetToInitial(keepExtends);
         this._hasEnded = true;
         this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow ended', {});
     }
@@ -254,12 +251,13 @@ export class Flow {
             this._handleNext.bind(this)(this._generator.next());
         } catch(error) {
             console.error('error in flow ', this.id, ': ', error);
-            this.__end(true);
+            this.__end();
             return;
         }
     }
 
     /**
+     * @internal
      * add a given-bid as an active given bid
      */
     public __addActiveGivenBid(bid: Placed<GivenBid<any, any>>): void {
@@ -273,21 +271,21 @@ export class Flow {
      * @returns all bids and pending information (see FlowBidsAndPendingInformation)
      */
     public __getBidsAndPendingInformation(): AllBidsAndPendingInformation {
-        if(this._isDisabled) return {placedBids: [], pendingExtends: this._pendingExtends};
-        const placedBids = this.isDisabled ? [] : this._placedBids || [];
+        if(this._isDisabled) return {placedBids: [], pendingExtends: [], pendingRequests: new Map()};
+        const placedBids = this._placedBids || [];
         if(this._activeGivenBids.length > 0) {
             placedBids.push(...this._activeGivenBids);
         }
-        const result = {
+        const result: AllBidsAndPendingInformation = {
             placedBids,
             pendingRequests: this._pendingRequests,
-            pendingExtends: this._pendingExtends
+            pendingExtends: this._extendInformation ? [this._extendInformation] : []
         };
         this._children.forEach((child) => {
             const childBidsAndPendingInformation = child.__getBidsAndPendingInformation();
             result.placedBids = [...childBidsAndPendingInformation.placedBids, ...result.placedBids];
             result.pendingRequests = mergeMaps(result.pendingRequests, childBidsAndPendingInformation.pendingRequests);
-            result.pendingExtends = mergeMaps(result.pendingExtends, childBidsAndPendingInformation.pendingExtends);
+            result.pendingExtends.push(...childBidsAndPendingInformation.pendingExtends);
         });
         return result
     }
@@ -309,7 +307,7 @@ export class Flow {
             console.error('error in flow ', this.id, ': ', error);
             if(this._latestBidThisFlowProgressedOn === undefined) {
                 this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow ended because an error on the first bid was not handled', {eventId: event.id});
-                this.__end(false);
+                this.__end();
                 return;
             }
             this._logger.__logFlowReaction(this.pathFromRootFlow, 'flow restarted because an error was not handled', {eventId: event.id});
@@ -339,24 +337,9 @@ export class Flow {
             this._handleNext(next);
         } catch(error) {
             console.error('error in flow ', this.id, ': ', error, 'flow ended');
-            this.__end(true);
+            this.__end();
             throw error;
         }
-    }
-
-    /**
-     * react to an extend action. Continue the flow based on an occurred extend action
-     * @internal
-     * @param event the event that occurred
-     * @param bidId the id of the bid that was placed and corresponds to the event
-     * @param extend the pending extend information
-     * @param actionId the id of the action to check if the flow already progressed on this action
-     */
-    public __onExtend<P, V>(event: Event<P, V>, bid: Placed<AnyBid<any, any>>, extend: PendingExtend<P,V>, actionId: number): void {
-        this._pendingExtends.set(event.id, extend);
-        this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend added', {eventId: event.id, bidId: bid.id, bidType: bid.type, actionId: actionId});
-        if(isThenable(extend.value)) return;
-        this.__onEvent(event, bid, actionId);
     }
 
     /**
@@ -365,7 +348,7 @@ export class Flow {
      * @internal
      * @param action the action that holds the promise payload
      */
-    public __onRequestedAsync<P, V>(bid: Placed<RequestBid<P,V>>, promise: Promise<P>, requestActionId: number): void {
+    public __onRequestedAsync<P, V>(bid: Placed<SetBid<P,V>>, promise: Promise<P>, requestActionId: number): void {
         this._pendingRequests.set(bid.event.id, {...bid, requestActionId: requestActionId});
         this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending request added', {eventId: bid.event.id, bidId: bid.id, bidType: bid.type, actionId: requestActionId});
         this._registerChangedEvent(bid.event);
@@ -407,13 +390,27 @@ export class Flow {
      * @internal
      * @param event the event that was extended by this flow
      */
-     public __resolvePendingRequest(event: Event<any,any>): void {
+    public __resolvePendingRequest(event: Event<any,any>): void {
         const pendingRequest = this._pendingRequests.get(event.id);
         if(pendingRequest) {
             this._pendingRequests.delete(event.id);
             this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending request resolved', {eventId: event.id, actionId: pendingRequest.requestActionId });
             this._registerChangedEvent(event);
         }
+    }
+
+    /**
+     * @internal
+     * resolve the pending extend
+     * this will set the event back to a none-pending state, and the event.extendedValue will be set to undefined
+     * @param event the event that was extended by this flow
+     */
+    public __resolveExtend(event: Event<any,any>): boolean {
+        if(this._extendInformation?.event.id !== event.id) return false;
+        this._extendInformation = undefined;
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend resolved', {eventId: event.id});
+        this._registerChangedEvent(event);
+        return true;
     }
 
     // PUBLIC --------------------------------------------------------------------------------------------
@@ -433,7 +430,7 @@ export class Flow {
      * @returns the child flow or undefined if the flow was not started / ended
      * @internalRemarks mutates: ._children
      */
-    public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, runEngine?: boolean): Flow | undefined {
+    public flow<T extends FlowGeneratorFunction>(id: string, generatorFunction: T, runEngine?: boolean, extendInformation?: ExtendInformation<any, any>): Flow | undefined {
         const currentChild = this._children.get(id);
         if(currentChild) {
             if(currentChild._isDisabled) {
@@ -448,6 +445,7 @@ export class Flow {
             pathFromRootFlow: [...this.pathFromRootFlow, id],
             generatorFunction,
             logger: this._logger,
+            extendInformation: extendInformation ? {...extendInformation} : undefined,
             registerChangedEvent: this._registerChangedEvent,
             runEngine: this._runEngine
         });
@@ -459,37 +457,21 @@ export class Flow {
         return newChild;
     }
 
-    /**
-     * end all child flows with the given id
-     * @param ids the ids of the child flows to end. if not given, all child flows will be ended
-     */
+    private endChildFlow(id: string): void {
+        const child = this._children.get(id);
+        if(child && !child.hasEnded) {
+            child.__end();
+            this._children.delete(id);
+        }
+    }
+
     public endChildFlows(ids?: string[]): void {
         if(!ids) {
-            this._children.forEach((child) => {
-                if(!child.hasEnded) {
-                    child.__end();
-                }
-            });
+            this._children.forEach((child, id) => this.endChildFlow(id));
             this._children.clear();
             return;
         }
-        ids.forEach((id) => {
-            const child = this._children.get(id);
-            if(child) {
-                if(!child.hasEnded) {
-                    child.__end();
-                }
-                this._children.delete(id);
-            }
-        });
-    }
-
-    /**
-     * end a child flow with the given id
-     * @param id the id of the child flow to end
-     */
-    public endChildFlow(id: string): void {
-        this.endChildFlows([id]);
+        ids.forEach(id => this.endChildFlow(id));
     }
 
     /**
@@ -513,27 +495,11 @@ export class Flow {
      * @param event the event that was extended by this flow
      */
     public abortExtend(event: Event<any,any>): boolean {
-        const wasRemoved = this._pendingExtends.delete(event.id);
-        if(wasRemoved) {
-            this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend aborted', {eventId: event.id});
-            this._registerChangedEvent(event);
-        }
-        return wasRemoved;
-    }
-
-    /**
-     * @internal
-     * resolve the pending extend
-     * this will set the event back to a none-pending state, and the event.extendedValue will be set to undefined
-     * @param event the event that was extended by this flow
-     */
-    public __resolveExtend(event: Event<any,any>): boolean {
-        const wasRemoved = this._pendingExtends.delete(event.id);
-        if(wasRemoved) {
-            this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend resolved', {eventId: event.id});
-            this._registerChangedEvent(event);
-        }
-        return wasRemoved;
+        if(this._extendInformation?.event.id !== event.id) return false;
+        this._extendInformation = undefined;
+        this._logger.__logFlowReaction(this.pathFromRootFlow, 'pending extend aborted', {eventId: event.id});
+        this._registerChangedEvent(event);
+        return true;
     }
 
 
@@ -562,15 +528,7 @@ export class Flow {
      * getter that returns all pending extends by this flow
      * @returns a map of all pending requests information by this flow (see PendingRequest)
      */
-    public get pendingExtends(): Map<string, PendingExtend<any, any>> {
-        return this._pendingExtends;
-    }
-
-    /**
-     * getter that returns all pending extends by this flow
-     * @returns a map of all pending requests information by this flow (see PendingRequest)
-     */
-    public get pendingRequests(): Map<string, Placed<RequestBid<any, any>>> {
+    public get pendingRequests(): Map<string, Placed<SetBid<any, any>>> {
         return this._pendingRequests;
     }
 

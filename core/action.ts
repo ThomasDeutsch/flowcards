@@ -11,7 +11,7 @@
  * @remarks An action with the id = null is an action that was not selected as the next action by the engine, yet.
  */
 interface BaseAction {
-    type: "external" | "requested" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";
+    type: "input" | "requested" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";
     eventId: string;
     flowPath: string[];
     bidId: number;
@@ -21,8 +21,8 @@ interface BaseAction {
  * an external action is created if a flow has placed a valid askFor bid and
  * the event is dispatched by an external source (for example by a user/UI)
  */
-export interface ExternalAction<P> extends BaseAction {
-    type: "external";
+export interface InputAction<P> extends BaseAction {
+    type: "input";
     id: number | null;
     payload: P;
 }
@@ -67,14 +67,14 @@ export interface RejectPendingRequestAction extends BaseAction {
 }
 
 /** all possible actions */
-export type Action<P> = ExternalAction<P> | ResolvePendingRequestAction<P> | RejectPendingRequestAction |  RequestedAction<P> | RequestedAsyncAction<P>;
+export type Action<P> = InputAction<P> | ResolvePendingRequestAction<P> | RejectPendingRequestAction |  RequestedAction<P> | RequestedAsyncAction<P>;
 
 /** all possible extendable action types */
-export type ExtendableAction<P> = ExternalAction<P> | RequestedAction<P> | ResolvePendingRequestAction<P> | RequestedAsyncAction<P>;
+export type ExtendableAction<P> = InputAction<P> | RequestedAction<P> | ResolvePendingRequestAction<P> | RequestedAsyncAction<P>;
 
 /** a logged action */
 export type LoggedAction<P> =
-    ExternalAction<P> & {id: number} |
+    InputAction<P> & {id: number} |
     ResolvePendingRequestAction<P> & {id: number} |
     RejectPendingRequestAction & {id: number} |
     RequestedAction<P> |

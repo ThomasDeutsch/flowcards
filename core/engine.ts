@@ -1,4 +1,4 @@
-import { ExternalAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
+import { InputAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
 import { Event } from "./event.ts";
 import { Flow, FlowGeneratorFunction } from "./flow.ts";
 import { ActionAndReactions, ActionReactionLogger } from "./action-reaction-logger.ts";
@@ -6,14 +6,14 @@ import { processNextValidRequestBid } from "./process-request.ts";
 import { processAction } from "./process-action.ts";
 import { isDefined, mapValues } from "./utils.ts";
 import { InvalidBidReason, invalidReasonForRequestBid } from "./bid-invalid-reasons.ts";
-import { OrderedRequestsAndCurrentBids, Placed, RequestBid, getOrderedRequestsAndCurrentBids, AskForBid } from "./bid.ts";
+import { OrderedRequestsAndCurrentBids, Placed, SetBid, getOrderedRequestsAndCurrentBids, WhenBid } from "./bid.ts";
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 /**
  * a callback function that is called if the current engine run is finished (all actions processed, and no more requests that can be processed)
  */
- export type ActionReactionGenerator = Generator<(ExternalAction<any> & {id: number}) | ResolvePendingRequestAction<any> | RejectPendingRequestAction | 'mockRequest' | undefined, void, ActionAndReactions | 'noActionReactionsRecorded' | 'runEnd'>;
+ export type ActionReactionGenerator = Generator<(InputAction<any> & {id: number}) | ResolvePendingRequestAction<any> | RejectPendingRequestAction | 'mockRequest' | undefined, void, ActionAndReactions | 'noActionReactionsRecorded' | 'runEnd'>;
 
 /**
  * properties of the Engine
@@ -120,7 +120,7 @@ export class Engine {
      * @param action the external/resolve/reject action that will be processed
      * @throws a recursive call error if the engine is already running
      */
-    public __run(externalAction?: ExternalAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
+    public __run(externalAction?: InputAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction): void {
         if(this._isRunning) {
             throw new Error('recursive call: engine already running');
         }
@@ -164,7 +164,7 @@ export class Engine {
      * @param bid the request bid that will be checked
      * @returns the invalid reasons for the bid or the validation results if the bid is invalid
      */
-    public explainRequestBid<P,V>(bid: Placed<RequestBid<P,V>>): InvalidBidReason | undefined {
+    public explainRequestBid<P,V>(bid: Placed<SetBid<P,V>>): InvalidBidReason | undefined {
         const currentBids = this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(bid.event.id);
         const invalidBidReasons = invalidReasonForRequestBid(bid, currentBids);
         return invalidBidReasons
@@ -179,17 +179,17 @@ export class Engine {
     }
 
     /**
-     * get the current askFor bids for all events in a list
-     * @returns a list of askFor bids for all events
+     * get the current when-bids for all events in a list
+     * @returns a list of when-bids for all events
      */
-    public get askForBids(): Placed<AskForBid<any, any>>[] {
-        return mapValues(this._orderedRequestsAndCurrentBids.currentBidsByEventId).map(bids => bids.askFor).flatMap(bids => bids).filter(isDefined);
+    public get whenBids(): Placed<WhenBid<any, any>>[] {
+        return mapValues(this._orderedRequestsAndCurrentBids.currentBidsByEventId).map(bids => bids.when).flatMap(bids => bids).filter(isDefined);
     }
 
     /**
      * get pending requests for all events in a list
      */
-    public get pendingRequests(): Placed<RequestBid<any, any>>[] {
+    public get pendingRequests(): Placed<SetBid<any, any>>[] {
         return mapValues(this._orderedRequestsAndCurrentBids.currentBidsByEventId).map(bids => bids.pendingRequest).flatMap(bids => bids).filter(isDefined);
     }
 
@@ -197,7 +197,7 @@ export class Engine {
      * get open requests for all events in a list
      * @returns a list of invalid requests for all events
      */
-    public get openRequests(): Placed<RequestBid<any, any>>[] {
+    public get openRequests(): Placed<SetBid<any, any>>[] {
         return this._orderedRequestsAndCurrentBids.orderedRequests;
     }
 

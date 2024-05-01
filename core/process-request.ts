@@ -51,7 +51,7 @@ export function processNextValidRequestBid(engine: Engine, mockRequest?: boolean
         // payload is not a promise, so it can be checked
         if(bid.isTriggerAskedFor) {
             // for a trigger, check if for this event, a dispatch would be valid
-            const {invalidBidReason, accumulatedValidationResults, askForBid} = bid.event.validate(payload);
+            const {invalidBidReason, accumulatedValidationResults, whenBid} = bid.event.validate(payload);
             if(invalidBidReason || accumulatedValidationResults?.isValidAccumulated === false) {
                 return false;
             }
@@ -63,7 +63,7 @@ export function processNextValidRequestBid(engine: Engine, mockRequest?: boolean
                 bidId: bid.id,
                 flowPath: bid.flow.path
             };
-            reactToRequestedAction(currentBids, requestedAction, bid, askForBid);
+            reactToRequestedAction(currentBids, requestedAction, bid, whenBid);
             engine.__actionReactionLogger.__onActionProcessed(requestedAction);
             return true;
         }

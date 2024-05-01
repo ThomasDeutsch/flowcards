@@ -1,6 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
 import { PageProps } from "$fresh/server.ts";
-import { ActionAndReactions, AskForBid, AugmentedAction, LoggedAction, Placed, Event, Engine} from "../../../core/index.ts";
+import { ActionAndReactions, WhenBid, AugmentedAction, LoggedAction, Placed, Event, Engine} from "../../../core/index.ts";
 import { TestRecord, runTests } from "../../tests/utils.ts";
 
 
