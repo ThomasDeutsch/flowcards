@@ -14,8 +14,8 @@ export async function runTests({rootFlow, replay}: TestCase) {
         new Engine({
             id: 'rootFlow',
             rootFlow,
-            actionReactionGeneratorFn: (e) => actionReactionTester(e, useMocks, [...(replay || [])], finishCallback)
-        }).start();
+            testGenerator: (e) => actionReactionTester(e, useMocks, [...(replay || [])], finishCallback)
+        }).run();
     });
     await deadline(promise, 3000);
     return promise;

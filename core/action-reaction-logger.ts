@@ -1,7 +1,11 @@
+import { isGlob } from "$std/path/glob.ts";
 import { LoggedAction } from "./action.ts";
 import { InvalidBidReason } from "./bid-invalid-reasons.ts";
 import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
 import { AccumulatedValidationResults, Action, Engine } from "./index.ts";
+
+
+// TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 export type AugmentedAction<P> = LoggedAction<P> & {
     resolvedBy?: number;
@@ -10,54 +14,34 @@ export type AugmentedAction<P> = LoggedAction<P> & {
     extenedBy?: string[];
 }
 
-/**
- * action and reactions that are logged by the flows
- */
- export interface ActionAndReactions {
+
+export interface ActionAndReactions {
     action?: AugmentedAction<any>,
     reactions?: FlowReaction[],
-    tests?: Record<string, ((engine: Engine) => void)>,
+    tests?: {[key:string]: (engine: Engine) => void},
     // DEBUG:
     invalidActionInfo?: {
         invalidBidReason?: InvalidBidReason,
         accumulatedValidationResults?: AccumulatedValidationResults<any>
     }
+    hasFinished?: true;
 }
 
 
-/**
- * @internal
- * the action/reaction log is used to collect information about all engine runs - until no more action is processed.
- * it is used to collect information about:
- *  3. based on a valid action, reactions from the flows are collected
- *  4. the finished processed action is logged (all flows have reacted to the action)
- */
+// CORE FUNCTIONS -----------------------------------------------------------------------------------------------
+
 export class ActionReactionLogger {
     private _actionAndReactions: ActionAndReactions = {};
     constructor() {}
 
-    /**
-     * @internal
-     * log invalid action information, because of an invalid bid
-     */
     public __logInvalidBidReason(invalidBidReason: InvalidBidReason) {
         this._actionAndReactions.invalidActionInfo = {invalidBidReason};
     }
 
-    /**
-     * @internal
-     * log invalid action information, because of an invalid payload
-     */
     public __logInvalidPayload(accumulatedValidationResults: AccumulatedValidationResults<any>) {
         this._actionAndReactions.invalidActionInfo = {accumulatedValidationResults};
     }
 
-    /**
-     * @internal
-     * log a reaction of a flow to an action
-     * @param flowId  the id of the flow
-     * @param reactionType  the type of the reaction
-     */
     public __logFlowReaction(flowPath: string[], type: FlowReactionType, details: FlowReactionDetails) {
         if(this._actionAndReactions.reactions === undefined) {
             this._actionAndReactions.reactions = [];
@@ -65,11 +49,6 @@ export class ActionReactionLogger {
         this._actionAndReactions.reactions.push({flowPath, type, details});
     }
 
-    /**
-     * @internal
-     * logs the processed action to the current engine run.
-     * @param action the processed action
-     */
     public __onActionProcessed(action: Action<any> & {id: number}): void {
         if(action.type === 'requestedAsync') {
             const {payload, ...a} = action;
@@ -80,19 +59,15 @@ export class ActionReactionLogger {
         }
     }
 
-    /**
-     * @internal
-     * the log of an action and all reactions to this action
-     */
-    public getActionAndReactions(): ActionAndReactions | 'noActionReactionsRecorded' {
+    public getActionAndReactions(): ActionAndReactions {
         const result: ActionAndReactions = {
             action: this._actionAndReactions.action,
-            reactions: this._actionAndReactions.reactions ? [...this._actionAndReactions.reactions] : undefined
+            reactions: this._actionAndReactions.reactions ? [...this._actionAndReactions.reactions] : undefined,
+        }
+        if(this._actionAndReactions.invalidActionInfo) {
+            result.invalidActionInfo = {...this._actionAndReactions.invalidActionInfo};
         }
         this._actionAndReactions = {};
-        if(!result.reactions?.length && !result.action) {
-            return 'noActionReactionsRecorded';
-        }
         return result;
     }
 }

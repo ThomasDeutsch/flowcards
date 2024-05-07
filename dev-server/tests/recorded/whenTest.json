@@ -12,7 +12,7 @@
   },
   {
     "action": {
-      "type": "external",
+      "type": "input",
       "payload": 1,
       "id": 0,
       "eventId": "eventA",

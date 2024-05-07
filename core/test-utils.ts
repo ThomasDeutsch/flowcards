@@ -1,6 +1,6 @@
 import { ActionAndReactions, LoggedAction } from "./index.ts";
 import { FlowReaction } from "./flow-reaction.ts";
-import { ActionReactionGenerator, Engine } from "./engine.ts";
+import { TestGenerator, Engine } from "./engine.ts";
 import { equalPaths } from "./utils.ts";
 import { InputAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./index.ts";
 
@@ -32,23 +32,17 @@ function isSameReaction(a: FlowReaction, b: FlowReaction): boolean {
     return true;
 }
 
-/**
- * a function that returns the invalid reactions when comparing the expected reactions with the actual reactions
- * @param expected the expected flow reactions
- * @param actual the actual flow reactions
- */
 export function getInvalidReactions(expected?: FlowReaction[], actual?: FlowReaction[]): FlowReaction[] {
     if(expected === undefined || actual === undefined) return actual ?? [];
     return actual.filter((a) => !expected.some((e) => isSameReaction(e, a)));
 }
 
-/**
- * get the next action that should be used for testing
- */
 function getRecordedTestAction(remainingTests: ActionAndReactions[], nextTest?: ActionAndReactions): "mockRequest" | undefined | InputAction<any> & {id: number}  | ResolvePendingRequestAction<any> | RejectPendingRequestAction {
     const action = nextTest?.action;
     if(action === undefined) return undefined;
-    // replay external (dispatched) action
+    if(action.type === 'input') {
+        return action;
+    }
     if(action.type === 'requestedAsync') {
         const resolveOrRejectActionWasRecorded = remainingTests.some((test) => {
             if(test.action?.type !== 'resolvePendingRequest' && test.action?.type !== 'rejectPendingRequest') return false;
@@ -60,24 +54,27 @@ function getRecordedTestAction(remainingTests: ActionAndReactions[], nextTest?: 
         }
         return undefined;
     }
-    if(action.type === 'resolvePendingRequest' || action.type === 'rejectPendingRequest' || action.type === 'input') {
+    if(action.type === 'resolvePendingRequest' || action.type === 'rejectPendingRequest') {
         return action;
     }
     return undefined;
 }
 
 
-export function* actionReactionTester(engine: Engine, useMocks: boolean, recoredActionsAndReactions: ActionAndReactions[], finishCallback: (result: TestResult, recorded: ActionAndReactions[], engine: Engine) => void): ActionReactionGenerator {
+export function* actionReactionTester(engine: Engine, useMocks: boolean, recoredActionsAndReactions: ActionAndReactions[], finishCallback: ({result, recorded, engine}:{result: TestResult, recorded: ActionAndReactions[], engine: Engine}) => void): TestGenerator {
     const remainingTests = [...recoredActionsAndReactions];
     const recorded: ActionAndReactions[] = [];
     while(true) {
         const nextTest = remainingTests.shift();
         const engineRunResult = yield getRecordedTestAction(useMocks ? remainingTests : [], nextTest);
-        if(engineRunResult === 'noActionReactionsRecorded') {
-            // at this point (initial run), no action & reactions recorded, only the next test-action was transferred to the engine.
-            continue;
+        if(engineRunResult.invalidActionInfo) {
+            console.error('invalid action info: ', engineRunResult.invalidActionInfo)
         }
-        if(engineRunResult === 'runEnd') {
+        if(engineRunResult.hasFinished) {
+            if(engineRunResult.invalidActionInfo) {
+                console.error('invalid action info: ', engineRunResult.invalidActionInfo)
+                throw new Error('invalid action info: ' + JSON.stringify(engineRunResult.invalidActionInfo));
+            }
             if(engine.pendingRequests.length === 0) break; // end the test
             continue; // wait for the pending requests to be resolved
         }
@@ -87,29 +84,33 @@ export function* actionReactionTester(engine: Engine, useMocks: boolean, recored
         if(nextTest !== undefined) {
             // 1. check action
             if(!isSameAction(nextTest.action, engineRunResult.action)) {
-                finishCallback('invalid action', recorded, engine);
+                console.error('invalid action info: ', engineRunResult.invalidActionInfo)
+
+                finishCallback({result: 'invalid action', recorded, engine});
+
                 return;
             }
             // 2. check reactions
             const invalidReactions = getInvalidReactions(nextTest.reactions, engineRunResult.reactions);
             if(invalidReactions.length > 0) {
-                finishCallback('invalid reactions', recorded, engine);
+                finishCallback({result: 'invalid reactions', recorded, engine});
                 return;
             }
             // 3. check tests
             if(nextTest.tests) {
                 // tests will throw an error if they fail
-                try {
-                    Object.entries(nextTest.tests).forEach(([testId, test]) => {
+                Object.entries(nextTest.tests).forEach(([testId, test]) => {
+                    try {
                         test(engine);
-                    });
-                }
-                catch(error) {
-                    finishCallback('failed test', recorded, engine); //TODO: include the name of the failed test!
-                    return;
-                }
+                    }
+                    catch(error) {
+                        console.error('test failed: ', testId, error);
+                        finishCallback({result: 'failed test', recorded, engine}); //TODO: include the name of the failed test!
+                        return;
+                    }
+                });
             }
         }
     }
-    finishCallback('completed', recorded, engine);
+    finishCallback({result: 'completed', recorded, engine});
 }

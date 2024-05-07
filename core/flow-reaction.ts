@@ -5,6 +5,9 @@ import { Event } from "./event.ts";
 import { Flow } from "./flow.ts";
 import { ExtendInformation } from "./flow.ts";
 
+
+// TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
+
 export type FlowReaction = {flowPath: string[], type: FlowReactionType, details: FlowReactionDetails};
 
 export type FlowReactionType =
@@ -37,11 +40,9 @@ export interface FlowReactionDetails {
     childFlowId?: string;
 }
 
-/**
- * @internal
- * handle given bids by restarting the flow if the bid is active, or by progressing the bid if the bid is not active - if the event value has changed
- * @param eventInfo the event info of the event
- */
+// TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
+
+
 export function progressGivenBids<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action:  InputAction<P> & {id: number} | RequestedAction<P> | ResolvePendingRequestAction<P> & {id: number}, eventValueHasChanged: boolean): void {
     eventInfo[BidType.given]?.forEach((givenBid) => {
         if(givenBid.isActive && eventValueHasChanged) {
@@ -54,32 +55,16 @@ export function progressGivenBids<P, V>(eventInfo: CurrentBidsForEvent<P, V>, ac
     });
 }
 
-
-/**
- * @internal
- * react to an input action, by progressing the When bid and all waiting and other When bids
- * @param eventInfo the event info of the event
- * @param action the valid external action selected by the engine
- * @param whenBid the When bid
- */
- export function reactToInputAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: InputAction<P> & {id: number}, whenBid: Placed<WhenBid<P, V>>): void {
+export function reactToInputAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: InputAction<P> & {id: number}, whenBid: Placed<WhenBid<P, V>>): void {
     eventInfo.pendingExtend?.extendingFlow?.__resolveExtend(eventInfo.event);
     if(progressExtendBid(eventInfo, action, whenBid)) return;
-    // removed: a when bid will not set a value!
-    // const eventValueHasChanged = eventInfo.event.__setValue(action.payload);
-    const eventValueHasChanged = false;
+    const eventValueHasChanged = eventInfo.event.__setValue(action.payload);
+    whenBid?.flow.__onEvent(eventInfo.event, whenBid, action.id);
     progressExtendedBids(eventInfo, action);
     progressGivenBids(eventInfo, action, eventValueHasChanged);
 }
 
-/**
- * @internal
- * react to a requested action, by progressing the request bid and a when bid.
- * @param eventInfo the event info of the event
- * @param action the valid requested action selected by the engine
- * @param requestBid the placed request bid
- */
- export function reactToRequestedAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: Placed<SetBid<P, V>>, whenBid?: Placed<WhenBid<P, V>>): void {
+export function reactToRequestedAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: RequestedAction<P>  & {id: number}, requestBid: Placed<SetBid<P, V>>, whenBid?: Placed<WhenBid<P, V>>): void {
     eventInfo.pendingExtend?.extendingFlow?.abortExtend(eventInfo.event);
     if(progressExtendBid(eventInfo, action, requestBid)) return;
     const eventValueHasChanged = eventInfo.event.__setValue(action.payload);
@@ -89,14 +74,7 @@ export function progressGivenBids<P, V>(eventInfo: CurrentBidsForEvent<P, V>, ac
     progressGivenBids(eventInfo, action, eventValueHasChanged);
 }
 
-/**
- * @internal
- * react to a requested async action, by progressing the request bid
- * @param eventInfo the event info of the event
- * @param action the valid request async action selected by the engine
- * @param requestBid the placed request bid of the flow that holds the pending request.
- */
- export function reactToRequestedAsyncAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: RequestedAsyncAction<P>, requestBid: Placed<SetBid<P, V>>): void {
+export function reactToRequestedAsyncAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: RequestedAsyncAction<P>, requestBid: Placed<SetBid<P, V>>): void {
     const extendingFlow = progressExtendBid(eventInfo, action, requestBid)
     if(extendingFlow) {
         // if the pending request gets extended, the extending flow will receive the pending event info. In this case, the extending flow is able to cancel the event if needed.
@@ -107,13 +85,7 @@ export function progressGivenBids<P, V>(eventInfo: CurrentBidsForEvent<P, V>, ac
     }
 }
 
-/**
- * @internal
- * react to a resolve pending request action
- * @param eventInfo the event info of the event
- * @param action the selected action
- */
- export function reactToResolveAsyncAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: ResolvePendingRequestAction<P> & {id: number}, pendingRequest: Placed<SetBid<P,V>>): void {
+export function reactToResolveAsyncAction<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: ResolvePendingRequestAction<P> & {id: number}, pendingRequest: Placed<SetBid<P,V>>): void {
     pendingRequest.flow.__resolvePendingRequest(eventInfo.event);
     eventInfo.pendingExtend?.extendingFlow?.__resolveExtend(eventInfo.event);
     if(progressExtendBid(eventInfo, action, pendingRequest)) return;
@@ -124,29 +96,15 @@ export function progressGivenBids<P, V>(eventInfo: CurrentBidsForEvent<P, V>, ac
     progressGivenBids(eventInfo, action, eventValueHasChanged);
 }
 
-/**
- * @internal
- * react to a reject action
- * @param eventInfo the event info of the event
- * @param action the reject action
- */
- export function reactToRejectAction(flow: Flow, event: Event<any, any>): void {
+export function reactToRejectAction(flow: Flow, event: Event<any, any>): void {
     flow.__onRejectAsyncAction(event);
 }
 
 
 // HELPERS ------------------------------------------------------------------------------------------------------------
 
-
-/**
- * @internal
- * extend an action when a flow has placed a valid extend bid and the bid is valid
- * @param eventInfo the event info of the event that could be extended
- * @param action the valid action selected by the engine
- * @param extendedBid the placed bid bid that may get extended (relevant if an event is already extended)
- */
  function progressExtendBid<P, V>(eventInfo: CurrentBidsForEvent<P, V>, action: ExtendableAction<P> & {id: number}, extendedBid: Placed<ProgressingBid<P,V>>): Flow | undefined {
-    if(!eventInfo.extend?.length) return
+    if(!eventInfo.extend?.length) return undefined;
     const bid = eventInfo.extend.find((extend) => isValidReturn(validateBid<P, V>(extend, action.payload as P)));
     if(bid === undefined) return undefined;
     const extendInformation: ExtendInformation<P,V> = {
@@ -160,15 +118,9 @@ export function progressGivenBids<P, V>(eventInfo: CurrentBidsForEvent<P, V>, ac
     return extendingFlow;
 }
 
-/**
- * @internal
- * progress all extended bids
- * @param eventInfo the event info of the the possibly extended event
- * @param action the selected action
- */
 function progressExtendedBids(eventInfo: CurrentBidsForEvent<any, any>, action: Action<any> & {id: number}): void {
     if(eventInfo.pendingExtend) {
-        const extendedBids = eventInfo.pendingExtend.extendedBids;
+        const extendedBids = [...eventInfo.pendingExtend.extendedBids];
         eventInfo.pendingExtend = undefined;
         extendedBids.forEach((extendedBid) => {
             extendedBid?.flow.__onEvent(eventInfo.event, extendedBid, action.id);

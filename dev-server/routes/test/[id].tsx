@@ -1,6 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { PageProps } from "$fresh/server.ts";
-import { ActionAndReactions, WhenBid, AugmentedAction, LoggedAction, Placed, Event, Engine} from "../../../core/index.ts";
+import { ActionAndReactions, Engine, Event} from "../../../core/index.ts";
+import EventDispatcher from "../../islands/EventDispatcher.tsx";
 import { TestRecord, runTests } from "../../tests/utils.ts";
 
 
@@ -45,15 +46,14 @@ export const handler: Handlers<{recorded: ActionAndReactions[], engine?: Engine}
               console.log('SUCCESS');
             }
             const test: {default: TestRecord} = await import(`../../tests/${fileName}.ts`);
-            console.log(test.default['a given bid will'].toString())
-            const {recorded, result, engine} = await runTests(test.default["a given bid will"]());
+            const {recorded, result, engine} = await runTests(test.default["a when-bid enables the dispatch function for an event"]());
             // from the recoreded reactions, get all information for the actions
             augmentRecorded(recorded);
             return ctx.render({recorded, engine});
         }
         catch(error) {
             // in this case, an assert failed
-            console.error('test failed');
+            console.error('test failed: ', error);
             return ctx.render({recorded: [], engine: undefined});
         }
     },
@@ -80,12 +80,6 @@ function nodeActionAndReactions(actionAndReactions: ActionAndReactions) {
   );
 }
 
-
-/**
- * a page that renders a list of actions and the corresponding reactions
- * @param props 
- * @returns a visualization of the ActionAndReactions array
- */
 export default function actionsAndReactionsPage(props: PageProps<{recorded: ActionAndReactions[], engine?: Engine}>) {
     return (
         <div>
@@ -101,15 +95,15 @@ export default function actionsAndReactionsPage(props: PageProps<{recorded: Acti
               <form>
                 <fieldset>
                   <legend>dispatch an event</legend>
-                  {props.data.engine?.askForBids.map(bid => (
+                  {props.data.engine?.whenBids.map(bid => (
                     <div>
                       <input type="radio" name="eventId" value={bid.event.id} required/>
                       <label for={bid.event.id}>{bid.event.id}</label>
                     </div>
                   ))}
+                  <textarea name="payload" cols={50} rows={10}></textarea>
+                  <EventDispatcher dispatch={props.data.engine!.whenBids[0].event.dispatch}/>
                 </fieldset>
-                <textarea name="payload" cols={50} rows={10}></textarea>
-                <button type="submit">Dispatch</button>
               </form>
             </ul>
         </div>

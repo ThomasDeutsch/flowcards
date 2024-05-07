@@ -5,26 +5,18 @@ import { reactToInputAction, reactToRejectAction, reactToResolveAsyncAction } fr
 import { invalidReasonForPendingRequestBid } from "./bid-invalid-reasons.ts";
 import { Placed, SetBid } from "./bid.ts";
 
-/**
- * @internal
- * function to process the next valid action.
- *  There are 3 types of actions that are handled by this function:
- *   A: external action: an external action is created by an event.dispatch call
- *   B: resolvePendingRequest: a resolvePendingRequest action is created if a pending event is resolved
- *   C: rejectPendingRequest: a rejectPendingRequest action is created if a pending event is rejected
- * @param info the information about bids and pending actions
- * @returns true if the next action was processed
- */
-export function processAction(engine: Engine, nextAction: Action<any>): boolean {
+
+export function processAction(engine: Engine, nextAction: Action<any>) {
     const currentBids = engine.orderedRequestsAndCurrentBids.currentBidsByEventId.get(nextAction.eventId);
-    // check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
         engine.__actionReactionLogger.__logInvalidBidReason({eventId: nextAction.eventId, type: 'no current bids for this event'});
         return false;
     }
+    if(currentBids.event.id !== nextAction.eventId) {
+        engine.__actionReactionLogger.__logInvalidBidReason({eventId: nextAction.eventId, type: 'event id does not match the current event'});
+        return false;
+    }
     const nextActionId = engine.currentActionId + 1;
-
-    // A. external action
     if(nextAction.type === 'input') {
         const event = currentBids.event;
         const {invalidBidReason, accumulatedValidationResults, whenBid} = event.validate(nextAction.payload);
@@ -44,8 +36,6 @@ export function processAction(engine: Engine, nextAction: Action<any>): boolean 
         engine.__actionReactionLogger.__onActionProcessed(action);
         return true;
     }
-
-    // B. resolvePendingRequest
     if(nextAction.type === 'resolvePendingRequest') {
         const pendingRequestBid = currentBids.pendingRequest;
         const invalidBidReason = invalidReasonForPendingRequestBid(nextAction, pendingRequestBid);
@@ -56,7 +46,7 @@ export function processAction(engine: Engine, nextAction: Action<any>): boolean 
         if(pendingRequestBid === undefined) {
             throw new Error('unexpected error: after bid validation, the pending request bid should not be undefined');
         }
-        const validationResult = explainValidation(currentBids, nextAction.payload, [pendingRequestBid, pendingRequestBid.isTriggerAskedFor ? currentBids.when![0] : undefined]);
+        const validationResult = explainValidation(currentBids, nextAction.payload, [pendingRequestBid, pendingRequestBid.isTrigger ? currentBids.when![0] : undefined]);
         if(validationResult.isValidAccumulated === false) {
             // if the validation result is not valid, create a rejectPendingRequest action
             const rejectAction: RejectPendingRequestAction & {id: number} = {
@@ -76,8 +66,6 @@ export function processAction(engine: Engine, nextAction: Action<any>): boolean 
         engine.__actionReactionLogger.__onActionProcessed({...nextAction, id: nextActionId});
         return true;
     }
-
-    // C. rejectPendingRequest
     if(nextAction.type === 'rejectPendingRequest') {
         let pendingRequestBid = currentBids.pendingRequest;
         const invalidReason = invalidReasonForPendingRequestBid(nextAction, pendingRequestBid);

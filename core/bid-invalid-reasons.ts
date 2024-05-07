@@ -3,6 +3,8 @@ import { WhenBid, BidType, CurrentBidsForEvent, Placed, SetBid, getHighestPriori
 import { equalPaths } from "./utils.ts";
 
 
+// TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
+
 export type InvalidBidReason = {
     eventId: string,
     type: string,
@@ -11,18 +13,16 @@ export type InvalidBidReason = {
     bidId?: number,
 }
 
-/**
- * will return the invalid reasons for the current when-bid. If no when-bid is provided, the highest priority when-bid will be used.
- * if the current bids  provided, this function will check and return the first invalid reason for the when-bid.
- * @remarks this function will not check if the when-payload is valid or not.
- * @param currentBids current placed bids for this event
- * @param whenBid the when bid that will be checked (will default to the highest priority when bid if not provided)
- * @returns all invalid reasons for the when bid or undefined if the when bid is valid
- */
-export function getValidAskForBid<P,V>(eventId: string, currentBids?: CurrentBidsForEvent<P, V>): {whenBid?: Placed<WhenBid<P, V>>, invalidBidReason?: InvalidBidReason} {
+
+// CORE FUNCTIONS -----------------------------------------------------------------------------------------------
+
+export function getValidWhenBid<P,V>(eventId: string, currentBids?: CurrentBidsForEvent<P, V>): {whenBid?: Placed<WhenBid<P, V>>, invalidBidReason?: InvalidBidReason} {
     const invalidBidReason: InvalidBidReason = {eventId, bidType: BidType.when, type: 'no current bids for this event'};
     // check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
+        return {invalidBidReason};
+    }
+    if(currentBids.event.id !== eventId) {
         return {invalidBidReason};
     }
     // check if the there is an when bid
@@ -57,15 +57,6 @@ export function getValidAskForBid<P,V>(eventId: string, currentBids?: CurrentBid
     return {whenBid: highestPriorityAskForBid};
 }
 
-
-/**
- * for a given request bid, this function will return an invalid reasons for the bid (if any).
- * if the current bids are provided, this function will check all invalid reasons for the request bid.
- * @remarks this function will not check if the request payload is valid or not.
- * @param bid the request bid that will be checked
- * @param currentBids current placed bids for this event
- * @returns an invalid reason for the request bid or undefined if the request bid is valid.
- */
 export function invalidReasonForRequestBid(bid: Placed<SetBid<any, any>>, currentBids?: CurrentBidsForEvent<any, any>): InvalidBidReason | undefined {
     const invalidReason: InvalidBidReason = {eventId: bid.event.id, bidType: BidType.set, flowPath: bid.flow.path, bidId: bid.id, type: 'no current bids for this event'};
     // check if the event information is available (if any bid is placed for this event id)
@@ -73,7 +64,7 @@ export function invalidReasonForRequestBid(bid: Placed<SetBid<any, any>>, curren
         return invalidReason;
     };
     // check, when the bid is only valid when asked for, if there is an when-bid for it
-    if(bid.isTriggerAskedFor) {
+    if(bid.isTrigger) {
         if(getHighestPriorityWhenBid(currentBids) === undefined) {
             invalidReason.type = 'no when-bid';
             return invalidReason;
@@ -97,7 +88,7 @@ export function invalidReasonForRequestBid(bid: Placed<SetBid<any, any>>, curren
     }
     // if the bid is from a different engine than the event, check if the bid is a triggerAskedFor bid
     else if(bid.flow.pathFromRootFlow[0] !== bid.event.rootFlowId) {
-        if(!bid.isTriggerAskedFor) {
+        if(!bid.isTrigger) {
             invalidReason.type = 'events connected to a different engine can not be requested';
         }
     }

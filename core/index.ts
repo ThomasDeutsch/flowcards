@@ -21,7 +21,7 @@ export { Event, EventByKey } from './event.ts';
 export type { TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, AllBidsAndPendingInformation, ExtendInformation, Flow } from './flow.ts';
 
 /* engine */
-export type { EngineProps, ActionReactionGenerator } from './engine.ts';
+export type { EngineProps, TestGenerator } from './engine.ts';
 export { Engine } from './engine.ts';
 
 
