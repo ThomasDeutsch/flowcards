@@ -89,6 +89,7 @@ export class Engine {
         while(true) {
             let wasActionProcessed: boolean;
             const actionFromTest = this.tester?.next(this.__actionReactionLogger.getActionAndReactions())?.value;
+            // process action from a test, or from a request bid
             if(actionFromTest) {
                 if(actionFromTest === 'mockRequest') {
                     wasActionProcessed = processNextValidRequestBid(this, true);
@@ -96,14 +97,15 @@ export class Engine {
                 else {
                     wasActionProcessed = processAction(this, actionFromTest)
                 }
+                if(!wasActionProcessed) throw new Error(`invalid test action, can not be processed: ${JSON.stringify(actionFromTest)}`);
             }
             else {
                 wasActionProcessed = processNextValidRequestBid(this);
             }
+            // stay in the loop, or exit
             if(wasActionProcessed === true) {
                 this._currentActionId++;
                 this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this);
-
             }
             else {
                 this.tester?.next({...this.__actionReactionLogger.getActionAndReactions(), hasFinished: true});

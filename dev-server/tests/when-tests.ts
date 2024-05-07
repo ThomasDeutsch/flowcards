@@ -204,7 +204,7 @@ Deno.test('tests', async () => {
         if(finishedTest.result === 'invalid reactions') {
           // show differences
           console.error('invalid reactions: ', finishedTest.recorded);
-          assertEquals(1, 2);
+          throw new Error('invalid reactions');
         }
         assertEquals(finishedTest.engine.whenBids.length, 0);
         assertEquals(finishedTest.result, 'completed');
