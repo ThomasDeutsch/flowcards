@@ -1,6 +1,6 @@
 import { InputAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./action.ts";
 import { Event } from "./event.ts";
-import { Flow, FlowGeneratorFunction } from "./flow.ts";
+import { Rule, RuleGeneratorFunction } from "./rule.ts";
 import { ActionAndReactions, ActionReactionLogger } from "./action-reaction-logger.ts";
 import { processNextValidRequestBid } from "./process-request.ts";
 import { processAction } from "./process-action.ts";
@@ -15,7 +15,7 @@ import { OrderedRequestsAndCurrentBids, Placed, SetBid, getOrderedRequestsAndCur
 
 export interface EngineProps {
     id: string;
-    rootFlow: FlowGeneratorFunction;
+    rootRule: RuleGeneratorFunction;
     createTester?: (engine: Engine) => TestGenerator;
 }
 
@@ -30,14 +30,14 @@ export class Engine {
     private _currentlyValidatedEvent?: Event<any, any>;
     private _isRunning = false;
     public readonly __actionReactionLogger = new ActionReactionLogger();
-    public readonly rootFlow: Flow;
+    public readonly rootRule: Rule;
 
     constructor(props : EngineProps) {
         this.__actionReactionLogger = new ActionReactionLogger();
         this.tester = props.createTester?.(this);
-        this.rootFlow = new Flow({
-            pathFromRootFlow: [props.id],
-            generatorFunction: props.rootFlow,
+        this.rootRule = new Rule({
+            pathFromRootRule: [props.id],
+            generatorFunction: props.rootRule,
             logger: this.__actionReactionLogger,
             registerChangedEvent: this._registerChangedEvent.bind(this),
             runEngine: this.run.bind(this)
@@ -66,7 +66,7 @@ export class Engine {
 
     public __connectEventToEngine(event: Event<any, any>): void {
         event.__connectToEngine({
-            rootFlowId: this.rootFlow.id,
+            rootRuleId: this.rootRule.id,
             getCurrentBids: (eventId: string) => this._orderedRequestsAndCurrentBids.currentBidsByEventId.get(eventId),
             registerEventAccess: this._registerEventAccessInValidateFunction.bind(this),
             toggleValueAccessLogging: this._toggleEventAccessRegistrationInValidateFunction.bind(this),
@@ -97,17 +97,24 @@ export class Engine {
                 else {
                     wasActionProcessed = processAction(this, actionFromTest)
                 }
-                if(!wasActionProcessed) throw new Error(`invalid test action, can not be processed: ${JSON.stringify(actionFromTest)}`);
+                if(!wasActionProcessed) {
+                    this.tester?.next({...this.__actionReactionLogger.getActionAndReactions(), actionRejected: true});
+                    continue;
+                }
             }
             else {
-                wasActionProcessed = processNextValidRequestBid(this);
+                const wasInternalRequestProcessed = processNextValidRequestBid(this);
+                if (!wasInternalRequestProcessed) {
+                    this.tester?.next({...this.__actionReactionLogger.getActionAndReactions(), hasFinished: true});
+                    break;
+                }
+                wasActionProcessed = true;
             }
             // stay in the loop, or exit
             if(wasActionProcessed === true) {
                 this._currentActionId++;
                 this._orderedRequestsAndCurrentBids = getOrderedRequestsAndCurrentBids(this);
-            }
-            else {
+            } else {
                 this.tester?.next({...this.__actionReactionLogger.getActionAndReactions(), hasFinished: true});
                 break;
             }

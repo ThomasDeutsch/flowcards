@@ -1,10 +1,10 @@
 // BID UTILITY FUNCTIONS -------------------------------------------------------------------------------------------------------------
 
 import { AnyBid } from "./bid.ts";
-import { FlowProgressInfo, TNext } from "./flow.ts";
+import { RuleProgressInfo, TNext } from "./rule.ts";
 
 
-export function* getAllValues<P extends AnyBid<any, any>[]>(...bids: P): Generator<TNext, {[K in keyof P]: P[K]["event"]["value"]}, FlowProgressInfo> {
+export function* getAllValues<P extends AnyBid<any, any>[]>(...bids: P): Generator<TNext, {[K in keyof P]: P[K]["event"]["value"]}, RuleProgressInfo> {
     let bidsCopy = [...bids];
     while(bidsCopy && bidsCopy.length > 1) {
         const [progressedEvent, remainingBids] = yield bidsCopy;
@@ -19,14 +19,14 @@ export function* getAllValues<P extends AnyBid<any, any>[]>(...bids: P): Generat
 }
 
 
-export function* getValue<P, V>(bid: AnyBid<P, V>): Generator<TNext, P, FlowProgressInfo> {
+export function* getValue<P, V>(bid: AnyBid<P, V>): Generator<TNext, P, RuleProgressInfo> {
     const x = yield bid;
     return x[0].value as P;
 }
 export const getEventValue = getValue;
 
 
-export function* getFirstValue<P extends AnyBid<any, any>[]>(...bids: P): Generator<TNext, {[K in keyof P]: P[K]["event"]["value"]}, FlowProgressInfo> {
+export function* getFirstValue<P extends AnyBid<any, any>[]>(...bids: P): Generator<TNext, {[K in keyof P]: P[K]["event"]["value"]}, RuleProgressInfo> {
     yield bids.map(bid => ({...bid, isGetValueBid: true}));
     return bids.map(bid => bid.event.value) as {[K in keyof P]: P[K]["event"]["value"]};
 }

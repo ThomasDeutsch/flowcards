@@ -7,7 +7,7 @@ import { AccumulatedValidationResults } from "./payload-validation.ts";
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
 
 interface ConnectToEngineProps {
-    rootFlowId: string;
+    rootRuleId: string;
     getCurrentBids: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     runEngine: (action?: InputAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     registerEventAccess: (event: Event<any, any>) => void;
@@ -23,7 +23,7 @@ export class Event<P = undefined, V = void> {
     public readonly id: string;
     private _value?: P;
     private _hasValue = false;
-    private _rootFlowId?: string;
+    private _rootRuleId?: string;
     private _runEngine?: (action?: InputAction<any> | ResolvePendingRequestAction<any> | RejectPendingRequestAction) => void;
     private _getCurrentBids?: (eventId: string) => CurrentBidsForEvent<any, any> | undefined;
     private _onUpdateCallback?: () => void; // only a single subscriber is supported
@@ -38,19 +38,25 @@ export class Event<P = undefined, V = void> {
         this.id = id;
     }
 
-    public __reset(): void {
-        this._rootFlowId = undefined;
+    /**
+     * Resets the event's internal state, value, and engine connections.
+     */
+    public reset(): this {
+        this._hasValue = false;
+        this._value = undefined;
+        this._rootRuleId = undefined;
         this._runEngine = undefined;
         this._getCurrentBids = undefined;
         this._registerEventAccess = undefined;
         this._toggleValueAccessLogging = undefined;
-        this._value = undefined;
         this._latestUpdateOnActionId = undefined;
         this._relatedValidationEvents.clear();
+        console.log(`[Event ${this.id}] Reset`); // Add log for debugging
+        return this;
     }
 
     public __connectToEngine(props: ConnectToEngineProps): void {
-        this._rootFlowId = props.rootFlowId;
+        this._rootRuleId = props.rootRuleId;
         this._getCurrentBids = props.getCurrentBids;
         this._runEngine = props.runEngine;
         this._registerEventAccess = () => props.registerEventAccess(this);
@@ -108,7 +114,7 @@ export class Event<P = undefined, V = void> {
             payload: value as P,
             id: null,
             eventId: this.id,
-            flowPath: whenBid.flow.path,
+            rulePath: whenBid.rule.path,
             bidId: whenBid.id
         };
         if(this._runEngine === undefined) throw new Error('unexpected error: runEngine is undefined');
@@ -154,14 +160,8 @@ export class Event<P = undefined, V = void> {
         return this._description;
     }
 
-    public get rootFlowId(): string | undefined {
-        return this._rootFlowId;
-    }
-
-    public reset(): this {
-        this._hasValue = false;
-        this._value = undefined;
-        return this;
+    public get rootRuleId(): string | undefined {
+        return this._rootRuleId;
     }
 
     public get hasValue(): boolean {

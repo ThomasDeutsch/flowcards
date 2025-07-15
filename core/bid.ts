@@ -1,8 +1,8 @@
 import { Event } from "./event.ts";
 import { BaseValidationReturn } from "./payload-validation.ts";
-import { Flow, ExtendInformation, TNext } from "./flow.ts";
-import { FlowProgressInfo, Engine } from "./index.ts";
-import { FlowGeneratorFunction } from "./index.ts";
+import { Rule, ExtendInformation, TNext } from "./rule.ts";
+import { RuleProgressInfo, Engine } from "./index.ts";
+import { RuleGeneratorFunction } from "./index.ts";
 
 
 // TYPES AND INTERFACES -----------------------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ export interface WhenBid<P, V> extends Bid<P, V> {
 export interface ExtendBid<P, V> extends Bid<P, V> {
     type: BidType.extend;
     validate?: (nextValue: P) => BaseValidationReturn<V>;
-    extendingFlow: FlowGeneratorFunction;
+    extendingRule: RuleGeneratorFunction;
 }
 
 export interface SetBid<P, V> extends Bid<P, V> {
@@ -50,7 +50,7 @@ export type AnyBid<P,V> = WhenBid<P,V> | ExtendBid<P,V> | SetBid<P,V> | GivenBid
 
 export type Placed<B extends AnyBid<any, any>> = B & {
     id: number;
-    flow: Flow;
+    rule: Rule;
     requestActionId?: number;
 }
 
@@ -75,16 +75,16 @@ export type ProgressingBid<P,V> = WhenBid<P,V> | ExtendBid<P,V> | SetBid<P,V>
 // CORE FUNCTIONS -----------------------------------------------------------------------------------------------
 
 export function getOrderedRequestsAndCurrentBids(engine: Engine): OrderedRequestsAndCurrentBids {
-    const bidsAndPendingInformation = engine.rootFlow.__getBidsAndPendingInformation();
+    const bidsAndPendingInformation = engine.rootRule.__getBidsAndPendingInformation();
     const result: OrderedRequestsAndCurrentBids = {
         orderedRequests: [],
         currentBidsByEventId: new Map(),
     };
     // 1. add all placed bids to the result
     bidsAndPendingInformation.placedBids.forEach(bid => {
-        if(bid.event.rootFlowId === undefined) {
+        if(bid.event.rootRuleId === undefined) {
             engine.__connectEventToEngine(bid.event); // connect the event to the engine, if it is not connected yet
-        } else if(bid.event.rootFlowId !== bid.flow.pathFromRootFlow[0]) return; // only add bids that are placed by the root flow (the flow that placed the event)
+        } else if(bid.event.rootRuleId !== bid.rule.pathFromRootRule[0]) return; // only add bids that are placed by the root rule (the rule that placed the event)
         if(bid.type === 'set') {
             result.orderedRequests = [...result.orderedRequests , bid];
         }
@@ -132,11 +132,11 @@ export function trigger<P, V>(...args: Parameters<(event: Event<P, V>, payload: 
     return { type: BidType.set, event, payload, validate, isTrigger: true } satisfies SetBid<P, V>;
 }
 
-export function extend<P, V>({event, validate, flow} : {event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>, flow: FlowGeneratorFunction}): ExtendBid<P, V> {
-    return { type: BidType.extend, event, validate, extendingFlow: flow } satisfies ExtendBid<P, V>;
+export function extend<P, V>({event, validate, rule} : {event: Event<P, V>, validate?: (nextValue: P) => BaseValidationReturn<V>, rule: RuleGeneratorFunction}): ExtendBid<P, V> {
+    return { type: BidType.extend, event, validate, extendingRule: rule } satisfies ExtendBid<P, V>;
 }
 
-export function* given<P, V>(...args: Parameters<(event: Event<P, V>, options?: {validate?: (value: P) => BaseValidationReturn<V>, equality?: (value: P) => unknown}) => GivenBid<P, V>>) : Generator<TNext, P, FlowProgressInfo> {
+export function* given<P, V>(...args: Parameters<(event: Event<P, V>, options?: {validate?: (value: P) => BaseValidationReturn<V>, equality?: (value: P) => unknown}) => GivenBid<P, V>>) : Generator<TNext, P, RuleProgressInfo> {
     const event = args[0];
     const options = args[1];
     const bid = { type: BidType.given, event, validate: options?.validate, equality: options?.equality, isActive: false } satisfies GivenBid<P, V>;
@@ -164,8 +164,8 @@ export function when<P, V>(...args: Parameters<(event: Event<P, V>, validate?: (
     }
 }
 
-export function isSameBid(bid1: Placed<AnyBid<any, any>>, flowId: string, bidId: number): boolean {
-    return (bid1.id === bidId) && (bid1.flow.id === flowId);
+export function isSameBid(bid1: Placed<AnyBid<any, any>>, ruleId: string, bidId: number): boolean {
+    return (bid1.id === bidId) && (bid1.rule.id === ruleId);
 }
 
 export function filterRemainingBids(bidId: number, placedBids?: Placed<AnyBid<any, any>>[]): Placed<AnyBid<any, any>>[] | undefined {
@@ -179,11 +179,11 @@ export function filterRemainingBids(bidId: number, placedBids?: Placed<AnyBid<an
 
 export function getHighestPriorityWhenBid(currentBids: CurrentBidsForEvent<any, any>): Placed<WhenBid<any, any>> | undefined {
     let highestPriorityAskForBid: Placed<WhenBid<any, any>> | undefined;
-    // if the bid gets extended, the highest priority askFor bid is the askFor bid placed by the extending flow or the first askFor bid
+    // if the bid gets extended, the highest priority askFor bid is the askFor bid placed by the extending rule or the first askFor bid
     if(currentBids.when === undefined || currentBids.when.length === 0) return undefined
     const pendingExtend = currentBids.pendingExtend;
-    if(pendingExtend?.extendingFlow) {
-        highestPriorityAskForBid = currentBids.when.find(bid => bid.flow.id === pendingExtend.extendingFlow?.id);
+    if(pendingExtend?.extendingRule) {
+        highestPriorityAskForBid = currentBids.when.find(bid => bid.rule.id === pendingExtend.extendingRule?.id);
     }
     if(highestPriorityAskForBid === undefined) {
         highestPriorityAskForBid = currentBids.when[0];

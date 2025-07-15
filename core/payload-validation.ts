@@ -8,13 +8,13 @@ export type BaseValidationReturn<V> = {isValid: boolean, details?: V[]} | boolea
 
  export interface AccumulatedValidationResults<V> {
     isValidAccumulated: boolean,
-    results?: {isValid: boolean, details: V[], flowId: string, bidId: number}[];
+    results?: {isValid: boolean, details: V[], ruleId: string, bidId: number}[];
 }
 
 
 export function explainValidation<P, V>(currentBids: CurrentBidsForEvent<P, V>, value: P, additionalBids: (Placed<AnyBid<P,V>> | undefined)[] = []): AccumulatedValidationResults<V> {
     let isValidAccumulated = true;
-    let results: {isValid: boolean, details: V[], flowId: string, bidId: number}[] = [];
+    let results: {isValid: boolean, details: V[], ruleId: string, bidId: number}[] = [];
     const latestExtendBid = currentBids.pendingExtend?.extendedBids[0];
     const bids = [latestExtendBid, ...additionalBids].filter(isDefined);
     bids.forEach(bid => {
@@ -24,7 +24,7 @@ export function explainValidation<P, V>(currentBids: CurrentBidsForEvent<P, V>, 
                 isValidAccumulated = isValidAccumulated && validationResult;
             } else {
                 if(validationResult.details) {
-                    results = [...results, {isValid: validationResult.isValid, bidId: bid.id, flowId: bid.flow.id, details: validationResult.details || []}];
+                    results = [...results, {isValid: validationResult.isValid, bidId: bid.id, ruleId: bid.rule.id, details: validationResult.details || []}];
                 }
                 isValidAccumulated = isValidAccumulated && validationResult.isValid;
             }

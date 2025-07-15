@@ -1,7 +1,7 @@
 import { RequestedAction, RequestedAsyncAction } from "./action.ts";
 import { explainValidation } from "./payload-validation.ts";
 import { CurrentBidsForEvent } from "./bid.ts";
-import { reactToRequestedAction, reactToRequestedAsyncAction } from "./flow-reaction.ts";
+import { reactToRequestedAction, reactToRequestedAsyncAction } from "./rule-reactions.ts";
 import { isThenable } from "./utils.ts";
 import { invalidReasonForRequestBid } from "./bid-invalid-reasons.ts";
 import { Engine } from "./engine.ts";
@@ -29,7 +29,7 @@ export function processNextValidRequestBid(engine: Engine, mockRequest?: boolean
                 eventId: bid.event.id,
                 payload: payload,
                 bidId: bid.id,
-                flowPath: bid.flow.path
+                rulePath: bid.rule.path
             }
             reactToRequestedAsyncAction(currentBids, requestedAsyncAction, bid);
             engine.__actionReactionLogger.__onActionProcessed(requestedAsyncAction);
@@ -46,7 +46,7 @@ export function processNextValidRequestBid(engine: Engine, mockRequest?: boolean
                 eventId: bid.event.id,
                 payload: payload,
                 bidId: bid.id,
-                flowPath: bid.flow.path
+                rulePath: bid.rule.path
             };
             reactToRequestedAction(currentBids, requestedAction, bid, whenBid);
             engine.__actionReactionLogger.__onActionProcessed(requestedAction);
@@ -63,7 +63,7 @@ export function processNextValidRequestBid(engine: Engine, mockRequest?: boolean
                 eventId: bid.event.id,
                 payload: payload,
                 bidId: bid.id,
-                flowPath: bid.flow.path
+                rulePath: bid.rule.path
             };
             reactToRequestedAction(currentBids, requestedAction, bid);
             engine.__actionReactionLogger.__onActionProcessed(requestedAction);

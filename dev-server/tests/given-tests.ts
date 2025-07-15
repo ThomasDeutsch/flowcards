@@ -1,5 +1,5 @@
 import { Event } from "../../core/event.ts";
-import { Flow } from "../../core/flow.ts";
+import { Rule } from "../../core/rule.ts";
 import { when, set, given } from "../../core/bid.ts";
 import { ActionAndReactions, FlowGeneratorFunction } from "../../core/index.ts";
 
@@ -9,8 +9,8 @@ export default {
         const eventA = new Event<number>('eventA');
         const eventB = new Event<number>('eventB');
         return {
-            rootFlow: function*(this: Flow) {
-                this.flow('givenFlow', function*(this: Flow) {
+            rootFlow: function*(this: Rule) {
+                this.flow('givenFlow', function*(this: Rule) {
                     yield* given(eventA, {validate: (x) => x > 10});
                     yield* given(eventB, {validate: (x) => x > 10});
                     yield undefined

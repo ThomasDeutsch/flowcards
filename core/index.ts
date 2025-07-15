@@ -17,8 +17,8 @@ export {getAllValues, getFirstValue, getValue} from './bid-utility-functions.ts'
 /* event */
 export { Event, EventByKey } from './event.ts';
 
-/* flow */
-export type { TNext, FlowProgressInfo, FlowGenerator, FlowGeneratorFunction, FlowParameters, AllBidsAndPendingInformation, ExtendInformation, Flow } from './flow.ts';
+/* rule */
+export type { TNext, RuleProgressInfo, RuleGenerator, RuleGeneratorFunction, RuleParameters, AllBidsAndPendingInformation, ExtendInformation, Rule } from './rule.ts';
 
 /* engine */
 export type { EngineProps, TestGenerator } from './engine.ts';

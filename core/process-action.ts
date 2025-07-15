@@ -1,7 +1,7 @@
 import { Action, RejectPendingRequestAction } from "./action.ts";
 import { Engine } from "./engine.ts";
 import { explainValidation } from "./payload-validation.ts";
-import { reactToInputAction, reactToRejectAction, reactToResolveAsyncAction } from "./flow-reaction.ts";
+import { reactToInputAction, reactToRejectAction, reactToResolveAsyncAction } from "./rule-reactions.ts";
 import { invalidReasonForPendingRequestBid } from "./bid-invalid-reasons.ts";
 import { Placed, SetBid } from "./bid.ts";
 
@@ -22,16 +22,23 @@ export function processAction(engine: Engine, nextAction: Action<any>) {
         const {invalidBidReason, accumulatedValidationResults, whenBid} = event.validate(nextAction.payload);
         if(invalidBidReason !== undefined) {
             engine.__actionReactionLogger.__logInvalidBidReason(invalidBidReason);
+            // Maybe log reaction here too? 
+            // engine.__actionReactionLogger.__logRuleReaction(whenBid?.rule.path || [], 'bid validation failed', { eventId: event.id, bidType: 'when', bidId: whenBid?.id, value: nextAction.payload, reason: invalidBidReason.type });
             return false;
+        }
+        if(whenBid === undefined) { // Check whenBid existence *before* using it for logging
+             // If no valid when bid, it's an invalid reason
+             engine.__actionReactionLogger.__logInvalidBidReason({ eventId: event.id, type: 'no valid when bid found for input action' });
+             return false; 
         }
         if(accumulatedValidationResults && accumulatedValidationResults.isValidAccumulated === false) {
-            engine.__actionReactionLogger.__logInvalidPayload(accumulatedValidationResults);
+            // Log specific reaction for validation failure
+            engine.__actionReactionLogger.__logRuleReaction(whenBid.rule.path, 'bid validation failed', { eventId: event.id, bidType: 'when', bidId: whenBid.id, value: nextAction.payload });
+            engine.__actionReactionLogger.__logInvalidPayload(accumulatedValidationResults); // Keep logging detailed payload info
             return false;
         }
+        // If whenBid exists and validation passed:
         const action = {...nextAction, id: nextActionId};
-        if(whenBid === undefined) {
-            throw new Error('unexpected error: after bid validation, the when-bid should not be undefined');
-        }
         reactToInputAction(currentBids, action, whenBid);
         engine.__actionReactionLogger.__onActionProcessed(action);
         return true;
@@ -53,12 +60,12 @@ export function processAction(engine: Engine, nextAction: Action<any>) {
                 id: nextActionId,
                 type: 'rejectPendingRequest',
                 eventId: nextAction.eventId,
-                flowPath: nextAction.flowPath,
+                rulePath: nextAction.rulePath,
                 bidId: nextAction.bidId,
                 requestActionId: nextAction.requestActionId,
                 error: validationResult
             };
-            reactToRejectAction(pendingRequestBid.flow, currentBids.event);
+            reactToRejectAction(pendingRequestBid.rule, currentBids.event);
             engine.__actionReactionLogger.__onActionProcessed(rejectAction);
             return true;
         }
@@ -74,7 +81,7 @@ export function processAction(engine: Engine, nextAction: Action<any>) {
             return false;
         }
         pendingRequestBid = pendingRequestBid as Placed<SetBid<any, any>>; // is not undefined because of the invalidReasonsForPendingRequestBid check
-        reactToRejectAction(pendingRequestBid.flow, currentBids.event);
+        reactToRejectAction(pendingRequestBid.rule, currentBids.event);
         engine.__actionReactionLogger.__onActionProcessed({...nextAction, id: nextActionId});
         return true;
     }

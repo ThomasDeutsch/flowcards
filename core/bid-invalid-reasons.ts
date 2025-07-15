@@ -9,7 +9,7 @@ export type InvalidBidReason = {
     eventId: string,
     type: string,
     bidType?: BidType,
-    flowPath?: string[],
+    rulePath?: string[],
     bidId?: number,
 }
 
@@ -34,23 +34,23 @@ export function getValidWhenBid<P,V>(eventId: string, currentBids?: CurrentBidsF
     // check if the bid has a pending request
     if(currentBids.pendingRequest) {
         invalidBidReason.type = 'event is pending';
-        invalidBidReason.flowPath = currentBids.pendingRequest.flow.path;
+        invalidBidReason.rulePath = currentBids.pendingRequest.rule.path;
         invalidBidReason.bidId = currentBids.pendingRequest.id;
         return {invalidBidReason};
     }
     // check if the bid has a pending extend, if so, check if the bid will resolve the extend
-    if(currentBids.pendingExtend?.extendingFlow) {
-        const isResolveExtendBid = highestPriorityAskForBid.flow.id === currentBids.pendingExtend.extendingFlow.id;
+    if(currentBids.pendingExtend?.extendingRule) {
+        const isResolveExtendBid = highestPriorityAskForBid.rule.id === currentBids.pendingExtend.extendingRule.id;
         if(!isResolveExtendBid) {
-            invalidBidReason.type = 'event is extended by another flow';
-            invalidBidReason.flowPath = currentBids.pendingExtend.extendingFlow.path;
+            invalidBidReason.type = 'event is extended by another rule';
+            invalidBidReason.rulePath = currentBids.pendingExtend.extendingRule.path;
             return {invalidBidReason};
         }
     }
     // check if the when bid is from a different engine than the event
-    if(highestPriorityAskForBid.flow.pathFromRootFlow[0] !== currentBids.event.rootFlowId) {
+    if(highestPriorityAskForBid.rule.pathFromRootRule[0] !== currentBids.event.rootRuleId) {
         invalidBidReason.type = 'events connected to a different engine can not be requested';
-        invalidBidReason.flowPath = highestPriorityAskForBid.flow.path;
+        invalidBidReason.rulePath = highestPriorityAskForBid.rule.path;
         invalidBidReason.bidId = highestPriorityAskForBid.id;
         return {invalidBidReason};
     }
@@ -58,7 +58,7 @@ export function getValidWhenBid<P,V>(eventId: string, currentBids?: CurrentBidsF
 }
 
 export function invalidReasonForRequestBid(bid: Placed<SetBid<any, any>>, currentBids?: CurrentBidsForEvent<any, any>): InvalidBidReason | undefined {
-    const invalidReason: InvalidBidReason = {eventId: bid.event.id, bidType: BidType.set, flowPath: bid.flow.path, bidId: bid.id, type: 'no current bids for this event'};
+    const invalidReason: InvalidBidReason = {eventId: bid.event.id, bidType: BidType.set, rulePath: bid.rule.path, bidId: bid.id, type: 'no current bids for this event'};
     // check if the event information is available (if any bid is placed for this event id)
     if(currentBids === undefined) {
         return invalidReason;
@@ -72,24 +72,26 @@ export function invalidReasonForRequestBid(bid: Placed<SetBid<any, any>>, curren
     }
     // check if the bid has a pending request
     if(currentBids.pendingRequest) {
-        if(currentBids.pendingRequest.flow.id === bid.flow.id && currentBids.pendingRequest.id === bid.id) {
+        if(currentBids.pendingRequest.rule.id === bid.rule.id && currentBids.pendingRequest.id === bid.id) {
             invalidReason.type = 'pending and waiting for resolve/reject';
         } else {
-            invalidReason.type = 'another flow is currently pending this event';
+            invalidReason.type = 'another rule is currently pending this event';
         }
         return invalidReason;
     }
     // check if the bid has a pending extend
-    else if(currentBids.pendingExtend?.extendingFlow) {
-        const willResolveTheExtendBid = bid.flow.id === currentBids.pendingExtend.extendingFlow.id;
+    else if(currentBids.pendingExtend?.extendingRule) {
+        const willResolveTheExtendBid = bid.rule.id === currentBids.pendingExtend.extendingRule.id;
         if(!willResolveTheExtendBid) {
-            invalidReason.type = 'event is extended by another flow';
+            invalidReason.type = 'event is extended by another rule';
+            return invalidReason;
         }
     }
     // if the bid is from a different engine than the event, check if the bid is a triggerAskedFor bid
-    else if(bid.flow.pathFromRootFlow[0] !== bid.event.rootFlowId) {
+    else if(bid.rule.pathFromRootRule[0] !== bid.event.rootRuleId) {
         if(!bid.isTrigger) {
             invalidReason.type = 'events connected to a different engine can not be requested';
+            return invalidReason;
         }
     }
     return undefined;
@@ -103,14 +105,14 @@ export function invalidReasonForRequestBid(bid: Placed<SetBid<any, any>>, curren
  * @returns all invalid reasons for the resolvePendingRequest or rejectPendingRequest action or undefined if the action is valid
  */
 export function invalidReasonForPendingRequestBid(action: ResolvePendingRequestAction<any> | RejectPendingRequestAction, pendingRequest?: Placed<SetBid<any, any>>): InvalidBidReason | undefined {
-    const invalidReason: InvalidBidReason = {eventId: action.eventId, bidType: BidType.set, flowPath: action.flowPath, bidId: action.bidId, type: 'no pending request'};
+    const invalidReason: InvalidBidReason = {eventId: action.eventId, bidType: BidType.set, rulePath: action.rulePath, bidId: action.bidId, type: 'no pending request'};
     // check if the pending request is available for this event
     if(pendingRequest === undefined) {
         return invalidReason;
     }
-    // check if the flow path matches
-    if(!equalPaths(pendingRequest.flow.path, action.flowPath)) {
-        invalidReason.type = 'flow path does not match';
+    // check if the rule path matches
+    if(!equalPaths(pendingRequest.rule.path, action.rulePath)) {
+        invalidReason.type = 'rule path does not match';
         return invalidReason;
     }
     // check if the bid id matches

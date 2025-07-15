@@ -3,7 +3,7 @@
 interface BaseAction {
     type: "input" | "requested" | "requestedAsync" | "resolvePendingRequest" | "rejectPendingRequest";
     eventId: string;
-    flowPath: string[];
+    rulePath: string[];
     bidId: number;
 }
 

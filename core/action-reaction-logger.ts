@@ -1,7 +1,6 @@
-import { isGlob } from "$std/path/glob.ts";
 import { LoggedAction } from "./action.ts";
 import { InvalidBidReason } from "./bid-invalid-reasons.ts";
-import { FlowReaction, FlowReactionDetails, FlowReactionType } from "./flow-reaction.ts";
+import { RuleReaction, RuleReactionDetails, RuleReactionType } from "./rule-reactions.ts";
 import { AccumulatedValidationResults, Action, Engine } from "./index.ts";
 
 
@@ -17,7 +16,7 @@ export type AugmentedAction<P> = LoggedAction<P> & {
 
 export interface ActionAndReactions {
     action?: AugmentedAction<any>,
-    reactions?: FlowReaction[],
+    reactions?: RuleReaction[],
     tests?: {[key:string]: (engine: Engine) => void},
     // DEBUG:
     invalidActionInfo?: {
@@ -25,6 +24,7 @@ export interface ActionAndReactions {
         accumulatedValidationResults?: AccumulatedValidationResults<any>
     }
     hasFinished?: true;
+    actionRejected?: boolean;
 }
 
 
@@ -42,11 +42,11 @@ export class ActionReactionLogger {
         this._actionAndReactions.invalidActionInfo = {accumulatedValidationResults};
     }
 
-    public __logFlowReaction(flowPath: string[], type: FlowReactionType, details: FlowReactionDetails) {
+    public __logRuleReaction(rulePath: string[], type: RuleReactionType, details: RuleReactionDetails) {
         if(this._actionAndReactions.reactions === undefined) {
             this._actionAndReactions.reactions = [];
         }
-        this._actionAndReactions.reactions.push({flowPath, type, details});
+        this._actionAndReactions.reactions.push({rulePath, type, details});
     }
 
     public __onActionProcessed(action: Action<any> & {id: number}): void {

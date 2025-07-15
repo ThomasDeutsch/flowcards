@@ -1,5 +1,5 @@
 import { ActionAndReactions, LoggedAction } from "./index.ts";
-import { FlowReaction } from "./flow-reaction.ts";
+import { RuleReaction } from "./rule-reactions.ts";
 import { TestGenerator, Engine } from "./engine.ts";
 import { equalPaths } from "./utils.ts";
 import { InputAction, RejectPendingRequestAction, ResolvePendingRequestAction } from "./index.ts";
@@ -10,7 +10,7 @@ export type TestResult = 'invalid action' | 'invalid reactions' | 'completed' | 
 function isSameAction(a?: LoggedAction<any>, b?: LoggedAction<any>): boolean {
     if(a === undefined && b === undefined) return true;
     if(a === undefined || b === undefined) return false;
-    const x = a.type === b.type && a.id === b.id && a.bidId === b.bidId && equalPaths(a.flowPath, b.flowPath) && a.id === b.id;
+    const x = a.type === b.type && a.id === b.id && a.bidId === b.bidId && equalPaths(a.rulePath, b.rulePath) && a.id === b.id;
     if(x === false) return false;
     if(a.eventId !== b.eventId) return false;
     if(a.type === 'rejectPendingRequest' || a.type === 'resolvePendingRequest') {
@@ -19,20 +19,20 @@ function isSameAction(a?: LoggedAction<any>, b?: LoggedAction<any>): boolean {
     return true;
 }
 
-function isSameReaction(a: FlowReaction, b: FlowReaction): boolean {
+function isSameReaction(a: RuleReaction, b: RuleReaction): boolean {
     if(a.type !== b.type) return false;
-    if(!equalPaths(a.flowPath, b.flowPath)) return false;
+    if(!equalPaths(a.rulePath, b.rulePath)) return false;
     const aDetails = a.details;
     const bDetails = b.details;
     if(aDetails.actionId !== bDetails.actionId) return false;
     if(aDetails.bidId !== bDetails.bidId) return false;
     if(aDetails.bidType !== bDetails.bidType) return false;
-    if(aDetails.childFlowId !== bDetails.childFlowId) return false;
+    if(aDetails.childRuleId !== bDetails.childRuleId) return false;
     if(aDetails.eventId !== bDetails.eventId) return false;
     return true;
 }
 
-export function getInvalidReactions(expected?: FlowReaction[], actual?: FlowReaction[]): FlowReaction[] {
+export function getInvalidReactions(expected?: RuleReaction[], actual?: RuleReaction[]): RuleReaction[] {
     if(expected === undefined || actual === undefined) return actual ?? [];
     return actual.filter((a) => !expected.some((e) => isSameReaction(e, a)));
 }
